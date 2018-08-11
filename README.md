@@ -1,2 +1,3 @@
 # quoting-service-api-adapter
-A HTTP API adapter for the casablanca quoting service
+
+Swagger api [location](./config/swagger.json)

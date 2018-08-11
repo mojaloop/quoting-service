@@ -1,0 +1,41 @@
+{
+    "name": "quoting-service-api-adapter",
+    "description": "",
+    "version": "1.0.0",
+    "author": "James Bush <james.bush@modusbox.com>",
+    "contributors": [],
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/bushjames/quoting-service-api-adapter.git"
+    },
+    "bugs": "http://github.com/bushjames/quoting-service-api-adapter/issues",
+    "publishConfig": {
+        "registry": "https://registry.npmjs.org"
+    },
+    "dependencies": {
+        "boom": "^7.1.1",
+        "good": "^8.1.1",
+        "good-console": "^7.1.0",
+        "good-squeeze": "^5.1.0",
+        "hapi": "^17.0.0",
+        "hapi-openapi": "^1.0.0",
+        "knex": "^0.15.2",
+        "mysql": "^2.16.0"
+    },
+    "devDependencies": {
+        "eslint": "^2",
+        "tape": "^4",
+        "istanbul": "~0.4.3",
+        "swagmock": "~0.0.2"
+    },
+    "scripts": {
+        "test": "tape 'tests/**/*.js'",
+        "cover": "istanbul cover tape -- 'tests/**/*.js'",
+        "lint": "eslint .",
+        "regenerate": "yo swaggerize:test --framework hapi --apiPath './config/swagger.json'"
+    },
+    "generator-swaggerize": {
+        "version": "4.1.0"
+    },
+    "main": "./server"
+}
