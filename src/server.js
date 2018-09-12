@@ -95,6 +95,15 @@ const config = new Config();
 initDb(config.database).then(db => {
     return initServer(db, config);
 }).then(server => {
+
+    process.on('SIGTERM', () => {
+        server.log(['info'], `Received SIGTERM, closing server...`);
+        server.stop({ timeout: 10000 }).then(err => {
+            console.log(`server stopped. ${err ? (err.stack || util.inspect(err)) : ''}`);
+            process.exit((err) ? 1 : 0);
+        });
+    });
+
     server.plugins.openapi.setHost(server.info.host + ':' + server.info.port);
     server.log(['info'], `Server running on ${server.info.host}:${server.info.port}`);
 }).catch(err => {

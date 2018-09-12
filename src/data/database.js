@@ -28,11 +28,11 @@ class Database {
 
 
     /**
-     * Ensures the specified transaction initiator type is present in the database and returns its id
+     * Gets the id of the specified transaction initiator type
      *
      * @returns {promise} - id of the transactionInitiatorType
      */
-    ensureInitiatorType(txn, initiatorType) {
+    getInitiatorType(txn, initiatorType) {
         return new Promise((resolve, reject) => {
             return this.queryBuilder('transactionInitiatorType')
                 .transacting(txn)
@@ -40,36 +40,25 @@ class Database {
                 .select()
                 .then(rows => {
                     if((!rows) || rows.length < 1) {
-                        //we need to insert this initiator type
-                        return this.queryBuilder('transactionInitiatorType')
-                            .transacting(txn)
-                            .insert({
-                                name: initiatorType
-                            })
-                            .then(res => {
-                                console.log(`inserted new transactionInitiatorType in db: ${res[0]}`);
-                                resolve(res[0]);
-                            })
-                            .catch(err => {
-                                reject(err);
-                            });
+                        //initiatorType does not exist, this is an error
+                        return reject(new Error(`Unsupported initiatorType \'${initiatorType}\'`));
                     }
-                    resolve(rows[0].transactionInitiatorTypeId);
+                    return resolve(rows[0].transactionInitiatorTypeId);
                 })
                 .catch(err => {
-                    console.log(`Error in ensureInitiatorType: ${err.stack || util.inspect(err)}`);
-                    reject(err);
+                    console.log(`Error in getInitiatorType: ${err.stack || util.inspect(err)}`);
+                    return reject(err);
                 });
         });
     }
 
 
     /**
-     * Ensures the specified transaction initiator is present in the database and returns its id
+     * Gets the id of the specified transaction initiator
      *
      * @returns {promise} - id of the transactionInitiator
      */
-    ensureInitiator(txn, initiator) {
+    getInitiator(txn, initiator) {
         return new Promise((resolve, reject) => {
             return this.queryBuilder('transactionInitiator')
                 .transacting(txn)
@@ -77,24 +66,13 @@ class Database {
                 .select()
                 .then(rows => {
                     if((!rows) || rows.length < 1) {
-                        //we need to insert this initiator
-                        return this.queryBuilder('transactionInitiator')
-                            .transacting(txn)
-                            .insert({
-                                name: initiator
-                            })
-                            .then(res => {
-                                console.log(`inserted new transactionInitiator in db: ${res[0]}`);
-                                resolve(res[0]);
-                            })
-                            .catch(err => {
-                                reject(err);
-                            });
+                        //initiator does not exist, this is an error
+                        return reject(new Error(`Unsupported initiator \'${initiator}\'`));
                     }
                     resolve(rows[0].transactionInitiatorId);
                 })
                 .catch(err => {
-                    console.log(`Error in ensureInitiator: ${err.stack || util.inspect(err)}`);
+                    console.log(`Error in getInitiator: ${err.stack || util.inspect(err)}`);
                     reject(err);
                 });
         });
@@ -102,11 +80,11 @@ class Database {
 
 
     /**
-     * Ensures the specified transaction scenario is present in the database and returns its id
+     * Gets the id of the specified transaction scenario
      *
      * @returns {promise} - id of the transactionScenario
      */
-    ensureScenario(txn, scenario) {
+    getScenario(txn, scenario) {
         return new Promise((resolve, reject) => {
             return this.queryBuilder('transactionScenario')
                 .transacting(txn)
@@ -114,24 +92,13 @@ class Database {
                 .select()
                 .then(rows => {
                     if((!rows) || rows.length < 1) {
-                        //we need to insert this scenario
-                        return this.queryBuilder('transactionScenario')
-                            .transacting(txn)
-                            .insert({
-                                name: scenario
-                            })
-                            .then(res => {
-                                console.log(`inserted new transactionScenario in db: ${res[0]}`);
-                                resolve(res[0]);
-                            })
-                            .catch(err => {
-                                reject(err);
-                            });
+                        //scenario does not exist, this is an error
+                        return reject(new Error(`Unsupported transaction scenario \'${scenario}\'`));
                     }
                     resolve(rows[0].transactionScenarioId);
                 })
                 .catch(err => {
-                    console.log(`Error in ensureScenario: ${err.stack || util.inspect(err)}`);
+                    console.log(`Error in getScenario: ${err.stack || util.inspect(err)}`);
                     reject(err);
                 });
         });
@@ -139,11 +106,37 @@ class Database {
 
 
     /**
-     * Ensures the specified amount type is present in the database and returns its id
+     * Gets the id of the specified transaction sub-scenario
+     *
+     * @returns {promise} - id of the transactionSubScenario
+     */
+    getSubScenario(txn, subScenario) {
+        return new Promise((resolve, reject) => {
+            return this.queryBuilder('transactionSubScenario')
+                .transacting(txn)
+                .where('name', subScenario)
+                .select()
+                .then(rows => {
+                    if((!rows) || rows.length < 1) {
+                        //sub-scenario does not exist, this is an error
+                        return reject(new Error(`Unsupported transaction sub-scenario \'${subScenario}\'`));
+                    }
+                    resolve(rows[0].transactionSubScenarioId);
+                })
+                .catch(err => {
+                    console.log(`Error in getSubScenario: ${err.stack || util.inspect(err)}`);
+                    reject(err);
+                });
+        });
+    }
+
+
+    /**
+     * Gets the id of the specified amount type
      *
      * @returns {promise} - id of the amountType
      */
-    ensureAmountType(txn, amountType) {
+    getAmountType(txn, amountType) {
         return new Promise((resolve, reject) => {
             return this.queryBuilder('amountType')
                 .transacting(txn)
@@ -151,24 +144,13 @@ class Database {
                 .select()
                 .then(rows => {
                     if((!rows) || rows.length < 1) {
-                        //we need to insert this amount type
-                        return this.queryBuilder('amountType')
-                            .transacting(txn)
-                            .insert({
-                                name: amountType
-                            })
-                            .then(res => {
-                                console.log(`inserted new amountType in db: ${res[0]}`);
-                                resolve(res[0]);
-                            })
-                            .catch(err => {
-                                reject(err);
-                            });
+                        //amount type does not exist, this is an error
+                        return reject(new Error(`Unsupported amount type \'${amountType}\'`));
                     }
                     resolve(rows[0].amountTypeId);
                 })
                 .catch(err => {
-                    console.log(`Error in ensureAmountType: ${err.stack || util.inspect(err)}`);
+                    console.log(`Error in getAmountType: ${err.stack || util.inspect(err)}`);
                     reject(err);
                 });
         });
@@ -226,11 +208,11 @@ class Database {
 
 
     /**
-     * Ensures the specified party type is present in the database and returns its id
+     * Gets the id of the specified party type
      *
      * @returns {promise} - id of the partyType
      */
-    ensurePartyType(txn, partyType) {
+    getPartyType(txn, partyType) {
         return new Promise((resolve, reject) => {
             return this.queryBuilder('partyType')
                 .transacting(txn)
@@ -238,24 +220,13 @@ class Database {
                 .select()
                 .then(rows => {
                     if((!rows) || rows.length < 1) {
-                        //we need to insert this party type
-                        return this.queryBuilder('partyType')
-                            .transacting(txn)
-                            .insert({
-                                name: partyType
-                            })
-                            .then(res => {
-                                console.log(`inserted new partyType in db: ${res[0]}`);
-                                resolve(res[0]);
-                            })
-                            .catch(err => {
-                                reject(err);
-                            });
+                        //party type does not exist, this is an error
+                        return reject(new Error(`Unsupported party type \'${partyType}\'`));
                     }
                     resolve(rows[0].partyTypeId);
                 })
                 .catch(err => {
-                    console.log(`Error in ensurePartyType: ${err.stack || util.inspect(err)}`);
+                    console.log(`Error in getPartyType: ${err.stack || util.inspect(err)}`);
                     reject(err);
                 });
         });
@@ -263,11 +234,11 @@ class Database {
 
 
     /**
-     * Ensures the specified party identifier type is present in the database and returns its id
+     * Gets the id of the specified party identifier type
      *
      * @returns {promise} - id of the partyIdentifierType
      */
-    ensurePartyIdentifierType(txn, partyIdentifierType) {
+    getPartyIdentifierType(txn, partyIdentifierType) {
         return new Promise((resolve, reject) => {
             return this.queryBuilder('partyIdentifierType')
                 .transacting(txn)
@@ -275,24 +246,100 @@ class Database {
                 .select()
                 .then(rows => {
                     if((!rows) || rows.length < 1) {
-                        //we need to insert this party identifier type
-                        return this.queryBuilder('partyIdentifierType')
-                            .transacting(txn)
-                            .insert({
-                                name: partyIdentifierType
-                            })
-                            .then(res => {
-                                console.log(`inserted new partyIdentifierType in db: ${res[0]}`);
-                                resolve(res[0]);
-                            })
-                            .catch(err => {
-                                reject(err);
-                            });
+                        //identifier type does not exist, this is an error
+                        return reject(new Error(`Unsupported party identifier type \'${partyIdentifierType}\'`));
                     }
                     resolve(rows[0].partyIdentifierTypeId);
                 })
                 .catch(err => {
-                    console.log(`Error in ensurePartyIdentifierType: ${err.stack || util.inspect(err)}`);
+                    console.log(`Error in getPartyIdentifierType: ${err.stack || util.inspect(err)}`);
+                    reject(err);
+                });
+        });
+    }
+
+
+    /**
+     * Gets the id of the specified participant
+     *
+     * @returns {promise} - id of the participant
+     */
+    getParticipant(txn, participantName) {
+        return new Promise((resolve, reject) => {
+            return this.queryBuilder('participant')
+                .transacting(txn)
+                .where({
+                    name: participantName,
+                    isActive: 1
+                })
+                .select()
+                .then(rows => {
+                    if((!rows) || rows.length < 1) {
+                        //active participant does not exist, this is an error
+                        return reject(new Error(`Unsupported participant \'${participantName}\'`));
+                    }
+                    resolve(rows[0].participantId);
+                })
+                .catch(err => {
+                    console.log(`Error in getPartyIdentifierType: ${err.stack || util.inspect(err)}`);
+                    reject(err);
+                });
+        });
+    }
+
+
+    /**
+     * Gets the id of the specified transfer participant role type
+     *
+     * @returns {promise} - id of the transfer participant role type
+     */
+    getTransferParticipantRoleType(txn, name) {
+        return new Promise((resolve, reject) => {
+            return this.queryBuilder('transferParticipantRoleType')
+                .transacting(txn)
+                .where({
+                    name: name,
+                    isActive: 1
+                })
+                .select()
+                .then(rows => {
+                    if((!rows) || rows.length < 1) {
+                        //active role type does not exist, this is an error
+                        return reject(new Error(`Unsupported transfer participant role type \'${name}\'`));
+                    }
+                    resolve(rows[0].transferParticipantRoleTypeId);
+                })
+                .catch(err => {
+                    console.log(`Error in getTransferParticipantRoleType: ${err.stack || util.inspect(err)}`);
+                    reject(err);
+                });
+        });
+    }
+
+
+    /**
+     * Gets the id of the specified ledger entry type
+     *
+     * @returns {promise} - id of the ledger entry type
+     */
+    getLedgerEntryType(txn, name) {
+        return new Promise((resolve, reject) => {
+            return this.queryBuilder('ledgerEntryType')
+                .transacting(txn)
+                .where({
+                    name: name,
+                    isActive: 1
+                })
+                .select()
+                .then(rows => {
+                    if((!rows) || rows.length < 1) {
+                        //active ledger entry type does not exist, this is an error
+                        return reject(new Error(`Unsupported ledger entry type \'${name}\'`));
+                    }
+                    resolve(rows[0].ledgerEntryTypeId);
+                })
+                .catch(err => {
+                    console.log(`Error in getLedgerEntryType: ${err.stack || util.inspect(err)}`);
                     reject(err);
                 });
         });
@@ -304,126 +351,148 @@ class Database {
      *
      * @returns {promise}
      */
-    createPayerQuoteParty(txn, quoteId, party) {
-        return this.createQuoteParty(txn, quoteId, 'PAYER', party);   
+    createPayerQuoteParty(txn, quoteId, party, amount, currency) {
+        //note amount is negative for payer and positive for payee
+        return this.createQuoteParty(txn, quoteId, 'PAYER', 'PAYER_DFSP', 'PRINCIPLE_VALUE', party, -amount, currency);   
     }
 
 
     /**
-     * Create
+     * Creates a payee quote party
      *
-     * @returns {undefined}
+     * @returns {promise}
      */
-    createPayeeQuoteParty(txn, quoteId, party) {
-        return this.createQuoteParty(txn, quoteId, 'PAYEE', party);
-    }
-
-    
-    createQuoteParty(txn, quoteId, partyType, party) {
-        return new Promise((resolve, reject) => {
-            return this.ensureParty(txn, partyType, party)
-                .then(pty => {
-                    //insert a quote party
-                    let newQuoteParty = {
-                        quoteId: quoteId,
-                        partyTypeId: pty.partyTypeId,
-                        partyId: pty.partyId
-                        //roleId: ,
-                        //ledgerEntryId ,
-                        //amount: ,
-                        //currencyId ,
-                        //geoCodeId ,
-                    };
-
-                    return this.queryBuilder('quoteParty')
-                        .transacting(txn)
-                        .insert(newQuoteParty)
-                        .then(res => {
-                            console.log(`inserted new quoteParty in db: ${res[0]}`);
-                            resolve(res[0]);
-                        })
-                        .catch(err => {
-                            console.log(`Error in createQuoteParty: ${err.stack || util.inspect(err)}`);
-                            reject(err);
-                        });
-                })
-                .catch(err => {
-                    console.log(`Error in createQuoteParty ${partyType}: ${err.stack || util.inspect(err)}`);
-                    reject(err);
-                });
-        });
+    createPayeeQuoteParty(txn, quoteId, party, amount, currency) {
+        //note amount is negative for payer and positive for payee
+        return this.createQuoteParty(txn, quoteId, 'PAYEE', 'PAYEE_DFSP', 'PRINCIPLE_VALUE', party, amount, currency);
     }
 
 
     /**
-     * Ensures the specifid party exists and returns its id
+     * Creates the quote parties for a payee dfsp for a quote response that includes fees
+     *
+     * @returns {promise}
+     */
+    createPayeeDfspQuoteParties(txn, quoteId, feeAmount, commissionAmount) {
+        throw new Error(`createPayeeDfspQuoteParties method not implemented`);
+    }
+
+
+    createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency) {
+        return new Promise((resolve, reject) => {
+            let refs = {};
+            let quotePartyId = null;
+
+            //get the party type id
+            return this.getPartyType(txn, partyType)
+                .then(id => {
+                    refs.partyTypeId = id;
+
+                        //get the party identifier type id
+                        return this.getPartyIdentifierType(txn, party.partyIdInfo.partyIdType);
+                    }).then(id => {
+                        refs.partyIdentifierTypeId = id;
+                        
+                        //do we have a subid?
+                        if(party.partyIdInfo.partySubIdOrType) {
+                            return this.getPartyIdentifierType(txn, party.partyIdInfo.partySubIdOrType)
+                                .then(id => {
+                                    refs.partySubIdOrTypeId = id;
+                                });
+                        }
+                        return Promise.resolve();
+                    }).then(() => {
+                        //get participant id for fsp
+                        return this.getParticipant(txn, party.partyIdInfo.fspId);
+                    }).then(id => {
+                        refs.participantId = id;
+
+                        return this.getTransferParticipantRoleType(txn, participantType);
+                    }).then(id => {
+                        refs.transferParticipantRoleTypeId = id;
+
+                        return this.getLedgerEntryType(txn, ledgerEntryType);
+                    }).then(id => {
+                        refs.ledgerEntryTypeId = id;
+
+                        //insert a quote party
+                        let newQuoteParty = {
+                            quoteId: quoteId,
+                            partyTypeId: refs.partyTypeId,
+                            partyIdentifierTypeId: refs.partyIdentifierTypeId,
+                            partyIdentifierValue: party.partyIdInfo.partyIdentifier,
+                            partySubIdOrTypeId: refs.partySubIdOrTypeId,
+                            fspId: party.partyIdInfo.fspId,
+                            participantId: refs.participantId,
+                            merchantClassificationCode: party.merchantClassificationCode,
+                            partyName: party.partyName,
+                            transferParticipantRoleTypeId: refs.transferParticipantRoleTypeId,
+                            ledgerEntryTypeId: refs.ledgerEntryTypeId,
+                            amount: amount,
+                            currencyId: currency
+                        };
+
+                        console.log(`${util.inspect(newQuoteParty)}`);
+
+                        return this.queryBuilder('quoteParty')
+                            .transacting(txn)
+                            .insert(newQuoteParty)
+                            .then(res => {
+                                console.log(`inserted new quoteParty in db: ${res[0]}`);
+                                //hold on to the created quotePartyId so we can return it at the end of the promise chain
+                                quotePartyId = res[0];
+
+                                if(party.personalInfo) {
+                                    //we need to store personal info also
+                                    let newParty = {
+                                        firstName: party.personalInfo.complexName.firstName,
+                                        middleName : party.personalInfo.complexName.middleName,
+                                        lastName: party.personalInfo.complexName.lastName,
+                                        dateOfBirth: party.personalInfo.dateOfBirth
+                                    };
+
+                                    return this.createParty(txn, quotePartyId, newParty);
+                                }
+                            
+                                return Promise.resolve();
+                            })
+                            .then(() => {
+                                return resolve(quotePartyId);
+                            })
+                            .catch(err => {
+                                console.log(`Error in createQuoteParty: ${err.stack || util.inspect(err)}`);
+                                reject(err);
+                            });
+                    })
+                    .catch(err => {
+                        console.log(`Error in createQuoteParty ${partyType}: ${err.stack || util.inspect(err)}`);
+                        reject(err);
+                    });
+            });
+    }
+
+
+    /**
+     * Creates the specifid party and returns its id
      *
      * @returns {promise} - id of party
      */
-    ensureParty(txn, partyType, party) {
+    createParty(txn, quotePartyId, party) {
         return new Promise((resolve, reject) => {
-            let refs = {};
+            let newParty = {
+                ...party,
+                quotePartyId: quotePartyId
+            };
 
-            //ensure party type exists
-            this.ensurePartyType(txn, partyType)
-                .then(partyTypeId => {
-                    refs.partyTypeId = partyTypeId;
-
-                    //ensure party identifier type exists
-                    return this.ensurePartyIdentifierType(txn, party.partyIdInfo.partyIdType);
-                }).then(id => {
-                    refs.partyIdentifierTypeId = id;
-
-                    //construct a unique key for the party
-                    //todo: use proper algorithm - ask Warren Carew.
-                    let key = `${refs.partyTypeId}-${refs.partyIdentifierTypeId}-${party.partyIdInfo.partyIdentifier}`;
-
-                    //construct the new party row
-                    let newParty = {
-                        partyTypeId: refs.partyTypeId,
-                        typeValue: partyType,
-                        //for now use party type, identifier type and identifier as unique party identifier
-                        key: key,
-                        partyIdentifierTypeId: refs.partyIdentifierTypeId,
-                        identifierValue: party.partyIdInfo.partyIdentifier
-                    };
-
-                    //add personal info if it is present
-                    if(party.personalInfo && party.personalInfo.complexName) {
-                        newParty.firstName = party.personalInfo.complexName.firstName;
-                        newParty.lastName = party.personalInfo.complexName.lastName;
-                        newParty.middleName = party.personalInfo.complexName.middleName;
-                    }
-                    
-                    //does this party already exist?
-                    return this.queryBuilder('party')
-                        .transacting(txn)
-                        .where('key', key)
-                        .select()
-                        .then(rows => {
-                            if((!rows) || rows.length < 1) {
-                                //we need to insert the party
-                                return this.queryBuilder('party')
-                                    .transacting(txn)
-                                    .insert(newParty)
-                                    .then(res => {
-                                        console.log(`inserted new party in db: ${res[0]}`);
-                                        newParty.partyId = res[0];
-                                        resolve(newParty);
-                                    })
-                                    .catch(err => {
-                                        reject(err);
-                                    });
-                            }
-                            resolve(rows[0]);
-                        })
-                        .catch(err => {
-                            console.log(`Error in ensureParty: ${err.stack || util.inspect(err)}`);
-                            reject(err);
-                        });
+            return this.queryBuilder('party')
+                .transacting(txn)
+                .insert(newParty)
+                .then(res => {
+                    console.log(`inserted new party in db: ${res[0]}`);
+                    newParty.partyId = res[0];
+                    resolve(newParty);
                 })
                 .catch(err => {
-                    console.log(`Error in ensureParty: ${err.stack || util.inspect(err)}`);
                     reject(err);
                 });
         });
@@ -444,16 +513,15 @@ class Database {
                     transactionReferenceId: quote.transactionReferenceId,
                     transactionRequestId: quote.transactionRequestId,
                     note: quote.note,
-                    expirationDate: quote.expiration,
+                    expirationDate: quote.expirationDate,
                     transactionInitiatorId: quote.transactionInitiatorId,
                     transactionInitiatorTypeId: quote.transactionInitiatorTypeId,
                     transactionScenarioId: quote.transactionScenarioId,
-                    //balanceOfPaymentsId: ,
-                    //transactionSubScenarioId: ,
+                    balanceOfPaymentsId: quote.balanceOfPaymentsId,
+                    transactionSubScenarioId: quote.transactionSubScenarioId,
                     amountTypeId: quote.amountTypeId,
-                    //amount: ,
-                    //currencyId: ,
-                    //createdDate: ,
+                    amount: quote.amount,
+                    currencyId: quote.currencyId
                 })
                 .then(res => {
                     console.log(`inserted new quote in db: ${util.inspect(quote)}`);
@@ -464,6 +532,21 @@ class Database {
                     reject(err);
                 });
         });
+    }
+
+
+    /**
+     * Gets the specified endpoint for the specified quote party
+     *
+     * @returns {undefined}
+     */
+    getQuotePartyEndpoint(txn, endpointType, quotePartyId) {
+        return new Promise((resolve, reject) => {
+            return this.queryBuilder()
+                .transacting(txn)
+                .select('');
+        });
+
     }
 
 }
