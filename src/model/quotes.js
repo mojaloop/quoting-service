@@ -131,17 +131,19 @@ class QuotesModel {
 
             //if we got here, all entities have been created in db correctly to record the quote request
 
-            //check rules syncronously so we give some backpressure
-            //this will have to go away with a kafka/message based implementation  :(
-            if(false) {
-                //rules failed, throw error for caller to handle
-
-            }
 
             //make call to payee dfsp in a setImmediate;
             //attempting to give fair execution of async events...
             //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
             setImmediate(() => {
+                //check rules
+                if(false) {
+                    //rules failed, queue up an error callback to the caller
+
+                }
+
+                //if we got here rules passed, so we can forward the quote on to the recipient dfsp
+
                 this.forwardQuoteRequest(refs.payeeId);
             });
 
