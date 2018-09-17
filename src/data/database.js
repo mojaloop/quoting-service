@@ -583,7 +583,7 @@ class Database {
         });
     }
 
-    
+
     /**
      * Gets the specified endpoint of the specified type for the specified participant
      *
@@ -604,6 +604,28 @@ class Database {
                     return resolve(rows[0].value);
                 })
                 .catch(err => {
+                    return reject(err);
+                });
+        });
+    }
+
+
+    getQuoteDuplicateCheck(txn, quoteId) {
+        return new Promise((resolve, reject) => {
+            return this.queryBuilder('quoteDuplicateCheck')
+                .transacting(txn)
+                .where({
+                    quoteId: quoteId
+                })
+                .select()
+                .then(rows => {
+                    if((!rows) || rows.length < 1) {
+                        return resolve(null);
+                    }
+                    return resolve(rows[0]);
+                })
+                .catch(err => {
+                    console.log(`Error in getQuoteDuplicateCheck: ${err.stack || util.inspect(err)}`);
                     return reject(err);
                 });
         });
