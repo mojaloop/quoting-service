@@ -66,7 +66,8 @@ const initServer = async function(db, config) {
                     name: 'Squeeze',
                     args: [{ log: '*', response: '*' }]
                 }, {
-                    module: 'good-console'
+                    module: 'good-console',
+                    args: [{ format: '' }]
                 }, 'stdout']
             }
         }

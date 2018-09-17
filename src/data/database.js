@@ -538,15 +538,56 @@ class Database {
     /**
      * Gets the specified endpoint for the specified quote party
      *
-     * @returns {undefined}
+     * @returns {promise} - resolves to the endpoint base url
      */
-    getQuotePartyEndpoint(txn, endpointType, quotePartyId) {
+    getQuotePartyEndpoint(txn, quoteId, endpointType, partyType) {
         return new Promise((resolve, reject) => {
-            return this.queryBuilder()
+            return this.queryBuilder('participantEndpoint')
                 .transacting(txn)
-                .select('');
+                .innerJoin('endpointType', 'participantEndpoint.endpointTypeId', 'endpointType.endpointTypeId')
+                .innerJoin('quoteParty', 'quoteParty.participantId', 'participantEndpoint.participantId')
+                .innerJoin('partyType', 'partyType.partyTypeId', 'quoteParty.partyTypeId')
+                .innerJoin('quote', 'quote.quoteId', 'quoteParty.quoteId')
+                .where('endpointType.name', endpointType)
+                .andWhere('partyType.name', partyType)
+                .andWhere('quote.quoteId', quoteId)
+                .select('participantEndpoint.value')
+                .then(rows => {
+                    if((!rows) || rows.length < 1) {
+                        return resolve(null);
+                    }
+                    return resolve(rows[0].value);
+                })
+                .catch(err => {
+                    return reject(err);
+                });
         });
+    }
 
+    
+    /**
+     * Gets the specified endpoint of the specified type for the specified participant
+     *
+     * @returns {promise} - resolves to the endpoint base url
+     */
+    getParticipantEndpoint(txn, participantName, endpointType) {
+        return new Promise((resolve, reject) => {
+            return this.queryBuilder('participantEndpoint')
+                .transacting(txn)
+                .innerJoin('participant', 'participant.participantId', 'participantEndpoint.participantId')
+                .innerJoin('endpointType', 'endpointType.endpointTypeId', 'participantEndpoint.endpointTypeId')
+                .where('participant.name', participantName)
+                .select('participantEndpoint.value')
+                .then(rows => {
+                    if((!rows) || rows.length < 1) {
+                        return resolve(null);
+                    }
+                    return resolve(rows[0].value);
+                })
+                .catch(err => {
+                    return reject(err);
+                });
+        });
     }
 
 }
