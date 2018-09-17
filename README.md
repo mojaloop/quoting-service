@@ -9,6 +9,7 @@ repo. Then run the central-ledger-init container, followed by the quoting-servic
 Now you're ready to run the quoting service as follows.
 
 ```
+cd src/
 npm run-script build
 npm run-script run
 curl localhost:3000

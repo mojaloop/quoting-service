@@ -22,8 +22,27 @@ class Database {
         return new Promise((resolve, reject) => {
             this.queryBuilder = Knex(this.config);
             console.log(`Connected to database with config: ${util.inspect(this.config)}`);
-            resolve(this);        
+            resolve(this);
         });
+    }
+
+    /**
+     * Gets the set of enabled transfer rules
+     *
+     * @returns {promise} - all enabled transfer rules
+     */
+    async getTransferRules(txn) {
+        try {
+            const rows = await this.queryBuilder('transferRules')
+                .transacting(txn)
+                .where('enabled', true)
+                .select();
+            return rows.map(r => JSON.parse(r.rule));
+        }
+        catch(err) {
+            console.log(`Error in getTransferRules: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
     }
 
 
@@ -392,7 +411,7 @@ class Database {
                         return this.getPartyIdentifierType(txn, party.partyIdInfo.partyIdType);
                     }).then(id => {
                         refs.partyIdentifierTypeId = id;
-                        
+
                         //do we have a subid?
                         if(party.partyIdInfo.partySubIdOrType) {
                             return this.getPartyIdentifierType(txn, party.partyIdInfo.partySubIdOrType)
@@ -453,7 +472,7 @@ class Database {
 
                                     return this.createParty(txn, quotePartyId, newParty);
                                 }
-                            
+
                                 return Promise.resolve();
                             })
                             .then(() => {
