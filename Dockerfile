@@ -4,8 +4,7 @@ WORKDIR /src
 
 CMD ["node", "/src/server.js"]
 
-COPY ./src/package.json /src/package.json
-COPY ./src/package-lock.json /src/package-lock.json
+COPY ./src/package.json ./src/package-lock.json /src/
 RUN npm install --production
 
 COPY ./src/ /src/
