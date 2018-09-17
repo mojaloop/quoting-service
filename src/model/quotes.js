@@ -2,10 +2,10 @@
 const util = require('util');
 const fetch = require('node-fetch');
 const Errors = require('./errors.js');
-
+const quoteRules = require('./rules.js');
 
 /**
- * Encapsulates operations on the quotes domain model 
+ * Encapsulates operations on the quotes domain model
  *
  * @returns {undefined}
  */
@@ -144,15 +144,14 @@ class QuotesModel {
 
             //if we got here, all entities have been created in db correctly to record the quote request
 
-
             //make call to payee dfsp in a setImmediate;
             //attempting to give fair execution of async events...
             //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
-            setImmediate(() => {
-                //check rules
-                if(false) {
-                    //rules failed, queue up an error callback to the caller
-
+            setImmediate(async () => {
+                //check quote rules
+                const failures = await quoteRules.getFailures(quoteRequest);
+                if (failures) {
+                    //quote broke business rules, queue up an error callback to the caller
                 }
 
                 //if we got here rules passed, so we can forward the quote on to the recipient dfsp
