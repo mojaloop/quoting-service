@@ -2,6 +2,13 @@
 
 Swagger api [location](./config/swagger.json)
 
+# Updating dependencies
+
+```
+cd src/
+npm run-script package-lock
+```
+
 # Testing
 
 Follow the README instructions to run and set up the mysql container from the central-ledger-init
