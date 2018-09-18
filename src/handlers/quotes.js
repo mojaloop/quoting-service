@@ -19,7 +19,7 @@ module.exports = {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-    post: function Quotes(request, h) {
+    post: async function Quotes(request, h) {
         //log request
         request.server.log(['info'], `got a POST /quotes request: ${util.inspect(request.payload)}`);
 
@@ -37,38 +37,32 @@ module.exports = {
         //note that the following is a perfect place for Promise.finally()
         //unfortunately not supported in this node version.
 
-        return model.validateQuoteRequest(request.payload)
-            .then(() => {
-                //call the quote request handler in the model
-                return model.handleQuoteRequest(fspiopSource, request.payload);
-            })
-            .then((result) => {
-                request.server.log(['info'], `POST quote request succeeded and returned: ${util.inspect(result)}`);
+        try {
+            const validationErrors = await model.validateQuoteRequest(request.payload);
 
-                //finally will return 'accepted' status code to caller.
-                //note that the contract we have with the model is that
-                //it will take any other background actions necessary to
-                //filfil the API spec such as making further calls to
-                //participants etc...
-                return h.response().code(202);
-            })
-            .catch(err => {
-                //if we get an error here we have most likely NOT been able to persist the quote request
-                //API spec says we should return "happy days" and make an error callback...WTF?!
-                request.server.log(['error'], `ERROR - POST /quotes: ${err.stack || util.inspect(err)}`);
+            //call the quote request handler in the model
+            const result = await model.handleQuoteRequest(fspiopSource, request.payload);
+            request.server.log(['info'], `POST quote request succeeded and returned: ${util.inspect(result)}`);
+        }
+        catch(err) {
+            //if we get an error here we have most likely NOT been able to persist the quote request
+            //API spec says we should return "happy days" and make an error callback...WTF?!
+            request.server.log(['error'], `ERROR - POST /quotes: ${err.stack || util.inspect(err)}`);
 
-                //do the error handling in a future event loop step
-                setImmediate(() => {
+            //do the error handling in a future event loop step
+            setImmediate(async () => {
+                try {
                     let e = new Errors.FSPIOPError(err, `An error occured processing the request`,fspiopSource, '1000', null);
-
-                    return model.sendErrorCallback(e, quoteId)
-                        .catch(err => {
-                            request.server.log(['error'], `Error sending error callback: ${err.stack || util.inspect(err)}`);
-                        });
-                });
-
-                return h.response().code(202);
+                    await model.sendErrorCallback(e, quoteId);
+                }
+                catch(err) {
+                    request.server.log(['error'], `Error sending error callback: ${err.stack || util.inspect(err)}`);
+                }
             });
+        }
+        finally {
+            return h.response().code(202);
+        }
     }
 };
 
