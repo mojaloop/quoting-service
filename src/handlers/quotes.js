@@ -34,9 +34,6 @@ module.exports = {
         const quoteId = request.payload.quoteId;
         const fspiopSource = request.headers['fspiop-source']; 
 
-        //note that the following is a perfect place for Promise.finally()
-        //unfortunately not supported in this node version.
-
         try {
             const validationErrors = await model.validateQuoteRequest(request.payload);
 

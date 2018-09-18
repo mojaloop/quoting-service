@@ -61,7 +61,8 @@ class QuotesModel {
 
             if(dupe.isResend && dupe.isDuplicateId) {
                 //this is a resend
-
+                //See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+                return this.handleResend(fspiopSource, quoteRequest);
             }
 
             //if we get here we need to create a duplicate check row
@@ -211,6 +212,24 @@ class QuotesModel {
                     `Error sending quote to 'PAYEE' participant`, fspiopSource, '1002'),
                     quoteId);
             });
+        }
+    }
+
+
+    /**
+     * Deals with resends under the API spec:
+     * See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+     *
+     * @returns {undefined}
+     */
+    async handleResend(fspiopSource, quoteRequest) {
+        try {
+            this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource}`);
+            throw new Error(`Resends currently not implemented by quoting service`);
+        }
+        catch(err) {
+            this.writeLog(`Error in handleResend: ${err.stack || util.inspect(err)}`);
+            throw err;
         }
     }
 
