@@ -49,7 +49,7 @@ module.exports = {
             //do the error handling in a future event loop step
             setImmediate(async () => {
                 try {
-                    let e = new Errors.FSPIOPError(err, `An error occured processing the request`,fspiopSource, '1000', null);
+                    let e = new Errors.FSPIOPError(err, `An error occured processing the request`, fspiopSource, '1000', null);
                     await model.sendErrorCallback(e, quoteId);
                 }
                 catch(err) {

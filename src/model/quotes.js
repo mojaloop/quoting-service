@@ -235,6 +235,22 @@ class QuotesModel {
 
 
     /**
+     * Logic for handling quote update requests 
+     *
+     * @returns {object} - object containing updated entities
+     */
+    async handleQuoteUpdate(fspiopSource, quoteUpdateRequest) {
+        try {
+
+        }
+        catch(err) {
+            this.writeLog(`Error in handleQuoteUpdate: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
      * Makes an error callback. Callback is sent to the FSIOP_CALLBACK_URL endpoint of the replyTo participant in the 
      * supplied fspiopErr object. This should be the participantId for the error callback recipient e.g. value from the
      * FSPIOP-Source header of the original request that caused the error. 
