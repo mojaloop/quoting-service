@@ -35,8 +35,6 @@ module.exports = {
         const fspiopSource = request.headers['fspiop-source']; 
 
         try {
-            const validationErrors = await model.validateQuoteRequest(request.payload);
-
             //call the quote request handler in the model
             const result = await model.handleQuoteRequest(fspiopSource, request.payload);
             request.server.log(['info'], `POST quote request succeeded and returned: ${util.inspect(result)}`);

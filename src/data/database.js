@@ -476,6 +476,61 @@ class Database {
 
 
     /**
+     * Returns an array of quote parties associated with the specified quote
+     * that have enum values resolved to their text identifiers
+     *
+     * @returns {object[]}
+     */
+    async getQuotePartyView(txn, quoteId) {
+        try {
+            const rows = await this.queryBuilder('quotePartyView')
+                .transacting(txn)
+                .where({
+                    quoteId: quoteId
+                })
+                .select();
+
+            return rows;
+        }
+        catch(err) {
+            this.writeLog(`Error in getQuotePartyView: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
+     * Returns a quote that has enum values resolved to their text identifiers
+     *
+     * @returns {object}
+     */
+    async getQuoteView(txn, quoteId) {
+        try {
+            const rows = await this.queryBuilder('quoteView')
+                .transacting(txn)
+                .where({
+                    quoteId: quoteId
+                })
+                .select();
+            
+            if((!rows) || rows.length < 1) {
+                return null;
+            }
+
+            if(rows.length > 1) {
+                throw new Error(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`);
+            }
+
+            return rows[0];
+        }
+        catch(err) {
+            this.writeLog(`Error in getQuoteView: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
      * Creates the specifid party and returns its id
      *
      * @returns {promise} - id of party
@@ -597,7 +652,7 @@ class Database {
     /**
      * Gets a quote duplicate check row 
      *
-     * @returns {object} - quote duplicate check on null if none found
+     * @returns {object} - quote duplicate check or null if none found
      */
     async getQuoteDuplicateCheck(txn, quoteId) {
         try {
@@ -616,6 +671,116 @@ class Database {
         }
         catch(err) {
             this.writeLog(`Error in getQuoteDuplicateCheck: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
+     * Gets a quote response duplicate check row 
+     *
+     * @returns {object} - quote duplicate check or null if none found
+     */
+    async getQuoteResponseDuplicateCheck(txn, quoteId) {
+        try {
+            const rows = await this.queryBuilder('quoteResponseDuplicateCheck')
+                .transacting(txn)
+                .where({
+                    quoteId: quoteId
+                })
+                .select();
+
+            if((!rows) || rows.length < 1) {
+                return null;
+            }
+
+            return rows[0];
+        }
+        catch(err) {
+            this.writeLog(`Error in getQuoteResponseDuplicateCheck: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
+     * Gets any transactionReference for the specified quote from the database
+     *
+     * @returns {object} - transaction reference or null if none found
+     */
+    async getTransactionReference(txn, quoteId) {
+        try {
+            const rows = await this.queryBuilder('transactionReference')
+                .transacting(txn)
+                .where({
+                    quoteId: quoteId
+                })
+                .select();
+
+            if((!rows) || rows.length < 1) {
+                return null;
+            }
+
+            return rows[0];
+        }
+        catch(err) {
+            this.writeLog(`Error in getTransactionReference: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
+     * Creates a quoteResponse object in the database
+     *
+     * @returns {object} - created object
+     */
+    async createQuoteResponse(txn, quoteId, quoteResponse) {
+        try {
+            let newQuoteResponse = {
+                quoteId: quoteId,
+                ilpCondition: quoteResponse.condition,
+                responseExpirationDate: quoteResponse.expiration,
+                isValid: quoteResponse.isValid
+            };
+
+            const res = await this.queryBuilder('quoteResponse')
+                .transacting(txn)
+                .insert(newQuoteResponse);
+
+            newQuoteResponse.quoteResponseId = res[0];
+
+            this.writeLog(`inserted new quoteResponse in db: ${util.inspect(newQuoteResponse)}`);
+            return newQuoteResponse;
+        }
+        catch(err) {
+            this.writeLog(`Error in createQuoteResponse: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
+     * Creates a new quote response ILP packet row
+     *
+     * @returns {object}
+     */
+    async createQuoteResponseIlpPacket(txn, quoteResponseId, ilpPacket) {
+        try {
+            let newPacket = {
+                quoteResponseId: quoteResponseId,
+                value: ilpPacket
+            };
+
+            const res = await this.queryBuilder('quoteResponseIlpPacket')
+                .transacting(txn)
+                .insert(newPacket);
+
+            this.writeLog(`inserted new quoteResponseIlpPacket in db: ${util.inspect(res)}`);
+            return res;
+        }
+        catch(err) {
+            this.writeLog(`Error in createIlpPacket: ${err.stack || util.inspect(err)}`);
             throw err;
         }
     }
