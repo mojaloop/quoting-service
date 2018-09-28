@@ -48,10 +48,9 @@ class Database {
      *
      * @returns {promise} - all enabled transfer rules
      */
-    async getTransferRules(txn) {
+    async getTransferRules() {
         try {
             const rows = await this.queryBuilder('transferRules')
-                .transacting(txn)
                 .where('enabled', true)
                 .select();
             return rows.map(r => JSON.parse(r.rule));
@@ -68,10 +67,9 @@ class Database {
      *
      * @returns {promise} - id of the transactionInitiatorType
      */
-    async getInitiatorType(txn, initiatorType) {
+    async getInitiatorType(initiatorType) {
         try {
             const rows = await this.queryBuilder('transactionInitiatorType')
-                .transacting(txn)
                 .where('name', initiatorType)
                 .select();
 
@@ -93,10 +91,9 @@ class Database {
      *
      * @returns {promise} - id of the transactionInitiator
      */
-    async getInitiator(txn, initiator) {
+    async getInitiator(initiator) {
         try {
             const rows = await this.queryBuilder('transactionInitiator')
-                .transacting(txn)
                 .where('name', initiator)
                 .select();
 
@@ -118,10 +115,9 @@ class Database {
      *
      * @returns {promise} - id of the transactionScenario
      */
-    async getScenario(txn, scenario) {
+    async getScenario(scenario) {
         try {
             const rows = await this.queryBuilder('transactionScenario')
-                .transacting(txn)
                 .where('name', scenario)
                 .select();
 
@@ -143,10 +139,9 @@ class Database {
      *
      * @returns {promise} - id of the transactionSubScenario
      */
-    async getSubScenario(txn, subScenario) {
+    async getSubScenario(subScenario) {
         try {
             const rows = await this.queryBuilder('transactionSubScenario')
-                .transacting(txn)
                 .where('name', subScenario)
                 .select();
 
@@ -168,10 +163,9 @@ class Database {
      *
      * @returns {promise} - id of the amountType
      */
-    async getAmountType(txn, amountType) {
+    async getAmountType(amountType) {
         try {
             const rows = await this.queryBuilder('amountType')
-                .transacting(txn)
                 .where('name', amountType)
                 .select();
 
@@ -237,14 +231,38 @@ class Database {
 
 
     /**
+     * Creates an entry in quoteResponseDuplicateCheck
+     *
+     * @returns {promise} - quoteResponseId
+     */
+    async createQuoteUpdateDuplicateCheck(txn, quoteId, quoteResponseId, hash) {
+        try {
+            const res = await this.queryBuilder('quoteResponseDuplicateCheck')
+                .transacting(txn)
+                .insert({
+                    quoteResponseId: quoteResponseId,
+                    quoteId: quoteId,
+                    hash: hash
+                });
+
+            this.writeLog(`inserted new response duplicate check in db for quote ${quoteId}, quoteResponseId: ${quoteResponseId}`);
+            return quoteId;
+        }
+        catch(err) {
+            this.writeLog(`Error in createQuoteUpdateDuplicateCheck: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
      * Gets the id of the specified party type
      *
      * @returns {promise} - id of the partyType
      */
-    async getPartyType(txn, partyType) {
+    async getPartyType(partyType) {
         try {
             const rows = await this.queryBuilder('partyType')
-                .transacting(txn)
                 .where('name', partyType)
                 .select();
 
@@ -267,10 +285,9 @@ class Database {
      *
      * @returns {promise} - id of the partyIdentifierType
      */
-    async getPartyIdentifierType(txn, partyIdentifierType) {
+    async getPartyIdentifierType(partyIdentifierType) {
         try {
             const rows = await this.queryBuilder('partyIdentifierType')
-                .transacting(txn)
                 .where('name', partyIdentifierType)
                 .select();
 
@@ -293,10 +310,9 @@ class Database {
      *
      * @returns {promise} - id of the participant
      */
-    async getParticipant(txn, participantName) {
+    async getParticipant(participantName) {
         try {
             const rows = await this.queryBuilder('participant')
-                .transacting(txn)
                 .where({
                     name: participantName,
                     isActive: 1
@@ -322,10 +338,9 @@ class Database {
      *
      * @returns {promise} - id of the transfer participant role type
      */
-    async getTransferParticipantRoleType(txn, name) {
+    async getTransferParticipantRoleType(name) {
         try {
             const rows = await this.queryBuilder('transferParticipantRoleType')
-                .transacting(txn)
                 .where({
                     name: name,
                     isActive: 1
@@ -351,10 +366,9 @@ class Database {
      *
      * @returns {promise} - id of the ledger entry type
      */
-    async getLedgerEntryType(txn, name) {
+    async getLedgerEntryType(name) {
         try {
             const rows = await this.queryBuilder('ledgerEntryType')
-                .transacting(txn)
                 .where({
                     name: name,
                     isActive: 1
@@ -381,8 +395,8 @@ class Database {
      * @returns {promise}
      */
     async createPayerQuoteParty(txn, quoteId, party, amount, currency) {
-        //note amount is negative for payer and positive for payee
-        return this.createQuoteParty(txn, quoteId, 'PAYER', 'PAYER_DFSP', 'PRINCIPLE_VALUE', party, -amount, currency);   
+        //note amount is negative for payee and positive for payer
+        return this.createQuoteParty(txn, quoteId, 'PAYER', 'PAYER_DFSP', 'PRINCIPLE_VALUE', party, amount, currency);   
     }
 
 
@@ -392,18 +406,8 @@ class Database {
      * @returns {promise}
      */
     async createPayeeQuoteParty(txn, quoteId, party, amount, currency) {
-        //note amount is negative for payer and positive for payee
-        return this.createQuoteParty(txn, quoteId, 'PAYEE', 'PAYEE_DFSP', 'PRINCIPLE_VALUE', party, amount, currency);
-    }
-
-
-    /**
-     * Creates the quote parties for a payee dfsp for a quote response that includes fees
-     *
-     * @returns {promise}
-     */
-    async createPayeeDfspQuoteParties(txn, quoteId, feeAmount, commissionAmount) {
-        throw new Error(`createPayeeDfspQuoteParties method not implemented`);
+        //note amount is negative for payee and positive for payer
+        return this.createQuoteParty(txn, quoteId, 'PAYEE', 'PAYEE_DFSP', 'PRINCIPLE_VALUE', party, -amount, currency);
     }
 
 
@@ -416,13 +420,23 @@ class Database {
         try {
             let refs = {};
 
-            //get various enum ids
-            refs.partyTypeId = await this.getPartyType(txn, partyType);
-            refs.partyIdentifierTypeId = await this.getPartyIdentifierType(txn, party.partyIdInfo.partyIdType);
-            refs.participantId = await this.getParticipant(txn, party.partyIdInfo.fspId);
-            refs.transferParticipantRoleTypeId = await this.getTransferParticipantRoleType(txn, participantType);
-            refs.ledgerEntryTypeId = await this.getLedgerEntryType(txn, ledgerEntryType);
+            //get various enum ids (async, as parallel as possible)
+            const enumVals = await Promise.all([
+                this.getPartyType(partyType),
+                this.getPartyIdentifierType(party.partyIdInfo.partyIdType),
+                this.getParticipant(party.partyIdInfo.fspId),
+                this.getTransferParticipantRoleType(participantType),
+                this.getLedgerEntryType(ledgerEntryType)
+            ]);
 
+            refs.partyTypeId = enumVals[0];
+            refs.partyIdentifierTypeId = enumVals[1];
+            refs.participantId = enumVals[2];
+            refs.transferParticipantRoleTypeId = enumVals[3];
+            refs.ledgerEntryTypeId = enumVals[4];
+
+            //todo: possibly push this subIdType lookup onto the array that gets awaited async...
+            //otherwise requests that have a subIdType will be a little slower due to the extra wait time
             if(party.partyIdInfo.partySubIdOrType) {
                 refs.partySubIdOrTypeId = await this.getPartyIdentifierType(txn, party.partyIdInfo.partySubIdOrType);
             }
@@ -481,10 +495,9 @@ class Database {
      *
      * @returns {object[]}
      */
-    async getQuotePartyView(txn, quoteId) {
+    async getQuotePartyView(quoteId) {
         try {
             const rows = await this.queryBuilder('quotePartyView')
-                .transacting(txn)
                 .where({
                     quoteId: quoteId
                 })
@@ -504,10 +517,9 @@ class Database {
      *
      * @returns {object}
      */
-    async getQuoteView(txn, quoteId) {
+    async getQuoteView(quoteId) {
         try {
             const rows = await this.queryBuilder('quoteView')
-                .transacting(txn)
                 .where({
                     quoteId: quoteId
                 })
@@ -525,6 +537,36 @@ class Database {
         }
         catch(err) {
             this.writeLog(`Error in getQuoteView: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
+     * Returns a quote response that has enum values resolved to their text identifiers
+     *
+     * @returns {object}
+     */
+    async getQuoteResponseView(quoteId) {
+        try {
+            const rows = await this.queryBuilder('quoteResponseView')
+                .where({
+                    quoteId: quoteId
+                })
+                .select();
+            
+            if((!rows) || rows.length < 1) {
+                return null;
+            }
+
+            if(rows.length > 1) {
+                throw new Error(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`);
+            }
+
+            return rows[0];
+        }
+        catch(err) {
+            this.writeLog(`Error in getQuoteResponseView: ${err.stack || util.inspect(err)}`);
             throw err;
         }
     }
@@ -596,10 +638,9 @@ class Database {
      *
      * @returns {promise} - resolves to the endpoint base url
      */
-    async getQuotePartyEndpoint(txn, quoteId, endpointType, partyType) {
+    async getQuotePartyEndpoint(quoteId, endpointType, partyType) {
         try {
             const rows = await this.queryBuilder('participantEndpoint')
-                .transacting(txn)
                 .innerJoin('endpointType', 'participantEndpoint.endpointTypeId', 'endpointType.endpointTypeId')
                 .innerJoin('quoteParty', 'quoteParty.participantId', 'participantEndpoint.participantId')
                 .innerJoin('partyType', 'partyType.partyTypeId', 'quoteParty.partyTypeId')
@@ -627,10 +668,9 @@ class Database {
      *
      * @returns {promise} - resolves to the endpoint base url
      */
-    async getParticipantEndpoint(txn, participantName, endpointType) {
+    async getParticipantEndpoint(participantName, endpointType) {
         try {
             const rows = await this.queryBuilder('participantEndpoint')
-                .transacting(txn)
                 .innerJoin('participant', 'participant.participantId', 'participantEndpoint.participantId')
                 .innerJoin('endpointType', 'endpointType.endpointTypeId', 'participantEndpoint.endpointTypeId')
                 .where('participant.name', participantName)
@@ -654,10 +694,9 @@ class Database {
      *
      * @returns {object} - quote duplicate check or null if none found
      */
-    async getQuoteDuplicateCheck(txn, quoteId) {
+    async getQuoteDuplicateCheck(quoteId) {
         try {
             const rows = await this.queryBuilder('quoteDuplicateCheck')
-                .transacting(txn)
                 .where({
                     quoteId: quoteId
                 })
@@ -681,10 +720,9 @@ class Database {
      *
      * @returns {object} - quote duplicate check or null if none found
      */
-    async getQuoteResponseDuplicateCheck(txn, quoteId) {
+    async getQuoteResponseDuplicateCheck(quoteId) {
         try {
             const rows = await this.queryBuilder('quoteResponseDuplicateCheck')
-                .transacting(txn)
                 .where({
                     quoteId: quoteId
                 })
@@ -708,10 +746,9 @@ class Database {
      *
      * @returns {object} - transaction reference or null if none found
      */
-    async getTransactionReference(txn, quoteId) {
+    async getTransactionReference(quoteId) {
         try {
             const rows = await this.queryBuilder('transactionReference')
-                .transacting(txn)
                 .where({
                     quoteId: quoteId
                 })
@@ -739,6 +776,14 @@ class Database {
         try {
             let newQuoteResponse = {
                 quoteId: quoteId,
+                transferAmountCurrencyId: quoteResponse.transferAmount.currency,
+                transferAmount: quoteResponse.transferAmount.amount,
+                payeeReceiveAmountCurrencyId: quoteResponse.payeeReceiveAmount ? quoteResponse.payeeReceiveAmount.currency : null,
+                payeeReceiveAmount: quoteResponse.payeeReceiveAmount ? quoteResponse.payeeReceiveAmount.amount : null,
+                payeeFspFeeCurrencyId: quoteResponse.payeeFspFee ? quoteResponse.payeeFspFee.currency : null,
+                payeeFspFeeAmount:  quoteResponse.payeeFspFee ? quoteResponse.payeeFspFee.amount : null,
+                payeeFspCommissionCurrencyId: quoteResponse.payeeFspCommission ? quoteResponse.payeeFspCommission.currency : null,
+                payeeFspCommissionAmount: quoteResponse.payeeFspCommission ? quoteResponse.payeeFspCommission.amount : null,
                 ilpCondition: quoteResponse.condition,
                 responseExpirationDate: quoteResponse.expiration,
                 isValid: quoteResponse.isValid
@@ -781,6 +826,35 @@ class Database {
         }
         catch(err) {
             this.writeLog(`Error in createIlpPacket: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
+     * Creates a new geoCode row
+     *
+     * @returns {object}
+     */
+    async createGeoCode(txn, geoCode) {
+        try {
+            let newGeoCode = {
+                quotePartyId: geoCode.quotePartyId,
+                latitude: geoCode.latitude,
+                longitude: geoCode.longitude
+            };
+
+            const res = await this.queryBuilder('geoCode')
+                .transacting(txn)
+                .insert(newGeoCode);
+
+            newGeoCode.geoCodeId = res[0];
+
+            this.writeLog(`inserted new geoCode in db: ${util.inspect(newGeoCode)}`);
+            return res;
+        }
+        catch(err) {
+            this.writeLog(`Error in createGeoCode: ${err.stack || util.inspect(err)}`);
             throw err;
         }
     }

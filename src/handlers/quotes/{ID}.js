@@ -34,8 +34,10 @@ module.exports = {
         const fspiopSource = request.headers['fspiop-source']; 
 
         try {
-            //get the quote in API spec projection from the model
-            const result = await model.getQuoteResponseApiProjection(null, quoteId);
+            //call the model to re-forward the quote update to the correct party
+            //note that we do not check if our caller is the correct party, but we
+            //will send the callback to the correct party regardless.
+            const result = await model.forwardQuoteUpdate(fspiopSource, quoteId);
             request.server.log(['info'], `GET quotes/{id} request succeeded and returned: ${util.inspect(result)}`);
         }
         catch(err) {

@@ -61,7 +61,7 @@ class QuotesModel {
             txn = await this.db.newTransaction();
 
             //check if this is a resend or an erroneous duplicate
-            const dupe = await this.checkDuplicateQuoteRequest(txn, quoteRequest);
+            const dupe = await this.checkDuplicateQuoteRequest(quoteRequest);
 
             this.writeLog(`Check duplicate for quoteId ${quoteRequest.quoteId} returned: ${util.inspect(dupe)}`);
 
@@ -88,24 +88,21 @@ class QuotesModel {
                 quoteRequest.quoteId, quoteRequest.transactionId);
 
             //get the initiator type
-            refs.transactionInitiatorTypeId = await this.db.getInitiatorType(txn,
-                quoteRequest.transactionType.initiatorType);
+            refs.transactionInitiatorTypeId = await this.db.getInitiatorType(quoteRequest.transactionType.initiatorType);
 
             //get the initiator
-            refs.transactionInitiatorId = await this.db.getInitiator(txn,
-                quoteRequest.transactionType.initiator);
+            refs.transactionInitiatorId = await this.db.getInitiator(quoteRequest.transactionType.initiator);
 
             //get the txn scenario id
-            refs.transactionScenarioId = await this.db.getScenario(txn, quoteRequest.transactionType.scenario);
+            refs.transactionScenarioId = await this.db.getScenario(quoteRequest.transactionType.scenario);
 
             if(quoteRequest.transactionType.subScenario) {
                 //a sub scenario is specified, we need to look it up
-                refs.transactionSubScenarioId = await this.db.getSubScenario(txn,
-                    quoteRequest.transactionType.subScenario);
+                refs.transactionSubScenarioId = await this.db.getSubScenario(quoteRequest.transactionType.subScenario);
             }
 
             //get amount type
-            refs.amountTypeId = await this.db.getAmountType(txn, quoteRequest.amountType);
+            refs.amountTypeId = await this.db.getAmountType(quoteRequest.amountType);
 
             //create the quote row itself
             refs.quoteId = await this.db.createQuote(txn, {
@@ -174,18 +171,15 @@ class QuotesModel {
         let endpoint = null;
 
         try {
-            //do everything in a db transaction
-            txn = await this.db.newTransaction();
-
             if(!originalQuoteRequest) {
                 //we need to recreate the quote request
-                originalQuoteRequest = await this.getQuoteRequestApiProjection(txn, quoteId);
+                originalQuoteRequest = await this.getQuoteRequestApiProjection(quoteId);
                 this.writeLog(`Recreated quote request: ${util.inspect(originalQuoteRequest)}`);
             }
 
             //lookup payee dfsp callback endpoint
             //todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-            endpoint = await this.db.getQuotePartyEndpoint(txn, quoteId, 'FSIOP_CALLBACK_URL', 'PAYEE');
+            endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSIOP_CALLBACK_URL', 'PAYEE');
  
             this.writeLog(`Resolved PAYEE party FSIOP_CALLBACK_URL endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`);
 
@@ -217,14 +211,9 @@ class QuotesModel {
             if(!res.ok) {
                 throw new Error(`Got non-success response sending error callback`);
             }
-
-            //txn.commit();
         }
         catch(err) {
             this.writeLog(`Error forwarding quote request to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`);
-            if(txn) {
-                //txn.rollback();
-            }
 
             //we need to make an error callback to the originator of the quote request
             setImmediate(() => {
@@ -245,28 +234,16 @@ class QuotesModel {
     async handleQuoteRequestResend(fspiopSource, quoteRequest) {
         try {
             this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource}`);
-            throw new Error(`Resends currently not implemented by quoting service`);
+
+            //we need to examine the quote state machine to determine what we should do
+
+            //if we already have a valid response from the other party we need to resend that to the caller
+
+
+            //if we dont already have a response from the other party we ...?
         }
         catch(err) {
             this.writeLog(`Error in handleQuoteRequestResend: ${err.stack || util.inspect(err)}`);
-            throw err;
-        }
-    }
-
-
-    /**
-     * Deals with resends under the API spec:
-     * See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-     *
-     * @returns {undefined}
-     */
-    async handleQuoteUpdateResend(fspiopSource, quoteId, quoteUpdate) {
-        try {
-            this.writeLog(`Handling resend of quote update: ${util.inspect(quoteUpdate)} from ${fspiopSource}`);
-            throw new Error(`Resends currently not implemented by quoting service`);
-        }
-        catch(err) {
-            this.writeLog(`Error in handleQuoteUpdateResend: ${err.stack || util.inspect(err)}`);
             throw err;
         }
     }
@@ -278,15 +255,17 @@ class QuotesModel {
      * @returns {object} - object containing updated entities
      */
     async handleQuoteUpdate(fspiopSource, quoteId, quoteUpdateRequest) {
+        let txn = null;
+
         try {
             //accumulate enum ids
             let refs = {};
 
             //do everything in a transaction so we can rollback multiple operations if something goes wrong
-            const txn = await this.db.newTransaction();
+            txn = await this.db.newTransaction();
 
             //check if this is a resend or an erroneous duplicate
-            const dupe = await this.checkDuplicateQuoteResponse(txn, quoteId, quoteUpdateRequest);
+            const dupe = await this.checkDuplicateQuoteResponse(quoteId, quoteUpdateRequest);
             this.writeLog(`Check duplicate for quoteId ${quoteId} update returned: ${util.inspect(dupe)}`);
 
             //fail fast on duplicate
@@ -305,17 +284,26 @@ class QuotesModel {
 
             //create the quote response row in the db
             const newQuoteResponse = await this.db.createQuoteResponse(txn, quoteId, {
+                transferAmount: quoteUpdateRequest.transferAmount,
+                payeeReceiveAmount: quoteUpdateRequest.payeeReceiveAmount,
+                payeeFspFee: quoteUpdateRequest.payeeFspFee,
+                payeeFspCommission: quoteUpdateRequest.payeeFspCommission,
                 condition: quoteUpdateRequest.condition,
                 expiration: quoteUpdateRequest.expiration ? new Date(quoteUpdateRequest.expiration) : null,
-                isValid: quoteUpdateRequest.isValid
+                isValid: 1 //assume the request is valid if we passed validation and duplicate checks etc...
             });
 
             refs.quoteResponseId = newQuoteResponse.quoteResponseId;
 
-            //create ilp packet in the db
-            const ilpPacketId = await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId, quoteUpdateRequest.ilpPacket);
+            //if we get here we need to create a duplicate check row
+            const hash = this.calculateRequestHash(quoteUpdateRequest);
+            await this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash);
 
-            //create any additional quoteParties e.g. for fees, comission etc...
+            //create ilp packet in the db
+            const ilpPacketId = await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId,
+                quoteUpdateRequest.ilpPacket);
+
+            //todo: create any additional quoteParties e.g. for fees, comission etc...
 
             await txn.commit();
             this.writeLog(`create quote update transaction committed to db: ${util.inspect(refs)}`);
@@ -337,7 +325,7 @@ class QuotesModel {
             //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
             setImmediate(() => {
                 //if we got here rules passed, so we can forward the quote on to the recipient dfsp
-                this.forwardQuoteResponse(fspiopSource, quoteId, quoteUpdateRequest);
+                this.forwardQuoteUpdate(fspiopSource, quoteId, quoteUpdateRequest);
             });
 
             //all ok, return refs
@@ -345,6 +333,7 @@ class QuotesModel {
         }
         catch(err) {
             this.writeLog(`Error in handleQuoteUpdate: ${err.stack || util.inspect(err)}`);
+            txn.rollback(err);
             throw err;
         }
     }
@@ -355,23 +344,19 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
-    async forwardQuoteResponse(fspiopSource, quoteId, originalQuoteResponse) {
-        let txn = null;
+    async forwardQuoteUpdate(fspiopSource, quoteId, originalQuoteResponse) {
         let endpoint = null;
 
         try {
-            //do everything in a db transaction
-            txn = await this.db.newTransaction();
-
             if(!originalQuoteResponse) {
                 //we need to recreate the quote response
-                originalQuoteResponse = await this.getQuoteResponseApiProjection(txn, quoteId);
+                originalQuoteResponse = await this.getQuoteResponseApiProjection(quoteId);
                 this.writeLog(`Recreated quote response: ${util.inspect(originalQuoteResponse)}`);
             }
 
             //lookup payer dfsp callback endpoint
             //todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-            endpoint = await this.db.getQuotePartyEndpoint(txn, quoteId, 'FSIOP_CALLBACK_URL', 'PAYER');
+            endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSIOP_CALLBACK_URL', 'PAYER');
  
             this.writeLog(`Resolved PAYER party FSIOP_CALLBACK_URL endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`);
 
@@ -403,14 +388,9 @@ class QuotesModel {
             if(!res.ok) {
                 throw new Error(`Got non-success response sending error callback`);
             }
-
-            //txn.commit();
         }
         catch(err) {
             this.writeLog(`Error forwarding quote response to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`);
-            if(txn) {
-                //txn.rollback();
-            }
 
             //we need to make an error callback to the originator of the quote response
             setImmediate(() => {
@@ -423,6 +403,24 @@ class QuotesModel {
 
 
     /**
+     * Deals with resends under the API spec:
+     * See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+     *
+     * @returns {undefined}
+     */
+    async handleQuoteUpdateResend(fspiopSource, quoteId, quoteUpdate) {
+        try {
+            this.writeLog(`Handling resend of quote update: ${util.inspect(quoteUpdate)} from ${fspiopSource}`);
+            throw new Error(`Resends currently not implemented by quoting service`);
+        }
+        catch(err) {
+            this.writeLog(`Error in handleQuoteUpdateResend: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
      * Makes an error callback. Callback is sent to the FSIOP_CALLBACK_URL endpoint of the replyTo participant in the 
      * supplied fspiopErr object. This should be the participantId for the error callback recipient e.g. value from the
      * FSPIOP-Source header of the original request that caused the error. 
@@ -430,17 +428,13 @@ class QuotesModel {
      * @returns {promise}
      */
     async sendErrorCallback(fspiopErr, quoteId) {
-        let txn = null;
-
         try {
             if(!(fspiopErr instanceof Errors.FSPIOPError)) {
                 throw new Error(`fspiopErr not an instance of FSPIOPError`);
             }
 
-            txn = await this.db.newTransaction();
-
             //look up the callback base url
-            const endpoint = await this.db.getParticipantEndpoint(txn, fspiopErr.replyTo, 'FSIOP_CALLBACK_URL');
+            const endpoint = await this.db.getParticipantEndpoint(fspiopErr.replyTo, 'FSIOP_CALLBACK_URL');
 
             this.writeLog(`Resolved participant '${fspiopErr.replyTo}' FSIOP_CALLBACK_URL to: '${endpoint}'`);
 
@@ -486,13 +480,13 @@ class QuotesModel {
      *
      * @returns {promise} - resolves to an object thus: { isResend: {boolean}, isDuplicateId: {boolean} }
      */
-    async checkDuplicateQuoteRequest(txn, quoteRequest) {
+    async checkDuplicateQuoteRequest(quoteRequest) {
         try {
             //calculate a SHA-256 of the request
             const hash = this.calculateRequestHash(quoteRequest);
             this.writeLog(`Calculated sha256 hash of quote request with id ${quoteRequest.quoteId} as: ${hash}`);
             
-            const dupchk = await this.db.getQuoteDuplicateCheck(txn, quoteRequest.quoteId);
+            const dupchk = await this.db.getQuoteDuplicateCheck(quoteRequest.quoteId);
             this.writeLog(`DB query for quote duplicate check with id ${quoteRequest.quoteId} returned: ${util.inspect(dupchk)}`);
 
             if(!dupchk) {
@@ -531,13 +525,13 @@ class QuotesModel {
      *
      * @returns {promise} - resolves to an object thus: { isResend: {boolean}, isDuplicateId: {boolean} }
      */
-    async checkDuplicateQuoteResponse(txn, quoteId, quoteResponse) {
+    async checkDuplicateQuoteResponse(quoteId, quoteResponse) {
         try {
             //calculate a SHA-256 of the request
             const hash = this.calculateRequestHash(quoteResponse);
             this.writeLog(`Calculated sha256 hash of quote response with id ${quoteId} as: ${hash}`);
             
-            const dupchk = await this.db.getQuoteResponseDuplicateCheck(txn, quoteId);
+            const dupchk = await this.db.getQuoteResponseDuplicateCheck(quoteId);
             this.writeLog(`DB query for quote response duplicate check with id ${quoteId} returned: ${util.inspect(dupchk)}`);
 
             if(!dupchk) {
@@ -574,8 +568,44 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
-    async getQuoteResponseApiProjection(txn, quoteId) {
+    async getQuoteResponseApiProjection(quoteId) {
+        try {
+            const quoteResponseObject = await this.db.getQuoteResponseView(quoteId);
 
+            if(!quoteResponseObject) {
+                throw new Error(`Response for Quote ${quoteId} not found`);
+            }
+
+            let apiProjection = {
+                transferAmount: {
+                    amount: this.amountDecimalToApiAmount(quoteResponseObject.transferAmountCurrencyId, quoteResponseObject.transferAmount),
+                    currency: quoteResponseObject.transferAmountCurrencyId
+                },
+                payeeReceiveAmount: {
+                    amount: this.amountDecimalToApiAmount(quoteResponseObject.payeeReceiveAmountCurrencyId, quoteResponseObject.payeeReceiveAmount),
+                    currency: quoteResponseObject.payeeReceiveAmountCurrencyId
+                },
+                payeeFspFee: {
+                    amount: this.amountDecimalToApiAmount(quoteResponseObject.payeeFspFeeCurrencyId, quoteResponseObject.payeeFspFeeAmount),
+                    currency: quoteResponseObject.payeeFspFeeCurrencyId
+                },
+                payeeFspCommission: {
+                    amount: this.amountDecimalToApiAmount(quoteResponseObject.payeeFspCommissionCurrencyId, quoteResponseObject.payeeFspCommissionAmount),
+                    currency: quoteResponseObject.payeeFspCommissionCurrencyId
+                },
+                geoCode: undefined, //todo
+                expiration: quoteResponseObject.responseExpirationDate.toISOString(),
+                ilpPacket: quoteResponseObject.ilpPacket,
+                condition: quoteResponseObject.ilpCondition,
+                extensionList: undefined
+            };
+
+            return this.removeEmptyKeys(apiProjection);
+        }
+        catch(err) {
+            this.writeLog(`Error in getQuoteResponseApiProjection: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
     }
 
 
@@ -586,20 +616,16 @@ class QuotesModel {
      *
      * @returns {object}
      */
-    async getQuoteRequestApiProjection(txn, quoteId) {
+    async getQuoteRequestApiProjection(quoteId) {
         try {
-            if(!txn) {
-                txn = await this.db.newTransaction();
-            }
-
-            const quoteObject = await this.db.getQuoteView(txn, quoteId);
+            const quoteObject = await this.db.getQuoteView(quoteId);
 
             if(!quoteObject) {
                 throw new Error(`Quote ${quoteId} not found`);
             }
 
             //get and validate the quote parties
-            const quoteParties = await this.db.getQuotePartyView(txn, quoteId);
+            const quoteParties = await this.db.getQuotePartyView(quoteId);
 
             if((!quoteParties) || quoteParties.length < 2) {
                 throw new Error(`Expected 2 quote parties but got: ${util.inspect(quoteParties)}`);
