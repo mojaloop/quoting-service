@@ -29,9 +29,11 @@ class FSPIOPError extends Error {
      */
     toApiErrorObject() {
         return {
-            errorCode: this.errorCode,
-            errorDescription: this.message,
-            extensionList: this.extensions
+            errorInformation: {
+                errorCode: this.errorCode,
+                errorDescription: this.message,
+                extensionList: this.extensions
+            }
         };
     }
 
