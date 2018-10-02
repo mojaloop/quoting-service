@@ -28,13 +28,18 @@ class FSPIOPError extends Error {
      * @returns {object}
      */
     toApiErrorObject() {
-        return {
+        let e = {
             errorInformation: {
                 errorCode: this.errorCode,
-                errorDescription: this.message,
-                extensionList: this.extensions
+                errorDescription: this.message
             }
         };
+
+        if(this.extensionList) {
+            e.errorInformation.extensionList = this.extensions;
+        }
+
+        return e;
     }
 
 
