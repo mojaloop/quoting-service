@@ -7,9 +7,6 @@ const Errors = require('./errors.js');
 const quoteRules = require('./rules.js');
 
 
-const SWITCH_FSPIOP_SOURCE_HEADER = 'switch';
-
-
 /**
  * Encapsulates operations on the quotes domain model
  *
@@ -50,7 +47,7 @@ class QuotesModel {
      *
      * @returns {object} - returns object containing keys for created database entities
      */
-    async handleQuoteRequest(fspiopSource, quoteRequest) {
+    async handleQuoteRequest(fspiopSource, fspiopDest, quoteRequest) {
         let txn = null;
 
         try {
@@ -74,7 +71,7 @@ class QuotesModel {
             if(dupe.isResend && dupe.isDuplicateId) {
                 //this is a resend
                 //See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-                return this.handleQuoteRequestResend(fspiopSource, quoteRequest);
+                return this.handleQuoteRequestResend(fspiopSource, fspiopDest, quoteRequest);
             }
 
             //todo: validation
@@ -147,7 +144,7 @@ class QuotesModel {
             //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
             setImmediate(() => {
                 //if we got here rules passed, so we can forward the quote on to the recipient dfsp
-                this.forwardQuoteRequest(fspiopSource, refs.quoteId, quoteRequest);
+                this.forwardQuoteRequest(fspiopSource, fspiopDest, refs.quoteId, quoteRequest);
             });
 
             //all ok, return refs
@@ -166,7 +163,7 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
-    async forwardQuoteRequest(fspiopSource, quoteId, originalQuoteRequest) {
+    async forwardQuoteRequest(fspiopSource, fspiopDest, quoteId, originalQuoteRequest) {
         let txn = null;
         let endpoint = null;
 
@@ -174,6 +171,9 @@ class QuotesModel {
             if(!originalQuoteRequest) {
                 //we need to recreate the quote request
                 originalQuoteRequest = await this.getQuoteRequestApiProjection(quoteId);
+                if(!originalQuoteRequest) {
+                    throw new Error(`Unable to recreate quote request for quote id ${quoteId}`);
+                }
                 this.writeLog(`Recreated quote request: ${util.inspect(originalQuoteRequest)}`);
             }
 
@@ -198,11 +198,7 @@ class QuotesModel {
             let opts = {
                 method: 'POST',
                 body: JSON.stringify(originalQuoteRequest),
-                headers: {
-                    'Content-Type': 'application/vnd.interoperability.resource+json;version=1.0',
-                    'Date': new Date().toUTCString(),
-                    'FSPIOP-Source': SWITCH_FSPIOP_SOURCE_HEADER //todo: what should this be?
-                }
+                headers: this.generateRequestHeaders(fspiopSource, fspiopDest)
             };
 
             const res = await fetch(fullUrl, opts);
@@ -226,21 +222,30 @@ class QuotesModel {
 
 
     /**
-     * Deals with resends under the API spec:
-     * See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+     * Deals with resends of quote requests (POST) under the API spec:
+     * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
      *
      * @returns {undefined}
      */
-    async handleQuoteRequestResend(fspiopSource, quoteRequest) {
+    async handleQuoteRequestResend(fspiopSource, fspiopDest, quoteRequest) {
         try {
-            this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource}`);
+            this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource} to ${fspiopDest}`);
 
-            //we need to examine the quote state machine to determine what we should do
+            //if we already have a valid response from the other party we can just resend that to the caller
+            const existingResponse = await this.getQuoteResponseApiProjection(quoteRequest.quoteId);
 
-            //if we already have a valid response from the other party we need to resend that to the caller
+            if(existingResponse) {
+                this.writeLog(`A response has already been received for quote ${quoteRequest.quoteId} so re-making callback to ${fspiopSource}`);
+                return this.forwardQuoteUpdate(fspiopSource, fspiopDest, quoteRequest.quoteId, existingResponse);
+            }
 
+            //if we dont already have a response from the other party we resend the request
+            this.writeLog(`No response has been received for quote ${quoteRequest.quoteId} so re-forwarding the request`);
 
-            //if we dont already have a response from the other party we ...?
+            //we are ok to assume the quoteRequest object passed to us is the same as the original...
+            //as it passed a hash duplicate check...so go ahead and use it to resend rather than
+            //hit the db again
+            return this.forwardQuoteRequest(fspiopSource, fspiopDest, quoteRequest.quoteId, quoteRequest);
         }
         catch(err) {
             this.writeLog(`Error in handleQuoteRequestResend: ${err.stack || util.inspect(err)}`);
@@ -254,7 +259,7 @@ class QuotesModel {
      *
      * @returns {object} - object containing updated entities
      */
-    async handleQuoteUpdate(fspiopSource, quoteId, quoteUpdateRequest) {
+    async handleQuoteUpdate(fspiopSource, fspiopDest, quoteId, quoteUpdateRequest) {
         let txn = null;
 
         try {
@@ -277,7 +282,7 @@ class QuotesModel {
             if(dupe.isResend && dupe.isDuplicateId) {
                 //this is a resend
                 //See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-                return this.handleQuoteUpdateResend(fspiopSource, quoteId, quoteUpdateRequest);
+                return this.handleQuoteUpdateResend(fspiopSource, fspiopDest, quoteId, quoteUpdateRequest);
             }
 
             //todo: validation
@@ -325,7 +330,7 @@ class QuotesModel {
             //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
             setImmediate(() => {
                 //if we got here rules passed, so we can forward the quote on to the recipient dfsp
-                this.forwardQuoteUpdate(fspiopSource, quoteId, quoteUpdateRequest);
+                this.forwardQuoteUpdate(fspiopSource, fspiopDest, quoteId, quoteUpdateRequest);
             });
 
             //all ok, return refs
@@ -344,13 +349,16 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
-    async forwardQuoteUpdate(fspiopSource, quoteId, originalQuoteResponse) {
+    async forwardQuoteUpdate(fspiopSource, fspiopDest, quoteId, originalQuoteResponse) {
         let endpoint = null;
 
         try {
             if(!originalQuoteResponse) {
                 //we need to recreate the quote response
                 originalQuoteResponse = await this.getQuoteResponseApiProjection(quoteId);
+                if(!originalQuoteResponse) {
+                    throw new Error(`Unable to recreate original response for quote id ${quoteId}`);
+                }
                 this.writeLog(`Recreated quote response: ${util.inspect(originalQuoteResponse)}`);
             }
 
@@ -375,11 +383,7 @@ class QuotesModel {
             let opts = {
                 method: 'PUT',
                 body: JSON.stringify(originalQuoteResponse),
-                headers: {
-                    'Content-Type': 'application/vnd.interoperability.resource+json;version=1.0',
-                    'Date': new Date().toUTCString(),
-                    'FSPIOP-Source': SWITCH_FSPIOP_SOURCE_HEADER //todo: what should this be?
-                }
+                headers: this.generateRequestHeaders(fspiopSource, fspiopDest)
             };
 
             const res = await fetch(fullUrl, opts);
@@ -408,13 +412,52 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
-    async handleQuoteUpdateResend(fspiopSource, quoteId, quoteUpdate) {
+    async handleQuoteUpdateResend(fspiopSource, fspiopDest, quoteId, quoteUpdate) {
+        throw new Error(`Multiple quote responses (PUT requests) are not supported by the quotes service`);
+    }
+
+
+    /**
+     * Handles error reports from clients e.g. POST quotes/{ID}/error
+     *
+     * @returns {undefined}
+     */
+    async handleQuoteError(fspiopSource, fspiopDest, quoteId, error) {
+        let txn = null;
+
         try {
-            this.writeLog(`Handling resend of quote update: ${util.inspect(quoteUpdate)} from ${fspiopSource}`);
-            throw new Error(`Resends currently not implemented by quoting service`);
+            //do everything in a transaction so we can rollback multiple operations if something goes wrong
+            txn = await this.db.newTransaction();
+
+            //persist the error
+            const newError = await this.db.createQuoteError(txn, {
+                quoteId: quoteId,
+                errorCode: Number(error.errorCode),
+                errorDescription: error.errorDescription
+            });
+
+            //commit the txn to the db
+            txn.commit();
+
+            //create a new object to represent the error
+            const e = new Errors.FSPIOPError(null, error.errorDescription, fspiopDest, error.errorCode, null);
+
+            //set fspiop-source and fspiop-destination headers on this callback!
+            e.fspiopSource = fspiopSource;
+            e.fspiopDestination = fspiopDest;
+
+            //send the callback in a future event loop step
+            //attempting to give fair execution of async events...
+            //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
+            setImmediate(() => {
+                this.sendErrorCallback(e, quoteId);
+            });
+
+            return newError;
         }
         catch(err) {
-            this.writeLog(`Error in handleQuoteUpdateResend: ${err.stack || util.inspect(err)}`);
+            this.writeLog(`Error in handleQuoteError: ${err.stack || util.inspect(err)}`);
+            txn.rollback(err);
             throw err;
         }
     }
@@ -452,11 +495,10 @@ class QuotesModel {
             let opts = {
                 method: 'POST',
                 body: JSON.stringify(fspiopErr.toApiErrorObject()),
-                headers: {
-                    'Content-Type': 'application/vnd.interoperability.resource+json;version=1.0',
-                    'Date': new Date().toUTCString(),
-                    'FSPIOP-Source': SWITCH_FSPIOP_SOURCE_HEADER //todo: what should this be?
-                }
+                //use fspiopSource and fspiopDestination of the error object if they are there...
+                //otherwise use sensible defaults
+                headers: this.generateRequestHeaders(fspiopErr.fspiopSource || 'switch',
+                    fspiopErr.fspiopDestination || fspiopErr.replyTo)
             };
 
             const res = await fetch(fullCallbackUrl, opts);
@@ -573,7 +615,7 @@ class QuotesModel {
             const quoteResponseObject = await this.db.getQuoteResponseView(quoteId);
 
             if(!quoteResponseObject) {
-                throw new Error(`Response for Quote ${quoteId} not found`);
+                return null;
             }
 
             let apiProjection = {
@@ -621,7 +663,7 @@ class QuotesModel {
             const quoteObject = await this.db.getQuoteView(quoteId);
 
             if(!quoteObject) {
-                throw new Error(`Quote ${quoteId} not found`);
+                return null;
             }
 
             //get and validate the quote parties
@@ -758,6 +800,23 @@ class QuotesModel {
         //calculate a SHA-256 of the request
         const requestStr = JSON.stringify(request);
         return crypto.createHash('sha256').update(requestStr).digest('hex');
+    }
+
+
+    /**
+     * Generates and returns an object containing API spec compliant HTTP request headers
+     *
+     * @returns {object}
+     */
+    generateRequestHeaders(fspiopSource, fspiopDest) {
+        return this.removeEmptyKeys({
+            'Content-Type': 'application/vnd.interoperability.resource+json;version=1.0',
+            'Accept': 'application/vnd.interoperability.resource+json;version=1.0',
+            'Date': new Date().toUTCString(),
+            'FSPIOP-Source': fspiopSource,
+            'FSPIOP-Destination': fspiopDest,
+            'User-Agent': ''  //yuck! node-fetch INSISTS on sending a user-agent header!? infuriating!
+        });
     }
 
 

@@ -36,7 +36,6 @@ const initServer = async function(db, config) {
         routes: {
             validate: {
                 failAction: async (request, h, err) => {
-                    console.log(`request: ${util.inspect(request)}`);
                     console.log(`validation failure: ${err.stack || util.inspect(err)}`);
                     throw err;
                 }
@@ -80,6 +79,15 @@ const initServer = async function(db, config) {
         handler: (request, h) => {
             return h.response().code(200);
         }
+    });
+
+    //deal with the api spec content-type not being "application/json" which it actually is. seriously!?
+    server.ext('onRequest', function(request, reply) {
+        if(request.headers['content-type'] === 'application/vnd.interoperability.resource+json;version=1.0') {
+            request.headers['content-type'] = 'application/json';
+            request.headers['x-content-type'] = 'application/vnd.interoperability.resource+json;version=1.0';
+        }
+        return reply.continue;
     });
 
     //start the server

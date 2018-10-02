@@ -32,11 +32,12 @@ module.exports = {
         //extract some things from the request we may need if we have to deal with an error e.g. the
         //originator and quoteId
         const quoteId = request.payload.quoteId;
-        const fspiopSource = request.headers['fspiop-source']; 
+        const fspiopSource = request.headers['fspiop-source'];
+        const fspiopDest = request.headers['fspiop-destination'];
 
         try {
             //call the quote request handler in the model
-            const result = await model.handleQuoteRequest(fspiopSource, request.payload);
+            const result = await model.handleQuoteRequest(fspiopSource, fspiopDest, request.payload);
             request.server.log(['info'], `POST quote request succeeded and returned: ${util.inspect(result)}`);
         }
         catch(err) {
@@ -47,7 +48,8 @@ module.exports = {
             //do the error handling in a future event loop step
             setImmediate(async () => {
                 try {
-                    let e = new Errors.FSPIOPError(err, `An error occured processing the request`, fspiopSource, '1000', null);
+                    let e = new Errors.FSPIOPError(err, `An error occured processing the request`,
+                        fspiopSource, '2000', null);
                     await model.sendErrorCallback(e, quoteId);
                 }
                 catch(err) {

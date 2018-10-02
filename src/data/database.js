@@ -861,6 +861,35 @@ class Database {
 
 
     /**
+     * Creates a new quoteError row
+     *
+     * @returns {object}
+     */
+    async createQuoteError(txn, error) {
+        try {
+            let newError = {
+                quoteId: error.quoteId,
+                errorCode: error.errorCode,
+                errorDescription: error.errorDescription
+            };
+
+            const res = await this.queryBuilder('quoteError')
+                .transacting(txn)
+                .insert(newError);
+
+            newError.quoteErrorId = res[0];
+
+            this.writeLog(`inserted new quoteError in db: ${util.inspect(newError)}`);
+            return res;
+        }
+        catch(err) {
+            this.writeLog(`Error in createQuoteError: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
      * Writes a formatted log message to the console
      */
     writeLog(message) {
