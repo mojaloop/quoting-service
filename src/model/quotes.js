@@ -21,12 +21,21 @@ class QuotesModel {
 
 
     /**
-     * Validates the form of a quote request object
+     * Validates the quote request object
      *
      * @returns {promise} - promise will reject if request is not valid
      */
-    async validateQuoteRequest(quoteResuest) {
-        //todo: actually do the validation (use joi as per mojaloop)
+    async validateQuoteRequest(fspiopSource, fspiopDest, quoteRequest) {
+        //note that the framework should validate the form of the request
+        //here we can do some nasty hard-coded rule validations
+
+        //make sure initiator is the PAYER party
+        if(quoteRequest.transactionType.initiator !== 'PAYER') {
+            throw new Error(`Only PAYER initiated transactions are supported`);
+        }
+
+        //todo: make sure the initiator is the source of the request
+
         return Promise.resolve(null);
     }
 
@@ -53,6 +62,9 @@ class QuotesModel {
         try {
             //accumulate enum ids
             let refs = {};
+
+            //validate - this will throw if the request is invalid
+            await this.validateQuoteRequest(fspiopSource, fspiopDest, quoteRequest);
 
             //do everything in a db txn so we can rollback multiple operations if something goes wrong
             txn = await this.db.newTransaction();
@@ -123,6 +135,15 @@ class QuotesModel {
 
             refs.payeeId = await this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
                 quoteRequest.amount.amount, quoteRequest.amount.currency);
+
+            //did we get a geoCode for the initiator?
+            if(quoteRequest.geoCode) {
+                refs.geoCodeId = await this.db.createGeoCode(txn, {
+                    quotePartyId: quoteRequest.transactionType.initiator === 'PAYER' ? refs.payerId : refs.payeeId,
+                    latitude: quoteRequest.geoCode.latitude,
+                    longitude: quoteRequest.geoCode.longitude
+                });
+            }
 
             await txn.commit();
             this.writeLog(`create quote transaction committed to db: ${util.inspect(refs)}`);
@@ -307,6 +328,21 @@ class QuotesModel {
             //create ilp packet in the db
             const ilpPacketId = await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId,
                 quoteUpdateRequest.ilpPacket);
+
+            //did we get a geoCode for the payee?
+            if(quoteUpdateRequest.geoCode) {
+                const payeeParty = await this.db.getQuoteParty(quoteId, 'PAYEE');
+
+                if(!payeeParty) {
+                    throw new Error(`Unable to find payee party for quote ${quoteId}`);
+                }
+
+                refs.geoCodeId = await this.db.createGeoCode(txn, {
+                    quotePartyId: payeeParty.quotePartyId,
+                    latitude: quoteUpdateRequest.geoCode.latitude,
+                    longitude: quoteUpdateRequest.geoCode.longitude
+                });
+            }
 
             //todo: create any additional quoteParties e.g. for fees, comission etc...
 
@@ -635,7 +671,10 @@ class QuotesModel {
                     amount: this.amountDecimalToApiAmount(quoteResponseObject.payeeFspCommissionCurrencyId, quoteResponseObject.payeeFspCommissionAmount),
                     currency: quoteResponseObject.payeeFspCommissionCurrencyId
                 },
-                geoCode: undefined, //todo
+                geoCode: (quoteResponseObject.longitude && quoteResponseObject.latitude) ? {
+                        longitude: quoteResponseObject.longitude,
+                        latitude: quoteResponseObject.latitude
+                    } : null,
                 expiration: quoteResponseObject.responseExpirationDate.toISOString(),
                 ilpPacket: quoteResponseObject.ilpPacket,
                 condition: quoteResponseObject.ilpCondition,
@@ -704,7 +743,10 @@ class QuotesModel {
                     initiatorType: quoteObject.transactionInitiatorType,
                     balanceOfPayments: `${quoteObject.balanceOfPaymentsId}`
                 },
-                geoCode: undefined, //todo
+                geoCode: (payerParty.longitude && payerParty.latitude) ? {
+                    longitude: payerParty.longitude,
+                    latitude: payerParty.latitude
+                } : null,
                 note: quoteObject.note,
                 expiration: quoteObject.expirationDate.toISOString(),
                 extensionList: undefined
@@ -736,7 +778,7 @@ class QuotesModel {
                 }
                 else {
                     //recurse
-                    this.removeEmptyKeys(obj[key]);
+                    obj[key] = this.removeEmptyKeys(obj[key]);
                 }
             }
             else if (obj[key] == null) {

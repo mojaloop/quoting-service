@@ -634,6 +634,36 @@ class Database {
 
 
     /**
+     * Gets the specified party for the specified quote
+     *
+     * @returns {object}
+     */
+    async getQuoteParty(quoteId, partyType) {
+        try {
+            const rows = await this.queryBuilder('quoteParty')
+                .innerJoin('partyType', 'partyType.partyTypeId', 'quoteParty.partyTypeId')
+                .where('quoteParty.quoteId', quoteId)
+                .andWhere('partyType.name', partyType)
+                .select('quoteParty.*');
+
+            if((!rows) || rows.length < 1) {
+                return null;
+            }
+
+            if(rows.length > 1) {
+                throw new Error(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`);
+            }
+
+            return rows[0];
+        }
+        catch(err) {
+            this.writeLog(`Error in getQuoteParty: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
      * Gets the specified endpoint for the specified quote party
      *
      * @returns {promise} - resolves to the endpoint base url
