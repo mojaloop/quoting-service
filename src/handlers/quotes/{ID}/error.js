@@ -39,21 +39,9 @@ module.exports = {
             request.server.log(['info'], `POST quote error request succeeded and returned: ${util.inspect(result)}`);
         }
         catch(err) {
-            //if we get an error here we have most likely NOT been able to persist the quote request
-            //API spec says we should return "happy days" and make an error callback...WTF?!
+            //something went wrong, use the model to handle the error in a sensible way
             request.server.log(['error'], `ERROR - POST /quotes/{ID}/error: ${err.stack || util.inspect(err)}`);
-
-            //do the error handling in a future event loop step
-            setImmediate(async () => {
-                try {
-                    let e = new Errors.FSPIOPError(err, `An error occured processing the request`,
-                        fspiopSource, '2000', null);
-                    await model.sendErrorCallback(e, quoteId);
-                }
-                catch(err) {
-                    request.server.log(['error'], `Error sending error callback: ${err.stack || util.inspect(err)}`);
-                }
-            });
+            await model.handleException(fspiopSource, quoteId, err);
         }
         finally {
             return h.response().code(202);

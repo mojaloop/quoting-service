@@ -27,11 +27,13 @@ class QuotesModel {
      */
     async validateQuoteRequest(fspiopSource, fspiopDest, quoteRequest) {
         //note that the framework should validate the form of the request
-        //here we can do some nasty hard-coded rule validations
+        //here we can do some hard-coded rule validations to ensure requests
+        //do not lead to unsupported scenarios or use-cases.
 
         //make sure initiator is the PAYER party
         if(quoteRequest.transactionType.initiator !== 'PAYER') {
-            throw new Error(`Only PAYER initiated transactions are supported`);
+            throw new Errors.FSPIOPError(quoteRequest, `Only PAYER initiated transactions are supported`,
+                fspiopSource, Errors.ApiErrorCodes.SERVER_ERROR);
         }
 
         //todo: make sure the initiator is the source of the request
@@ -77,7 +79,9 @@ class QuotesModel {
             //fail fast on duplicate
             if(dupe.isDuplicateId && (!dupe.isResend)) {
                 //same quoteId but a different request, this is an error!
-                throw new Error(`Quote id ${quoteRequest.quoteId} is a duplicate but hashes dont match`);
+                throw new Errors.FSPIOPError(quoteRequest,
+                    `Quote ${quoteRequest.quoteId} is a duplicate but hashes dont match`, fspiopSource,
+                    Errors.ApiErrorCodes.MODIFIED_REQUEST);
             }
 
             if(dupe.isResend && dupe.isDuplicateId) {
@@ -163,9 +167,17 @@ class QuotesModel {
             //make call to payee dfsp in a setImmediate;
             //attempting to give fair execution of async events...
             //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
-            setImmediate(() => {
+            setImmediate(async () => {
                 //if we got here rules passed, so we can forward the quote on to the recipient dfsp
-                this.forwardQuoteRequest(fspiopSource, fspiopDest, refs.quoteId, quoteRequest);
+                try {
+                    await this.forwardQuoteRequest(fspiopSource, fspiopDest, refs.quoteId, quoteRequest);
+                }
+                catch(err) {
+                    //as we are on our own in this context, dont just rethrow the error, instead...
+                    //get the model to handle it
+                    this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}`);
+                    await this.handleException(fspiopSource, refs.quoteId, err);
+                }
             });
 
             //all ok, return refs
@@ -207,9 +219,9 @@ class QuotesModel {
             if(!endpoint) {
                 //we didnt get an endpoint for the payee dfsp!
                 //make an error callback to the initiator
-                return this.sendErrorCallback(new Errors.FSPIOPError(null, 
-                    `No FSIOP_CALLBACK_URL found for quote ${quoteId} PAYEE party`, fspiopSource, '1001'),
-                    quoteId);
+                throw new Errors.FSPIOPError(originalQuoteRequest,
+                    `No FSIOP_CALLBACK_URL found for quote ${quoteId} PAYEE party`, fspiopSource,
+                    Errors.ApiErrorCodes.DESTINATION_FSP_ERROR);
             }
 
             let fullUrl = `${endpoint}/quotes`;
@@ -226,18 +238,13 @@ class QuotesModel {
             this.writeLog(`forwarding quote request got response ${res.status} ${res.statusText}`);
 
             if(!res.ok) {
-                throw new Error(`Got non-success response sending error callback`);
+                throw new Errors.FSPIOPError(res.statusText, `Got non-success response sending error callback`,
+                fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
             }
         }
         catch(err) {
             this.writeLog(`Error forwarding quote request to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`);
-
-            //we need to make an error callback to the originator of the quote request
-            setImmediate(() => {
-                return this.sendErrorCallback(new Errors.FSPIOPError(err, 
-                    `Error sending quote to 'PAYEE' participant`, fspiopSource, '1002'),
-                    quoteId);
-            });
+            throw err;
         }
     }
 
@@ -245,8 +252,6 @@ class QuotesModel {
     /**
      * Deals with resends of quote requests (POST) under the API spec:
      * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
-     *
-     * @returns {undefined}
      */
     async handleQuoteRequestResend(fspiopSource, fspiopDest, quoteRequest) {
         try {
@@ -297,7 +302,9 @@ class QuotesModel {
             //fail fast on duplicate
             if(dupe.isDuplicateId && (!dupe.isResend)) {
                 //same quoteId but a different request, this is an error!
-                throw new Error(`Quote response id ${quoteId} is a duplicate but hashes dont match`);
+                throw new Errors.FSPIOPError(quoteUpdateRequest,
+                    `Update for quote ${quoteUpdateRequest.quoteId} is a duplicate but hashes dont match`, fspiopSource,
+                    Errors.ApiErrorCodes.MODIFIED_REQUEST);
             }
 
             if(dupe.isResend && dupe.isDuplicateId) {
@@ -476,7 +483,11 @@ class QuotesModel {
             txn.commit();
 
             //create a new object to represent the error
-            const e = new Errors.FSPIOPError(null, error.errorDescription, fspiopDest, error.errorCode, null);
+            const e = new Errors.FSPIOPError(`Quote ${quoteId} error post from ${fspiopSource}`,
+                error.errorDescription, fspiopDest, {
+                    code: Number(error.errorCode),
+                    message: error.errorDescription
+                });
 
             //set fspiop-source and fspiop-destination headers on this callback!
             e.fspiopSource = fspiopSource;
@@ -496,6 +507,32 @@ class QuotesModel {
             txn.rollback(err);
             throw err;
         }
+    }
+
+
+    /**
+     * Attempts to handle an exception in a sensible manner by forwarding it on to the
+     * source of the request that caused the error.
+     */
+    async handleException(fspiopSource, quoteId, exception) {
+        //is this exception already wrapped as an API spec compatible type?
+        if(!(exception instanceof Errors.FSPIOPError)) {
+            //we need to wrap the error in a generic API compatible error
+            exception = new Errors.FSPIOPError(exception, exception.message || `Error occured`,
+                fspiopSource, Errors.ApiErrorCodes.SERVER_ERROR);
+        }
+
+        //do the error callback in a future event loop iteration
+        //to play nicely with other events
+        setImmediate(async () => {
+            try {
+                return await this.sendErrorCallback(exception, quoteId);
+            }
+            catch(err) {
+                //not much we can do other than log the error
+                this.writeLog(`Error occured handling error check service logs as this error may not have been propogated successfully to any other party: ${err.stack || util.inspect(err)}`); 
+            }
+        });
     }
 
 
