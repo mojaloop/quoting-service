@@ -13,7 +13,7 @@ module.exports = {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-    get: function BulkQuotesByID(request, h) {
+    get: function BulkQuotesByID() {
         return Boom.notImplemented();
     },
     /**
@@ -23,7 +23,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-    put: function BulkQuotesByID1(request, h) {
+    put: function BulkQuotesByID1() {
         return Boom.notImplemented();
     }
 };

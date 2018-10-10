@@ -13,7 +13,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-    put: function BulkQuotesErrorByID(request, h) {
+    put: function BulkQuotesErrorByID() {
         return Boom.notImplemented();
     }
 };

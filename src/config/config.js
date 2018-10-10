@@ -9,7 +9,7 @@ class Config {
     constructor() {
         //load config from environment (or use sensible defaults)
         this.listenAddress = process.env['LISTEN_ADDRESS'] || '0.0.0.0';
-        this.listenPort = process.env['LISTEN_PORT'] || 3000
+        this.listenPort = process.env['LISTEN_PORT'] || 3000;
 
         this.database = {
             client: process.env['DATABASE_DIALECT'] || 'mysql',
@@ -25,7 +25,7 @@ class Config {
                 max: process.env['DATABASE_POOL_MAXSIZE'] || 10
             }
         };
-
+        //eslint-disable-next-line no-console
         console.log('Config loaded: %s', util.inspect(this));
     }
 }

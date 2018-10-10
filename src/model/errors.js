@@ -76,7 +76,7 @@ const ApiErrorCodes = {
     PAYEE_UNSUPPORTED_CURRENCY:       { code: 5106, message: 'Payee does not have an account which supports the requested currency.' },
     PAYEE_LIMIT_ERROR:                { code: 5200, message: 'Payee limit exceeded' },
     PAYEE_PERMISSION_ERROR:           { code: 5300, message: 'Payee or Payee FSP insufficient permissions' },
-    GENERIC_PAYEE_BLOCKED_ERROR:      { code: 5400, message: 'Payee blocked' },
+    GENERIC_PAYEE_BLOCKED_ERROR:      { code: 5400, message: 'Payee blocked' }
 };
 
 
@@ -133,7 +133,7 @@ class FSPIOPError extends Error {
 
 
     /**
-     * Returns an object containing all details of the error e.g. for logging 
+     * Returns an object containing all details of the error e.g. for logging
      *
      * @returns {object}
      */

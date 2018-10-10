@@ -1,9 +1,7 @@
 'use strict';
 
 const util = require('util');
-const Boom = require('boom');
 const QuotesModel = require('../../../model/quotes.js');
-const Errors = require('../../../model/errors.js');
 
 
 /**
@@ -44,6 +42,7 @@ module.exports = {
             await model.handleException(fspiopSource, quoteId, err);
         }
         finally {
+            //eslint-disable-next-line no-unsafe-finally
             return h.response().code(202);
         }
     }
