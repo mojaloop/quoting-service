@@ -26,10 +26,10 @@
         "node-fetch": "^2.2.0"
     },
     "devDependencies": {
-        "eslint": "^2",
-        "tape": "^4",
+        "eslint": "^5.6.1",
         "istanbul": "~0.4.3",
-        "swagmock": "~0.0.2"
+        "swagmock": "~0.0.2",
+        "tape": "^4"
     },
     "scripts": {
         "test": "tape 'tests/**/*.js'",

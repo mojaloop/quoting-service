@@ -75,7 +75,7 @@ class Database {
 
             if((!rows) || rows.length < 1) {
                 //initiatorType does not exist, this is an error
-                throw new Error(`Unsupported initiatorType \'${initiatorType}\'`);
+                throw new Error(`Unsupported initiatorType '${initiatorType}'`);
             }
             return rows[0].transactionInitiatorTypeId;
         }
@@ -99,7 +99,7 @@ class Database {
 
             if((!rows) || rows.length < 1) {
                 //initiator does not exist, this is an error
-                throw new Error(`Unsupported initiator \'${initiator}\'`);
+                throw new Error(`Unsupported initiator '${initiator}'`);
             }
             return rows[0].transactionInitiatorId;
         }
@@ -123,7 +123,7 @@ class Database {
 
             if((!rows) || rows.length < 1) {
                 //scenario does not exist, this is an error
-                throw new Error(`Unsupported transaction scenario \'${scenario}\'`);
+                throw new Error(`Unsupported transaction scenario '${scenario}'`);
             }
             return rows[0].transactionScenarioId;
         }
@@ -147,14 +147,14 @@ class Database {
 
             if((!rows) || rows.length < 1) {
                 //sub-scenario does not exist, this is an error
-                throw new Error(`Unsupported transaction sub-scenario \'${subScenario}\'`);
+                throw new Error(`Unsupported transaction sub-scenario '${subScenario}'`);
             }
             return rows[0].transactionSubScenarioId;
         }
         catch(err) {
             this.writeLog(`Error in getSubScenario: ${err.stack || util.inspect(err)}`);
             throw err;
-        };
+        }
     }
 
 
@@ -171,7 +171,7 @@ class Database {
 
             if((!rows) || rows.length < 1) {
                 //amount type does not exist, this is an error
-                throw new Error(`Unsupported amount type \'${amountType}\'`);
+                throw new Error(`Unsupported amount type '${amountType}'`);
             }
             return rows[0].amountTypeId;
         }
@@ -189,7 +189,7 @@ class Database {
      */
     async createTransactionReference(txn, quoteId, transactionReferenceId) {
         try {
-            const res = await this.queryBuilder('transactionReference')
+            await this.queryBuilder('transactionReference')
                 .transacting(txn)
                 .insert({
                     quoteId: quoteId,
@@ -213,7 +213,7 @@ class Database {
      */
     async createQuoteDuplicateCheck(txn, quoteId, hash) {
         try {
-            const res = await this.queryBuilder('quoteDuplicateCheck')
+            await this.queryBuilder('quoteDuplicateCheck')
                 .transacting(txn)
                 .insert({
                     quoteId: quoteId,
@@ -237,7 +237,7 @@ class Database {
      */
     async createQuoteUpdateDuplicateCheck(txn, quoteId, quoteResponseId, hash) {
         try {
-            const res = await this.queryBuilder('quoteResponseDuplicateCheck')
+            await this.queryBuilder('quoteResponseDuplicateCheck')
                 .transacting(txn)
                 .insert({
                     quoteResponseId: quoteResponseId,
@@ -268,7 +268,7 @@ class Database {
 
             if((!rows) || rows.length < 1) {
                 //party type does not exist, this is an error
-                throw new Error(`Unsupported party type \'${partyType}\'`);
+                throw new Error(`Unsupported party type '${partyType}'`);
             }
 
             return rows[0].partyTypeId;
@@ -293,7 +293,7 @@ class Database {
 
             if((!rows) || rows.length < 1) {
                 //identifier type does not exist, this is an error
-                throw new Error(`Unsupported party identifier type \'${partyIdentifierType}\'`);
+                throw new Error(`Unsupported party identifier type '${partyIdentifierType}'`);
             }
 
             return rows[0].partyIdentifierTypeId;
@@ -321,7 +321,7 @@ class Database {
 
             if((!rows) || rows.length < 1) {
                 //active participant does not exist, this is an error
-                throw new Error(`Unsupported participant \'${participantName}\'`);
+                throw new Error(`Unsupported participant '${participantName}'`);
             }
 
             return rows[0].participantId;
@@ -349,7 +349,7 @@ class Database {
 
             if((!rows) || rows.length < 1) {
                 //active role type does not exist, this is an error
-                throw new Error(`Unsupported transfer participant role type \'${name}\'`);
+                throw new Error(`Unsupported transfer participant role type '${name}'`);
             }
 
             return rows[0].transferParticipantRoleTypeId;
@@ -377,7 +377,7 @@ class Database {
 
             if((!rows) || rows.length < 1) {
                 //active ledger entry type does not exist, this is an error
-                throw new Error(`Unsupported ledger entry type \'${name}\'`);
+                throw new Error(`Unsupported ledger entry type '${name}'`);
             }
 
             return rows[0].ledgerEntryTypeId;
@@ -396,7 +396,7 @@ class Database {
      */
     async createPayerQuoteParty(txn, quoteId, party, amount, currency) {
         //note amount is negative for payee and positive for payer
-        return this.createQuoteParty(txn, quoteId, 'PAYER', 'PAYER_DFSP', 'PRINCIPLE_VALUE', party, amount, currency);   
+        return this.createQuoteParty(txn, quoteId, 'PAYER', 'PAYER_DFSP', 'PRINCIPLE_VALUE', party, amount, currency);
     }
 
 
@@ -412,7 +412,7 @@ class Database {
 
 
     /**
-     * Creates a quote party 
+     * Creates a quote party
      *
      * @returns {integer} - id of created quoteParty
      */
@@ -524,7 +524,7 @@ class Database {
                     quoteId: quoteId
                 })
                 .select();
-            
+
             if((!rows) || rows.length < 1) {
                 return null;
             }
@@ -554,7 +554,7 @@ class Database {
                     quoteId: quoteId
                 })
                 .select();
-            
+
             if((!rows) || rows.length < 1) {
                 return null;
             }
@@ -594,7 +594,7 @@ class Database {
         catch(err) {
             this.writeLog(`Error in createParty: ${err.stack || util.inspect(err)}`);
             throw err;
-        };
+        }
     }
 
 
@@ -605,7 +605,7 @@ class Database {
      */
     async createQuote(txn, quote) {
         try {
-            const res = await this.queryBuilder('quote')
+            await this.queryBuilder('quote')
                 .transacting(txn)
                 .insert({
                     quoteId: quote.quoteId,
@@ -704,6 +704,7 @@ class Database {
                 .innerJoin('participant', 'participant.participantId', 'participantEndpoint.participantId')
                 .innerJoin('endpointType', 'endpointType.endpointTypeId', 'participantEndpoint.endpointTypeId')
                 .where('participant.name', participantName)
+                .andWhere('endpointType.name', endpointType)
                 .select('participantEndpoint.value');
 
             if((!rows) || rows.length < 1) {
@@ -720,7 +721,7 @@ class Database {
 
 
     /**
-     * Gets a quote duplicate check row 
+     * Gets a quote duplicate check row
      *
      * @returns {object} - quote duplicate check or null if none found
      */
@@ -746,7 +747,7 @@ class Database {
 
 
     /**
-     * Gets a quote response duplicate check row 
+     * Gets a quote response duplicate check row
      *
      * @returns {object} - quote duplicate check or null if none found
      */
@@ -923,6 +924,7 @@ class Database {
      * Writes a formatted log message to the console
      */
     writeLog(message) {
+        //eslint-disable-next-line no-console
         console.log(`${new Date().toISOString()}, [quotesdatabase]: ${message}`);
     }
 }

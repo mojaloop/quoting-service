@@ -36,6 +36,7 @@ const initServer = async function(db, config) {
         routes: {
             validate: {
                 failAction: async (request, h, err) => {
+                    //eslint-disable-next-line no-console
                     console.log(`validation failure: ${err.stack || util.inspect(err)}`);
                     throw err;
                 }
@@ -51,8 +52,8 @@ const initServer = async function(db, config) {
         plugin: HapiOpenAPI,
         options: {
             api: Path.resolve('./config/swagger.json'),
-            handlers: Path.resolve('./handlers'),
-        },
+            handlers: Path.resolve('./handlers')
+        }
     }, {
         plugin: Good,
         options: {
@@ -106,8 +107,9 @@ initDb(config.database).then(db => {
 }).then(server => {
 
     process.on('SIGTERM', () => {
-        server.log(['info'], `Received SIGTERM, closing server...`);
+        server.log(['info'], 'Received SIGTERM, closing server...');
         server.stop({ timeout: 10000 }).then(err => {
+            //eslint-disable-next-line no-console
             console.log(`server stopped. ${err ? (err.stack || util.inspect(err)) : ''}`);
             process.exit((err) ? 1 : 0);
         });
@@ -116,5 +118,6 @@ initDb(config.database).then(db => {
     server.plugins.openapi.setHost(server.info.host + ':' + server.info.port);
     server.log(['info'], `Server running on ${server.info.host}:${server.info.port}`);
 }).catch(err => {
+    //eslint-disable-next-line no-console
     console.log(`Error initializing server: ${err.stack || util.inspect(err)}`);
 });

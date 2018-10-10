@@ -32,7 +32,7 @@ class QuotesModel {
 
         //make sure initiator is the PAYER party
         if(quoteRequest.transactionType.initiator !== 'PAYER') {
-            throw new Errors.FSPIOPError(quoteRequest, `Only PAYER initiated transactions are supported`,
+            throw new Errors.FSPIOPError(quoteRequest, 'Only PAYER initiated transactions are supported',
                 fspiopSource, Errors.ApiErrorCodes.SERVER_ERROR);
         }
 
@@ -47,7 +47,7 @@ class QuotesModel {
      *
      * @returns {promise} - promise will reject if request is not valid
      */
-    async validateQuoteUpdate(quoteUpdate) {
+    async validateQuoteUpdate() {
         //todo: actually do the validation (use joi as per mojaloop)
         return Promise.resolve(null);
     }
@@ -135,7 +135,7 @@ class QuotesModel {
             });
 
             refs.payerId = await this.db.createPayerQuoteParty(txn, refs.quoteId, quoteRequest.payer,
-                quoteRequest.amount.amount, quoteRequest.amount.currency); 
+                quoteRequest.amount.amount, quoteRequest.amount.currency);
 
             refs.payeeId = await this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
                 quoteRequest.amount.amount, quoteRequest.amount.currency);
@@ -197,7 +197,6 @@ class QuotesModel {
      * @returns {undefined}
      */
     async forwardQuoteRequest(fspiopSource, fspiopDest, quoteId, originalQuoteRequest) {
-        let txn = null;
         let endpoint = null;
 
         try {
@@ -213,7 +212,7 @@ class QuotesModel {
             //lookup payee dfsp callback endpoint
             //todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
             endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSIOP_CALLBACK_URL', 'PAYEE');
- 
+
             this.writeLog(`Resolved PAYEE party FSIOP_CALLBACK_URL endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`);
 
             if(!endpoint) {
@@ -238,8 +237,8 @@ class QuotesModel {
             this.writeLog(`forwarding quote request got response ${res.status} ${res.statusText}`);
 
             if(!res.ok) {
-                throw new Errors.FSPIOPError(res.statusText, `Got non-success response sending error callback`,
-                fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
+                throw new Errors.FSPIOPError(res.statusText, 'Got non-success response sending error callback',
+                    fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
             }
         }
         catch(err) {
@@ -281,7 +280,7 @@ class QuotesModel {
 
 
     /**
-     * Logic for handling quote update requests e.g. PUT /quotes/{id} requests 
+     * Logic for handling quote update requests e.g. PUT /quotes/{id} requests
      *
      * @returns {object} - object containing updated entities
      */
@@ -333,7 +332,7 @@ class QuotesModel {
             await this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash);
 
             //create ilp packet in the db
-            const ilpPacketId = await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId,
+            await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId,
                 quoteUpdateRequest.ilpPacket);
 
             //did we get a geoCode for the payee?
@@ -359,13 +358,13 @@ class QuotesModel {
             ///if we got here, all entities have been created in db correctly to record the quote request
 
             //check quote response rules
-            let test = { ...quoteUpdateRequest };
+            //let test = { ...quoteUpdateRequest };
 
             //const failures = await quoteRules.getFailures(test);
             //if (failures && failures.length > 0) {
-                //quote broke business rules, queue up an error callback to the caller
+            //quote broke business rules, queue up an error callback to the caller
             //    this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`);
-                //todo: make error callback
+            //todo: make error callback
             //}
 
             //make call to payee dfsp in a setImmediate;
@@ -408,15 +407,15 @@ class QuotesModel {
             //lookup payer dfsp callback endpoint
             //todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
             endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSIOP_CALLBACK_URL', 'PAYER');
- 
+
             this.writeLog(`Resolved PAYER party FSIOP_CALLBACK_URL endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`);
 
             if(!endpoint) {
                 //we didnt get an endpoint for the payee dfsp!
                 //make an error callback to the initiator
-                return this.sendErrorCallback(new Errors.FSPIOPError(null, 
+                return this.sendErrorCallback(new Errors.FSPIOPError(null,
                     `No FSIOP_CALLBACK_URL found for quote ${quoteId} PAYER party`, fspiopSource, '1001'),
-                    quoteId);
+                quoteId);
             }
 
             let fullUrl = `${endpoint}/quotes/${quoteId}`;
@@ -433,7 +432,7 @@ class QuotesModel {
             this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`);
 
             if(!res.ok) {
-                throw new Error(`Got non-success response sending error callback`);
+                throw new Error('Got non-success response sending error callback');
             }
         }
         catch(err) {
@@ -441,9 +440,9 @@ class QuotesModel {
 
             //we need to make an error callback to the originator of the quote response
             setImmediate(() => {
-                return this.sendErrorCallback(new Errors.FSPIOPError(err, 
-                    `Error sending quote response to 'PAYER' participant`, fspiopSource, '1003'),
-                    quoteId);
+                return this.sendErrorCallback(new Errors.FSPIOPError(err,
+                    'Error sending quote response to \'PAYER\' participant', fspiopSource, '1003'),
+                quoteId);
             });
         }
     }
@@ -455,8 +454,9 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
+    //eslint-disable-next-line no-unused-vars
     async handleQuoteUpdateResend(fspiopSource, fspiopDest, quoteId, quoteUpdate) {
-        throw new Error(`Multiple quote responses (PUT requests) are not supported by the quotes service`);
+        throw new Error('Multiple quote responses (PUT requests) are not supported by the quotes service');
     }
 
 
@@ -518,7 +518,7 @@ class QuotesModel {
         //is this exception already wrapped as an API spec compatible type?
         if(!(exception instanceof Errors.FSPIOPError)) {
             //we need to wrap the error in a generic API compatible error
-            exception = new Errors.FSPIOPError(exception, exception.message || `Error occured`,
+            exception = new Errors.FSPIOPError(exception, exception.message || 'Error occured',
                 fspiopSource, Errors.ApiErrorCodes.SERVER_ERROR);
         }
 
@@ -530,23 +530,23 @@ class QuotesModel {
             }
             catch(err) {
                 //not much we can do other than log the error
-                this.writeLog(`Error occured handling error check service logs as this error may not have been propogated successfully to any other party: ${err.stack || util.inspect(err)}`); 
+                this.writeLog(`Error occured handling error check service logs as this error may not have been propogated successfully to any other party: ${err.stack || util.inspect(err)}`);
             }
         });
     }
 
 
     /**
-     * Makes an error callback. Callback is sent to the FSIOP_CALLBACK_URL endpoint of the replyTo participant in the 
+     * Makes an error callback. Callback is sent to the FSIOP_CALLBACK_URL endpoint of the replyTo participant in the
      * supplied fspiopErr object. This should be the participantId for the error callback recipient e.g. value from the
-     * FSPIOP-Source header of the original request that caused the error. 
+     * FSPIOP-Source header of the original request that caused the error.
      *
      * @returns {promise}
      */
     async sendErrorCallback(fspiopErr, quoteId) {
         try {
             if(!(fspiopErr instanceof Errors.FSPIOPError)) {
-                throw new Error(`fspiopErr not an instance of FSPIOPError`);
+                throw new Error('fspiopErr not an instance of FSPIOPError');
             }
 
             //look up the callback base url
@@ -578,7 +578,7 @@ class QuotesModel {
             this.writeLog(`Error callback got response ${res.status} ${res.statusText}`);
 
             if(!res.ok) {
-                throw new Error(`Got non-success response sending error callback`);
+                throw new Error('Got non-success response sending error callback');
             }
         }
         catch(err) {
@@ -600,7 +600,7 @@ class QuotesModel {
             //calculate a SHA-256 of the request
             const hash = this.calculateRequestHash(quoteRequest);
             this.writeLog(`Calculated sha256 hash of quote request with id ${quoteRequest.quoteId} as: ${hash}`);
-            
+
             const dupchk = await this.db.getQuoteDuplicateCheck(quoteRequest.quoteId);
             this.writeLog(`DB query for quote duplicate check with id ${quoteRequest.quoteId} returned: ${util.inspect(dupchk)}`);
 
@@ -645,7 +645,7 @@ class QuotesModel {
             //calculate a SHA-256 of the request
             const hash = this.calculateRequestHash(quoteResponse);
             this.writeLog(`Calculated sha256 hash of quote response with id ${quoteId} as: ${hash}`);
-            
+
             const dupchk = await this.db.getQuoteResponseDuplicateCheck(quoteId);
             this.writeLog(`DB query for quote response duplicate check with id ${quoteId} returned: ${util.inspect(dupchk)}`);
 
@@ -679,7 +679,7 @@ class QuotesModel {
 
 
     /**
-     * Returns a quote response object 
+     * Returns a quote response object
      *
      * @returns {undefined}
      */
@@ -709,9 +709,9 @@ class QuotesModel {
                     currency: quoteResponseObject.payeeFspCommissionCurrencyId
                 },
                 geoCode: (quoteResponseObject.longitude && quoteResponseObject.latitude) ? {
-                        longitude: quoteResponseObject.longitude,
-                        latitude: quoteResponseObject.latitude
-                    } : null,
+                    longitude: quoteResponseObject.longitude,
+                    latitude: quoteResponseObject.latitude
+                } : null,
                 expiration: quoteResponseObject.responseExpirationDate.toISOString(),
                 ilpPacket: quoteResponseObject.ilpPacket,
                 condition: quoteResponseObject.ilpCondition,
@@ -869,7 +869,7 @@ class QuotesModel {
         return `${amount}`;
     }
 
- 
+
     /**
      * Returns the SHA-256 hash of the supplied request object
      *
@@ -900,11 +900,12 @@ class QuotesModel {
 
 
     /**
-     * Writes a formatted message to the console 
+     * Writes a formatted message to the console
      *
      * @returns {undefined}
      */
     writeLog(message) {
+        //eslint-disable-next-line no-console
         console.log(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`);
     }
 

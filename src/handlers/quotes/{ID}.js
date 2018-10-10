@@ -2,9 +2,7 @@
 
 
 const util = require('util');
-const Boom = require('boom');
 const QuotesModel = require('../../model/quotes.js');
-const Errors = require('../../model/errors.js');
 
 
 /**
@@ -31,7 +29,7 @@ module.exports = {
         //extract some things from the request we may need if we have to deal with an error e.g. the
         //originator and quoteId
         const quoteId = request.params.ID;
-        const fspiopSource = request.headers['fspiop-source']; 
+        const fspiopSource = request.headers['fspiop-source'];
         const fspiopDest = request.headers['fspiop-destination'];
 
         try {
@@ -47,6 +45,7 @@ module.exports = {
             await model.handleException(fspiopSource, quoteId, err);
         }
         finally {
+            //eslint-disable-next-line no-unsafe-finally
             return h.response().code(202);
         }
     },
@@ -86,6 +85,7 @@ module.exports = {
             await model.handleException(fspiopSource, quoteId, err);
         }
         finally {
+            //eslint-disable-next-line no-unsafe-finally
             return h.response().code(202);
         }
     }
