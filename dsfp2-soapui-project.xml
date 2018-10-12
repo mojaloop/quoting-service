@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<con:soapui-project id="2f5917a5-e4ba-4d74-aff8-4edb29fc8e63" activeEnvironment="Default" name="dsfp2" resourceRoot="${projectDir}" soapui-version="5.4.0" abortOnError="false" runType="SEQUENTIAL" xmlns:con="http://eviware.com/soapui/config">
+  <con:settings/>
+  <con:interface xsi:type="con:RestService" id="198ebe70-7240-4242-91e4-039aea4ebe2c" wadlVersion="http://wadl.dev.java.net/2009/02" name="" type="rest" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <con:settings/>
+    <con:definitionCache/>
+    <con:endpoints/>
+  </con:interface>
+  <con:restMockService id="3ef40734-cd83-46ae-a69b-59ab3c9a365c" port="8080" path="/" host="martin-Latitude-5580" name="quoting service">
+    <con:settings/>
+    <con:properties/>
+    <con:onRequestScript/>
+    <con:afterRequestScript/>
+    <con:restMockAction name="quotes" method="POST" resourcePath="/quotes" id="ee36110f-71af-4df9-842f-5b535a644a00">
+      <con:settings/>
+      <con:defaultResponse>Successful</con:defaultResponse>
+      <con:dispatchStyle>SCRIPT</con:dispatchStyle>
+      <con:dispatchPath>import groovy.json.JsonSlurper
+// for some reason this handler would get called for requests that hit /quotes/qid/error
+// this prevents it
+
+if (!mockRequest.getPath().equals("/quotes")) return
+
+// failing to parse the body or a missing quoteId property in the body will result in a 400
+try {
+	log.info "==================================================="
+	def requestBody = mockRequest.getRequestContent()
+  	def json = new JsonSlurper().parseText(requestBody)
+	log.info "->req : POST" + mockRequest.getPath() + " body: "+ requestBody
+  	def quoteId = json.quoteId?.trim()
+  	def transactionId = json.transactionId?.trim()
+  	def _currency = json.amount?.currency?.trim()
+  	def _amount = json.amount?.amount?.trim()
+
+  	if (!quoteId) throw new Exception("quote is null or empty")
+  	if (!transactionId) throw new Exception("transactionId is null or empty")
+  	if (!_currency) throw new Exception("amount.currency is null or empty")
+  	if (!_amount) throw new Exception("amount.amount is null or empty")
+  	
+   	// put these variable on the global context object to make them available for
+   	// other scripts
+    	context.quoteId = quoteId
+    	context.transactionId = transactionId
+
+    	def builder = new groovy.json.JsonBuilder()
+    	builder {
+		transferAmount {
+   			currency _currency
+   			amount _amount
+		}
+ 		expiration "2018-10-15 00:00:00"
+ 		ilpPacket "whatever"
+ 		condition "whatever"
+	}
+
+   	def url = "http://0.0.0.0:3000/quotes/" + quoteId
+	
+	try {
+		def put = new URL(url).openConnection();
+		
+	    	put.setRequestMethod("PUT")
+	    	put.setDoOutput(true)
+	    	put.setRequestProperty("content-type", "application/json")
+      	put.setRequestProperty("date", new Date().toString())
+      	// hardcoded for now
+ 		put.setRequestProperty("fspiop-source", "BankNrOne")
+	    	log.info "req-> "+"PUT "+ url + " body: " + builder.toString()
+	    	put.getOutputStream().write(builder.toString().getBytes("UTF-8"))
+	    
+	    	def statusCode = put.getResponseCode()
+	    
+	    	log.info "Response status code: " + statusCode
+	} catch (ex) {
+		// don't throw an error here because we want it to mimic an async service,
+		// just log it out
+	    	log.info "Error making PUT to: "+ url + ", message: " + ex.getMessage()
+	}
+} catch (exception) {
+    log.info exception.getMessage()
+    return "BadRequest"
+}</con:dispatchPath>
+      <con:response name="Successful" id="3e312641-f420-4c6c-b7d7-3b051bc86d7b" httpResponseStatus="202">
+        <con:settings/>
+        <con:responseContent/>
+      </con:response>
+      <con:response name="BadRequest" id="6e05ca8b-d958-4bd9-a155-71bbe90bc8d5" httpResponseStatus="400">
+        <con:settings/>
+        <con:responseContent/>
+      </con:response>
+    </con:restMockAction>
+    <con:restMockAction name="quotes" method="PUT" resourcePath="/quotes/" id="3b18113a-b3d1-4a4a-8f8e-18bed467d201">
+      <con:settings/>
+      <con:defaultResponse>Successful</con:defaultResponse>
+      <con:dispatchStyle>SCRIPT</con:dispatchStyle>
+      <con:dispatchPath>import groovy.json.JsonSlurper
+def qid = context.quoteId
+if (!mockRequest.getPath().contains("/quotes/")) return
+
+// workaround for a bug in soapui where you can't grab the PUT body as you would
+// for POST bodies https://community.smartbear.com/t5/SoapUI-Pro/Mock-Service-mockRequest-requestContent-is-NULL-HTTP-PUT/m-p/148574/highlight/true#M33826
+InputStream is = mockRequest.request.inputStream
+BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+StringBuilder sb = new StringBuilder()
+
+while((s=br.readLine())!=null) {
+	sb.append(s)
+}
+
+String payLoad = sb.toString()
+log.info ("->req: " + mockRequest.getPath() + ", body: " + payLoad)
+def json = new JsonSlurper().parseText(payLoad)
+
+def requestQid = json.quoteId
+def pathQuoteId =  mockRequest.getPath().split("/")[-1]
+
+// check the quoteId from the path matches up to the quoteId from the very first quote request we have stored in the global
+// context object
+if (pathQuoteId != qid) {
+	log.info "quoteId from the request url param doesnt match the context quoteId"
+	return "BadRequest"
+}</con:dispatchPath>
+      <con:response name="Successful" id="2bc89df5-ff82-4c7c-ac9a-988f6f01a7a0" httpResponseStatus="202">
+        <con:settings/>
+        <con:responseContent/>
+      </con:response>
+      <con:response name="BadRequest" id="af71bc92-5049-4f4b-bbe2-2cc035e3be10" httpResponseStatus="400">
+        <con:settings/>
+        <con:responseContent/>
+      </con:response>
+    </con:restMockAction>
+  </con:restMockService>
+  <con:properties/>
+  <con:wssContainer/>
+  <con:oAuth2ProfileContainer/>
+  <con:oAuth1ProfileContainer/>
+  <con:sensitiveInformation/>
+</con:soapui-project>
