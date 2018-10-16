@@ -566,7 +566,7 @@ class QuotesModel {
 
             //make an error callback
             let opts = {
-                method: 'POST',
+                method: 'PUT',
                 body: JSON.stringify(fspiopErr.toApiErrorObject()),
                 //use fspiopSource and fspiopDestination of the error object if they are there...
                 //otherwise use sensible defaults
@@ -889,8 +889,8 @@ class QuotesModel {
      */
     generateRequestHeaders(fspiopSource, fspiopDest) {
         return this.removeEmptyKeys({
-            'Content-Type': 'application/vnd.interoperability.resource+json;version=1.0',
-            'Accept': 'application/vnd.interoperability.resource+json;version=1.0',
+            'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+            'Accept': 'application/vnd.interoperability.quotes+json;version=1.0',
             'Date': new Date().toUTCString(),
             'FSPIOP-Source': fspiopSource,
             'FSPIOP-Destination': fspiopDest,

@@ -84,9 +84,10 @@ const initServer = async function(db, config) {
 
     //deal with the api spec content-type not being "application/json" which it actually is. seriously!?
     server.ext('onRequest', function(request, reply) {
-        if(request.headers['content-type'] === 'application/vnd.interoperability.resource+json;version=1.0') {
+        if(request.headers['content-type']
+            && request.headers['content-type'].startsWith('application/vnd.interoperability')) {
+            request.headers['x-content-type'] = request.headers['content-type'];
             request.headers['content-type'] = 'application/json';
-            request.headers['x-content-type'] = 'application/vnd.interoperability.resource+json;version=1.0';
         }
         return reply.continue;
     });
