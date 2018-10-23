@@ -1,0 +1,150 @@
+# CircleCI 2.0 configuration file
+version: 2
+
+defaults_working_directory: &defaults_working_directory
+  working_directory: /home/circleci/project/src/
+
+defaults_docker_node: &defaults_docker_node
+  docker:
+    - image: mhart/alpine-node:8.9.4
+
+defaults_Dependencies: &defaults_Dependencies | 
+    apk --no-cache add git
+    apk --no-cache add ca-certificates
+    apk --no-cache add curl
+    apk --no-cache add openssh-client
+    apk --no-cache add bash
+    apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
+    npm install -g node-gyp
+
+defaults_awsCliDependencies: &defaults_awsCliDependencies |
+    apk --no-cache add \
+            python \
+            py-pip \
+            groff \
+            less \
+            mailcap
+    pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
+    apk -v --purge del py-pip
+
+defaults_build_docker_login: &defaults_build_docker_login
+  name: Login to Docker Hub
+  command: |
+    docker login -u $DOCKER_USER -p $DOCKER_PASS $DOCKER_ORG
+defaults_build_docker_build: &defaults_build_docker_build
+  name: Build Docker image
+  command: |
+    docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG .
+defaults_build_docker_publish: &defaults_build_docker_publish
+  name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
+  command: |
+    echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+    docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+    echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
+    docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
+
+jobs:
+  setup:
+    <<: *defaults_working_directory
+    <<: *defaults_docker_node
+    steps:
+      - run:
+          name: Install general dependencies
+          command: *defaults_Dependencies
+      - checkout
+      - run:
+          name: Build dependencies
+          command: apk add --no-cache -t build-dependencies make gcc g++ python libtool autoconf automake
+      - run:
+          name: Access npm folder as root
+          command: cd $(npm root -g)/npm
+      - run:
+          name: Delete build dependencies
+          command: apk del build-dependencies
+      - run:
+          name: Update NPM registry
+          command: curl $NPM_TOKEN $ARTIFACTORY_NPMURL_INSTALL > .npmrc
+      - run:
+          name: Update NPM install
+          command: npm install
+#      - save_cache:
+#          key: dependency-cache-{{ checksum "package.json" }}
+#          paths:
+#            - node_modules
+  
+  build-snapshot:
+    machine: true
+    <<: *defaults_working_directory
+    steps:
+    - checkout
+    - run:
+        name: Update npm registry
+        command: curl $NPM_TOKEN $ARTIFACTORY_NPMURL_INSTALL > .npmrc
+    - run:
+        name: setup environment vars for SNAPSHOT release
+        command: |
+          echo 'export RELEASE_TAG=$RELEASE_TAG_SNAPSHOT' >> $BASH_ENV
+    - run:
+        <<: *defaults_build_docker_login
+    - run:
+        <<: *defaults_build_docker_build
+    - run:
+        <<: *defaults_build_docker_publish
+
+  build:
+    machine: true
+    # <<: *default_env
+    steps:
+    - checkout
+    - run:
+        name: Update npm registry
+        command: curl $NPM_TOKEN $ARTIFACTORY_NPMURL_INSTALL > .npmrc
+    - run:
+        name: setup environment vars for LATEST release
+        command: |
+          echo 'export RELEASE_TAG=$RELEASE_TAG_PROD' >> $BASH_ENV
+    - run:
+        <<: *defaults_build_docker_login
+    - run:
+        <<: *defaults_build_docker_build
+    - run:
+        <<: *defaults_build_docker_publish
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - setup:
+          context: org-global
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: 
+                - /feature*/
+                - /bugfix*/
+      - build-snapshot:
+          context: org-global
+          requires:
+            - setup
+#            - test-unit
+#            - test-coverage
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*\-snapshot/
+            branches:
+              ignore: 
+                - /.*/
+      - build:
+          context: org-global
+          requires:
+            - setup
+#            - test-unit
+#            - test-coverage
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: 
+                - /.*/
+
