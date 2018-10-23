@@ -197,7 +197,7 @@ class QuotesModel {
      * @returns {undefined}
      */
     async forwardQuoteRequest(fspiopSource, fspiopDest, quoteId, originalQuoteRequest) {
-        let endpoint = null;
+        let endpoint;
 
         try {
             if(!originalQuoteRequest) {
@@ -223,25 +223,32 @@ class QuotesModel {
                     Errors.ApiErrorCodes.DESTINATION_FSP_ERROR);
             }
 
-            let fullUrl = `${endpoint}/quotes`;
+            const fullUrl = `${endpoint}/quotes`;
 
             this.writeLog(`Forwarding quote request to endpoint: ${fullUrl}`);
 
-            let opts = {
+            const opts = {
                 method: 'POST',
                 body: JSON.stringify(originalQuoteRequest),
                 headers: this.generateRequestHeaders(fspiopSource, fspiopDest)
             };
 
-            const res = await fetch(fullUrl, opts);
+            // Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
+            // so we need to wrap the request below in a `try catch` to handle network errors
+            let res;
+            try {
+                res = await fetch(fullUrl, opts);
+            } catch (_err) {
+                throw new Errors.FSPIOPError('network error', `Network error: [${_err.message}] sending error callback`,
+                    fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
+            }
             this.writeLog(`forwarding quote request got response ${res.status} ${res.statusText}`);
-
+            // handle non network related errors below
             if(!res.ok) {
                 throw new Errors.FSPIOPError(res.statusText, 'Got non-success response sending error callback',
                     fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
             }
-        }
-        catch(err) {
+        } catch(err) {
             this.writeLog(`Error forwarding quote request to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`);
             throw err;
         }
