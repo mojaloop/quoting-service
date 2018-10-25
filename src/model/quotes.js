@@ -438,7 +438,7 @@ class QuotesModel {
             try {
                 res = await fetch(fullUrl, opts);
             } catch (_err) {
-                this.writeLog(`network error forwarding quote response: ${_err.message}`);
+                throw new Error(`network error forwarding quote response: ${_err.message}`);
             }
             this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`);
 
