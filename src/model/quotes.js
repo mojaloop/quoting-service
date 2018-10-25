@@ -434,8 +434,12 @@ class QuotesModel {
                 body: JSON.stringify(originalQuoteResponse),
                 headers: this.generateRequestHeaders(fspiopSource, fspiopDest)
             };
-
-            const res = await fetch(fullUrl, opts);
+            let res;
+            try {
+                res = await fetch(fullUrl, opts);
+            } catch (_err) {
+                this.writeLog(`network error forwarding quote response: ${_err.message}`);
+            }
             this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`);
 
             if(!res.ok) {
@@ -580,8 +584,12 @@ class QuotesModel {
                 headers: this.generateRequestHeaders(fspiopErr.fspiopSource || 'switch',
                     fspiopErr.fspiopDestination || fspiopErr.replyTo)
             };
-
-            const res = await fetch(fullCallbackUrl, opts);
+            let res;
+            try {
+                res = await fetch(fullCallbackUrl, opts);
+            } catch (_err) {
+                throw new Error(`network error in sendErrorCallback: ${_err.message}`);
+            }
             this.writeLog(`Error callback got response ${res.status} ${res.statusText}`);
 
             if(!res.ok) {
