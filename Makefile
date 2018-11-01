@@ -3,6 +3,7 @@
 # If our tree isn't clean we'll append "-local" to the version
 # Untracked files are ignored when considering whether the tree is clean
 REV:=$(shell git rev-parse HEAD)
+# It's possible to add --show-untracked=no to the git status command to ignore untracked files
 VER:=${REV}$(shell if [[ `git status --porcelain` ]]; then echo "-local"; fi)
 REPO:=casablanca-casa-docker-release.jfrog.io
 NAME:=quoting-service-api-adapter
