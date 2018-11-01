@@ -3,7 +3,7 @@
 # If our tree isn't clean we'll append "-local" to the version
 # Untracked files are ignored when considering whether the tree is clean
 REV:=$(shell git rev-parse HEAD)
-VER:=${REV}$(shell if [[ `git status --porcelain --untracked-files=no` ]]; then echo "-local"; fi)
+VER:=${REV}$(shell if [[ `git status --porcelain` ]]; then echo "-local"; fi)
 REPO:=casablanca-casa-docker-release.jfrog.io
 NAME:=quoting-service-api-adapter
 TAG:=${REPO}/${NAME}:${VER}

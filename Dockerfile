@@ -4,7 +4,7 @@ WORKDIR /src
 
 CMD ["node", "/src/server.js"]
 
-COPY .npmrc .npmrc
+# COPY .npmrc .npmrc
 COPY ./src/package.json ./src/package-lock.json /src/
 RUN npm install --production
 
