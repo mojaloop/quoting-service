@@ -201,12 +201,7 @@ class QuotesModel {
 
         try {
             if(!originalQuoteRequest) {
-                //we need to recreate the quote request
-                originalQuoteRequest = await this.getQuoteRequestApiProjection(quoteId);
-                if(!originalQuoteRequest) {
-                    throw new Error(`Unable to recreate quote request for quote id ${quoteId}`);
-                }
-                this.writeLog(`Recreated quote request: ${util.inspect(originalQuoteRequest)}`);
+                throw new Errors.FSPIOPError(null, 'No quote request to forward', fspiopSource, Errors.ApiErrorCodes.SERVER_ERROR);
             }
 
             //lookup payee dfsp callback endpoint
@@ -262,17 +257,6 @@ class QuotesModel {
     async handleQuoteRequestResend(fspiopSource, fspiopDest, quoteRequest) {
         try {
             this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource} to ${fspiopDest}`);
-
-            //if we already have a valid response from the other party we can just resend that to the caller
-            const existingResponse = await this.getQuoteResponseApiProjection(quoteRequest.quoteId);
-
-            if(existingResponse) {
-                this.writeLog(`A response has already been received for quote ${quoteRequest.quoteId} so re-making callback to ${fspiopSource}`);
-                return this.forwardQuoteUpdate(fspiopSource, fspiopDest, quoteRequest.quoteId, existingResponse);
-            }
-
-            //if we dont already have a response from the other party we resend the request
-            this.writeLog(`No response has been received for quote ${quoteRequest.quoteId} so re-forwarding the request`);
 
             //we are ok to assume the quoteRequest object passed to us is the same as the original...
             //as it passed a hash duplicate check...so go ahead and use it to resend rather than
@@ -404,11 +388,7 @@ class QuotesModel {
         try {
             if(!originalQuoteResponse) {
                 //we need to recreate the quote response
-                originalQuoteResponse = await this.getQuoteResponseApiProjection(quoteId);
-                if(!originalQuoteResponse) {
-                    throw new Error(`Unable to recreate original response for quote id ${quoteId}`);
-                }
-                this.writeLog(`Recreated quote response: ${util.inspect(originalQuoteResponse)}`);
+                throw new Errors.FSPIOPError(null, 'No quote response to forward', fspiopSource, Errors.ApiErrorCodes.SERVER_ERROR);
             }
 
             //lookup payer dfsp callback endpoint
@@ -421,7 +401,7 @@ class QuotesModel {
                 //we didnt get an endpoint for the payee dfsp!
                 //make an error callback to the initiator
                 return this.sendErrorCallback(new Errors.FSPIOPError(null,
-                    `No FSIOP_CALLBACK_URL found for quote ${quoteId} PAYER party`, fspiopSource, '1001'),
+                    `No FSIOP_CALLBACK_URL found for quote ${quoteId} PAYER party`, fspiopSource, Errors.ApiErrorCodes.COMMUNICATION_ERROR),
                 quoteId);
             }
 
@@ -452,7 +432,7 @@ class QuotesModel {
             //we need to make an error callback to the originator of the quote response
             setImmediate(() => {
                 return this.sendErrorCallback(new Errors.FSPIOPError(err,
-                    'Error sending quote response to \'PAYER\' participant', fspiopSource, '1003'),
+                    'Error sending quote response to \'PAYER\' participant', fspiopSource, Errors.ApiErrorCodes.SERVER_ERROR),
                 quoteId);
             });
         }
@@ -460,14 +440,22 @@ class QuotesModel {
 
 
     /**
-     * Deals with resends under the API spec:
-     * See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-     *
-     * @returns {undefined}
+     * Deals with resends of quote responses (PUT) under the API spec:
+     * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
      */
-    //eslint-disable-next-line no-unused-vars
     async handleQuoteUpdateResend(fspiopSource, fspiopDest, quoteId, quoteUpdate) {
-        throw new Error('Multiple quote responses (PUT requests) are not supported by the quotes service');
+        try {
+            this.writeLog(`Handling resend of quoteUpdate: ${util.inspect(quoteUpdate)} from ${fspiopSource} to ${fspiopDest}`);
+
+            //we are ok to assume the quoteUpdate object passed to us is the same as the original...
+            //as it passed a hash duplicate check...so go ahead and use it to resend rather than
+            //hit the db again
+            return this.forwardQuoteUpdate(fspiopSource, fspiopDest, quoteId, quoteUpdate);
+        }
+        catch(err) {
+            this.writeLog(`Error in handleQuoteRequestResend: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
     }
 
 
