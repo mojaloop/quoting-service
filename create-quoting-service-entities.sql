@@ -303,7 +303,7 @@ CREATE TABLE `quoteError` (
         REFERENCES quote (quoteId),
     CONSTRAINT quoteerror_quoteresponseid_foreign FOREIGN KEY (quoteResponseId)
         REFERENCES quoteResponse (quoteResponseId)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+)
 
 
 DROP TABLE IF EXISTS `transferRules`;
@@ -315,7 +315,7 @@ CREATE TABLE `transferRules` (
   `enabled` BOOLEAN NOT NULL DEFAULT TRUE,
   `createdDate` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`transferRulesId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+)
 
 
 /* views */
