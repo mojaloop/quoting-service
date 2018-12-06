@@ -71,15 +71,10 @@ CREATE TABLE IF NOT EXISTS transactionReference (
     quoteId VARCHAR(36) NULL COMMENT 'Common ID between the FSPs for the quote object, decided by the Payer FSP',
     createdDate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT 'System row creation timestamp',
     CONSTRAINT transactionreference_quoteid_foreign FOREIGN KEY (quoteId)
-        REFERENCES quoteDuplicateCheck (quoteId)
+        REFERENCES quoteDuplicateCheck (quoteId),
+    INDEX transactionreference_quoteid_index (quoteId),
+    INDEX transactionreference_transactionreferenceid_index (transactionReferenceId)
 );
-
-
-CREATE INDEX transactionreference_quoteid_index
-  on transactionReference (quoteId);
-
-CREATE INDEX transactionreference_transactionreferenceid_index
-  on transactionReference (transactionReferenceId);
 
 
 CREATE TABLE IF NOT EXISTS transactionScenario (
@@ -87,11 +82,9 @@ CREATE TABLE IF NOT EXISTS transactionScenario (
     name VARCHAR(256) NOT NULL,
     description VARCHAR(1024) NULL,
     createDate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT 'System dateTime stamp pertaining to the inserted record',
-    CONSTRAINT transactionscenario_name_unique UNIQUE (name)
+    CONSTRAINT transactionscenario_name_unique UNIQUE (name),
+    INDEX transactionscenario_transactionscenarioid_index (transactionScenarioId)
 );
-
-CREATE INDEX transactionscenario_transactionscenarioid_index
-  on transactionScenario (transactionScenarioId);
 
 
 CREATE TABLE IF NOT EXISTS transactionSubScenario (
