@@ -312,7 +312,7 @@ CREATE TABLE `transferRules` (
 
 
 /* views */
-CREATE VIEW quotePartyView AS
+CREATE OR REPLACE VIEW quotePartyView AS
 SELECT
     qp.quoteId AS quoteId,
     qp.quotePartyId AS quotePartyId,
