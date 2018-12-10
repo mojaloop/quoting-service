@@ -32,12 +32,17 @@ defaults_build_docker_login: &defaults_build_docker_login
   command: |
     docker login -u $DOCKER_USER -p $DOCKER_PASS $DOCKER_ORG
 defaults_build_docker_build: &defaults_build_docker_build
-  name: Build Docker image
+  name: Build Docker image(s)
   command: |
+    docker build -f Dockerfile.dbinit -t $DOCKER_ORG/quoting-service-init:$CIRCLE_TAG -t $DOCKER_ORG/quoting-service-init:$RELEASE_TAG .
     docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG .
 defaults_build_docker_publish: &defaults_build_docker_publish
   name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
   command: |
+    echo "Publishing $DOCKER_ORG/quoting-service-init:$CIRCLE_TAG"
+    docker push $DOCKER_ORG/quoting-service-init:$CIRCLE_TAG
+    echo "Publishing $DOCKER_ORG/quoting-service-init:$RELEASE_TAG"
+    docker push $DOCKER_ORG/quoting-service-init:$RELEASE_TAG
     echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
     docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
     echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
@@ -71,25 +76,6 @@ jobs:
 #          key: dependency-cache-{{ checksum "package.json" }}
 #          paths:
 #            - node_modules
-  
-  build-snapshot:
-    machine: true
-    <<: *defaults_working_directory
-    steps:
-    - checkout
-    - run:
-        name: Update npm registry
-        command: curl $NPM_TOKEN $ARTIFACTORY_NPMURL_INSTALL > .npmrc
-    - run:
-        name: setup environment vars for SNAPSHOT release
-        command: |
-          echo 'export RELEASE_TAG=$RELEASE_TAG_SNAPSHOT' >> $BASH_ENV
-    - run:
-        <<: *defaults_build_docker_login
-    - run:
-        <<: *defaults_build_docker_build
-    - run:
-        <<: *defaults_build_docker_publish
 
   build:
     machine: true
@@ -120,31 +106,16 @@ workflows:
             tags:
               only: /.*/
             branches:
-              ignore: 
-                - /feature*/
-                - /bugfix*/
-      - build-snapshot:
-          context: org-global
-          requires:
-            - setup
-#            - test-unit
-#            - test-coverage
-          filters:
-            tags:
-              only: /v[0-9]+(\.[0-9]+)*\-snapshot/
-            branches:
-              ignore: 
-                - /.*/
+              only:
+                - master
       - build:
           context: org-global
           requires:
             - setup
-#            - test-unit
-#            - test-coverage
           filters:
             tags:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
-              ignore: 
-                - /.*/
+              only:
+                - master
 
