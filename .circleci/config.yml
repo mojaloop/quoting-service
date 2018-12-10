@@ -107,7 +107,8 @@ workflows:
               only: /.*/
             branches:
               only:
-                - master
+                - /feature*/
+                - /bugfix*/
       - build:
           context: org-global
           requires:
@@ -117,5 +118,5 @@ workflows:
               only: /v[0-9]+(\.[0-9]+)*/
             branches:
               only:
-                - master
+                - /.*/
 
