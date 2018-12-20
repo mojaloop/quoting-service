@@ -43,6 +43,25 @@ class Database {
         });
     }
 
+
+    /**
+     * Check whether the database connection has basic functionality
+     *
+     * @returns {boolean}
+     */
+    async isConnected() {
+        try {
+            const result = await this.queryBuilder.raw('SELECT 1 + 1 AS result');
+            if (result) {
+                return true;
+            }
+            return false;
+        } catch(err) {
+            return false;
+        }
+    }
+
+
     /**
      * Gets the set of enabled transfer rules
      *

@@ -77,7 +77,13 @@ const initServer = async function(db, config) {
     server.route({
         method: 'GET',
         path: '/',
-        handler: (request, h) => {
+        handler: async (request, h) => {
+            if (!(await db.isConnected())) {
+                return h.response({
+                    statusCode: 500,
+                    error: 'Internal Server Error',
+                    message: 'Database not connected' }).code(500);
+            }
             return h.response().code(200);
         }
     });
