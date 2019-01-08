@@ -175,7 +175,7 @@ class QuotesModel {
                 catch(err) {
                     //as we are on our own in this context, dont just rethrow the error, instead...
                     //get the model to handle it
-                    this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}`);
+                    this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`);
                     await this.handleException(fspiopSource, refs.quoteId, err);
                 }
             });
@@ -228,22 +228,25 @@ class QuotesModel {
                 headers: this.generateRequestHeaders(fspiopSource, fspiopDest)
             };
 
-            // Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
-            // so we need to wrap the request below in a `try catch` to handle network errors
+            //Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
+            //so we need to wrap the request below in a `try catch` to handle network errors
             let res;
             try {
                 res = await fetch(fullUrl, opts);
-            } catch (_err) {
-                throw new Errors.FSPIOPError('network error', `Network error: [${_err.message}] sending error callback`,
+            }
+            catch (e) {
+                throw new Errors.FSPIOPError('Network error', `Network error forwarding quote request: ${e.stack || util.inspect(e)}`,
                     fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
             }
-            this.writeLog(`forwarding quote request got response ${res.status} ${res.statusText}`);
-            // handle non network related errors below
+            this.writeLog(`forwarding quote request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`);
+
+            //handle non network related errors below
             if(!res.ok) {
-                throw new Errors.FSPIOPError(res.statusText, 'Got non-success response sending error callback',
+                throw new Errors.FSPIOPError(res.statusText, 'Got non-success response forwarding quote request',
                     fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
             }
-        } catch(err) {
+        }
+        catch(err) {
             this.writeLog(`Error forwarding quote request to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`);
             throw err;
         }
@@ -261,7 +264,22 @@ class QuotesModel {
             //we are ok to assume the quoteRequest object passed to us is the same as the original...
             //as it passed a hash duplicate check...so go ahead and use it to resend rather than
             //hit the db again
-            return this.forwardQuoteRequest(fspiopSource, fspiopDest, quoteRequest.quoteId, quoteRequest);
+
+            //make call to payee dfsp in a setImmediate;
+            //attempting to give fair execution of async events...
+            //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
+            setImmediate(async () => {
+                //if we got here rules passed, so we can forward the quote on to the recipient dfsp
+                try {
+                    await this.forwardQuoteRequest(fspiopSource, fspiopDest, quoteRequest.quoteId, quoteRequest);
+                }
+                catch(err) {
+                    //as we are on our own in this context, dont just rethrow the error, instead...
+                    //get the model to handle it
+                    this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`);
+                    await this.handleException(fspiopSource, quoteRequest.quoteId, err);
+                }
+            });
         }
         catch(err) {
             this.writeLog(`Error in handleQuoteRequestResend: ${err.stack || util.inspect(err)}`);
@@ -361,9 +379,17 @@ class QuotesModel {
             //make call to payee dfsp in a setImmediate;
             //attempting to give fair execution of async events...
             //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
-            setImmediate(() => {
+            setImmediate(async () => {
                 //if we got here rules passed, so we can forward the quote on to the recipient dfsp
-                this.forwardQuoteUpdate(fspiopSource, fspiopDest, quoteId, quoteUpdateRequest);
+                try {
+                    await this.forwardQuoteUpdate(fspiopSource, fspiopDest, quoteId, quoteUpdateRequest);
+                }
+                catch(err) {
+                    //as we are on our own in this context, dont just rethrow the error, instead...
+                    //get the model to handle it
+                    this.writeLog(`Error forwarding quote update: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`);
+                    await this.handleException(fspiopSource, quoteId, err);
+                }
             });
 
             //all ok, return refs
@@ -414,27 +440,27 @@ class QuotesModel {
                 body: JSON.stringify(originalQuoteResponse),
                 headers: this.generateRequestHeaders(fspiopSource, fspiopDest)
             };
+
+            //Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
+            //so we need to wrap the request below in a `try catch` to handle network errors
             let res;
             try {
                 res = await fetch(fullUrl, opts);
-            } catch (_err) {
-                throw new Error(`network error forwarding quote response: ${_err.message}`);
+            }
+            catch (e) {
+                throw new Errors.FSPIOPError('Network error', `Network error forwarding quote response: ${e.stack || util.inspect(e)}`,
+                    fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
             }
             this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`);
 
             if(!res.ok) {
-                throw new Error('Got non-success response sending error callback');
+                throw new Errors.FSPIOPError(res.statusText, 'Got non-success response forwarding quote response',
+                    fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
             }
         }
         catch(err) {
             this.writeLog(`Error forwarding quote response to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`);
-
-            //we need to make an error callback to the originator of the quote response
-            setImmediate(() => {
-                return this.sendErrorCallback(new Errors.FSPIOPError(err,
-                    'Error sending quote response to \'PAYER\' participant', fspiopSource, Errors.ApiErrorCodes.SERVER_ERROR),
-                quoteId);
-            });
+            throw err;
         }
     }
 
@@ -450,10 +476,25 @@ class QuotesModel {
             //we are ok to assume the quoteUpdate object passed to us is the same as the original...
             //as it passed a hash duplicate check...so go ahead and use it to resend rather than
             //hit the db again
-            return this.forwardQuoteUpdate(fspiopSource, fspiopDest, quoteId, quoteUpdate);
+
+            //make call to payee dfsp in a setImmediate;
+            //attempting to give fair execution of async events...
+            //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
+            setImmediate(async () => {
+                //if we got here rules passed, so we can forward the quote on to the recipient dfsp
+                try {
+                    await this.forwardQuoteUpdate(fspiopSource, fspiopDest, quoteId, quoteUpdate);
+                }
+                catch(err) {
+                    //as we are on our own in this context, dont just rethrow the error, instead...
+                    //get the model to handle it
+                    this.writeLog(`Error forwarding quote response: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`);
+                    await this.handleException(fspiopSource, quoteId, err);
+                }
+            });
         }
         catch(err) {
-            this.writeLog(`Error in handleQuoteRequestResend: ${err.stack || util.inspect(err)}`);
+            this.writeLog(`Error in handleQuoteUpdateResend: ${err.stack || util.inspect(err)}`);
             throw err;
         }
     }
@@ -510,6 +551,95 @@ class QuotesModel {
 
 
     /**
+     * Attempts to handle a quote GET request by forwarding it to the destination DFSP
+     *
+     * @returns {undefined}
+     */
+    async handleQuoteGet(fspiopSource, fspiopDest, quoteId) {
+        try {
+            //make call to destination dfsp in a setImmediate;
+            //attempting to give fair execution of async events...
+            //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
+            setImmediate(async () => {
+                try {
+                    await this.forwardQuoteGet(fspiopSource, fspiopDest, quoteId);
+                }
+                catch(err) {
+                    //as we are on our own in this context, dont just rethrow the error, instead...
+                    //get the model to handle it
+                    this.writeLog(`Error forwarding quote get: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`);
+                    await this.handleException(fspiopSource, quoteId, err);
+                }
+            });
+        }
+        catch(err) {
+            this.writeLog(`Error in handleQuoteGet: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
+     * Attempts to forward a quote GET request
+     *
+     * @returns {undefined}
+     */
+    async forwardQuoteGet(fspiopSource, fspiopDest, quoteId) {
+        let endpoint;
+
+        try {
+            //we just need to forward this request on to the destinatin dfsp. they should response with a
+            //quote update resend (PUT)
+
+            //lookup payee dfsp callback endpoint
+            //todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
+            endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSIOP_CALLBACK_URL');
+
+            this.writeLog(`Resolved ${fspiopDest} FSIOP_CALLBACK_URL endpoint for quote GET ${quoteId} to: ${util.inspect(endpoint)}`);
+
+            if(!endpoint) {
+                //we didnt get an endpoint for the payee dfsp!
+                //make an error callback to the initiator
+                throw new Errors.FSPIOPError(null,
+                    `No FSIOP_CALLBACK_URL found for quote GET ${quoteId}`, fspiopSource,
+                    Errors.ApiErrorCodes.DESTINATION_FSP_ERROR);
+            }
+
+            const fullUrl = `${endpoint}/quotes/${quoteId}`;
+
+            this.writeLog(`Forwarding quote get request to endpoint: ${fullUrl}`);
+
+            const opts = {
+                method: 'GET',
+                headers: this.generateRequestHeaders(fspiopSource, fspiopDest)
+            };
+
+            //Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
+            //so we need to wrap the request below in a `try catch` to handle network errors
+            let res;
+            try {
+                res = await fetch(fullUrl, opts);
+            }
+            catch (e) {
+                throw new Errors.FSPIOPError('Network error', `Network error forwarding quote get request: ${e.stack || util.inspect(e)}`,
+                    fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
+            }
+            this.writeLog(`forwarding quote get request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`);
+
+            //handle non network related errors below
+            if(!res.ok) {
+                throw new Errors.FSPIOPError(res.statusText, 'Got non-success response forwarding quote get request',
+                    fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR);
+            }
+        }
+        catch(err) {
+            this.writeLog(`Error forwarding quote get request: ${err.stack || util.inspect(err)}`);
+            throw err;
+        }
+    }
+
+
+    /**
      * Attempts to handle an exception in a sensible manner by forwarding it on to the
      * source of the request that caused the error.
      */
@@ -529,7 +659,7 @@ class QuotesModel {
             }
             catch(err) {
                 //not much we can do other than log the error
-                this.writeLog(`Error occured handling error check service logs as this error may not have been propogated successfully to any other party: ${err.stack || util.inspect(err)}`);
+                this.writeLog(`Error occured handling error. check service logs as this error may not have been propogated successfully to any other party: ${err.stack || util.inspect(err)}`);
             }
         });
     }
@@ -682,126 +812,6 @@ class QuotesModel {
 
 
     /**
-     * Returns a quote response object
-     *
-     * @returns {undefined}
-     */
-    async getQuoteResponseApiProjection(quoteId) {
-        try {
-            const quoteResponseObject = await this.db.getQuoteResponseView(quoteId);
-
-            if(!quoteResponseObject) {
-                return null;
-            }
-
-            let apiProjection = {
-                transferAmount: {
-                    amount: this.amountDecimalToApiAmount(quoteResponseObject.transferAmountCurrencyId, quoteResponseObject.transferAmount),
-                    currency: quoteResponseObject.transferAmountCurrencyId
-                },
-                payeeReceiveAmount: {
-                    amount: this.amountDecimalToApiAmount(quoteResponseObject.payeeReceiveAmountCurrencyId, quoteResponseObject.payeeReceiveAmount),
-                    currency: quoteResponseObject.payeeReceiveAmountCurrencyId
-                },
-                payeeFspFee: {
-                    amount: this.amountDecimalToApiAmount(quoteResponseObject.payeeFspFeeCurrencyId, quoteResponseObject.payeeFspFeeAmount),
-                    currency: quoteResponseObject.payeeFspFeeCurrencyId
-                },
-                payeeFspCommission: {
-                    amount: this.amountDecimalToApiAmount(quoteResponseObject.payeeFspCommissionCurrencyId, quoteResponseObject.payeeFspCommissionAmount),
-                    currency: quoteResponseObject.payeeFspCommissionCurrencyId
-                },
-                geoCode: (quoteResponseObject.longitude && quoteResponseObject.latitude) ? {
-                    longitude: quoteResponseObject.longitude,
-                    latitude: quoteResponseObject.latitude
-                } : null,
-                expiration: quoteResponseObject.responseExpirationDate.toISOString(),
-                ilpPacket: quoteResponseObject.ilpPacket,
-                condition: quoteResponseObject.ilpCondition,
-                extensionList: undefined
-            };
-
-            return this.removeEmptyKeys(apiProjection);
-        }
-        catch(err) {
-            this.writeLog(`Error in getQuoteResponseApiProjection: ${err.stack || util.inspect(err)}`);
-            throw err;
-        }
-    }
-
-
-    /**
-     * Returns a quote object in the form defined by the API spec
-     * e.g. with enum values resolved to their textual identifiers.
-     * Includes parties etc...
-     *
-     * @returns {object}
-     */
-    async getQuoteRequestApiProjection(quoteId) {
-        try {
-            const quoteObject = await this.db.getQuoteView(quoteId);
-
-            if(!quoteObject) {
-                return null;
-            }
-
-            //get and validate the quote parties
-            const quoteParties = await this.db.getQuotePartyView(quoteId);
-
-            if((!quoteParties) || quoteParties.length < 2) {
-                throw new Error(`Expected 2 quote parties but got: ${util.inspect(quoteParties)}`);
-            }
-
-            const payerParty = quoteParties.find((p) => {
-                return p.partyType === 'PAYER';
-            });
-
-            const payeeParty = quoteParties.find((p) => {
-                return p.partyType === 'PAYEE';
-            });
-
-            if(!(payerParty && payeeParty)) {
-                throw new Error(`Expected a PAYEE and a PAYER party but got ${util.inspect(payeeParty)} and ${util.inspect(payerParty)}`);
-            }
-
-            let apiProjection = {
-                quoteId: quoteId,
-                transactionId: quoteObject.transactionReferenceId,
-                transactionRequestId: quoteObject.transactionRequestId,
-                payee: this.quotePartyViewToApiParty(payeeParty),
-                payer: this.quotePartyViewToApiParty(payerParty),
-                amountType: quoteObject.amountType,
-                amount: {
-                    amount: this.amountDecimalToApiAmount(quoteObject.currency, quoteObject.amount),
-                    currency: quoteObject.currency
-                },
-                fees: undefined, //todo
-                transactionType: {
-                    scenario: quoteObject.transactionScenario,
-                    subScenario: quoteObject.transactionSubScenario,
-                    initiator: quoteObject.transactionInitiator,
-                    initiatorType: quoteObject.transactionInitiatorType,
-                    balanceOfPayments: `${quoteObject.balanceOfPaymentsId}`
-                },
-                geoCode: (payerParty.longitude && payerParty.latitude) ? {
-                    longitude: payerParty.longitude,
-                    latitude: payerParty.latitude
-                } : null,
-                note: quoteObject.note,
-                expiration: quoteObject.expirationDate.toISOString(),
-                extensionList: undefined
-            };
-
-            return this.removeEmptyKeys(apiProjection);
-        }
-        catch(err) {
-            this.writeLog(`Error in getQuoteApiProjection: ${err.stack || util.inspect(err)}`);
-            throw err;
-        }
-    }
-
-
-    /**
      * Utility function to remove null and undefined keys from an object.
      * This is useful for removing "nulls" that come back from database queries
      * when projecting into API spec objects
@@ -827,49 +837,6 @@ class QuotesModel {
             }
         });
         return obj;
-    }
-
-
-    /**
-     * Converts a quotePartyView row to an API spec party object
-     *
-     * @returns {object}
-     */
-    quotePartyViewToApiParty(party) {
-        let personalInfo = {
-            dateOfBirth: party.dateOfBirth
-        };
-
-        if(party.firstName || party.lastName || party.middleName) {
-            personalInfo.complexName = this.removeEmptyKeys({
-                firstName: party.firstName,
-                middleName: party.middleName,
-                lastName: party.lastName
-            });
-        }
-
-        return this.removeEmptyKeys({
-            partyIdInfo: this.removeEmptyKeys({
-                partyIdType: party.identifierType,
-                partyIdentifier: party.partyIdentifierValue,
-                partySubIdOrType: party.partySubIdOrType,
-                fspId: party.fspId
-            }),
-            merchantClassificationCode: party.merchantClassificationCode,
-            name: party.partyName,
-            personalInfo: Object.keys(personalInfo).length > 0 ? this.removeEmptyKeys(personalInfo) : undefined
-        });
-    }
-
-    /**
-     * Converts a decimal amount e.g. from database representation to an API spec
-     * amount e.g. integer
-     *
-     * @returns {undefined}
-     */
-    amountDecimalToApiAmount(currencyId, amount) {
-        //todo: lookup currency exponent and multipl!y
-        return `${amount}`;
     }
 
 
@@ -911,7 +878,6 @@ class QuotesModel {
         //eslint-disable-next-line no-console
         console.log(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`);
     }
-
 }
 
 
