@@ -382,7 +382,7 @@ class QuotesModel {
             setImmediate(async () => {
                 //if we got here rules passed, so we can forward the quote on to the recipient dfsp
                 try {
-                    await this.forwardQuoteUpdate(fspiopSource, fspiopDest, quoteId, quoteUpdateRequest);
+                    await this.forwardQuoteUpdate(fspiopSource, fspiopDest, fspiopSignature, quoteId, quoteUpdateRequest);
                 }
                 catch(err) {
                     //as we are on our own in this context, dont just rethrow the error, instead...
