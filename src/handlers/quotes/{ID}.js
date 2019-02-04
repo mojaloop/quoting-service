@@ -31,12 +31,13 @@ module.exports = {
         const quoteId = request.params.ID;
         const fspiopSource = request.headers['fspiop-source'];
         const fspiopDest = request.headers['fspiop-destination'];
+        const fspiopSignature = request.headers['fspiop-signature'];
 
         try {
             //call the model to re-forward the quote update to the correct party
             //note that we do not check if our caller is the correct party, but we
             //will send the callback to the correct party regardless.
-            const result = await model.handleQuoteGet(fspiopSource, fspiopDest, quoteId);
+            const result = await model.handleQuoteGet(fspiopSource, fspiopDest, fspiopSignature, quoteId);
             request.server.log(['info'], `GET quotes/{id} request succeeded and returned: ${util.inspect(result)}`);
         }
         catch(err) {
@@ -73,10 +74,11 @@ module.exports = {
         const quoteId = request.params.ID;
         const fspiopSource = request.headers['fspiop-source'];
         const fspiopDest = request.headers['fspiop-destination'];
+        const fspiopSignature = request.headers['fspiop-signature'];
 
         try {
             //call the quote update handler in the model
-            const result = await model.handleQuoteUpdate(fspiopSource, fspiopDest, quoteId, request.payload);
+            const result = await model.handleQuoteUpdate(fspiopSource, fspiopDest, fspiopSignature, quoteId, request.payload);
             request.server.log(['info'], `PUT quote request succeeded and returned: ${util.inspect(result)}`);
         }
         catch(err) {

@@ -30,10 +30,11 @@ module.exports = {
         const quoteId = request.params.ID;
         const fspiopSource = request.headers['fspiop-source'];
         const fspiopDest = request.headers['fspiop-destination'];
+        const fspiopSignature = request.headers['fspiop-signature'];
 
         try {
             //call the quote error handler in the model
-            const result = await model.handleQuoteError(fspiopSource, fspiopDest, quoteId, request.payload.errorInformation);
+            const result = await model.handleQuoteError(fspiopSource, fspiopDest, fspiopSignature, quoteId, request.payload.errorInformation);
             request.server.log(['info'], `POST quote error request succeeded and returned: ${util.inspect(result)}`);
         }
         catch(err) {

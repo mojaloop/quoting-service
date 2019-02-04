@@ -58,7 +58,7 @@ class QuotesModel {
      *
      * @returns {object} - returns object containing keys for created database entities
      */
-    async handleQuoteRequest(fspiopSource, fspiopDest, quoteRequest) {
+    async handleQuoteRequest(fspiopSource, fspiopDest, fspiopSignature, quoteRequest) {
         let txn = null;
 
         try {
@@ -87,7 +87,7 @@ class QuotesModel {
             if(dupe.isResend && dupe.isDuplicateId) {
                 //this is a resend
                 //See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-                return this.handleQuoteRequestResend(fspiopSource, fspiopDest, quoteRequest);
+                return this.handleQuoteRequestResend(fspiopSource, fspiopDest, fspiopSignature, quoteRequest);
             }
 
             //todo: validation
@@ -170,7 +170,7 @@ class QuotesModel {
             setImmediate(async () => {
                 //if we got here rules passed, so we can forward the quote on to the recipient dfsp
                 try {
-                    await this.forwardQuoteRequest(fspiopSource, fspiopDest, refs.quoteId, quoteRequest);
+                    await this.forwardQuoteRequest(fspiopSource, fspiopDest, fspiopSignature, refs.quoteId, quoteRequest);
                 }
                 catch(err) {
                     //as we are on our own in this context, dont just rethrow the error, instead...
@@ -196,7 +196,7 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
-    async forwardQuoteRequest(fspiopSource, fspiopDest, quoteId, originalQuoteRequest) {
+    async forwardQuoteRequest(fspiopSource, fspiopDest, fspiopSignature, quoteId, originalQuoteRequest) {
         let endpoint;
 
         try {
@@ -225,7 +225,7 @@ class QuotesModel {
             const opts = {
                 method: 'POST',
                 body: JSON.stringify(originalQuoteRequest),
-                headers: this.generateRequestHeaders(fspiopSource, fspiopDest)
+                headers: this.generateRequestHeaders(fspiopSource, fspiopDest, fspiopSignature)
             };
 
             //Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
@@ -257,7 +257,7 @@ class QuotesModel {
      * Deals with resends of quote requests (POST) under the API spec:
      * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
      */
-    async handleQuoteRequestResend(fspiopSource, fspiopDest, quoteRequest) {
+    async handleQuoteRequestResend(fspiopSource, fspiopDest, fspiopSignature, quoteRequest) {
         try {
             this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource} to ${fspiopDest}`);
 
@@ -271,7 +271,7 @@ class QuotesModel {
             setImmediate(async () => {
                 //if we got here rules passed, so we can forward the quote on to the recipient dfsp
                 try {
-                    await this.forwardQuoteRequest(fspiopSource, fspiopDest, quoteRequest.quoteId, quoteRequest);
+                    await this.forwardQuoteRequest(fspiopSource, fspiopDest, fspiopSignature, quoteRequest.quoteId, quoteRequest);
                 }
                 catch(err) {
                     //as we are on our own in this context, dont just rethrow the error, instead...
@@ -293,7 +293,7 @@ class QuotesModel {
      *
      * @returns {object} - object containing updated entities
      */
-    async handleQuoteUpdate(fspiopSource, fspiopDest, quoteId, quoteUpdateRequest) {
+    async handleQuoteUpdate(fspiopSource, fspiopDest, fspiopSignature, quoteId, quoteUpdateRequest) {
         let txn = null;
 
         try {
@@ -318,7 +318,7 @@ class QuotesModel {
             if(dupe.isResend && dupe.isDuplicateId) {
                 //this is a resend
                 //See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-                return this.handleQuoteUpdateResend(fspiopSource, fspiopDest, quoteId, quoteUpdateRequest);
+                return this.handleQuoteUpdateResend(fspiopSource, fspiopDest, fspiopSignature, quoteId, quoteUpdateRequest);
             }
 
             //todo: validation
@@ -408,7 +408,7 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
-    async forwardQuoteUpdate(fspiopSource, fspiopDest, quoteId, originalQuoteResponse) {
+    async forwardQuoteUpdate(fspiopSource, fspiopDest, fspiopSignature, quoteId, originalQuoteResponse) {
         let endpoint = null;
 
         try {
@@ -438,7 +438,7 @@ class QuotesModel {
             let opts = {
                 method: 'PUT',
                 body: JSON.stringify(originalQuoteResponse),
-                headers: this.generateRequestHeaders(fspiopSource, fspiopDest)
+                headers: this.generateRequestHeaders(fspiopSource, fspiopDest, fspiopSignature)
             };
 
             //Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
@@ -469,7 +469,7 @@ class QuotesModel {
      * Deals with resends of quote responses (PUT) under the API spec:
      * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
      */
-    async handleQuoteUpdateResend(fspiopSource, fspiopDest, quoteId, quoteUpdate) {
+    async handleQuoteUpdateResend(fspiopSource, fspiopDest, fspiopSignature, quoteId, quoteUpdate) {
         try {
             this.writeLog(`Handling resend of quoteUpdate: ${util.inspect(quoteUpdate)} from ${fspiopSource} to ${fspiopDest}`);
 
@@ -483,7 +483,7 @@ class QuotesModel {
             setImmediate(async () => {
                 //if we got here rules passed, so we can forward the quote on to the recipient dfsp
                 try {
-                    await this.forwardQuoteUpdate(fspiopSource, fspiopDest, quoteId, quoteUpdate);
+                    await this.forwardQuoteUpdate(fspiopSource, fspiopDest, fspiopSignature, quoteId, quoteUpdate);
                 }
                 catch(err) {
                     //as we are on our own in this context, dont just rethrow the error, instead...
@@ -505,7 +505,7 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
-    async handleQuoteError(fspiopSource, fspiopDest, quoteId, error) {
+    async handleQuoteError(fspiopSource, fspiopDest, fspiopSignature, quoteId, error) {
         let txn = null;
 
         try {
@@ -532,6 +532,7 @@ class QuotesModel {
             //set fspiop-source and fspiop-destination headers on this callback!
             e.fspiopSource = fspiopSource;
             e.fspiopDestination = fspiopDest;
+            e.fspiopSignature = fspiopSignature;
 
             //send the callback in a future event loop step
             //attempting to give fair execution of async events...
@@ -555,14 +556,14 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
-    async handleQuoteGet(fspiopSource, fspiopDest, quoteId) {
+    async handleQuoteGet(fspiopSource, fspiopDest, fspiopSignature, quoteId) {
         try {
             //make call to destination dfsp in a setImmediate;
             //attempting to give fair execution of async events...
             //see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
             setImmediate(async () => {
                 try {
-                    await this.forwardQuoteGet(fspiopSource, fspiopDest, quoteId);
+                    await this.forwardQuoteGet(fspiopSource, fspiopDest, fspiopSignature, quoteId);
                 }
                 catch(err) {
                     //as we are on our own in this context, dont just rethrow the error, instead...
@@ -584,7 +585,7 @@ class QuotesModel {
      *
      * @returns {undefined}
      */
-    async forwardQuoteGet(fspiopSource, fspiopDest, quoteId) {
+    async forwardQuoteGet(fspiopSource, fspiopDest, fspiopSignature, quoteId) {
         let endpoint;
 
         try {
@@ -611,7 +612,7 @@ class QuotesModel {
 
             const opts = {
                 method: 'GET',
-                headers: this.generateRequestHeaders(fspiopSource, fspiopDest)
+                headers: this.generateRequestHeaders(fspiopSource, fspiopDest, fspiopSignature)
             };
 
             //Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
@@ -700,7 +701,7 @@ class QuotesModel {
                 //use fspiopSource and fspiopDestination of the error object if they are there...
                 //otherwise use sensible defaults
                 headers: this.generateRequestHeaders(fspiopErr.fspiopSource || 'switch',
-                    fspiopErr.fspiopDestination || fspiopErr.replyTo)
+                    fspiopErr.fspiopDestination || fspiopErr.replyTo, fspiopErr.fspiopSignature)
             };
             let res;
             try {
@@ -857,13 +858,14 @@ class QuotesModel {
      *
      * @returns {object}
      */
-    generateRequestHeaders(fspiopSource, fspiopDest) {
+    generateRequestHeaders(fspiopSource, fspiopDest, fspiopSignature) {
         return this.removeEmptyKeys({
             'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
             'Accept': 'application/vnd.interoperability.quotes+json;version=1.0',
             'Date': new Date().toUTCString(),
             'FSPIOP-Source': fspiopSource,
             'FSPIOP-Destination': fspiopDest,
+            'FSPIOP-Signature': fspiopSignature,
             'User-Agent': ''  //yuck! node-fetch INSISTS on sending a user-agent header!? infuriating!
         });
     }

@@ -252,7 +252,7 @@ CREATE TABLE IF NOT EXISTS geoCode (
 );
 
 
- 
+
 CREATE TABLE IF NOT EXISTS quoteExtension (
     quoteExtensionId BIGINT NOT NULL PRIMARY KEY,
     quoteId VARCHAR(36) NOT NULL COMMENT 'Common ID between the FSPs for the quote object, decided by the Payer FSP',
