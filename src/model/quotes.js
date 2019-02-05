@@ -879,6 +879,7 @@ class QuotesModel {
             'FSPIOP-Destination': headers['fspiop-destination'],
             'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
             'FSPIOP-Signature': headers['fspiop-signature'],
+            'FSPIOP-URI': headers['fspiop-uri'],
             'User-Agent': ''  //yuck! node-fetch INSISTS on sending a user-agent header!? infuriating!
         });
     }
