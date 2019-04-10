@@ -42,7 +42,7 @@ module.exports = {
         }
         finally {
             //eslint-disable-next-line no-unsafe-finally
-            return h.response().code(202);
+            return h.response().code(200);
         }
     }
 };
