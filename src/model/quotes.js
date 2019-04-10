@@ -533,7 +533,7 @@ class QuotesModel {
 
             //create a new object to represent the error
             const e = new Errors.FSPIOPError(`Quote ${quoteId} error post from ${headers['fspiop-source']}`,
-                error.errorDescription, headers['fspiop-dest'], {
+                error.errorDescription, headers['fspiop-destination'], {
                     code: Number(error.errorCode),
                     message: error.errorDescription
                 });
