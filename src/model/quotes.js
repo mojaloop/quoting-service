@@ -711,7 +711,7 @@ class QuotesModel {
             let opts = {
                 method: 'PUT',
                 url: fullCallbackUrl,
-                body: JSON.stringify(fspiopErr.toApiErrorObject()),
+                data: JSON.stringify(fspiopErr.toApiErrorObject()),
                 //use headers of the error object if they are there...
                 //otherwise use sensible defaults
                 headers: this.generateRequestHeaders(fspiopErr.headers || {
