@@ -3,9 +3,13 @@ const util = require('util');
 const crypto = require('crypto');
 
 const fetch = require('node-fetch');
+const axios = require('axios');
 const Errors = require('./errors.js');
 const quoteRules = require('./rules.js');
 
+
+delete axios.defaults.headers.common['Accept'];
+delete axios.defaults.headers.common['Content-Type'];
 
 /**
  * Encapsulates operations on the quotes domain model
@@ -706,18 +710,19 @@ class QuotesModel {
             //make an error callback
             let opts = {
                 method: 'PUT',
-                body: JSON.stringify(fspiopErr.toApiErrorObject()),
+                url: fullCallbackUrl,
+                data: JSON.stringify(fspiopErr.toApiErrorObject()),
                 //use headers of the error object if they are there...
                 //otherwise use sensible defaults
                 headers: this.generateRequestHeaders(fspiopErr.headers || {
                     'fspiop-destination': fspiopErr.replyTo,
                     'fspiop-source': 'switch',
                     'fspiop-http-method': 'PUT'
-                })
+                }, true)
             };
             let res;
             try {
-                res = await fetch(fullCallbackUrl, opts);
+                res = await axios.request(opts);
             } catch (_err) {
                 throw new Error(`network error in sendErrorCallback: ${_err.message}`);
             }
@@ -870,18 +875,24 @@ class QuotesModel {
      *
      * @returns {object}
      */
-    generateRequestHeaders(headers) {
-        return this.removeEmptyKeys({
+    generateRequestHeaders(headers, noAccept) {
+        let ret = {
             'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
-            'Accept': 'application/vnd.interoperability.quotes+json;version=1.0',
             'Date': new Date().toUTCString(),
             'FSPIOP-Source': headers['fspiop-source'],
             'FSPIOP-Destination': headers['fspiop-destination'],
             'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
             'FSPIOP-Signature': headers['fspiop-signature'],
             'FSPIOP-URI': headers['fspiop-uri'],
-            'User-Agent': ''  //yuck! node-fetch INSISTS on sending a user-agent header!? infuriating!
-        });
+            'User-Agent': null,  //yuck! node-fetch INSISTS on sending a user-agent header!? infuriating!
+            'Accept': null
+        };
+
+        if(!noAccept) {
+            ret['Accept'] = 'application/vnd.interoperability.quotes+json;version=1.0';
+        }
+
+        return this.removeEmptyKeys(ret);
     }
 
 
