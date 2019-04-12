@@ -13,6 +13,7 @@
         "registry": "https://registry.npmjs.org"
     },
     "dependencies": {
+        "axios": "^0.18.0",
         "boom": "^7.1.1",
         "good": "^8.1.1",
         "good-console": "^7.1.0",
