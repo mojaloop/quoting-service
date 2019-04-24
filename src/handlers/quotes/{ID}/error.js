@@ -17,7 +17,7 @@ module.exports = {
      */
     put: async function QuotesByIDAndError(request, h) {
         //log request
-        request.server.log(['info'], `got a POST /quotes/{ID}/error request: ${util.inspect(request.payload)}`);
+        request.server.log(['info'], `got a PUT /quotes/{ID}/error request: ${util.inspect(request.payload)}`);
 
         //instantiate a new quote model
         const model = new QuotesModel({
@@ -33,11 +33,11 @@ module.exports = {
         try {
             //call the quote error handler in the model
             const result = await model.handleQuoteError(request.headers, quoteId, request.payload.errorInformation);
-            request.server.log(['info'], `POST quote error request succeeded and returned: ${util.inspect(result)}`);
+            request.server.log(['info'], `PUT quote error request succeeded and returned: ${util.inspect(result)}`);
         }
         catch(err) {
             //something went wrong, use the model to handle the error in a sensible way
-            request.server.log(['error'], `ERROR - POST /quotes/{ID}/error: ${err.stack || util.inspect(err)}`);
+            request.server.log(['error'], `ERROR - PUT /quotes/{ID}/error: ${err.stack || util.inspect(err)}`);
             await model.handleException(fspiopSource, quoteId, err);
         }
         finally {
