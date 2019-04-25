@@ -728,7 +728,7 @@ class QuotesModel {
             }
             this.writeLog(`Error callback got response ${res.status} ${res.statusText}`);
 
-            if(!res.ok) {
+            if(res.ok !== 200) {
                 throw new Error('Got non-success response sending error callback');
             }
         }
