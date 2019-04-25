@@ -17,7 +17,7 @@ module.exports = {
      */
     put: async function QuotesByIDAndError(request, h) {
         //log request
-        request.server.log(['info'], `got a POST /quotes/{ID}/error request: ${util.inspect(request.payload)}`);
+        request.server.log(['info'], `got a PUT /quotes/{ID}/error request: ${util.inspect(request.payload)}`);
 
         //instantiate a new quote model
         const model = new QuotesModel({
