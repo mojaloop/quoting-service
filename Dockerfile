@@ -1,11 +1,12 @@
-FROM node:8.11.3-alpine
+FROM node:10.15.3-alpine
 
-WORKDIR /src
+WORKDIR /opt/quoting-service
+COPY src /opt/quoting-service/src
+COPY config /opt/quoting-service/config
+COPY package.json /opt/quoting-service/
 
-CMD ["node", "/src/server.js"]
-
-# COPY .npmrc .npmrc
-COPY package.json ./src/package-lock.json /src/
 RUN npm install --production
 
-COPY ./src/ /src/
+EXPOSE 3000
+
+CMD npm run start
