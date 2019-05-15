@@ -59,3 +59,17 @@ typings/
 
 # next.js build output
 .next
+
+# --------------- #
+# IntelliJ #
+# --------------- #
+.idea/
+**/*.iml
+
+# General files
+*IGNORE*
+*ignore*
+*.log
+
+# MacOs
+.[Dd][Ss]_[Ss]tore
