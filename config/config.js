@@ -10,8 +10,6 @@
  Initial contribution
  --------------------
  The initial functionality and code base was donated by the Mowali project working in conjunction with MTN and Orange as service provides.
- * Project: Casablanca
- * Original Author: James Bush
 
  Contributors
  --------------
@@ -26,37 +24,40 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
+ * James Bush <james.bush@modusbox.com
  * Henk Kodde <henk.kodde@modusbox.com>
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
-'use strict'
-
-const Boom = require('boom')
+const util = require('util')
 
 /**
- * Operations on /bulkQuotes/{ID}
+ * Loads config from environment
  */
-module.exports = {
-  /**
-     * summary: BulkQuotesByID
-     * description: The HTTP request GET /bulkQuotes/&lt;ID&gt; is used to get information regarding an earlier created or requested bulk quote. The &lt;ID&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote.
-     * parameters: Accept
-     * produces: application/json
-     * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
-     */
-  get: function BulkQuotesByID () {
-    return Boom.notImplemented()
-  },
-  /**
-     * summary: BulkQuotesByID
-     * description: The callback PUT /bulkQuotes/&lt;ID&gt; is used to inform the client of a requested or created bulk quote. The &lt;ID&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;ID&gt; that was used in the GET /bulkQuotes/&lt;ID&gt;.
-     * parameters: body, Content-Length
-     * produces: application/json
-     * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
-     */
-  put: function BulkQuotesByID1 () {
-    return Boom.notImplemented()
+class Config {
+  constructor () {
+    // load config from environment (or use sensible defaults)
+    this.listenAddress = process.env['LISTEN_ADDRESS'] || '0.0.0.0'
+    this.listenPort = process.env['LISTEN_PORT'] || 3000
+
+    this.database = {
+      client: process.env['DATABASE_DIALECT'] || 'mysql',
+      connection: {
+        host: process.env['DATABASE_HOST'] || 'localhost',
+        port: process.env['DATABASE_PORT'] || '3306',
+        user: process.env['DATABASE_USER'] || 'central_ledger',
+        password: process.env['DATABASE_PASSWORD'] || 'password',
+        database: process.env['DATABASE_SCHEMA'] || 'central_ledger'
+      },
+      pool: {
+        min: process.env['DATABASE_POOL_MINSIZE'] || 10,
+        max: process.env['DATABASE_POOL_MAXSIZE'] || 10
+      }
+    }
+    // eslint-disable-next-line no-console
+    console.log('Config loaded: %s', util.inspect(this))
   }
 }
+
+module.exports = Config

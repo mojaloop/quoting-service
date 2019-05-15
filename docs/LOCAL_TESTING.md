@@ -1,6 +1,6 @@
-# Running Casablanca Quoting Service Locally
+# Running Quoting Service Locally
 
-This document is intended to guide a user through the steps required to run the casablanca quoting service locally.
+This document is intended to guide a user through the steps required to run the quoting service locally.
 
 ## Prerequisites
 
@@ -8,7 +8,7 @@ Ensure you have to following:
 
  1. A linux operating system (either native or a VM - ubuntu is a reasonable choice if you arent fussy)
  2. Docker CE installed (e.g. see https://docs.docker.com/install/linux/docker-ce/ubuntu/)
- 3. A user account for the casablanca docker registry (see Infrastructure page on Confluence)
+ 3. A user account for the docker registry (see Infrastructure page on Confluence)
 
 ## Get the Docker images
 
@@ -48,8 +48,8 @@ Ensure you have to following:
     `mysql> alter user 'root'@'localhost' identified by 'root';`
 
     5. Create the database user and grant it permissions:
-    `mysql> create user 'casa'@'%' identitfied by 'casa';`
-    `mysql> grant all privileges on *.* to 'casa'@'%';`
+    `mysql> create user 'central_ledger'@'%' identitfied by 'central_ledger';`
+    `mysql> grant all privileges on *.* to 'central_ledger'@'%';`
     `mysql> flush privileges;`
 
     6. Create the core database schema:
@@ -63,12 +63,12 @@ Ensure you have to following:
 
     8. Initialise the core database schema:
     Run the following command but substitute the IP address you got from step 7 above with [IPADDRESS] (remove the square brackets also):
-    `$ docker run -e "CLEDG_DATABASE_URI=mysql://casa:casa@[IPADDRESS]:3306/central_ledger" --name cli casablanca-casa-docker-release.jfrog.io/central-ledger-init:latest`
+    `$ docker run -e "CLEDG_DATABASE_URI=mysql://central_ledger:central_ledger@[IPADDRESS]:3306/central_ledger" --name cli casablanca-casa-docker-release.jfrog.io/central-ledger-init:latest`
     Check the output for errors. There should not be any.
 
     9. Initialise the quoting service database schema:
     Run the following command but substitute the IP address you got from step 7 above with [IPADDRESS] (remove the square brackets also):
-    `$ docker run -e "CLEDG_DATABASE_URI=mysql://casa:casa@[IPADDRESS]:3306/central_ledger" --name qsi casablanca-casa-docker-release.jfrog.io/quoting-service-init:latest`
+    `$ docker run -e "CLEDG_DATABASE_URI=mysql://central_ledger:central_ledger@[IPADDRESS]:3306/central_ledger" --name qsi casablanca-casa-docker-release.jfrog.io/quoting-service-init:latest`
     Check the output for errors. There should not be any.
 
     >*Note: If you need to re-run steps 8 and/or 9 above you will need to remove the existing containers by running:*
@@ -96,6 +96,6 @@ Ensure you have to following:
     1. Note that the API base address will be of the format:
     `http://[IPADDRESS]:3000/quotes`
 
-3. Details of the API exposed by the quoting service is available as swagger yaml in the casablanca github here:
+3. Details of the API exposed by the quoting service is available as swagger yaml in the github here:
 
-    `https://github.com/casablanca-project/quoting-service-api-adapter/blob/master/src/config/fspiop-rest-v1.0-OpenAPI-implementation-quoting.yaml`
+    `https://github.com/mojaloop/quoting-service-api-adapter/blob/master/src/config/fspiop-rest-v1.0-OpenAPI-implementation-quoting.yaml`

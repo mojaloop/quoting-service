@@ -1,5 +1,5 @@
 @startuml
-Title Casablanca Quoting Service Sequences
+Title Quoting Service Sequences
 participant "Payer DFSP"
 participant "Switch\nQuoting\nService" as Switch
 participant "Payee DFSP"

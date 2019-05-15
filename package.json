@@ -1,0 +1,52 @@
+{
+    "name": "quoting-service-api-adapter",
+    "description": "",
+    "version": "1.0.0",
+    "author": "Modusbox",
+    "contributors": [
+        "James Bush <james.bush@modusbox.com>",
+        "Georgi Georgiev <georgi.georgiev@modusbox.com>",
+        "Henk Kodde <henk.kodde@modusbox.com>"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/mojaloop/quoting-service-api-adapter.git"
+    },
+    "bugs": "http://github.com/mojaloop/quoting-service-api-adapter/issues",
+    "publishConfig": {
+        "registry": "https://registry.npmjs.org"
+    },
+    "dependencies": {
+        "axios": "0.18.0",
+        "boom": "7.1.1",
+        "good": "8.1.1",
+        "good-console": "7.1.0",
+        "good-squeeze": "5.1.0",
+        "hapi": "17.0.0",
+        "hapi-openapi": "1.0.0",
+        "json-rules-engine": "2.3.0",
+        "knex": "0.15.2",
+        "memory-cache": "0.2.0",
+        "mysql": "2.16.0",
+        "node-fetch": "2.2.0"
+    },
+    "devDependencies": {
+        "eslint": "5.6.1",
+        "istanbul": "0.4.3",
+        "swagmock": "0.0.2",
+        "tape": "4"
+    },
+    "scripts": {
+        "test": "tape 'tests/**/*.js'",
+        "cover": "istanbul cover tape -- 'tests/**/*.js'",
+        "lint": "eslint .",
+        "regenerate": "yo swaggerize:test --framework hapi --apiPath './config/swagger.json'",
+        "build": "docker build -t quoting-service-api-adapter:local -f ./Dockerfile ../",
+        "run": "docker run -p 3000:3000 --rm --link db:mysql quoting-service-api-adapter:local",
+        "package-lock": "docker run --rm -it quoting-service-api-adapter:local cat package-lock.json > package-lock.json"
+    },
+    "generator-swaggerize": {
+        "version": "4.1.0"
+    },
+    "main": "./server"
+}

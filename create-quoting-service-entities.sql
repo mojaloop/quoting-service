@@ -1,8 +1,37 @@
-/*
- * (C)2018 ModusBox Inc.
- * =====================
+// (C)2018 ModusBox Inc.
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+ Initial contribution
+ --------------------
+ The initial functionality and code base was donated by the Mowali project working in conjunction with MTN and Orange as service provides.
  * Project: Casablanca
  * Original Author: James Bush
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Henk Kodde <henk.kodde@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ --------------
+ ******/
+
+/*
  * Description: This script creates database entities required by the Casablanca Quoting service
  */
 
@@ -388,7 +417,7 @@ INSERT IGNORE INTO amountType (name, description) VALUES ('RECEIVE', 'Amount the
 /* partyIdentifierType table */
 INSERT IGNORE INTO partyIdentifierType (name, description) VALUES ('MSISDN', 'An MSISDN (Mobile Station International Subscriber Directory Number; that is, a phone number) is used in reference to a Party');
 
-/* note that the following partyIdentifierTypes although defined by the API spec are not supported by the casablanca switch.
+/* note that the following partyIdentifierTypes although defined by the API spec are not supported by the switch.
 
 INSERT IGNORE INTO partyIdentifierType (name, description) VALUES ('EMAIL', 'An email is used in reference to a Party. The format of the email should be according to the informational RFC 3696');
 INSERT IGNORE INTO partyIdentifierType (name, description) VALUES ('PERSONAL_ID', 'A personal identifier is used in reference to a participant. Examples of personal identification are passport number, birth certificate number, and national registration number. The identifier number is added in the PartyIdentifier element. The personal identifier type is added in the PartySubIdOrType element');
@@ -419,7 +448,7 @@ INSERT IGNORE INTO transactionInitiatorType (name, description) VALUES ('DEVICE'
 /* transactionScenario table */
 INSERT IGNORE INTO transactionScenario (name, description) VALUES ('TRANSFER', 'Used for performing a P2P (Peer to Peer, or Consumer to Consumer) transaction');
 
-/* note that the following transactionScenarios although defined by the API spec are not supported by the casablanca switch.
+/* note that the following transactionScenarios although defined by the API spec are not supported by the switch.
 
 INSERT IGNORE INTO transactionScenario (name, description) VALUES ('DEPOSIT', 'Used for performing a Cash-In (deposit) transaction. In a normal scenario, electronic funds are transferred from a Business account to a Consumer account, and physical cash is given from the Consumer to the Business User');
 INSERT IGNORE INTO transactionScenario (name, description) VALUES ('WITHDRAWAL', 'Used for performing a Cash-Out (withdrawal) transaction. In a normal scenario, electronic funds are transferred from a Consumer’s account to a Business account, and physical cash is given from the Business User to the Consumer');
