@@ -37,6 +37,7 @@
         "tape": "4"
     },
     "scripts": {
+        "start": "node src/server.js",
         "test": "tape 'tests/**/*.js'",
         "cover": "istanbul cover tape -- 'tests/**/*.js'",
         "lint": "eslint .",
