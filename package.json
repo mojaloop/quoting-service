@@ -1,6 +1,7 @@
 {
   "name": "quoting-service",
-  "description": "",
+  "description": "Quoting Service hosted by a scheme",
+  "license": "Apache-2.0",
   "version": "6.2.0",
   "author": "Modusbox",
   "contributors": [
@@ -28,7 +29,6 @@
     "json-rules-engine": "2.3.0",
     "knex": "0.15.2",
     "memory-cache": "0.2.0",
-    "mysql": "2.16.0",
     "node-fetch": "2.2.0",
     "rc": "1.2.8"
   },
