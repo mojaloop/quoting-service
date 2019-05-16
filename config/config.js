@@ -39,7 +39,7 @@ class Config {
   constructor () {
     // load config from environment (or use sensible defaults)
     this.listenAddress = process.env['LISTEN_ADDRESS'] || '0.0.0.0'
-    this.listenPort = process.env['LISTEN_PORT'] || 3000
+    this.listenPort = RC.PORT
 
     this.database = {
       client: process.env['DATABASE_DIALECT'] || 'mysql',
