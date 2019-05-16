@@ -1,4 +1,4 @@
-FROM node:10.15.3-alpine
+FROM node:10.15-alpine
 
 WORKDIR /opt/quoting-service
 COPY src /opt/quoting-service/src

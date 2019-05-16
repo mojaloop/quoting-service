@@ -8,7 +8,6 @@ const Path = require('path')
 const Good = require('good')
 
 const Config = require('./lib/config.js')
-// const Config = require('../config/config.js')
 const Database = require('./data/cachedDatabase.js')
 
 /**
@@ -50,7 +49,7 @@ const initServer = async function (db, config) {
   await server.register([{
     plugin: HapiOpenAPI,
     options: {
-      api: Path.resolve('./config/swagger.json'),
+      api: Path.resolve('./interface/swagger.json'),
       handlers: Path.resolve('./src/handlers')
     }
   }, {
