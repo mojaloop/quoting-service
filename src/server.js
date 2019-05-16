@@ -49,7 +49,7 @@ const initServer = async function (db, config) {
   await server.register([{
     plugin: HapiOpenAPI,
     options: {
-      api: Path.resolve('./interface/swagger.json'),
+      api: Path.resolve('./src/interface/swagger.json'),
       handlers: Path.resolve('./src/handlers')
     }
   }, {
