@@ -1,16 +1,64 @@
-const RC = require('rc')('QUOTE', require('../../config/default.json'))
+// (C)2018 ModusBox Inc.
+/*****
+ License
+ --------------
+ Copyright © 2017 Bill & Melinda Gates Foundation
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-module.exports = {
-    HOSTNAME: RC.HOSTNAME.replace(/\/$/, ''),
-    PORT: RC.PORT,
-    HOSTADDRESS: RC.HOSTADDRESS,
-    LISTEN_ADDRESS: RC.LISTEN_ADDRESS,
-    DATABASE_DIALECT: RC.DATABASE_DIALECT,
-    DATABASE_HOST: RC.DATABASE_HOST,
-    DATABASE_PORT: RC.DATABASE_PORT,
-    DATABASE_USER: RC.DATABASE_USER,
-    DATABASE_PASSWORD: RC.DATABASE_PASSWORD,
-    DATABASE_SCHEMA: RC.DATABASE_SCHEMA,
-    DATABASE_POOL_MINSIZE: RC.DATABASE_POOL_MINSIZE,
-    DATABASE_POOL_MAXSIZE: RC.DATABASE_POOL_MAXSIZE
+ Initial contribution
+ --------------------
+ The initial functionality and code base was donated by the Mowali project working in conjunction with MTN and Orange as service provides.
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * James Bush <james.bush@modusbox.com
+ * Henk Kodde <henk.kodde@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ --------------
+ ******/
+
+const RC = require('rc')('QUOTE', require('../../config/default.json'))
+const util = require('util')
+
+/**
+ * Loads config from environment
+ */
+class Config {
+  constructor () {
+    // load config from environment (or use sensible defaults)
+    this.listenAddress = RC.LISTEN_ADDRESS
+    this.listenPort = RC.PORT
+
+    this.database = {
+      client: RC.DATABASE.DIALECT,
+      connection: {
+        host: RC.DATABASE.HOST.replace(/\/$/, ''),
+        port: RC.DATABASE.PORT,
+        user: RC.DATABASE.USER,
+        password: RC.DATABASE.PASSWORD,
+        database: RC.DATABASE.SCHEMA
+      },
+      pool: {
+        min: RC.DATABASE.POOL_MINSIZE,
+        max: RC.DATABASE.POOL_MAXSIZE
+      }
+    }
+    // eslint-disable-next-line no-console
+    console.log('Config loaded: %s', util.inspect(this))
+  }
 }
+
+module.exports = Config
