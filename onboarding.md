@@ -38,22 +38,16 @@ install npm
 
 ## Initialising the database and starting the service
 
-Create the database table by executing [create-quoting-service-entities](create-quoting-service-entities.sql) script in MySQLWorkbench. 
+The database table was already created by the Central-Ledger services at startup.
 
 Before starting the quoting-service, insure the mock service is still running as described in [onboarding guide](https://github.com/mojaloop/central-ledger/blob/master/Onboarding.md)
 
-Run the following in your terminal session to connect to the database and start the quoting service;
+Run the below from the root quoting-service in your terminal session to start the quoting service;
 
 ```bash
-DATABASE_HOST=localhost DATABASE_USER=central_ledger DATABASE_PASSWORD=password node server.js
+npm start
 ```
 
 ## Run Tests
 
-Use Postman or similar to make calls to the quoting service API:
-
-Details of the API exposed by the quoting service is available as swagger yaml in the github here:
-
-```
-https://github.com/mojaloop/quoting-service/blob/master/config/fspiop-rest-v1.0-OpenAPI-implementation-quoting.yaml
-```
+Use Postman to generate quotes.
