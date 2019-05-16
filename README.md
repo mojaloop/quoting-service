@@ -1,27 +1,26 @@
-# quoting-service-api-adapter
+# Quoting Service
+[![Git Commit](https://img.shields.io/github/last-commit/mojaloop/quoting-service.svg?style=flat)](https://github.com/mojaloop/quoting-service/commits/master)
+[![Git Releases](https://img.shields.io/github/release/mojaloop/quoting-service.svg?style=flat)](https://github.com/mojaloop/quoting-service/releases)
+[![Docker pulls](https://img.shields.io/docker/pulls/mojaloop/quoting-service.svg?style=flat)](https://hub.docker.com/r/mojaloop/quoting-service)
+[![CircleCI](https://circleci.com/gh/mojaloop/quoting-service.svg?style=svg)](https://circleci.com/gh/mojaloop/quoting-service)
 
-Swagger api [location](./config/swagger.json)
+The Quoting Service was donated by the Mowali project working in collaboration with Orange and MTN. 
+The Quoting service is now part of the Mojaloop project and deployment.
 
-# Updating dependencies
+The service provided by the API resource /quotes is calculation of possible fees and FSP commission involved in performing an interoperable financial transaction. 
+Both the Payer and Payee FSP should calculate their part of the quote to be able to get a total view of all the fees and FSP commission involved in the transaction.
 
-```
-cd src/
-npm run-script package-lock
-```
+### Contents:
 
-![Quoting Service Sequence diagram](docs/quotingServiceSequences.svg)
+- [Services Sequence overview](#services-sequence-overview)
+- [Local Deployment](#local-deployment)
 
-* [Quoting Service Sequence diagram](docs/quotingServiceSequences.puml)
+## Services Sequence overview
 
-# Testing
+![Quoting Service Sequence diagram](diagrams/quotingServiceSequences.svg)
 
-Follow the README instructions to run and set up the mysql container from the central-ledger
-repo. Then run the central-ledger-init container, followed by the quoting-service-init container.
-Now you're ready to run the quoting service as follows.
+* [Quoting Service Sequence diagram](diagrams/quotingServiceSequences.puml)
 
-```
-cd src/
-npm run-script build
-npm run-script run
-curl localhost:3000
-```
+## Local Deployment
+
+Please follow the instruction in [Onboarding Document](onboarding.md) to setup and run the service locally.

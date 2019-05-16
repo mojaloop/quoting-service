@@ -7,8 +7,8 @@ const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
 const Good = require('good')
 
-const Config = require('./config/config.js')
-const Database = require('./src/data/cachedDatabase.js')
+const Config = require('../config/config.js')
+const Database = require('./data/cachedDatabase.js')
 
 /**
  * Initializes a database connection pool
