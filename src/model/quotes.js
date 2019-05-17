@@ -239,15 +239,15 @@ class QuotesModel {
 
       // lookup payee dfsp callback endpoint
       // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-      endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSIOP_CALLBACK_URL', 'PAYEE')
+      endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYEE')
 
-      this.writeLog(`Resolved PAYEE party FSIOP_CALLBACK_URL endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
+      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
         throw new Errors.FSPIOPError(originalQuoteRequest,
-          `No FSIOP_CALLBACK_URL found for quote ${quoteId} PAYEE party`, fspiopSource,
+          `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYEE party`, fspiopSource,
           Errors.ApiErrorCodes.DESTINATION_FSP_ERROR)
       }
 
@@ -446,15 +446,15 @@ class QuotesModel {
 
       // lookup payer dfsp callback endpoint
       // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-      endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSIOP_CALLBACK_URL', 'PAYER')
+      endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
 
-      this.writeLog(`Resolved PAYER party FSIOP_CALLBACK_URL endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
+      this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
         return this.sendErrorCallback(new Errors.FSPIOPError(null,
-          `No FSIOP_CALLBACK_URL found for quote ${quoteId} PAYER party`, fspiopSource, Errors.ApiErrorCodes.COMMUNICATION_ERROR),
+          `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYER party`, fspiopSource, Errors.ApiErrorCodes.COMMUNICATION_ERROR),
         quoteId)
       }
 
@@ -612,15 +612,15 @@ class QuotesModel {
       // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
       const fspiopSource = headers['fspiop-source']
       const fspiopDest = headers['fspiop-destination']
-      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSIOP_CALLBACK_URL')
+      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
 
-      this.writeLog(`Resolved ${fspiopDest} FSIOP_CALLBACK_URL endpoint for quote GET ${quoteId} to: ${util.inspect(endpoint)}`)
+      this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_QUOTES endpoint for quote GET ${quoteId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
         throw new Errors.FSPIOPError(null,
-          `No FSIOP_CALLBACK_URL found for quote GET ${quoteId}`, fspiopSource,
+          `No FSPIOP_CALLBACK_URL_QUOTES found for quote GET ${quoteId}`, fspiopSource,
           Errors.ApiErrorCodes.DESTINATION_FSP_ERROR)
       }
 
@@ -680,7 +680,7 @@ class QuotesModel {
   }
 
   /**
-     * Makes an error callback. Callback is sent to the FSIOP_CALLBACK_URL endpoint of the replyTo participant in the
+     * Makes an error callback. Callback is sent to the FSPIOP_CALLBACK_URL_QUOTES endpoint of the replyTo participant in the
      * supplied fspiopErr object. This should be the participantId for the error callback recipient e.g. value from the
      * FSPIOP-Source header of the original request that caused the error.
      *
@@ -693,13 +693,13 @@ class QuotesModel {
       }
 
       // look up the callback base url
-      const endpoint = await this.db.getParticipantEndpoint(fspiopErr.replyTo, 'FSIOP_CALLBACK_URL')
+      const endpoint = await this.db.getParticipantEndpoint(fspiopErr.replyTo, 'FSPIOP_CALLBACK_URL_QUOTES')
 
-      this.writeLog(`Resolved participant '${fspiopErr.replyTo}' FSIOP_CALLBACK_URL to: '${endpoint}'`)
+      this.writeLog(`Resolved participant '${fspiopErr.replyTo}' FSPIOP_CALLBACK_URL_QUOTES to: '${endpoint}'`)
 
       if (!endpoint) {
         // oops, we cant make an error callback if we dont have an endpoint to call!
-        throw new Error(`No FSIOP_CALLBACK_URL found for ${fspiopErr.replyTo} unable to make error callback`)
+        throw new Error(`No FSPIOP_CALLBACK_URL_QUOTES found for ${fspiopErr.replyTo} unable to make error callback`)
       }
 
       let fullCallbackUrl = `${endpoint}/quotes/${quoteId}/error`
