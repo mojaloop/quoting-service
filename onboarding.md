@@ -35,6 +35,9 @@ In the quoting-service project root, install NMP (at the time of publish node v8
 ```bash 
 install npm 
 ```
+## Configuration
+
+Configuration is maintained in the [default.json](./config/default.json).
 
 ## Initialising the database and starting the service
 
@@ -50,4 +53,6 @@ npm start
 
 ## Run Tests
 
-Use Postman to generate quotes.
+Please refer to Central-Ledger repository to setup Postman.
+
+Postman is used to generate quotes via the quoting-service.

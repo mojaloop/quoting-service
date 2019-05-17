@@ -11,7 +11,6 @@
  --------------------
  The initial functionality and code base was donated by the Mowali project working in conjunction with MTN and Orange as service provides.
  * Project: Mowali
- * Original Author: James Bush
 
  Contributors
  --------------
