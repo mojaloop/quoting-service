@@ -53,4 +53,6 @@ npm start
 
 ## Run Tests
 
-Use Postman to generate quotes.
+Please refer to Central-Ledger repository to setup Postman.
+
+Postman is used to generate quotes via the quoting-service.
