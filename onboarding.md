@@ -35,6 +35,9 @@ In the quoting-service project root, install NMP (at the time of publish node v8
 ```bash 
 install npm 
 ```
+## Configuration
+
+Configuration is maintained in the [default.json](./config/default.json).
 
 ## Initialising the database and starting the service
 
