@@ -50,7 +50,11 @@ class Database {
      */
   async connect () {
     this.queryBuilder = Knex(this.config)
-    this.writeLog(`Connected to database with config: ${util.inspect(this.config)}`)
+    this.writeLog(`Connected to database`)
+    /**
+     *     this.writeLog(`Connected to database with config: ${util.inspect(this.config)}`)
+      */
+
     return this
   }
 
