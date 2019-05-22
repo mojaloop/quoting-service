@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "6.2.0",
+  "version": "6.2.1",
   "author": "Modusbox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
@@ -25,6 +25,7 @@
     "good-console": "7.1.0",
     "good-squeeze": "5.1.0",
     "hapi": "17.0.0",
+    "hapi-alive": "2.0.1",
     "hapi-openapi": "1.0.0",
     "json-rules-engine": "2.3.0",
     "knex": "0.15.2",

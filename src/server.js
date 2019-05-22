@@ -6,6 +6,7 @@ const Hapi = require('hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
 const Good = require('good')
+const Health = require('hapi-alive')
 
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase.js')
@@ -69,23 +70,33 @@ const initServer = async function (db, config) {
         }, 'stdout']
       }
     }
+  }, {
+
+  // add a health endpoint on Database being available/
+    plugin: Health,
+    options: {
+      path: '/health', //Health route path
+      tags: ['health', 'monitor'],
+      responses: {
+        healthy: {
+          message: 'Quoting service Database connection is healthy!!!'
+        },
+        unhealthy: {
+          statusCode: 500
+        }
+      },
+
+    // If database is not connected , throw an error.
+      healthCheck: async function (server) {
+        if (!(await server.app.database.isConnected())) {
+          throw new Error('Database not connected');
+        }
+        return await true;
+      }
+    }
   }])
 
   // add a health endpoint on /
-  server.route({
-    method: 'GET',
-    path: '/',
-    handler: async (request, h) => {
-      if (!(await db.isConnected())) {
-        return h.response({
-          statusCode: 500,
-          error: 'Internal Server Error',
-          message: 'Database not connected' }).code(500)
-      }
-      return h.response().code(200)
-    }
-  })
-
   // deal with the api spec content-type not being "application/json" which it actually is. seriously!?
   server.ext('onRequest', function (request, reply) {
     if (request.headers['content-type'] &&
@@ -98,7 +109,6 @@ const initServer = async function (db, config) {
 
   // start the server
   await server.start()
-
   return server
 }
 
@@ -119,8 +129,10 @@ initDb(config.database).then(db => {
   })
 
   server.plugins.openapi.setHost(server.info.host + ':' + server.info.port)
-  server.log(['info'], `Server running on ${server.info.host}:${server.info.port}`)
+  server.log(['info'], `Server running`)
+
 }).catch(err => {
   // eslint-disable-next-line no-console
   console.log(`Error initializing server: ${err.stack || util.inspect(err)}`)
 })
+
