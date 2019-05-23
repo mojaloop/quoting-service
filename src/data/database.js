@@ -908,7 +908,7 @@ class Database {
      */
   writeLog (message) {
     // eslint-disable-next-line no-console
-    console.log(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
+    // console.log(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
   }
 }
 

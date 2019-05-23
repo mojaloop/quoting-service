@@ -35,7 +35,7 @@ const initServer = async function (db, config) {
       validate: {
         failAction: async (request, h, err) => {
           // eslint-disable-next-line no-console
-          console.log(`validation failure: ${err.stack || util.inspect(err)}`)
+          // console.log(`validation failure: ${err.stack || util.inspect(err)}`)
           throw err
         }
       }
@@ -98,7 +98,7 @@ initDb(config.database).then(db => {
     server.log(['info'], 'Received SIGTERM, closing server...')
     server.stop({ timeout: 10000 }).then(err => {
       // eslint-disable-next-line no-console
-      console.log(`server stopped. ${err ? (err.stack || util.inspect(err)) : ''}`)
+      // console.log(`server stopped. ${err ? (err.stack || util.inspect(err)) : ''}`)
       process.exit((err) ? 1 : 0)
     })
   })
@@ -107,5 +107,5 @@ initDb(config.database).then(db => {
   server.log(['info'], `Server running on ${server.info.uri}`)
 }).catch(err => {
   // eslint-disable-next-line no-console
-  console.log(`Error initializing server: ${err.stack || util.inspect(err)}`)
+  //console.log(`Error initializing server: ${err.stack || util.inspect(err)}`)
 })

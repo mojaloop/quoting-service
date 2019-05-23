@@ -891,7 +891,7 @@ class QuotesModel {
      */
   writeLog (message) {
     // eslint-disable-next-line no-console
-    console.log(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
+    // console.log(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
   }
 }
 

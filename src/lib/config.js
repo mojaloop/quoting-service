@@ -57,7 +57,7 @@ class Config {
       }
     }
     // eslint-disable-next-line no-console
-    console.log('Initializes database connection to :', RC.DATABASE.SCHEMA, 'database.')
+    // console.log('Initializes database connection to :', RC.DATABASE.SCHEMA, 'database.')
   }
 }
 
