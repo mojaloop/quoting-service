@@ -939,6 +939,24 @@
                     }
                 }
             }
+        },
+        "/health": {
+        "get": {
+            "description": "The HTTP request GET /health is used to return the current status of the API.",
+            "summary": "Get Server",
+            "tags": [
+                "health"
+                ],
+            "operationId": "HealthGet",
+            "produces": [
+                "application/json"
+                ],
+            "responses": {
+                "200": {
+                    "$ref": "#/responses/ResponseHealth200"
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2284,6 +2302,17 @@
                 "originalTransactionId"
             ]
         },
+        "Status": {
+            "title": "Status",
+            "type": "object",
+            "description": "Data model for the api status.",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "description": "The return status, usually \"OK\""
+                }
+            }
+        },
         "Transaction": {
             "title": "Transaction",
             "type": "object",
@@ -2545,7 +2574,13 @@
         }
     },
     "responses": {
-        "Response200": {
+        "ResponseHealth200": {
+            "description": "OK",
+            "schema": {
+                "$ref": "#/definitions/Status"
+            }
+        },
+         "Response200": {
             "description": "OK"
         },
         "Response202": {
