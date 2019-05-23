@@ -35,7 +35,7 @@ const initServer = async function (db, config) {
       validate: {
         failAction: async (request, h, err) => {
           // eslint-disable-next-line no-console
-          console.log(`validation failure: ${err.stack || util.inspect(err)}`)
+          // console.log(`validation failure: ${err.stack || util.inspect(err)}`)
           throw err
         }
       }
@@ -71,25 +71,10 @@ const initServer = async function (db, config) {
     }
   }])
 
-  // add a health endpoint on /
-  server.route({
-    method: 'GET',
-    path: '/',
-    handler: async (request, h) => {
-      if (!(await db.isConnected())) {
-        return h.response({
-          statusCode: 500,
-          error: 'Internal Server Error',
-          message: 'Database not connected' }).code(500)
-      }
-      return h.response().code(200)
-    }
-  })
-
   // deal with the api spec content-type not being "application/json" which it actually is. seriously!?
   server.ext('onRequest', function (request, reply) {
     if (request.headers['content-type'] &&
-            request.headers['content-type'].startsWith('application/vnd.interoperability')) {
+      request.headers['content-type'].startsWith('application/vnd.interoperability')) {
       request.headers['x-content-type'] = request.headers['content-type']
       request.headers['content-type'] = 'application/json'
     }
@@ -113,14 +98,14 @@ initDb(config.database).then(db => {
     server.log(['info'], 'Received SIGTERM, closing server...')
     server.stop({ timeout: 10000 }).then(err => {
       // eslint-disable-next-line no-console
-      console.log(`server stopped. ${err ? (err.stack || util.inspect(err)) : ''}`)
+      // console.log(`server stopped. ${err ? (err.stack || util.inspect(err)) : ''}`)
       process.exit((err) ? 1 : 0)
     })
   })
 
   server.plugins.openapi.setHost(server.info.host + ':' + server.info.port)
-  server.log(['info'], `Server running on ${server.info.host}:${server.info.port}`)
+  server.log(['info'], `Server running on ${server.info.uri}`)
 }).catch(err => {
   // eslint-disable-next-line no-console
-  console.log(`Error initializing server: ${err.stack || util.inspect(err)}`)
+  //console.log(`Error initializing server: ${err.stack || util.inspect(err)}`)
 })

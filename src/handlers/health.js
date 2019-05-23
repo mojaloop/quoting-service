@@ -1,4 +1,3 @@
-// (C)2018 ModusBox Inc.
 /*****
  License
  --------------
@@ -6,10 +5,6 @@
  The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
  http://www.apache.org/licenses/LICENSE-2.0
  Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
- Initial contribution
- --------------------
- The initial functionality and code base was donated by the Mowali project working in conjunction with MTN and Orange as service provides.
 
  Contributors
  --------------
@@ -24,41 +19,23 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * James Bush <james.bush@modusbox.com
  * Henk Kodde <henk.kodde@modusbox.com>
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
-const RC = require('rc')('QUOTE', require('../../config/default.json'))
-const util = require('util')
-
+'use strict'
 /**
- * Loads config from environment
+ * Operations on /health
  */
-class Config {
-  constructor () {
-    // load config from environment (or use sensible defaults)
-    this.listenAddress = RC.LISTEN_ADDRESS
-    this.listenPort = RC.PORT
-
-    this.database = {
-      client: RC.DATABASE.DIALECT,
-      connection: {
-        host: RC.DATABASE.HOST.replace(/\/$/, ''),
-        port: RC.DATABASE.PORT,
-        user: RC.DATABASE.USER,
-        password: RC.DATABASE.PASSWORD,
-        database: RC.DATABASE.SCHEMA
-      },
-      pool: {
-        min: RC.DATABASE.POOL_MINSIZE,
-        max: RC.DATABASE.POOL_MAXSIZE
-      }
-    }
-    // eslint-disable-next-line no-console
-    // console.log('Initializes database connection to :', RC.DATABASE.SCHEMA, 'database.')
+module.exports = {
+  /**
+   * summary: Get Quoting Service Health
+   * description: The HTTP request GET /health is used to return the current status of the API .
+   * parameters:
+   * produces: application/json
+   * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
+   */
+  get: function HealthGet(request, h) {
+      return h.response({ status: 'OK' }).code(200)
   }
 }
-
-module.exports = Config
