@@ -13,6 +13,7 @@ In this document we'll walk through the setup a local Mojaloop Quoting Service a
 - [Software List](#software-list)
 - [Setting up a local quote environment](#setting-up-a-local-quote-environment)
 - [Initialising the database and starting the service](#initialising-the-database-and-starting-the-service)
+- [Health Check](#health-check)
 - [Run Tests](#run-tests)
 
 ## Software List
@@ -50,6 +51,17 @@ Run the below from the root quoting-service in your terminal session to start th
 ```bash
 npm start
 ```
+
+## Health check
+
+To verify the database is connected once the server started, run this from your browser;
+```
+http://localserver:3002/health
+```
+
+If all is well, the following responce will be received'
+
+**Quoting service Database connection is healthy!!!**
 
 ## Run Tests
 
