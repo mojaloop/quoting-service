@@ -878,7 +878,7 @@ class QuotesModel {
     }
 
     if (!noAccept) {
-      ret['Accept'] = 'application/vnd.interoperability.quotes+json;version=1.0'
+      ret['Accept'] = 'application/vnd.interoperability.quotes+json;version=1'
     }
 
     return this.removeEmptyKeys(ret)
