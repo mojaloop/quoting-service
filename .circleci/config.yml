@@ -398,7 +398,7 @@ workflows:
             - setup
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*/
+              only: /.*/
             branches:
               ignore:
                 - /feature*/
@@ -429,7 +429,7 @@ workflows:
           context: org-global
           requires:
             - setup
-          #            - test-unit
+            - test-unit
           #            - test-coverage
           #            - test-integration
           #            - test-functional
