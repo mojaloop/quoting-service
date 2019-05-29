@@ -5,7 +5,7 @@ const util = require('util')
 const Hapi = require('hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
-const Good = require('good')
+const Good = require('@hapi/good')
 
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase.js')
