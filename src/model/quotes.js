@@ -32,6 +32,7 @@
 
 const util = require('util')
 const crypto = require('crypto')
+const Config = require('../lib/config')
 
 const fetch = require('node-fetch')
 const axios = require('axios')
@@ -90,6 +91,7 @@ class QuotesModel {
      * @returns {object} - returns object containing keys for created database entities
      */
   async handleQuoteRequest (headers, quoteRequest) {
+    const envConfig = new Config()
     let txn = null
 
     try {
@@ -101,114 +103,123 @@ class QuotesModel {
       // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, quoteRequest)
 
-      // do everything in a db txn so we can rollback multiple operations if something goes wrong
-      txn = await this.db.newTransaction()
+      if (!envConfig.simpleRoutingMode) {
+        // do everything in a db txn so we can rollback multiple operations if something goes wrong
+        txn = await this.db.newTransaction()
 
-      // check if this is a resend or an erroneous duplicate
-      const dupe = await this.checkDuplicateQuoteRequest(quoteRequest)
+        // check if this is a resend or an erroneous duplicate
+        const dupe = await this.checkDuplicateQuoteRequest(quoteRequest)
 
-      this.writeLog(`Check duplicate for quoteId ${quoteRequest.quoteId} returned: ${util.inspect(dupe)}`)
+        this.writeLog(`Check duplicate for quoteId ${quoteRequest.quoteId} returned: ${util.inspect(dupe)}`)
 
-      // fail fast on duplicate
-      if (dupe.isDuplicateId && (!dupe.isResend)) {
-        // same quoteId but a different request, this is an error!
-        throw new Errors.FSPIOPError(quoteRequest,
-          `Quote ${quoteRequest.quoteId} is a duplicate but hashes dont match`, fspiopSource,
-          Errors.ApiErrorCodes.MODIFIED_REQUEST)
-      }
+        // fail fast on duplicate
+        if (dupe.isDuplicateId && (!dupe.isResend)) {
+          // same quoteId but a different request, this is an error!
+          throw new Errors.FSPIOPError(quoteRequest,
+            `Quote ${quoteRequest.quoteId} is a duplicate but hashes dont match`, fspiopSource,
+            Errors.ApiErrorCodes.MODIFIED_REQUEST)
+        }
 
-      if (dupe.isResend && dupe.isDuplicateId) {
-        // this is a resend
-        // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-        return this.handleQuoteRequestResend(headers, quoteRequest)
-      }
+        if (dupe.isResend && dupe.isDuplicateId) {
+          // this is a resend
+          // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+          return this.handleQuoteRequestResend(headers, quoteRequest)
+        }
 
-      // todo: validation
+        // todo: validation
 
-      // if we get here we need to create a duplicate check row
-      const hash = this.calculateRequestHash(quoteRequest)
-      await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
+        // if we get here we need to create a duplicate check row
+        const hash = this.calculateRequestHash(quoteRequest)
+        await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
 
-      // create a txn reference
-      refs.transactionReferenceId = await this.db.createTransactionReference(txn,
-        quoteRequest.quoteId, quoteRequest.transactionId)
+        // create a txn reference
+        refs.transactionReferenceId = await this.db.createTransactionReference(txn,
+          quoteRequest.quoteId, quoteRequest.transactionId)
 
-      // get the initiator type
-      refs.transactionInitiatorTypeId = await this.db.getInitiatorType(quoteRequest.transactionType.initiatorType)
+        // get the initiator type
+        refs.transactionInitiatorTypeId = await this.db.getInitiatorType(quoteRequest.transactionType.initiatorType)
 
-      // get the initiator
-      refs.transactionInitiatorId = await this.db.getInitiator(quoteRequest.transactionType.initiator)
+        // get the initiator
+        refs.transactionInitiatorId = await this.db.getInitiator(quoteRequest.transactionType.initiator)
 
-      // get the txn scenario id
-      refs.transactionScenarioId = await this.db.getScenario(quoteRequest.transactionType.scenario)
+        // get the txn scenario id
+        refs.transactionScenarioId = await this.db.getScenario(quoteRequest.transactionType.scenario)
 
-      if (quoteRequest.transactionType.subScenario) {
-        // a sub scenario is specified, we need to look it up
-        refs.transactionSubScenarioId = await this.db.getSubScenario(quoteRequest.transactionType.subScenario)
-      }
+        if (quoteRequest.transactionType.subScenario) {
+          // a sub scenario is specified, we need to look it up
+          refs.transactionSubScenarioId = await this.db.getSubScenario(quoteRequest.transactionType.subScenario)
+        }
 
-      // get amount type
-      refs.amountTypeId = await this.db.getAmountType(quoteRequest.amountType)
+        // get amount type
+        refs.amountTypeId = await this.db.getAmountType(quoteRequest.amountType)
 
-      // create the quote row itself
-      refs.quoteId = await this.db.createQuote(txn, {
-        quoteId: quoteRequest.quoteId,
-        transactionReferenceId: refs.transactionReferenceId,
-        transactionRequestId: quoteRequest.transactionRequestId || null,
-        note: quoteRequest.note,
-        expirationDate: quoteRequest.expiration ? new Date(quoteRequest.expiration) : null,
-        transactionInitiatorId: refs.transactionInitiatorId,
-        transactionInitiatorTypeId: refs.transactionInitiatorTypeId,
-        transactionScenarioId: refs.transactionScenarioId,
-        balanceOfPaymentsId: quoteRequest.transactionType.balanceOfPayments ? Number(quoteRequest.transactionType.balanceOfPayments) : null,
-        transactionSubScenarioId: refs.transactionSubScenarioId,
-        amountTypeId: refs.amountTypeId,
-        amount: quoteRequest.amount.amount,
-        currencyId: quoteRequest.amount.currency
-      })
-
-      refs.payerId = await this.db.createPayerQuoteParty(txn, refs.quoteId, quoteRequest.payer,
-        quoteRequest.amount.amount, quoteRequest.amount.currency)
-
-      refs.payeeId = await this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
-        quoteRequest.amount.amount, quoteRequest.amount.currency)
-
-      // did we get a geoCode for the initiator?
-      if (quoteRequest.geoCode) {
-        refs.geoCodeId = await this.db.createGeoCode(txn, {
-          quotePartyId: quoteRequest.transactionType.initiator === 'PAYER' ? refs.payerId : refs.payeeId,
-          latitude: quoteRequest.geoCode.latitude,
-          longitude: quoteRequest.geoCode.longitude
+        // create the quote row itself
+        refs.quoteId = await this.db.createQuote(txn, {
+          quoteId: quoteRequest.quoteId,
+          transactionReferenceId: refs.transactionReferenceId,
+          transactionRequestId: quoteRequest.transactionRequestId || null,
+          note: quoteRequest.note,
+          expirationDate: quoteRequest.expiration ? new Date(quoteRequest.expiration) : null,
+          transactionInitiatorId: refs.transactionInitiatorId,
+          transactionInitiatorTypeId: refs.transactionInitiatorTypeId,
+          transactionScenarioId: refs.transactionScenarioId,
+          balanceOfPaymentsId: quoteRequest.transactionType.balanceOfPayments ? Number(quoteRequest.transactionType.balanceOfPayments) : null,
+          transactionSubScenarioId: refs.transactionSubScenarioId,
+          amountTypeId: refs.amountTypeId,
+          amount: quoteRequest.amount.amount,
+          currencyId: quoteRequest.amount.currency
         })
+
+        refs.payerId = await this.db.createPayerQuoteParty(txn, refs.quoteId, quoteRequest.payer,
+          quoteRequest.amount.amount, quoteRequest.amount.currency)
+
+        refs.payeeId = await this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
+          quoteRequest.amount.amount, quoteRequest.amount.currency)
+
+        // did we get a geoCode for the initiator?
+        if (quoteRequest.geoCode) {
+          refs.geoCodeId = await this.db.createGeoCode(txn, {
+            quotePartyId: quoteRequest.transactionType.initiator === 'PAYER' ? refs.payerId : refs.payeeId,
+            latitude: quoteRequest.geoCode.latitude,
+            longitude: quoteRequest.geoCode.longitude
+          })
+        }
+
+        await txn.commit()
+        this.writeLog(`create quote transaction committed to db: ${util.inspect(refs)}`)
+
+        // if we got here, all entities have been created in db correctly to record the quote request
+
+        // check quote rules
+        let test = {...quoteRequest}
+
+        const failures = await quoteRules.getFailures(test)
+        if (failures && failures.length > 0) {
+          // quote broke business rules, queue up an error callback to the caller
+          this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`)
+          // todo: make error callback
+        }
       }
-
-      await txn.commit()
-      this.writeLog(`create quote transaction committed to db: ${util.inspect(refs)}`)
-
-      // if we got here, all entities have been created in db correctly to record the quote request
-
-      // check quote rules
-      let test = { ...quoteRequest }
-
-      const failures = await quoteRules.getFailures(test)
-      if (failures && failures.length > 0) {
-        // quote broke business rules, queue up an error callback to the caller
-        this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`)
-        // todo: make error callback
-      }
-
       // make call to payee dfsp in a setImmediate;
       // attempting to give fair execution of async events...
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
         // if we got here rules passed, so we can forward the quote on to the recipient dfsp
         try {
-          await this.forwardQuoteRequest(headers, refs.quoteId, quoteRequest)
+          if (envConfig.simpleRoutingMode) {
+            await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest)
+          } else {
+            await this.forwardQuoteRequest(headers, refs.quoteId, quoteRequest)
+          }
         } catch (err) {
           // as we are on our own in this context, dont just rethrow the error, instead...
           // get the model to handle it
           this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, refs.quoteId, err)
+          if (envConfig.simpleRoutingMode) {
+            await this.handleException(fspiopSource, quoteRequest.quoteId, err)
+          } else {
+            await this.handleException(fspiopSource, refs.quoteId, err)
+          }
         }
       })
 
@@ -230,7 +241,7 @@ class QuotesModel {
     let endpoint
     const fspiopSource = headers['fspiop-source']
     const fspiopDest = headers['fspiop-destination']
-
+    const envConfig = new Config()
     try {
       if (!originalQuoteRequest) {
         throw new Errors.FSPIOPError(null, 'No quote request to forward', fspiopSource, Errors.ApiErrorCodes.SERVER_ERROR)
@@ -238,8 +249,11 @@ class QuotesModel {
 
       // lookup payee dfsp callback endpoint
       // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-      endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYEE')
-
+      if (envConfig.simpleRoutingMode) {
+        endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
+      } else {
+        endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYEE')
+      }
       this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
@@ -322,87 +336,89 @@ class QuotesModel {
      */
   async handleQuoteUpdate (headers, quoteId, quoteUpdateRequest) {
     let txn = null
-
+    const envConfig = new Config()
     try {
+
       // accumulate enum ids
       let refs = {}
+      if (!envConfig.simpleRoutingMode) {
 
-      // do everything in a transaction so we can rollback multiple operations if something goes wrong
-      txn = await this.db.newTransaction()
+        // do everything in a transaction so we can rollback multiple operations if something goes wrong
+        txn = await this.db.newTransaction()
 
-      // check if this is a resend or an erroneous duplicate
-      const dupe = await this.checkDuplicateQuoteResponse(quoteId, quoteUpdateRequest)
-      this.writeLog(`Check duplicate for quoteId ${quoteId} update returned: ${util.inspect(dupe)}`)
+        // check if this is a resend or an erroneous duplicate
+        const dupe = await this.checkDuplicateQuoteResponse(quoteId, quoteUpdateRequest)
+        this.writeLog(`Check duplicate for quoteId ${quoteId} update returned: ${util.inspect(dupe)}`)
 
-      // fail fast on duplicate
-      if (dupe.isDuplicateId && (!dupe.isResend)) {
-        // same quoteId but a different request, this is an error!
-        throw new Errors.FSPIOPError(quoteUpdateRequest,
-          `Update for quote ${quoteUpdateRequest.quoteId} is a duplicate but hashes dont match`, headers['fspiop-source'],
-          Errors.ApiErrorCodes.MODIFIED_REQUEST)
-      }
-
-      if (dupe.isResend && dupe.isDuplicateId) {
-        // this is a resend
-        // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-        return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest)
-      }
-
-      // todo: validation
-
-      // create the quote response row in the db
-      const newQuoteResponse = await this.db.createQuoteResponse(txn, quoteId, {
-        transferAmount: quoteUpdateRequest.transferAmount,
-        payeeReceiveAmount: quoteUpdateRequest.payeeReceiveAmount,
-        payeeFspFee: quoteUpdateRequest.payeeFspFee,
-        payeeFspCommission: quoteUpdateRequest.payeeFspCommission,
-        condition: quoteUpdateRequest.condition,
-        expiration: quoteUpdateRequest.expiration ? new Date(quoteUpdateRequest.expiration) : null,
-        isValid: 1 // assume the request is valid if we passed validation and duplicate checks etc...
-      })
-
-      refs.quoteResponseId = newQuoteResponse.quoteResponseId
-
-      // if we get here we need to create a duplicate check row
-      const hash = this.calculateRequestHash(quoteUpdateRequest)
-      await this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash)
-
-      // create ilp packet in the db
-      await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId,
-        quoteUpdateRequest.ilpPacket)
-
-      // did we get a geoCode for the payee?
-      if (quoteUpdateRequest.geoCode) {
-        const payeeParty = await this.db.getQuoteParty(quoteId, 'PAYEE')
-
-        if (!payeeParty) {
-          throw new Error(`Unable to find payee party for quote ${quoteId}`)
+        // fail fast on duplicate
+        if (dupe.isDuplicateId && (!dupe.isResend)) {
+          // same quoteId but a different request, this is an error!
+          throw new Errors.FSPIOPError(quoteUpdateRequest,
+            `Update for quote ${quoteUpdateRequest.quoteId} is a duplicate but hashes dont match`, headers['fspiop-source'],
+            Errors.ApiErrorCodes.MODIFIED_REQUEST)
         }
 
-        refs.geoCodeId = await this.db.createGeoCode(txn, {
-          quotePartyId: payeeParty.quotePartyId,
-          latitude: quoteUpdateRequest.geoCode.latitude,
-          longitude: quoteUpdateRequest.geoCode.longitude
+        if (dupe.isResend && dupe.isDuplicateId) {
+          // this is a resend
+          // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+          return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest)
+        }
+
+        // todo: validation
+
+        // create the quote response row in the db
+        const newQuoteResponse = await this.db.createQuoteResponse(txn, quoteId, {
+          transferAmount: quoteUpdateRequest.transferAmount,
+          payeeReceiveAmount: quoteUpdateRequest.payeeReceiveAmount,
+          payeeFspFee: quoteUpdateRequest.payeeFspFee,
+          payeeFspCommission: quoteUpdateRequest.payeeFspCommission,
+          condition: quoteUpdateRequest.condition,
+          expiration: quoteUpdateRequest.expiration ? new Date(quoteUpdateRequest.expiration) : null,
+          isValid: 1 // assume the request is valid if we passed validation and duplicate checks etc...
         })
+
+        refs.quoteResponseId = newQuoteResponse.quoteResponseId
+
+        // if we get here we need to create a duplicate check row
+        const hash = this.calculateRequestHash(quoteUpdateRequest)
+        await this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash)
+
+        // create ilp packet in the db
+        await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId,
+          quoteUpdateRequest.ilpPacket)
+
+        // did we get a geoCode for the payee?
+        if (quoteUpdateRequest.geoCode) {
+          const payeeParty = await this.db.getQuoteParty(quoteId, 'PAYEE')
+
+          if (!payeeParty) {
+            throw new Error(`Unable to find payee party for quote ${quoteId}`)
+          }
+
+          refs.geoCodeId = await this.db.createGeoCode(txn, {
+            quotePartyId: payeeParty.quotePartyId,
+            latitude: quoteUpdateRequest.geoCode.latitude,
+            longitude: quoteUpdateRequest.geoCode.longitude
+          })
+        }
+
+        // todo: create any additional quoteParties e.g. for fees, comission etc...
+
+        await txn.commit()
+        this.writeLog(`create quote update transaction committed to db: ${util.inspect(refs)}`)
+
+        /// if we got here, all entities have been created in db correctly to record the quote request
+
+        // check quote response rules
+        // let test = { ...quoteUpdateRequest };
+
+        // const failures = await quoteRules.getFailures(test);
+        // if (failures && failures.length > 0) {
+        // quote broke business rules, queue up an error callback to the caller
+        //    this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`);
+        // todo: make error callback
+        // }
       }
-
-      // todo: create any additional quoteParties e.g. for fees, comission etc...
-
-      await txn.commit()
-      this.writeLog(`create quote update transaction committed to db: ${util.inspect(refs)}`)
-
-      /// if we got here, all entities have been created in db correctly to record the quote request
-
-      // check quote response rules
-      // let test = { ...quoteUpdateRequest };
-
-      // const failures = await quoteRules.getFailures(test);
-      // if (failures && failures.length > 0) {
-      // quote broke business rules, queue up an error callback to the caller
-      //    this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`);
-      // todo: make error callback
-      // }
-
       // make call to payee dfsp in a setImmediate;
       // attempting to give fair execution of async events...
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
@@ -435,8 +451,9 @@ class QuotesModel {
      */
   async forwardQuoteUpdate (headers, quoteId, originalQuoteResponse) {
     let endpoint = null
+    const envConfig = new Config()
     const fspiopSource = headers['fspiop-source']
-
+    const fspiopDestination = headers['fspiop-destination']
     try {
       if (!originalQuoteResponse) {
         // we need to recreate the quote response
@@ -444,8 +461,12 @@ class QuotesModel {
       }
 
       // lookup payer dfsp callback endpoint
-      // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-      endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
+      if (envConfig.simpleRoutingMode) {
+        endpoint = await this.db.getParticipantEndpoint(fspiopDestination, 'FSPIOP_CALLBACK_URL_QUOTES')
+      } else {
+        // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
+        endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
+      }
 
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
 
@@ -529,21 +550,22 @@ class QuotesModel {
      */
   async handleQuoteError (headers, quoteId, error) {
     let txn = null
-
+    const envConfig = new Config()
     try {
-      // do everything in a transaction so we can rollback multiple operations if something goes wrong
-      txn = await this.db.newTransaction()
+      if (!envConfig.simpleRoutingMode) {
+        // do everything in a transaction so we can rollback multiple operations if something goes wrong
+        txn = await this.db.newTransaction()
 
-      // persist the error
-      const newError = await this.db.createQuoteError(txn, {
-        quoteId: quoteId,
-        errorCode: Number(error.errorCode),
-        errorDescription: error.errorDescription
-      })
+        // persist the error
+        const newError = await this.db.createQuoteError(txn, {
+          quoteId: quoteId,
+          errorCode: Number(error.errorCode),
+          errorDescription: error.errorDescription
+        })
 
-      // commit the txn to the db
-      txn.commit()
-
+        // commit the txn to the db
+        txn.commit()
+      }
       // create a new object to represent the error
       const e = new Errors.FSPIOPError(`Quote ${quoteId} error put from ${headers['fspiop-source']}`,
         error.errorDescription, headers['fspiop-destination'], {
