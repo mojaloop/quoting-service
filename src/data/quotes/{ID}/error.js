@@ -31,7 +31,7 @@
  ******/
 
 'use strict'
-var Mockgen = require('../../mockgen.js')
+var Mockgen = require('../../../../test/util/mockgen.js')
 /**
  * Operations on /quotes/{ID}/error
  */
