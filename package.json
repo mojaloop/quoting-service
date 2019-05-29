@@ -39,12 +39,14 @@
     "proxyquire": "2.1.0",
     "sinon": "7.3.2",
     "swagmock": "1.0.0",
+    "tap-xunit": "^2.3.0",
     "tape": "4.10.1",
     "tapes": "4.1.0"
   },
   "scripts": {
     "start": "node src/server.js",
     "test": "tape 'test/unit/**/*.test.js'",
+    "test:xunit": "tape 'test/unit/**/*.test.js' | tap-xunit",
     "cover": "istanbul cover tape -- 'test/unit/**/*.test.js'",
     "lint": "eslint .",
     "regenerate": "yo swaggerize:test --framework hapi --apiPath './src/interface/swagger.json'",
