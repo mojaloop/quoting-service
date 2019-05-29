@@ -31,31 +31,15 @@
  ******/
 
 'use strict'
+const Swagmock = require('swagmock')
+const Path = require('path')
+const apiPath = Path.resolve(__dirname, '../../src/interface/swagger.json')
+let mockgen
 
-const Boom = require('@hapi/boom')
-
-/**
- * Operations on /bulkQuotes/{ID}
- */
-module.exports = {
+module.exports = function () {
   /**
-     * summary: BulkQuotesByID
-     * description: The HTTP request GET /bulkQuotes/&lt;ID&gt; is used to get information regarding an earlier created or requested bulk quote. The &lt;ID&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote.
-     * parameters: Accept
-     * produces: application/json
-     * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
+     * Cached mock generator
      */
-  get: function BulkQuotesByID () {
-    return Boom.notImplemented()
-  },
-  /**
-     * summary: BulkQuotesByID
-     * description: The callback PUT /bulkQuotes/&lt;ID&gt; is used to inform the client of a requested or created bulk quote. The &lt;ID&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;ID&gt; that was used in the GET /bulkQuotes/&lt;ID&gt;.
-     * parameters: body, Content-Length
-     * produces: application/json
-     * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
-     */
-  put: function BulkQuotesByID1 () {
-    return Boom.notImplemented()
-  }
+  mockgen = mockgen || Swagmock(apiPath)
+  return mockgen
 }

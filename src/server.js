@@ -5,7 +5,7 @@ const util = require('util')
 const Hapi = require('hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
-const Good = require('good')
+const Good = require('@hapi/good')
 
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase.js')
@@ -71,15 +71,30 @@ const initServer = async function (db, config) {
     }
   }])
 
-  // deal with the api spec content-type not being "application/json" which it actually is. seriously!?
-  server.ext('onRequest', function (request, reply) {
-    if (request.headers['content-type'] &&
-      request.headers['content-type'].startsWith('application/vnd.interoperability')) {
-      request.headers['x-content-type'] = request.headers['content-type']
-      request.headers['content-type'] = 'application/json'
+  await server.ext([
+    {
+      type: 'onPreResponse',
+      method: (request, h) => {
+        if (!request.response.isBoom) {
+          console.log('Not Boom error')
+        } else {
+          const error = request.response
+          error.message = {
+            errorInformation: {
+              errorCode: error.statusCode,
+              errorDescription: error.message,
+              extensionList:[{
+                key: '',
+                value: ''
+              }]
+            }
+          }
+          error.reformat()
+        }
+        return h.continue
+      }
     }
-    return reply.continue
-  })
+  ])
 
   // start the server
   await server.start()

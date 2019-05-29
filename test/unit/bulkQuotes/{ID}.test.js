@@ -36,7 +36,8 @@ const Test = require('tape')
 const Hapi = require('hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
-const Mockgen = require('../../data/mockgen.js')
+const Mockgen = require('../../util/mockgen.js')
+const helper = require('../../util/helper')
 
 /**
  * Test for /bulkQuotes/{ID}
@@ -55,11 +56,36 @@ Test('/bulkQuotes/{ID}', function (t) {
     await server.register({
       plugin: HapiOpenAPI,
       options: {
-        api: Path.resolve(__dirname, '../../src/interface/swagger.json'),
-        handlers: Path.join(__dirname, '../../handlers'),
-        outputvalidation: true
+        api: Path.resolve(__dirname, '../../../src/interface/swagger.json'),
+        handlers: Path.join(__dirname, '../../../src/handlers'),
+        outputvalidation: false
       }
     })
+
+    await server.ext([
+      {
+        type: 'onPreResponse',
+        method: (request, h) => {
+          if (!request.response.isBoom) {
+            Logger.info('Not Boom error')
+          } else {
+            const error = request.response
+            error.message = {
+              errorInformation: {
+                errorCode: error.output.statusCode,
+                errorDescription: error.message,
+                extensionList:[{
+                  key: '',
+                  value: ''
+                }]
+              }
+            }
+            error.reformat()
+          }
+          return h.continue
+        }
+      }
+    ])
 
     const requests = new Promise((resolve, reject) => {
       Mockgen().requests({
@@ -78,7 +104,8 @@ Test('/bulkQuotes/{ID}', function (t) {
     // Mock request Path templates({}) are resolved using path parameters
     const options = {
       method: 'get',
-      url: '/fsp' + mock.request.path
+      url: mock.request.path,
+      headers: helper.defaultHeaders()
     }
     if (mock.request.body) {
       // Send the request body
@@ -87,17 +114,12 @@ Test('/bulkQuotes/{ID}', function (t) {
       // Send the request form data
       options.payload = mock.request.formData
       // Set the Content-Type as application/x-www-form-urlencoded
-      options.headers = options.headers || {}
-      options.headers['Content-Type'] = 'application/x-www-form-urlencoded'
-    }
-    // If headers are present, set the headers.
-    if (mock.request.headers && mock.request.headers.length > 0) {
-      options.headers = mock.request.headers
+      options.headers = helper.defaultHeaders()
     }
 
     const response = await server.inject(options)
 
-    t.equal(response.statusCode, 202, 'Ok response status')
+    t.equal(response.statusCode, 501, 'Not Implemented response status')
     t.end()
   })
   /**
@@ -113,11 +135,36 @@ Test('/bulkQuotes/{ID}', function (t) {
     await server.register({
       plugin: HapiOpenAPI,
       options: {
-        api: Path.resolve(__dirname, '../../src/interface/swagger.json'),
-        handlers: Path.join(__dirname, '../../handlers'),
-        outputvalidation: true
+        api: Path.resolve(__dirname, '../../../src/interface/swagger.json'),
+        handlers: Path.join(__dirname, '../../../src/handlers'),
+        outputvalidation: false
       }
     })
+
+    await server.ext([
+      {
+        type: 'onPreResponse',
+        method: (request, h) => {
+          if (!request.response.isBoom) {
+            Logger.info('Not Boom error')
+          } else {
+            const error = request.response
+            error.message = {
+              errorInformation: {
+                errorCode: error.output.statusCode,
+                errorDescription: error.message,
+                extensionList:[{
+                  key: '',
+                  value: ''
+                }]
+              }
+            }
+            error.reformat()
+          }
+          return h.continue
+        }
+      }
+    ])
 
     const requests = new Promise((resolve, reject) => {
       Mockgen().requests({
@@ -136,7 +183,8 @@ Test('/bulkQuotes/{ID}', function (t) {
     // Mock request Path templates({}) are resolved using path parameters
     const options = {
       method: 'put',
-      url: '/fsp' + mock.request.path
+      url: mock.request.path,
+      headers: helper.defaultHeaders()
     }
     if (mock.request.body) {
       // Send the request body
@@ -145,17 +193,12 @@ Test('/bulkQuotes/{ID}', function (t) {
       // Send the request form data
       options.payload = mock.request.formData
       // Set the Content-Type as application/x-www-form-urlencoded
-      options.headers = options.headers || {}
-      options.headers['Content-Type'] = 'application/x-www-form-urlencoded'
-    }
-    // If headers are present, set the headers.
-    if (mock.request.headers && mock.request.headers.length > 0) {
-      options.headers = mock.request.headers
+      options.headers = helper.defaultHeaders()
     }
 
     const response = await server.inject(options)
 
-    t.equal(response.statusCode, 200, 'Ok response status')
+    t.equal(response.statusCode, 501, 'Not Implemented response status')
     t.end()
   })
 })

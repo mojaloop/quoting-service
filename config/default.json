@@ -11,5 +11,6 @@
     "SCHEMA": "central_ledger",
     "POOL_MINSIZE": 10,
     "POOL_MAXSIZE": 10
-  }
+  },
+  "SIMPLE_ROUTING_MODE": true
 }

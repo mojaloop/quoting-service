@@ -31,7 +31,6 @@
  ******/
 
 const RC = require('rc')('QUOTE', require('../../config/default.json'))
-const util = require('util')
 
 /**
  * Loads config from environment
@@ -41,7 +40,7 @@ class Config {
     // load config from environment (or use sensible defaults)
     this.listenAddress = RC.LISTEN_ADDRESS
     this.listenPort = RC.PORT
-
+    this.simpleRoutingMode = RC.SIMPLE_ROUTING_MODE
     this.database = {
       client: RC.DATABASE.DIALECT,
       connection: {
@@ -56,8 +55,6 @@ class Config {
         max: RC.DATABASE.POOL_MAXSIZE
       }
     }
-    // eslint-disable-next-line no-console
-    // console.log('Initializes database connection to :', RC.DATABASE.SCHEMA, 'database.')
   }
 }
 
