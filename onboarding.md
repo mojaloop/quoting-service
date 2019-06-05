@@ -172,6 +172,8 @@ npm run cover
 
 Refer to the [central-ledger onboarding guide](https://github.com/mojaloop/central-ledger/blob/master/Onboarding.md#51-testing-the-central-ledger-api-with-postman) to test the `quoting-service` using postman.
 
+[todo: add steps about populate test data?]
+
 
 ##  6. <a name='CommonErrorsFAQs'></a>Common Errors/FAQs
 

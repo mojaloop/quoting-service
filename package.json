@@ -53,7 +53,8 @@
     "build": "docker build -t quoting-service:local -f ./Dockerfile ../",
     "run": "docker run -p 3002:3002 --rm --link db:mysql quoting-service:local",
     "package-lock": "docker run --rm -it quoting-service:local cat package-lock.json > package-lock.json",
-    "docker:up": "docker-compose -f docker-compose.yml -f docker-compose.base.yml up"
+    "docker:up": "docker-compose -f docker-compose.yml -f docker-compose.base.yml up",
+    "docker:stop": "docker-compose -f docker-compose.yml -f docker-compose.base.yml stop"
   },
   "generator-swaggerize": {
     "version": "4.1.0"

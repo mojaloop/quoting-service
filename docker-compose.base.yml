@@ -19,6 +19,8 @@ services:
     container_name: qs_ml-api-adapter
     links:
       - kafka
+      - central-ledger
+      - mockserver
     ports:
       - "3000:3000"
     volumes:
