@@ -80,7 +80,6 @@ docker-compose -f docker-compose.base.yml up mysql
 ```bash
 # start all the dependencies inside of docker - these services are defined in docker-compose.base.yml
 docker-compose -f docker-compose.base.yml up
-
 ```
 
 **3. Configure the default files and run the server**
@@ -90,11 +89,6 @@ docker-compose -f docker-compose.base.yml up
 # start the server
 npm run start
 ```
-
-<!-- **4. Populate the test database**
-```bash
-./test/util/scripts/populateTestData.sh
-``` -->
 
 Upon running `npm run start`, your output should look similar to:
 
@@ -106,7 +100,6 @@ Upon running `npm run start`, your output should look similar to:
 ```
 
 **4. Verify the quoting-service is running with the health check**
-<!-- TODO: Verify everything works correctly! -->
 
 Hit the health check endpoint to verify the server is up and running:
 
@@ -168,11 +161,11 @@ npm run test
 npm run cover
 ```
 
-### 5.1 Testing the `central-ledger` API with Postman
+### 5.1 Testing the `quoting-service` API with Postman
 
 Refer to the [central-ledger onboarding guide](https://github.com/mojaloop/central-ledger/blob/master/Onboarding.md#51-testing-the-central-ledger-api-with-postman) to test the `quoting-service` using postman.
 
-[todo: add steps about populate test data?]
+>Note: Before running the postman scripts, ensure you have populated the test data using the `test/util/scripts/populateTestData.sh` in the `central-ledger` directory. For more information, follow the [Running `central-ledger` Inside Docker](https://github.com/mojaloop/central-ledger/blob/master/Onboarding.md#4-running-inside-docker) guide
 
 
 ##  6. <a name='CommonErrorsFAQs'></a>Common Errors/FAQs
