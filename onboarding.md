@@ -161,16 +161,11 @@ npm run docker:stop
 
 We use `npm` scripts as a common entrypoint for running the tests.
 ```bash
-# TODO: double check
-
-# unit tests:
-npm run test:unit
-
-# integration tests
-npm run test:integration
+# unit tests
+npm run test
 
 # check test coverage
-npm run test:coverage
+npm run cover
 ```
 
 ### 5.1 Testing the `central-ledger` API with Postman
