@@ -106,6 +106,7 @@ Upon running `npm run start`, your output should look similar to:
 ```
 
 **4. Verify the quoting-service is running with the health check**
+<!-- TODO: Verify everything works correctly! -->
 
 Hit the health check endpoint to verify the server is up and running:
 
@@ -135,47 +136,74 @@ npm run docker:up
 
 This will do the following:
 * `docker pull` down any dependencies defined in the `docker-compose.yml` file
-* `docker build` the `central-ledger` image based on the `Dockerfile` defined in this repo
+* `docker build` the `quoting-service` image based on the `Dockerfile` defined in this repo
 * run all of the containers together
 
+### 4.1 Handy Docker Compose Tips
 
+You can run `docker-compose` in 'detached' mode as follows:
 
-
-
-
-# Running Quoting Service Locally
-
-This document is intended to guide a user through the steps required to run the quoting service locally.
-
-## Prerequisites
-
-Setup the Central Ledger servers as per the [onboarding guide](https://github.com/mojaloop/central-ledger/blob/master/Onboarding.md).
-
-## Introduction
-
-In this document we'll walk through the setup a local Mojaloop Quoting Service and starting the services. It consists of three sections:
-
-- [Software List](#software-list)
-- [Setting up a local quote environment](#setting-up-a-local-quote-environment)
-- [Initialising the database and starting the service](#initialising-the-database-and-starting-the-service)
-- [Health Check](#health-check)
-- [Run Tests](#run-tests)
-
-
-
-## Health check
-
-To verify the database is connected once the server started, run this from your browser;
-```
-http://localserver:3002/health
+```bash
+npm run docker:up -- -d
 ```
 
-If all is well, the following responce will be received'
+And then attach to the logs with:
+```bash
+docker-compose logs -f
+```
 
-**Quoting service Database connection is healthy!!!**
+When you're done, don't forget to stop your containers however:
+```bash
+npm run docker:stop
+```
 
-## Run Tests
+##  5. <a name='Testing'></a>Testing
 
-Please refer to Central-Ledger repository to setup Postman.
+We use `npm` scripts as a common entrypoint for running the tests.
+```bash
+# TODO: double check
 
-Postman is used to generate quotes via the quoting-service.
+# unit tests:
+npm run test:unit
+
+# integration tests
+npm run test:integration
+
+# check test coverage
+npm run test:coverage
+```
+
+### 5.1 Testing the `central-ledger` API with Postman
+
+Refer to the [central-ledger onboarding guide](https://github.com/mojaloop/central-ledger/blob/master/Onboarding.md#51-testing-the-central-ledger-api-with-postman) to test the `quoting-service` using postman.
+
+
+##  6. <a name='CommonErrorsFAQs'></a>Common Errors/FAQs
+
+#### 6.1 `sodium v1.2.3` can't compile during npm install
+
+Resolved by installing v2.0.3 `npm install sodium@2.0.3`
+
+
+#### 6.2 `./src/argon2_node.cpp:6:10: fatal error: 'tuple' file not found` 
+
+Resolved by running `CXX='clang++ -std=c++11 -stdlib=libc++' npm rebuild`
+
+
+#### 6.3 On macOS, `npm install` fails with the following error
+```
+Undefined symbols for architecture x86_64:
+  "_CRYPTO_cleanup_all_ex_data", referenced from:
+      _rd_kafka_transport_ssl_term in rdkafka_transport.o
+  "_CRYPTO_num_locks", referenced from:
+  ........
+  ld: symbol(s) not found for architecture x86_64
+clang: error: linker command failed with exit code 1 (use -v to see invocation) 
+```
+
+Resolved by installing openssl `brew install openssl` and then running: 
+  ```bash
+  export CFLAGS=-I/usr/local/opt/openssl/include 
+  export LDFLAGS=-L/usr/local/opt/openssl/lib 
+  npm install
+  ```  
