@@ -37,7 +37,7 @@ exports.endpoints = {
   TRANSACTION_REQUEST_POST: '/transactionRequest',
   TRANSACTION_REQUEST_PUT: '/transactionRequest/{{ID}}',
   TRANSACTION_REQUEST_GET: '/transactionRequest/{{ID}}',
-  TRANSACTION_REQUEST_PUT_ERROR: '/transactionRequest//{{ID}}/error'
+  TRANSACTION_REQUEST_PUT_ERROR: '/transactionRequest/{{ID}}/error'
 }
 
 exports.restMethods = {
