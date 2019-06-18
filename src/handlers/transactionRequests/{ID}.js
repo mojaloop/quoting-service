@@ -15,7 +15,7 @@ module.exports = {
    * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
    */
   get: async function (request, h) {
-    request.server.log(['info'], `got a GET /transactionRequests/{ID} request: ${util.inspect(request.payload)}`)
+    request.server.log(['info'], 'Got a GET /transactionRequests/{ID} request')
 
     // instantiate a new quote model
     const model = new QuotesModel({
