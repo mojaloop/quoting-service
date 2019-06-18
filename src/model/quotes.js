@@ -30,6 +30,7 @@
  --------------
  ******/
 
+const Mustache = require('mustache')
 const util = require('util')
 const crypto = require('crypto')
 const Config = require('../lib/config')
@@ -38,6 +39,7 @@ const fetch = require('node-fetch')
 const axios = require('axios')
 const Errors = require('./errors.js')
 const quoteRules = require('./rules.js')
+const Enums = require('../lib/enums')
 
 delete axios.defaults.headers.common['Accept']
 delete axios.defaults.headers.common['Content-Type']
@@ -48,18 +50,18 @@ delete axios.defaults.headers.common['Content-Type']
  * @returns {undefined}
  */
 class QuotesModel {
-  constructor (config) {
+  constructor(config) {
     this.config = config
     this.db = config.db
     this.requestId = config.requestId
   }
 
   /**
-     * Validates the quote request object
-     *
-     * @returns {promise} - promise will reject if request is not valid
-     */
-  async validateQuoteRequest (fspiopSource, quoteRequest) {
+   * Validates the quote request object
+   *
+   * @returns {promise} - promise will reject if request is not valid
+   */
+  async validateQuoteRequest(fspiopSource, quoteRequest) {
     // note that the framework should validate the form of the request
     // here we can do some hard-coded rule validations to ensure requests
     // do not lead to unsupported scenarios or use-cases.
@@ -76,21 +78,21 @@ class QuotesModel {
   }
 
   /**
-     * Validates the form of a quote update object
-     *
-     * @returns {promise} - promise will reject if request is not valid
-     */
-  async validateQuoteUpdate () {
+   * Validates the form of a quote update object
+   *
+   * @returns {promise} - promise will reject if request is not valid
+   */
+  async validateQuoteUpdate() {
     // todo: actually do the validation (use joi as per mojaloop)
     return Promise.resolve(null)
   }
 
   /**
-     * Logic for creating and handling quote requests
-     *
-     * @returns {object} - returns object containing keys for created database entities
-     */
-  async handleQuoteRequest (headers, quoteRequest) {
+   * Logic for creating and handling quote requests
+   *
+   * @returns {object} - returns object containing keys for created database entities
+   */
+  async handleQuoteRequest(headers, quoteRequest) {
     const envConfig = new Config()
     let txn = null
 
@@ -233,11 +235,118 @@ class QuotesModel {
   }
 
   /**
-     * Forwards a quote request to a payee DFSP for processing
-     *
-     * @returns {undefined}
-     */
-  async forwardQuoteRequest (headers, quoteId, originalQuoteRequest) {
+   * Forwards transactionRequests endpoint requests to destination FSP for processing
+   *
+   * @returns {undefined}
+   */
+  async forwardTransactionRequest(headers, path, method, transaction) {
+    let endpoint
+    const fspiopSource = headers['fspiop-source']
+    const fspiopDest = headers['fspiop-destination']
+    try {
+      endpoint = await this.db.getParticipantEndpoint(fspiopDest, Enums.endpointTypes.FSPIOP_CALLBACK_URL_TRANSACTION)
+      this.writeLog(`Resolved PAYER party ${Enums.endpointTypes.FSPIOP_CALLBACK_URL_TRANSACTION} endpoint for transactionRequest ${transaction.transactionRequestId || 'error'} to: ${util.inspect(endpoint)}`)
+
+      if (!endpoint) {
+        // we didnt get an endpoint for the payee dfsp!
+        // make an error callback to the initiator
+        throw new Errors.FSPIOPError(transaction,
+          `No ${Enums.endpointTypes.FSPIOP_CALLBACK_URL_TRANSACTION} endpoint found for transactionRequest ${transaction.transactionRequestId} for ${fspiopDest}`, fspiopSource,
+          Errors.ApiErrorCodes.DESTINATION_FSP_ERROR)
+      }
+      const fullUrl = Mustache.render(endpoint + path, {
+        ID: transaction.transactionRequestId
+      })
+
+      this.writeLog(`Forwarding transaction request to endpoint: ${fullUrl}`)
+
+      const opts = {
+        method,
+        body: method !== Enums.restMethods.GET ? JSON.stringify(transaction) : undefined,
+        headers: this.generateRequestHeaders(headers)
+      }
+
+      // Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
+      // so we need to wrap the request below in a `try catch` to handle network errors
+      let res
+      try {
+        res = await fetch(fullUrl, opts)
+      } catch (e) {
+        throw new Errors.FSPIOPError('Network error', `Network error forwarding quote request: ${e.stack || util.inspect(e)}`,
+          fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR)
+      }
+      this.writeLog(`Forwarding transaction request ${transaction.transactionRequestId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
+
+      // handle non network related errors below
+      if (!res.ok) {
+        throw new Errors.FSPIOPError(res.statusText, 'Got non-success response forwarding transaction request',
+          fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR)
+      }
+    } catch (err) {
+      this.writeLog(`Error forwarding transaction request to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`)
+      throw err
+    }
+  }
+
+  /**
+   * Forwards transactionRequests errors to error endpoint
+   *
+   * @returns {undefined}
+   */
+  async forwardTransactionRequestError(headers, to, path, method, transactionRequestId, err) {
+    let endpoint
+    const fspiopSource = headers['fspiop-source']
+    try {
+      endpoint = await this.db.getParticipantEndpoint(to, Enums.endpointTypes.FSPIOP_CALLBACK_URL_TRANSACTION)
+      this.writeLog(`Resolved PAYER party ${Enums.endpointTypes.FSPIOP_CALLBACK_URL_TRANSACTION} endpoint for transactionRequest ${transactionRequestId || 'error'} to: ${util.inspect(endpoint)}`)
+
+      if (!endpoint) {
+        // we didnt get an endpoint for the payee dfsp!
+        // make an error callback to the initiator
+        throw new Errors.FSPIOPError(err,
+          `No ${Enums.endpointTypes.FSPIOP_CALLBACK_URL_TRANSACTION} endpoint found for transactionRequest ${transactionRequestId} for ${to}`, fspiopSource,
+          Errors.ApiErrorCodes.DESTINATION_FSP_ERROR)
+      }
+      const fullUrl = Mustache.render(endpoint + path, {
+        ID: transactionRequestId
+      })
+
+      this.writeLog(`Forwarding transaction request to endpoint: ${fullUrl}`)
+
+      const opts = {
+        method,
+        body: JSON.stringify(err),
+        headers: this.generateRequestHeaders(headers)
+      }
+
+      // Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
+      // so we need to wrap the request below in a `try catch` to handle network errors
+      let res
+      try {
+        res = await fetch(fullUrl, opts)
+      } catch (e) {
+        throw new Errors.FSPIOPError('Network error', `Network error forwarding quote request: ${e.stack || util.inspect(e)}`,
+          fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR)
+      }
+      this.writeLog(`Forwarding transaction request ${transactionRequestId} from ${fspiopSource} to ${to} got response ${res.status} ${res.statusText}`)
+
+      // handle non network related errors below
+      if (!res.ok) {
+        throw new Errors.FSPIOPError(res.statusText, 'Got non-success response forwarding transaction request',
+          fspiopSource, Errors.ApiErrorCodes.DESTINATION_COMMUNICATION_ERROR)
+      }
+    } catch (err) {
+      this.writeLog(`Error forwarding transaction request to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`)
+      throw err
+    }
+  }
+
+  /**
+   * Forwards a quote request to a payee DFSP for processing
+   *
+   * @returns {undefined}
+   */
+  async forwardQuoteRequest(headers, quoteId, originalQuoteRequest) {
     let endpoint
     const fspiopSource = headers['fspiop-source']
     const fspiopDest = headers['fspiop-destination']
@@ -297,10 +406,10 @@ class QuotesModel {
   }
 
   /**
-     * Deals with resends of quote requests (POST) under the API spec:
-     * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
-     */
-  async handleQuoteRequestResend (headers, quoteRequest) {
+   * Deals with resends of quote requests (POST) under the API spec:
+   * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
+   */
+  async handleQuoteRequestResend(headers, quoteRequest) {
     try {
       const fspiopSource = headers['fspiop-source']
       this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource} to ${headers['fspiop-destination']}`)
@@ -330,11 +439,11 @@ class QuotesModel {
   }
 
   /**
-     * Logic for handling quote update requests e.g. PUT /quotes/{id} requests
-     *
-     * @returns {object} - object containing updated entities
-     */
-  async handleQuoteUpdate (headers, quoteId, quoteUpdateRequest) {
+   * Logic for handling quote update requests e.g. PUT /quotes/{id} requests
+   *
+   * @returns {object} - object containing updated entities
+   */
+  async handleQuoteUpdate(headers, quoteId, quoteUpdateRequest) {
     let txn = null
     const envConfig = new Config()
     try {
@@ -445,11 +554,11 @@ class QuotesModel {
   }
 
   /**
-     * Forwards a quote response to a payer DFSP for processing
-     *
-     * @returns {undefined}
-     */
-  async forwardQuoteUpdate (headers, quoteId, originalQuoteResponse) {
+   * Forwards a quote response to a payer DFSP for processing
+   *
+   * @returns {undefined}
+   */
+  async forwardQuoteUpdate(headers, quoteId, originalQuoteResponse) {
     let endpoint = null
     const envConfig = new Config()
     const fspiopSource = headers['fspiop-source']
@@ -474,8 +583,7 @@ class QuotesModel {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
         return this.sendErrorCallback(new Errors.FSPIOPError(null,
-          `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYER party`, fspiopSource, Errors.ApiErrorCodes.COMMUNICATION_ERROR),
-        quoteId)
+          `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYER party`, fspiopSource, Errors.ApiErrorCodes.COMMUNICATION_ERROR), quoteId)
       }
 
       let fullUrl = `${endpoint}/quotes/${quoteId}`
@@ -510,10 +618,10 @@ class QuotesModel {
   }
 
   /**
-     * Deals with resends of quote responses (PUT) under the API spec:
-     * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
-     */
-  async handleQuoteUpdateResend (headers, quoteId, quoteUpdate) {
+   * Deals with resends of quote responses (PUT) under the API spec:
+   * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
+   */
+  async handleQuoteUpdateResend(headers, quoteId, quoteUpdate) {
     try {
       const fspiopSource = headers['fspiop-source']
       const fspiopDest = headers['fspiop-destination']
@@ -544,11 +652,11 @@ class QuotesModel {
   }
 
   /**
-     * Handles error reports from clients e.g. POST quotes/{ID}/error
-     *
-     * @returns {undefined}
-     */
-  async handleQuoteError (headers, quoteId, error) {
+   * Handles error reports from clients e.g. POST quotes/{ID}/error
+   *
+   * @returns {undefined}
+   */
+  async handleQuoteError(headers, quoteId, error) {
     let txn = null
     const envConfig = new Config()
     try {
@@ -592,11 +700,11 @@ class QuotesModel {
   }
 
   /**
-     * Attempts to handle a quote GET request by forwarding it to the destination DFSP
-     *
-     * @returns {undefined}
-     */
-  async handleQuoteGet (headers, quoteId) {
+   * Attempts to handle a quote GET request by forwarding it to the destination DFSP
+   *
+   * @returns {undefined}
+   */
+  async handleQuoteGet(headers, quoteId) {
     try {
       // make call to destination dfsp in a setImmediate;
       // attempting to give fair execution of async events...
@@ -618,11 +726,11 @@ class QuotesModel {
   }
 
   /**
-     * Attempts to forward a quote GET request
-     *
-     * @returns {undefined}
-     */
-  async forwardQuoteGet (headers, quoteId) {
+   * Attempts to forward a quote GET request
+   *
+   * @returns {undefined}
+   */
+  async forwardQuoteGet(headers, quoteId) {
     let endpoint
 
     try {
@@ -677,14 +785,14 @@ class QuotesModel {
   }
 
   /**
-     * Attempts to handle an exception in a sensible manner by forwarding it on to the
-     * source of the request that caused the error.
-     */
-  async handleException (fspiopSource, quoteId, exception) {
+   * Attempts to handle an exception in a sensible manner by forwarding it on to the
+   * source of the request that caused the error.
+   */
+  async handleException(fspiopSource, quoteId, exception) {
     // is this exception already wrapped as an API spec compatible type?
     if (!(exception instanceof Errors.FSPIOPError)) {
       // we need to wrap the error in a generic API compatible error
-      exception = new Errors.FSPIOPError(exception, exception.message || 'Error occured',
+      exception = new Errors.FSPIOPError(exception, exception.message || 'Error occurred',
         fspiopSource, Errors.ApiErrorCodes.SERVER_ERROR)
     }
 
@@ -695,19 +803,19 @@ class QuotesModel {
         return await this.sendErrorCallback(exception, quoteId)
       } catch (err) {
         // not much we can do other than log the error
-        this.writeLog(`Error occured handling error. check service logs as this error may not have been propogated successfully to any other party: ${err.stack || util.inspect(err)}`)
+        this.writeLog(`Error occurred handling error. check service logs as this error may not have been propagated successfully to any other party: ${err.stack || util.inspect(err)}`)
       }
     })
   }
 
   /**
-     * Makes an error callback. Callback is sent to the FSPIOP_CALLBACK_URL_QUOTES endpoint of the replyTo participant in the
-     * supplied fspiopErr object. This should be the participantId for the error callback recipient e.g. value from the
-     * FSPIOP-Source header of the original request that caused the error.
-     *
-     * @returns {promise}
-     */
-  async sendErrorCallback (fspiopErr, quoteId) {
+   * Makes an error callback. Callback is sent to the FSPIOP_CALLBACK_URL_QUOTES endpoint of the replyTo participant in the
+   * supplied fspiopErr object. This should be the participantId for the error callback recipient e.g. value from the
+   * FSPIOP-Source header of the original request that caused the error.
+   *
+   * @returns {promise}
+   */
+  async sendErrorCallback(fspiopErr, quoteId) {
     try {
       if (!(fspiopErr instanceof Errors.FSPIOPError)) {
         throw new Error('fspiopErr not an instance of FSPIOPError')
@@ -759,13 +867,13 @@ class QuotesModel {
   }
 
   /**
-     * Tests to see if this quote request is a RESEND of a previous request or an inadvertant duplicate quoteId.
-     *
-     * See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-     *
-     * @returns {promise} - resolves to an object thus: { isResend: {boolean}, isDuplicateId: {boolean} }
-     */
-  async checkDuplicateQuoteRequest (quoteRequest) {
+   * Tests to see if this quote request is a RESEND of a previous request or an inadvertant duplicate quoteId.
+   *
+   * See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+   *
+   * @returns {promise} - resolves to an object thus: { isResend: {boolean}, isDuplicateId: {boolean} }
+   */
+  async checkDuplicateQuoteRequest(quoteRequest) {
     try {
       // calculate a SHA-256 of the request
       const hash = this.calculateRequestHash(quoteRequest)
@@ -802,13 +910,13 @@ class QuotesModel {
   }
 
   /**
-     * Tests to see if this quote reqponse is a RESEND of a previous response or an inadvertant duplicate quoteId.
-     *
-     * See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-     *
-     * @returns {promise} - resolves to an object thus: { isResend: {boolean}, isDuplicateId: {boolean} }
-     */
-  async checkDuplicateQuoteResponse (quoteId, quoteResponse) {
+   * Tests to see if this quote reqponse is a RESEND of a previous response or an inadvertant duplicate quoteId.
+   *
+   * See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+   *
+   * @returns {promise} - resolves to an object thus: { isResend: {boolean}, isDuplicateId: {boolean} }
+   */
+  async checkDuplicateQuoteResponse(quoteId, quoteResponse) {
     try {
       // calculate a SHA-256 of the request
       const hash = this.calculateRequestHash(quoteResponse)
@@ -845,14 +953,14 @@ class QuotesModel {
   }
 
   /**
-     * Utility function to remove null and undefined keys from an object.
-     * This is useful for removing "nulls" that come back from database queries
-     * when projecting into API spec objects
-     *
-     * @returns {object}
-     */
-  removeEmptyKeys (originalObject) {
-    let obj = { ...originalObject }
+   * Utility function to remove null and undefined keys from an object.
+   * This is useful for removing "nulls" that come back from database queries
+   * when projecting into API spec objects
+   *
+   * @returns {object}
+   */
+  removeEmptyKeys(originalObject) {
+    let obj = {...originalObject}
     Object.keys(obj).forEach(key => {
       if (obj[key] && typeof obj[key] === 'object') {
         if (Object.keys(obj[key]).length < 1) {
@@ -871,22 +979,22 @@ class QuotesModel {
   }
 
   /**
-     * Returns the SHA-256 hash of the supplied request object
-     *
-     * @returns {undefined}
-     */
-  calculateRequestHash (request) {
+   * Returns the SHA-256 hash of the supplied request object
+   *
+   * @returns {undefined}
+   */
+  calculateRequestHash(request) {
     // calculate a SHA-256 of the request
     const requestStr = JSON.stringify(request)
     return crypto.createHash('sha256').update(requestStr).digest('hex')
   }
 
   /**
-     * Generates and returns an object containing API spec compliant HTTP request headers
-     *
-     * @returns {object}
-     */
-  generateRequestHeaders (headers, noAccept) {
+   * Generates and returns an object containing API spec compliant HTTP request headers
+   *
+   * @returns {object}
+   */
+  generateRequestHeaders(headers, noAccept) {
     let ret = {
       'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
       'Date': new Date().toUTCString(),
@@ -907,11 +1015,11 @@ class QuotesModel {
   }
 
   /**
-     * Writes a formatted message to the console
-     *
-     * @returns {undefined}
-     */
-  writeLog (message) {
+   * Writes a formatted message to the console
+   *
+   * @returns {undefined}
+   */
+  writeLog(message) {
     // eslint-disable-next-line no-console
     // console.log(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
   }

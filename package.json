@@ -2,13 +2,14 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "6.3.0",
+  "version": "6.4.0",
   "author": "Modusbox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
     "Georgi Georgiev <georgi.georgiev@modusbox.com>",
     "Henk Kodde <henk.kodde@modusbox.com>",
-    "Miguel de Barros <miguel.debarros@modusbox.com>"
+    "Miguel de Barros <miguel.debarros@modusbox.com>",
+    "Rajiv Mothilal <rajiv.mothilal@modusbox.com>"
   ],
   "repository": {
     "type": "git",
@@ -21,14 +22,15 @@
   "dependencies": {
     "@hapi/boom": "7.4.2",
     "@hapi/good": "8.2.0",
-    "axios": "0.18.0",
+    "@hapi/hapi": "18.3.1",
+    "axios": "0.19.0",
     "good-console": "8.0.0",
     "good-squeeze": "5.1.0",
-    "hapi": "18.1.0",
     "hapi-openapi": "1.2.2",
-    "json-rules-engine": "3.0.1",
-    "knex": "0.16.5",
+    "json-rules-engine": "3.0.2",
+    "knex": "0.17.6",
     "memory-cache": "0.2.0",
+    "mustache": "3.0.1",
     "mysql": "2.17.1",
     "node-fetch": "2.6.0",
     "rc": "1.2.8"
@@ -39,8 +41,8 @@
     "proxyquire": "2.1.0",
     "sinon": "7.3.2",
     "swagmock": "1.0.0",
-    "tap-xunit": "2.3.0",
-    "tape": "4.10.1",
+    "tap-xunit": "2.4.1",
+    "tape": "4.10.2",
     "tapes": "4.1.0"
   },
   "scripts": {

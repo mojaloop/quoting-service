@@ -40,13 +40,13 @@ const QuotesModel = require('../model/quotes.js')
  */
 module.exports = {
   /**
-     * summary: Quotes
-     * description: The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.
-     * parameters: body, Accept, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
-     * produces: application/json
-     * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
-     */
-  post: async function Quotes (request, h) {
+   * summary: Quotes
+   * description: The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.
+   * parameters: body, Accept, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
+   * produces: application/json
+   * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
+   */
+  post: async function (request, h) {
     // log request
     request.server.log(['info'], `got a POST /quotes request: ${util.inspect(request.payload)}`)
 

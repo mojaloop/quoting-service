@@ -33,7 +33,7 @@
 'use strict'
 
 const Test = require('tapes')(require('tape'))
-const Hapi = require('hapi')
+const Hapi = require('@hapi/hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
 const Mockgen = require('../../../util/mockgen.js')
