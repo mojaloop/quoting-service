@@ -21,7 +21,7 @@
   "dependencies": {
     "@hapi/boom": "7.4.2",
     "@hapi/good": "8.2.0",
-    "axios": "^0.19.0",
+    "axios": "0.19.0",
     "good-console": "8.0.0",
     "good-squeeze": "5.1.0",
     "hapi": "18.1.0",
