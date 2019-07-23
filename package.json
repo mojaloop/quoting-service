@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "7.1.0",
+  "version": "7.1.1",
   "author": "Modusbox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
@@ -21,7 +21,7 @@
   "dependencies": {
     "@hapi/boom": "7.4.2",
     "@hapi/good": "8.2.0",
-    "axios": "0.18.0",
+    "axios": "0.19.0",
     "good-console": "8.0.0",
     "good-squeeze": "5.1.0",
     "hapi": "18.1.0",
@@ -36,6 +36,7 @@
   "devDependencies": {
     "eslint": "5.16.0",
     "istanbul": "0.4.5",
+    "npm-audit-resolver": "1.5.0",
     "proxyquire": "2.1.0",
     "sinon": "7.3.2",
     "swagmock": "1.0.0",
@@ -54,7 +55,9 @@
     "run": "docker run -p 3002:3002 --rm --link db:mysql quoting-service:local",
     "package-lock": "docker run --rm -it quoting-service:local cat package-lock.json > package-lock.json",
     "docker:up": "docker-compose -f docker-compose.yml -f docker-compose.base.yml up",
-    "docker:stop": "docker-compose -f docker-compose.yml -f docker-compose.base.yml stop"
+    "docker:stop": "docker-compose -f docker-compose.yml -f docker-compose.base.yml stop",
+    "audit:resolve": "SHELL=sh resolve-audit",
+    "audit:check": "SHELL=sh check-audit"
   },
   "generator-swaggerize": {
     "version": "4.1.0"

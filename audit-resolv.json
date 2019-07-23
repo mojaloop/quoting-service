@@ -1,0 +1,74 @@
+{
+  "880|axios": {
+    "fix": 1
+  },
+  "1065|knex>lodash": {
+    "fix": 1
+  },
+  "1065|eslint>inquirer>lodash": {
+    "fix": 1
+  },
+  "1065|eslint>lodash": {
+    "fix": 1
+  },
+  "1065|eslint>table>lodash": {
+    "fix": 1
+  },
+  "1065|sinon>@sinonjs/formatio>@sinonjs/samsam>lodash": {
+    "fix": 1
+  },
+  "1065|sinon>@sinonjs/samsam>lodash": {
+    "fix": 1
+  },
+  "1065|sinon>nise>@sinonjs/formatio>@sinonjs/samsam>lodash": {
+    "fix": 1
+  },
+  "1065|tap-xunit>xmlbuilder>lodash": {
+    "fix": 1
+  },
+  "1012|knex>liftoff>findup-sync>micromatch>braces>snapdragon>base>cache-base>set-value": {
+    "fix": 1
+  },
+  "1012|knex>liftoff>findup-sync>micromatch>extglob>expand-brackets>snapdragon>base>cache-base>set-value": {
+    "fix": 1
+  },
+  "1012|knex>liftoff>findup-sync>micromatch>extglob>snapdragon>base>cache-base>set-value": {
+    "fix": 1
+  },
+  "1012|knex>liftoff>findup-sync>micromatch>nanomatch>snapdragon>base>cache-base>set-value": {
+    "fix": 1
+  },
+  "1012|knex>liftoff>findup-sync>micromatch>snapdragon>base>cache-base>set-value": {
+    "fix": 1
+  },
+  "1012|knex>liftoff>findup-sync>micromatch>braces>snapdragon>base>cache-base>union-value>set-value": {
+    "fix": 1
+  },
+  "1012|knex>liftoff>findup-sync>micromatch>extglob>expand-brackets>snapdragon>base>cache-base>union-value>set-value": {
+    "fix": 1
+  },
+  "1012|knex>liftoff>findup-sync>micromatch>extglob>snapdragon>base>cache-base>union-value>set-value": {
+    "fix": 1
+  },
+  "1012|knex>liftoff>findup-sync>micromatch>nanomatch>snapdragon>base>cache-base>union-value>set-value": {
+    "fix": 1
+  },
+  "1012|knex>liftoff>findup-sync>micromatch>snapdragon>base>cache-base>union-value>set-value": {
+    "fix": 1
+  },
+  "1013|knex>liftoff>findup-sync>micromatch>braces>snapdragon>base>mixin-deep": {
+    "fix": 1
+  },
+  "1013|knex>liftoff>findup-sync>micromatch>extglob>expand-brackets>snapdragon>base>mixin-deep": {
+    "fix": 1
+  },
+  "1013|knex>liftoff>findup-sync>micromatch>extglob>snapdragon>base>mixin-deep": {
+    "fix": 1
+  },
+  "1013|knex>liftoff>findup-sync>micromatch>nanomatch>snapdragon>base>mixin-deep": {
+    "fix": 1
+  },
+  "1013|knex>liftoff>findup-sync>micromatch>snapdragon>base>mixin-deep": {
+    "fix": 1
+  }
+}
