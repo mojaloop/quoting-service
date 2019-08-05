@@ -32,6 +32,7 @@
 
 'use strict'
 
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Test = require('tape')
 const Hapi = require('hapi')
 const HapiOpenAPI = require('hapi-openapi')
@@ -53,39 +54,14 @@ Test('/bulkQuotes/{ID}', function (t) {
   t.test('test BulkQuotesByID get operation', async function (t) {
     const server = new Hapi.Server()
 
-    await server.register({
+    await server.register([{
       plugin: HapiOpenAPI,
       options: {
         api: Path.resolve(__dirname, '../../../src/interface/swagger.json'),
         handlers: Path.join(__dirname, '../../../src/handlers'),
         outputvalidation: false
       }
-    })
-
-    await server.ext([
-      {
-        type: 'onPreResponse',
-        method: (request, h) => {
-          if (!request.response.isBoom) {
-            Logger.info('Not Boom error')
-          } else {
-            const error = request.response
-            error.message = {
-              errorInformation: {
-                errorCode: error.output.statusCode,
-                errorDescription: error.message,
-                extensionList:[{
-                  key: '',
-                  value: ''
-                }]
-              }
-            }
-            error.reformat()
-          }
-          return h.continue
-        }
-      }
-    ])
+    }, ErrorHandler])
 
     const requests = new Promise((resolve, reject) => {
       Mockgen().requests({
@@ -132,39 +108,14 @@ Test('/bulkQuotes/{ID}', function (t) {
   t.test('test BulkQuotesByID1 put operation', async function (t) {
     const server = new Hapi.Server()
 
-    await server.register({
+    await server.register([{
       plugin: HapiOpenAPI,
       options: {
         api: Path.resolve(__dirname, '../../../src/interface/swagger.json'),
         handlers: Path.join(__dirname, '../../../src/handlers'),
         outputvalidation: false
       }
-    })
-
-    await server.ext([
-      {
-        type: 'onPreResponse',
-        method: (request, h) => {
-          if (!request.response.isBoom) {
-            Logger.info('Not Boom error')
-          } else {
-            const error = request.response
-            error.message = {
-              errorInformation: {
-                errorCode: error.output.statusCode,
-                errorDescription: error.message,
-                extensionList:[{
-                  key: '',
-                  value: ''
-                }]
-              }
-            }
-            error.reformat()
-          }
-          return h.continue
-        }
-      }
-    ])
+    }, ErrorHandler])
 
     const requests = new Promise((resolve, reject) => {
       Mockgen().requests({

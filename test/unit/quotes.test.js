@@ -32,6 +32,7 @@
 
 'use strict'
 
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Test = require('tape')
 const Hapi = require('hapi')
 const HapiOpenAPI = require('hapi-openapi')
@@ -53,14 +54,14 @@ Test('/quotes', function (t) {
   t.test('test Quotes post operation', async function (t) {
     const server = new Hapi.Server()
 
-    await server.register({
+    await server.register([{
       plugin: HapiOpenAPI,
       options: {
         api: Path.resolve(__dirname, '../../src/interface/swagger.json'),
         handlers: Path.join(__dirname, '../../src/handlers'),
         outputvalidation: true
       }
-    })
+    }, ErrorHandler])
 
     const requests = new Promise((resolve, reject) => {
       Mockgen().requests({

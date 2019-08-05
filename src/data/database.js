@@ -906,6 +906,7 @@ class Database {
   /**
      * Writes a formatted log message to the console
      */
+  // eslint-disable-next-line no-unused-vars
   writeLog (message) {
     // eslint-disable-next-line no-console
     // console.log(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
