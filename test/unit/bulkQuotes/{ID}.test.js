@@ -122,6 +122,10 @@ Test('/bulkQuotes/{ID}', function (t) {
         path: '/bulkQuotes/{ID}',
         operation: 'put'
       }, function (error, mock) {
+        // Mockgen can generate very large arrays so limiting this to 100
+        if (mock.request.body.individualQuoteResults.length > 100) {
+          mock.request.body.individualQuoteResults = mock.request.body.individualQuoteResults.slice(0, 100)
+        }
         return error ? reject(error) : resolve(mock)
       })
     })
