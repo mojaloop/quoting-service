@@ -256,7 +256,7 @@ class QuotesModel {
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(3102, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYEE party`, null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(3201, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYEE party`, null, fspiopSource)
       }
 
       const fullUrl = `${endpoint}/quotes`
@@ -275,14 +275,25 @@ class QuotesModel {
       try {
         res = await fetch(fullUrl, opts)
       } catch (err) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, `Network error forwarding quote request to ${fspiopDest}`, err, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, `Network error forwarding quote request to ${fspiopDest}`, err, fspiopSource, [
+          { key: 'url', value: fullUrl },
+          { key: 'sourceFsp', value: fspiopSource },
+          { key: 'destinationFsp', value: fspiopDest },
+          { key: 'method', value: opts.method },
+          { key: 'request', value: JSON.stringify(opts) }
+        ])
       }
       this.writeLog(`forwarding quote request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
 
       // handle non network related errors below
       if (!res.ok) {
         throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response forwarding quote request', null, fspiopSource, [
-          { key: 'response', value: JSON.stringify(res)}
+          { key: 'url', value: fullUrl },
+          { key: 'sourceFsp', value: fspiopSource },
+          { key: 'destinationFsp', value: fspiopDest },
+          { key: 'method', value: opts.method },
+          { key: 'request', value: JSON.stringify(opts) },
+          { key: 'response', value: JSON.stringify(res) }
         ])
       }
     } catch (err) {
@@ -487,12 +498,25 @@ class QuotesModel {
       try {
         res = await fetch(fullUrl, opts)
       } catch (err) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Network error forwarding quote response', err, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Network error forwarding quote response', err, fspiopSource, [
+          { key: 'url', value: fullUrl },
+          { key: 'sourceFsp', value: fspiopSource },
+          { key: 'destinationFsp', value: fspiopDestination },
+          { key: 'method', value: opts.method },
+          { key: 'request', value: JSON.stringify(opts) }
+        ])
       }
       this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`)
 
       if (!res.ok) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response forwarding quote response', null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response forwarding quote response', null, fspiopSource, [
+          { key: 'url', value: fullUrl },
+          { key: 'sourceFsp', value: fspiopSource },
+          { key: 'destinationFsp', value: fspiopDestination },
+          { key: 'method', value: opts.method },
+          { key: 'request', value: JSON.stringify(opts) },
+          { key: 'response', value: JSON.stringify(res) }
+        ])
       }
     } catch (err) {
       this.writeLog(`Error forwarding quote response to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`)
@@ -643,13 +667,26 @@ class QuotesModel {
       try {
         res = await fetch(fullUrl, opts)
       } catch (err) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Network error forwarding quote get request', err, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Network error forwarding quote get request', err, fspiopSource, [
+          { key: 'url', value: fullUrl },
+          { key: 'sourceFsp', value: fspiopSource },
+          { key: 'destinationFsp', value: fspiopDest },
+          { key: 'method', value: opts.method },
+          { key: 'request', value: JSON.stringify(opts) }
+        ])
       }
       this.writeLog(`forwarding quote get request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
 
       // handle non network related errors below
       if (!res.ok) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response forwarding quote get request', null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response forwarding quote get request', null, fspiopSource, [
+          { key: 'url', value: fullUrl },
+          { key: 'sourceFsp', value: fspiopSource },
+          { key: 'destinationFsp', value: fspiopDest },
+          { key: 'method', value: opts.method },
+          { key: 'request', value: JSON.stringify(opts) },
+          { key: 'response', value: JSON.stringify(res) }
+        ])
       }
     } catch (err) {
       this.writeLog(`Error forwarding quote get request: ${err.stack || util.inspect(err)}`)
@@ -718,12 +755,25 @@ class QuotesModel {
       try {
         res = await axios.request(opts)
       } catch (err) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, `network error in sendErrorCallback: ${err.message}`, err, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, `network error in sendErrorCallback: ${err.message}`, err, fspiopSource, [
+          { key: 'url', value: fullCallbackUrl },
+          { key: 'sourceFsp', value: fspiopSource },
+          { key: 'destinationFsp', value: headers['fspiop-destination'] },
+          { key: 'method', value: opts.method },
+          { key: 'request', value: JSON.stringify(opts) }
+        ])
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
       if (res.status !== 200) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response sending error callback', null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response sending error callback', null, fspiopSource, [
+          { key: 'url', value: fullCallbackUrl },
+          { key: 'sourceFsp', value: fspiopSource },
+          { key: 'destinationFsp', value: headers['fspiop-destination'] },
+          { key: 'method', value: opts.method },
+          { key: 'request', value: JSON.stringify(opts) },
+          { key: 'response', value: JSON.stringify(res) }
+        ])
       }
     } catch (err) {
       this.writeLog(`Error in sendErrorCallback: ${err.stack || util.inspect(err)}`)
