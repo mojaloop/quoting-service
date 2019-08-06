@@ -66,7 +66,7 @@ class QuotesModel {
 
     // make sure initiator is the PAYER party
     if (quoteRequest.transactionType.initiator !== 'PAYER') {
-      throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(2000, 'Only PAYER initiated transactions are supported', null, fspiopSource)
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Only PAYER initiated transactions are supported', null, fspiopSource)
     }
 
     // todo: make sure the initiator is the source of the request
@@ -112,7 +112,7 @@ class QuotesModel {
         // fail fast on duplicate
         if (dupe.isDuplicateId && (!dupe.isResend)) {
           // same quoteId but a different request, this is an error!
-          throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(3106, `Quote ${quoteRequest.quoteId} is a duplicate but hashes dont match`, null, fspiopSource)
+          throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, `Quote ${quoteRequest.quoteId} is a duplicate but hashes dont match`, null, fspiopSource)
         }
 
         if (dupe.isResend && dupe.isDuplicateId) {
@@ -256,7 +256,7 @@ class QuotesModel {
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(3201, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYEE party`, null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYEE party`, null, fspiopSource)
       }
 
       const fullUrl = `${endpoint}/quotes`
@@ -275,7 +275,7 @@ class QuotesModel {
       try {
         res = await fetch(fullUrl, opts)
       } catch (err) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, `Network error forwarding quote request to ${fspiopDest}`, err, fspiopSource, [
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `Network error forwarding quote request to ${fspiopDest}`, err, fspiopSource, [
           { key: 'url', value: fullUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
@@ -287,7 +287,7 @@ class QuotesModel {
 
       // handle non network related errors below
       if (!res.ok) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response forwarding quote request', null, fspiopSource, [
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote request', null, fspiopSource, [
           { key: 'url', value: fullUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
@@ -360,7 +360,7 @@ class QuotesModel {
         // fail fast on duplicate
         if (dupe.isDuplicateId && (!dupe.isResend)) {
           // same quoteId but a different request, this is an error!
-          throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(3106, `Update for quote ${quoteUpdateRequest.quoteId} is a duplicate but hashes dont match`, null, headers['fspiop-source'])
+          throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, `Update for quote ${quoteUpdateRequest.quoteId} is a duplicate but hashes dont match`, null, headers['fspiop-source'])
         }
 
         if (dupe.isResend && dupe.isDuplicateId) {
@@ -397,7 +397,7 @@ class QuotesModel {
           const payeeParty = await this.db.getQuoteParty(quoteId, 'PAYEE')
 
           if (!payeeParty) {
-            throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(3204, `Unable to find payee party for quote ${quoteId}`, null, headers['fspiop-source'])
+            throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `Unable to find payee party for quote ${quoteId}`, null, headers['fspiop-source'])
           }
 
           refs.geoCodeId = await this.db.createGeoCode(txn, {
@@ -478,7 +478,7 @@ class QuotesModel {
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
-        const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorCode(3201, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYER party`, null, fspiopSource)
+        const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYER party`, null, fspiopSource)
         return this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers)
       }
 
@@ -498,7 +498,7 @@ class QuotesModel {
       try {
         res = await fetch(fullUrl, opts)
       } catch (err) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Network error forwarding quote response', err, fspiopSource, [
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error forwarding quote response', err, fspiopSource, [
           { key: 'url', value: fullUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDestination },
@@ -509,7 +509,7 @@ class QuotesModel {
       this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`)
 
       if (!res.ok) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response forwarding quote response', null, fspiopSource, [
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote response', null, fspiopSource, [
           { key: 'url', value: fullUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDestination },
@@ -649,7 +649,7 @@ class QuotesModel {
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(3201, `No FSPIOP_CALLBACK_URL_QUOTES found for quote GET ${quoteId}`, null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_QUOTES found for quote GET ${quoteId}`, null, fspiopSource)
       }
 
       const fullUrl = `${endpoint}/quotes/${quoteId}`
@@ -667,7 +667,7 @@ class QuotesModel {
       try {
         res = await fetch(fullUrl, opts)
       } catch (err) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Network error forwarding quote get request', err, fspiopSource, [
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error forwarding quote get request', err, fspiopSource, [
           { key: 'url', value: fullUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
@@ -679,7 +679,7 @@ class QuotesModel {
 
       // handle non network related errors below
       if (!res.ok) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response forwarding quote get request', null, fspiopSource, [
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote get request', null, fspiopSource, [
           { key: 'url', value: fullUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
@@ -730,7 +730,7 @@ class QuotesModel {
 
       if (!endpoint) {
         // oops, we cant make an error callback if we dont have an endpoint to call!
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(3204, `No FSPIOP_CALLBACK_URL_QUOTES found for ${fspiopSource} unable to make error callback`, null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `No FSPIOP_CALLBACK_URL_QUOTES found for ${fspiopSource} unable to make error callback`, null, fspiopSource)
       }
 
       let fullCallbackUrl = `${endpoint}/quotes/${quoteId}/error`
@@ -755,7 +755,7 @@ class QuotesModel {
       try {
         res = await axios.request(opts)
       } catch (err) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, `network error in sendErrorCallback: ${err.message}`, err, fspiopSource, [
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, err, fspiopSource, [
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: headers['fspiop-destination'] },
@@ -766,7 +766,7 @@ class QuotesModel {
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
       if (res.status !== 200) {
-        throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(1001, 'Got non-success response sending error callback', null, fspiopSource, [
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response sending error callback', null, fspiopSource, [
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: headers['fspiop-destination'] },

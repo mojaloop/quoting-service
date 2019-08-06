@@ -46,7 +46,7 @@ module.exports = {
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
   get: function BulkQuotesByID () {
-    throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(2002, 'Bulk quotes not implemented')
+    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Bulk quotes not implemented')
   },
   /**
      * summary: BulkQuotesByID
@@ -56,6 +56,6 @@ module.exports = {
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
   put: function BulkQuotesByID1 () {
-    throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(2002, 'Bulk quotes not implemented')
+    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Bulk quotes not implemented')
   }
 }

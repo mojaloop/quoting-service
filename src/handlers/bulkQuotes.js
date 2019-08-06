@@ -46,6 +46,6 @@ module.exports = {
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
   post: function BulkQuotes () {
-    throw ErrorHandler.CreateFSPIOPErrorFromErrorCode(2002, 'Bulk quotes not implemented')
+    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Bulk quotes not implemented')
   }
 }
