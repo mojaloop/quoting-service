@@ -1,11 +1,11 @@
 'use strict'
 
-const util = require('util')
-
 const Hapi = require('hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
 const Good = require('@hapi/good')
+const Blipp = require('blipp')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase.js')
@@ -69,32 +69,9 @@ const initServer = async function (db, config) {
         }, 'stdout']
       }
     }
-  }])
-
-  await server.ext([
-    {
-      type: 'onPreResponse',
-      method: (request, h) => {
-        if (!request.response.isBoom) {
-          console.log('Not Boom error')
-        } else {
-          const error = request.response
-          error.message = {
-            errorInformation: {
-              errorCode: error.statusCode,
-              errorDescription: error.message,
-              extensionList:[{
-                key: '',
-                value: ''
-              }]
-            }
-          }
-          error.reformat()
-        }
-        return h.continue
-      }
-    }
-  ])
+  },
+  Blipp,
+  ErrorHandler])
 
   // start the server
   await server.start()
@@ -120,6 +97,7 @@ initDb(config.database).then(db => {
 
   server.plugins.openapi.setHost(server.info.host + ':' + server.info.port)
   server.log(['info'], `Server running on ${server.info.uri}`)
+// eslint-disable-next-line no-unused-vars
 }).catch(err => {
   // eslint-disable-next-line no-console
   //console.log(`Error initializing server: ${err.stack || util.inspect(err)}`)

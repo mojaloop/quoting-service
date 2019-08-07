@@ -32,7 +32,7 @@
 
 'use strict'
 
-const Boom = require('@hapi/boom')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 /**
  * Operations on /bulkQuotes/{ID}/error
@@ -46,6 +46,6 @@ module.exports = {
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
   put: function BulkQuotesErrorByID () {
-    return Boom.notImplemented()
+    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Bulk quotes not implemented')
   }
 }

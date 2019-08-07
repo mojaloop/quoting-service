@@ -32,6 +32,7 @@
 
 'use strict'
 
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const util = require('util')
 const QuotesModel = require('../model/quotes.js')
 
@@ -68,7 +69,8 @@ module.exports = {
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - POST /quotes: ${err.stack || util.inspect(err)}`)
-      await model.handleException(fspiopSource, quoteId, err)
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+      await model.handleException(fspiopSource, quoteId, fspiopError)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(202)

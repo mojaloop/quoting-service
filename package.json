@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "7.1.1",
+  "version": "7.3.0",
   "author": "Modusbox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
@@ -19,9 +19,10 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@hapi/boom": "7.4.2",
     "@hapi/good": "8.2.0",
+    "@mojaloop/central-services-error-handling": "7.2.4",
     "axios": "0.19.0",
+    "blipp": "4.0.0",
     "good-console": "8.0.0",
     "good-squeeze": "5.1.0",
     "hapi": "18.1.0",
@@ -35,7 +36,7 @@
   },
   "devDependencies": {
     "eslint": "5.16.0",
-    "istanbul": "0.4.5",
+    "istanbul": "1.1.0-alpha.1",
     "npm-audit-resolver": "1.5.0",
     "proxyquire": "2.1.0",
     "sinon": "7.3.2",
@@ -48,7 +49,8 @@
     "start": "node src/server.js",
     "test": "tape 'test/unit/**/*.test.js'",
     "test:xunit": "tape 'test/unit/**/*.test.js' | tap-xunit",
-    "cover": "istanbul cover tape -- 'test/unit/**/*.test.js'",
+    "test:coverage": "istanbul cover tape -- 'test/unit/**/*.test.js'",
+    "test:coverage-check": "npm run test:coverage && istanbul check-coverage",
     "lint": "eslint .",
     "regenerate": "yo swaggerize:test --framework hapi --apiPath './src/interface/swagger.json'",
     "build": "docker build -t quoting-service:local -f ./Dockerfile ../",
