@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "7.3.0",
+  "version": "7.3.1",
   "author": "Modusbox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@hapi/good": "8.2.0",
-    "@mojaloop/central-services-error-handling": "7.2.4",
+    "@mojaloop/central-services-error-handling": "7.3.0",
     "axios": "0.19.0",
     "blipp": "4.0.0",
     "good-console": "8.0.0",
