@@ -79,9 +79,10 @@ class CachedDatabase extends Database {
     return this.getCacheValue('getPartyIdentifierType', [partyIdentifierType])
   }
 
-  async getParticipant (participantName) {
-    return this.getCacheValue('getParticipant', [participantName])
-  }
+  // This has been commented out as the participant data should not be cashed. This is mainly due to the scenario when the participant is made inactive vs active. Ref: https://github.com/mojaloop/project/issues/933
+  // async getParticipant (participantName) {
+  //   return this.getCacheValue('getParticipant', [participantName])
+  // }
 
   async getTransferParticipantRoleType (name) {
     return this.getCacheValue('getTransferParticipantRoleType', [name])
