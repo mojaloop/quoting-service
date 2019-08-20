@@ -1,6 +1,6 @@
 'use strict'
 
-const Hapi = require('hapi')
+const Hapi = require('@hapi/hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
 const Good = require('@hapi/good')
