@@ -65,38 +65,6 @@ Test('QuotesModel should', quotesTest => {
     t.end()
   })
 
-  quotesTest.test('validate a valid quote request', async test => {
-    try {
-      await quotesModel.validateQuoteRequest('dfsp1', {
-        transactionType: {
-          initiator: 'PAYER'
-        }
-      })
-      test.ok(quotesModel)
-      test.end()
-    } catch (err) {
-      test.fail('Error should not be thrown')
-      test.end()
-    }
-  })
-
-  quotesTest.test('throw an FSPIOP error on an invalid request', async test => {
-    try {
-      await quotesModel.validateQuoteRequest('dfsp1', {
-        transactionType: {
-          initiator: 'PAYEE'
-        }
-      })
-      test.fail('Expected an error to be thrown')
-      test.end()
-    } catch (err) {
-      test.ok(err instanceof ErrorHandler.Factory.FSPIOPError)
-      test.equal(err.apiErrorCode.code, ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED.code)
-      test.equal(err.message, 'Only PAYER initiated transactions are supported')
-      test.end()
-    }
-  })
-
   quotesTest.test('validate quote update', async test => {
     try {
       await quotesModel.validateQuoteUpdate()
@@ -158,6 +126,7 @@ Test('QuotesModel should', quotesTest => {
       Sinon.stub(db, 'createPayerQuoteParty').returns(5)
       Sinon.stub(db, 'createPayeeQuoteParty').returns(6)
       Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://test.com/dfsp2')
+      Sinon.stub(db, 'getParticipant').returns(5)
 
       const refs = await quotesModel.handleQuoteRequest(headers, quoteRequest)
       test.ok(refs)
@@ -200,6 +169,7 @@ Test('QuotesModel should', quotesTest => {
         rollback: () => { }
       }
       Sinon.stub(db, 'newTransaction').returns(transaction)
+      Sinon.stub(db, 'getParticipant').returns(3)
       Sinon.stub(db, 'getQuoteDuplicateCheck').returns({ hash: '85b6067dc6e271c53e2bbc2218e94187022677e80267f95ca28c80707b3009bc' })
 
       await quotesModel.handleQuoteRequest(headers, quoteRequest)
@@ -234,6 +204,7 @@ Test('QuotesModel should', quotesTest => {
         rollback: () => { }
       }
       Sinon.stub(db, 'newTransaction').returns(transaction)
+      Sinon.stub(db, 'getParticipant').returns(2)
       Sinon.stub(db, 'getQuoteDuplicateCheck').returns({ hash: 'e31fed1d22e622737fea8f40f60359b374b51ff543d840934b7ee5b5ead22edd' })
       Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://test.com/dfsp2')
 
