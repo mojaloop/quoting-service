@@ -59,17 +59,26 @@ class QuotesModel {
      *
      * @returns {promise} - promise will reject if request is not valid
      */
-  async validateQuoteRequest (fspiopSource, quoteRequest) {
+  async validateQuoteRequest (fspiopSource, fspiopDestination, quoteRequest) {
     // note that the framework should validate the form of the request
     // here we can do some hard-coded rule validations to ensure requests
     // do not lead to unsupported scenarios or use-cases.
 
-    // make sure initiator is the PAYER party
-    if (quoteRequest.transactionType.initiator !== 'PAYER') {
-      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Only PAYER initiated transactions are supported', null, fspiopSource)
+    // This validation is being removed because it prevents the switch from supporting PAYEE initiated use cases
+    // if (quoteRequest.transactionType.initiator !== 'PAYER') {
+    //   throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Only PAYER initiated transactions are supported', null, fspiopSource)
+    // }
+    const sourceParticipant = await this.db.getParticipant(fspiopSource)
+    if (sourceParticipant) {
+      const destinationParticipant = await this.db.getParticipant(fspiopDestination)
+      if (destinationParticipant) {
+        return true
+      } else {
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_ID_NOT_FOUND)
+      }
+    } else {
+      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND)
     }
-
-    // todo: make sure the initiator is the source of the request
   }
 
   /**
@@ -93,12 +102,12 @@ class QuotesModel {
 
     try {
       const fspiopSource = headers['fspiop-source']
-
+      const fspiopDestination = headers['fspiop-destination']
       // accumulate enum ids
       let refs = {}
 
       // validate - this will throw if the request is invalid
-      await this.validateQuoteRequest(fspiopSource, quoteRequest)
+      await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
       if (!envConfig.simpleRoutingMode) {
         // do everything in a db txn so we can rollback multiple operations if something goes wrong
