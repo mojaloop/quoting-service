@@ -68,17 +68,8 @@ class QuotesModel {
     // if (quoteRequest.transactionType.initiator !== 'PAYER') {
     //   throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Only PAYER initiated transactions are supported', null, fspiopSource)
     // }
-    const sourceParticipant = await this.db.getParticipant(fspiopSource)
-    if (sourceParticipant) {
-      const destinationParticipant = await this.db.getParticipant(fspiopDestination)
-      if (destinationParticipant) {
-        return true
-      } else {
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_FSP_ID_NOT_FOUND)
-      }
-    } else {
-      throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND)
-    }
+    await this.db.getParticipant(fspiopSource)
+    await this.db.getParticipant(fspiopDestination)
   }
 
   /**
