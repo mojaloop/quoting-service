@@ -34,7 +34,7 @@
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Test = require('tape')
-const Hapi = require('hapi')
+const Hapi = require('@hapi/hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
 const Mockgen = require('../util/mockgen.js')
