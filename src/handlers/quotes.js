@@ -32,6 +32,7 @@
 
 'use strict'
 
+const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const util = require('util')
 const QuotesModel = require('../model/quotes.js')
@@ -60,7 +61,7 @@ module.exports = {
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
     const quoteId = request.payload.quoteId
-    const fspiopSource = request.headers['fspiop-source']
+    const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
     try {
       // call the quote request handler in the model
@@ -73,7 +74,7 @@ module.exports = {
       await model.handleException(fspiopSource, quoteId, fspiopError)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
-      return h.response().code(202)
+      return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     }
   }
 }
