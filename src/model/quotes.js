@@ -489,7 +489,7 @@ class QuotesModel {
       let opts = {
         method: 'PUT',
         body: JSON.stringify(originalQuoteResponse),
-        headers: this.generateRequestHeaders(headers)
+        headers: this.generateRequestHeaders(headers, true)
       }
 
       // Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
