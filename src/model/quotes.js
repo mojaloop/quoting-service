@@ -30,6 +30,7 @@
  --------------
  ******/
 
+const request = require('@mojaloop/central-services-shared').Util.Request
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const util = require('util')
@@ -498,7 +499,7 @@ class QuotesModel {
       // so we need to wrap the request below in a `try catch` to handle network errors
       let res
       try {
-        res = await fetch(fullUrl, opts)
+        res = await request.sendRequest(fullUrl, opts.headers, fspiopSource, fspiopDestination, opts.method, opts.body, Enum.Http.ResponseTypes.JSON)
       } catch (err) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error forwarding quote response', err, fspiopSource, [
           { key: 'url', value: fullUrl },
@@ -757,7 +758,7 @@ class QuotesModel {
       }
       let res
       try {
-        res = await axios.request(opts)
+        res = await request.sendRequest(opts.url, opts.headers, fspiopSource, fspiopDest, opts.method, opts.data, Enum.Http.ResponseTypes.JSON)
       } catch (err) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, err, fspiopSource, [
           { key: 'url', value: fullCallbackUrl },
