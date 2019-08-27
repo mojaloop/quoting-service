@@ -345,6 +345,11 @@ class QuotesModel {
     let txn = null
     const envConfig = new Config()
     try {
+      // ensure no 'accept' header is present in the request headers.
+      if (headers['accept']) {
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          `Update for quote ${quoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
+      }
 
       // accumulate enum ids
       let refs = {}
@@ -444,7 +449,9 @@ class QuotesModel {
       return refs
     } catch (err) {
       this.writeLog(`Error in handleQuoteUpdate: ${err.stack || util.inspect(err)}`)
-      txn.rollback(err)
+      if (txn) {
+        txn.rollback(err)
+      }
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
