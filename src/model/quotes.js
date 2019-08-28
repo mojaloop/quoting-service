@@ -31,6 +31,7 @@
  ******/
 
 const request = require('@mojaloop/central-services-shared').Util.Request
+const CSutil = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const util = require('util')
@@ -492,7 +493,7 @@ class QuotesModel {
       let opts = {
         method: Enum.Http.RestMethods.PUT,
         body: JSON.stringify(originalQuoteResponse),
-        headers: headers
+        headers: headers || CSutil.Http.SwitchDefaultHeaders(fspiopDestination, Enum.Http.HeaderResources.QUOTES, Enum.Http.Headers.FSPIOP.SWITCH.value)
       }
 
       // Network errors lob an exception. Bare in mind 3xx 4xx and 5xx are not network errors
@@ -750,11 +751,7 @@ class QuotesModel {
         data: JSON.stringify(fspiopError.toApiErrorObject()),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
-        headers: (headers || {
-          'Enum.Http.Headers.FSPIOP.DESTINATION': fspiopSource,
-          'Enum.Http.Headers.FSPIOP.SOURCE': 'Enum.Http.Headers.FSPIOP.SWITCH.value',
-          'Enum.Http.Headers.FSPIOP.HTTP_METHOD': 'Enum.Http.RestMethods.PUT'
-        }, true)
+        headers: headers || CSutil.Http.SwitchDefaultHeaders(fspiopSource, Enum.Http.HeaderResources.QUOTES, Enum.Http.Headers.FSPIOP.SWITCH.value)
       }
       let res
       try {
