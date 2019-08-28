@@ -984,7 +984,7 @@
     "Amount": {
       "title": "Amount",
       "type": "string",
-      "pattern": "^([0]|([1-9][0-9]{0,17}))([.][0-9]{0,3}[1-9])?$",
+      "pattern": "^(([1-9][0-9]{0,17}))([.][0-9]{0,3}[1-9])?$",
       "description": "The API data type Amount is a JSON String in a canonical format that is restricted by a regular expression for interoperability reasons. This pattern does not allow any trailing zeroes at all, but allows an amount without a minor currency unit. It also only allows four digits in the minor currency unit; a negative value is not allowed. Using more than 18 digits in the major currency unit is not allowed."
     },
     "AmountType": {
@@ -1430,6 +1430,12 @@
       ],
       "description": "Below are the allowed values for the enumeration - PASSPORT A passport number is used as reference to a Party. - NATIONAL_REGISTRATION A national registration number is used as reference to a Party. - DRIVING_LICENSE A driving license is used as reference to a Party. - ALIEN_REGISTRATION An alien registration number is used as reference to a Party. - NATIONAL_ID_CARD A national ID card number is used as reference to a Party. - EMPLOYER_ID A tax identification number is used as reference to a Party. - TAX_ID_NUMBER A tax identification number is used as reference to a Party. - SENIOR_CITIZENS_CARD A senior citizens card number is used as reference to a Party. - MARRIAGE_CERTIFICATE A marriage certificate number is used as reference to a Party. - HEALTH_CARD A health card number is used as reference to a Party. - VOTERS_ID A voter’s identification number is used as reference to a Party. - UNITED_NATIONS An UN (United Nations) number is used as reference to a Party. - OTHER_ID Any other type of identification type number is used as reference to a Party."
     },
+    "QuoteId": {
+      "title": "QuoteId",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Quote Identifier. The API data type UUID (Universally Unique Identifier) is a JSON String in canonical format, conforming to RFC 4122, that is restricted by a regular expression for interoperability reasons. An UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘)."
+    },
     "QRCODE": {
       "title": "QRCODE",
       "type": "string",
@@ -1449,6 +1455,12 @@
       "type": "string",
       "pattern": "^[0-9a-zA-Z]{4,32}$",
       "description": "The API data type TokenCode is a JSON String between 4 and 32 characters, consisting of digits or upper or lowercase characters from a to z."
+    },
+    "TransactionId": {
+      "title": "TransactionId",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Transaction Identifier. The API data type UUID (Universally Unique Identifier) is a JSON String in canonical format, conforming to RFC 4122, that is restricted by a regular expression for interoperability reasons. An UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘)."
     },
     "TransactionInitiator": {
       "title": "TransactionInitiatorEnum",
@@ -1976,11 +1988,11 @@
       "description": "Data model for the complex type Money.",
       "properties": {
         "currency": {
-          "type": "string",
+          "$ref": "#/definitions/Currency",
           "description": "Currency of the amount."
         },
         "amount": {
-          "type": "string",
+          "$ref": "#/definitions/Amount",
           "description": "Amount of Money."
         }
       },
@@ -2120,11 +2132,11 @@
       "description": "Data model for the complex type PartyIdInfo.",
       "properties": {
         "partyIdType": {
-          "type": "string",
+          "$ref": "#/definitions/PartyIdType",
           "description": "Type of the identifier."
         },
         "partyIdentifier": {
-          "type": "string",
+          "$ref": "#/definitions/PartyIdentifier",
           "description": "An identifier for the Party."
         },
         "partySubIdOrType": {
@@ -2194,11 +2206,11 @@
       "description": "POST /quotes object",
       "properties": {
         "quoteId": {
-          "type": "string",
+          "$ref": "#/definitions/QuoteId",
           "description": "Common ID between the FSPs for the quote object, decided by the Payer FSP. The ID should be reused for resends of the same quote for a transaction. A new ID should be generated for each new quote for a transaction."
         },
         "transactionId": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionId",
           "description": "Common ID (decided by the Payer FSP) between the FSPs for the future transaction object. The actual transaction will be created as part of a successful transfer process. The ID should be reused for resends of the same quote for a transaction. A new ID should be generated for each new quote for a transaction."
         },
         "transactionRequestId": {
@@ -2740,8 +2752,8 @@
     "Accept": {
       "name": "accept",
       "in": "header",
-      "required": true,
       "type": "string",
+      "required": true,
       "description": "The Accept header field indicates the version of the API the client would like the server to use."
     },
     "Content-Length": {
