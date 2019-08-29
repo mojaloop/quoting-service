@@ -22,7 +22,8 @@
   "dependencies": {
     "@hapi/good": "8.2.1",
     "@hapi/hapi": "18.3.2",
-    "@mojaloop/central-services-error-handling": "7.4.0",
+    "@mojaloop/central-services-shared": "7.4.5",
+    "@mojaloop/central-services-error-handling": "7.3.0",
     "axios": "0.19.0",
     "blipp": "4.0.0",
     "good-console": "8.0.0",
