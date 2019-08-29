@@ -346,7 +346,7 @@ class QuotesModel {
     const envConfig = new Config()
     try {
       // ensure no 'accept' header is present in the request headers.
-      if (headers['accept']) {
+      if ('accept' in headers) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           `Update for quote ${quoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
       }
