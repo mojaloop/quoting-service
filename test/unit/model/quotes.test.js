@@ -147,6 +147,62 @@ Test('QuotesModel should', quotesTest => {
     }
   })
 
+  quotesTest.test('fail quote update since "accept" header is specified', async test => {
+    const headers = {
+      accept: '*.*'
+    }
+
+    try {
+      await quotesModel.handleQuoteUpdate(headers)
+      test.fail('An error should be thrown.')
+      test.end()
+    } catch (err) {
+      test.ok(err instanceof ErrorHandler.Factory.FSPIOPError)
+      test.equal(err.apiErrorCode.code, ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code)
+      test.end()
+    }
+  })
+
+  quotesTest.test('update quote successfully', async test => {
+    try {
+      const headers = {
+        'fspiop-source': 'dfsp1',
+        'fspiop-destination': 'dfsp2'
+      }
+
+      const quoteRequest = {
+        quoteId: 'test123',
+        transactionId: 'abc123',
+        amountType: 'SEND',
+        transactionType: {
+          scenario: 'TRANSFER',
+          initiator: 'PAYER',
+          initiatorType: 'CONSUMER'
+        }
+      }
+
+      let transaction = {
+        commit: () => {},
+        rollback: () => { }
+      }
+      Sinon.stub(db, 'newTransaction').returns(transaction)
+      Sinon.stub(db, 'createQuoteResponse').returns({ quoteResponseId: quoteRequest.transactionId })
+      Sinon.stub(db, 'createQuoteUpdateDuplicateCheck').returns(null)
+      Sinon.stub(db, 'createQuoteResponseIlpPacket').returns(null)
+      Sinon.stub(db, 'createTransactionReference').returns(quoteRequest.transactionId)
+      Sinon.stub(quotesModel, 'checkDuplicateQuoteResponse').returns({ isDuplicatedId: false, isResend: false })
+
+      const refs = await quotesModel.handleQuoteUpdate(headers, quoteRequest.id, quoteRequest)
+      test.ok(refs)
+      test.deepEquals(refs, { quoteResponseId: quoteRequest.transactionId })
+      test.end()
+    } catch (err) {
+      test.fail('Error should not be thrown')
+      console.log(err)
+      test.end()
+    }
+  })
+
   quotesTest.test('throw an error on duplicate quote with a different body', async test => {
     try {
       const headers = {
