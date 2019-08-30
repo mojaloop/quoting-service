@@ -34,6 +34,7 @@
 
 const util = require('util')
 const QuotesModel = require('../../model/quotes.js')
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 /**
  * Operations on /quotes/{ID}
@@ -59,7 +60,7 @@ module.exports = {
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
     const quoteId = request.params.ID
-    const fspiopSource = request.headers['fspiop-source']
+    const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
     try {
       // call the model to re-forward the quote update to the correct party
@@ -97,7 +98,7 @@ module.exports = {
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
     const quoteId = request.params.ID
-    const fspiopSource = request.headers['fspiop-source']
+    const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
     try {
       // call the quote update handler in the model
