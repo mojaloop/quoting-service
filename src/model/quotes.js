@@ -98,7 +98,7 @@ class QuotesModel {
       const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
       // accumulate enum ids
-      let refs = {}
+      const refs = {}
 
       // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
@@ -189,7 +189,7 @@ class QuotesModel {
         // if we got here, all entities have been created in db correctly to record the quote request
 
         // check quote rules
-        let test = {...quoteRequest}
+        const test = { ...quoteRequest }
 
         const failures = await quoteRules.getFailures(test)
         if (failures && failures.length > 0) {
@@ -356,9 +356,8 @@ class QuotesModel {
       }
 
       // accumulate enum ids
-      let refs = {}
+      const refs = {}
       if (!envConfig.simpleRoutingMode) {
-
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
 
@@ -493,11 +492,11 @@ class QuotesModel {
         return this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers)
       }
 
-      let fullUrl = `${endpoint}/quotes/${quoteId}`
+      const fullUrl = `${endpoint}/quotes/${quoteId}`
 
       this.writeLog(`Forwarding quote response to endpoint: ${fullUrl}`)
 
-      let opts = {
+      const opts = {
         method: Enum.Http.RestMethods.PUT,
         body: JSON.stringify(originalQuoteResponse),
         headers: headers || CSutil.Http.SwitchDefaultHeaders(fspiopDestination, Enum.Http.HeaderResources.QUOTES, Enum.Http.Headers.FSPIOP.SWITCH.value)
@@ -746,13 +745,13 @@ class QuotesModel {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `No FSPIOP_CALLBACK_URL_QUOTES found for ${fspiopSource} unable to make error callback`, null, fspiopSource)
       }
 
-      let fullCallbackUrl = `${endpoint}/quotes/${quoteId}/error`
+      const fullCallbackUrl = `${endpoint}/quotes/${quoteId}/error`
 
       // log the original error
       this.writeLog(`Making error callback to participant '${fspiopSource}' for quoteId '${quoteId}' to ${fullCallbackUrl} for error: ${util.inspect(fspiopError.toFullErrorObject())}`)
 
       // make an error callback
-      let opts = {
+      const opts = {
         method: Enum.Http.RestMethods.PUT,
         url: fullCallbackUrl,
         data: JSON.stringify(fspiopError.toApiErrorObject()),

@@ -113,7 +113,7 @@ Test('QuotesModel should', quotesTest => {
       }
 
       conf.SIMPLE_ROUTING_MODE = false
-      let transaction = { commit: () => { }}
+      const transaction = { commit: () => { } }
       Sinon.stub(db, 'newTransaction').returns(transaction)
       Sinon.stub(db, 'getQuoteDuplicateCheck').returns(null)
       Sinon.stub(db, 'createQuoteDuplicateCheck').returns(quoteRequest.quoteId)
@@ -181,7 +181,7 @@ Test('QuotesModel should', quotesTest => {
         }
       }
 
-      let transaction = {
+      const transaction = {
         commit: () => {},
         rollback: () => { }
       }
@@ -221,7 +221,7 @@ Test('QuotesModel should', quotesTest => {
         }
       }
 
-      let transaction = {
+      const transaction = {
         rollback: () => { }
       }
       Sinon.stub(db, 'newTransaction').returns(transaction)
@@ -256,7 +256,7 @@ Test('QuotesModel should', quotesTest => {
         }
       }
 
-      let transaction = {
+      const transaction = {
         rollback: () => { }
       }
       Sinon.stub(db, 'newTransaction').returns(transaction)
