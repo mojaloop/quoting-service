@@ -21,7 +21,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@hapi/good": "8.2.1",
+    "@hapi/good": "8.2.2",
     "@hapi/hapi": "18.3.2",
     "@mojaloop/central-services-shared": "7.4.8",
     "@mojaloop/central-services-error-handling": "7.4.2",
