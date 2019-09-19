@@ -32,18 +32,18 @@
  *
  * @returns {object} Returns the default headers
  */
-function defaultHeaders() {
-  let destination = 'payeefsp'
-  let source = 'payerfsp'
-  let resource = 'quotes'
-  let version = '1.0'
+function defaultHeaders () {
+  const destination = 'payeefsp'
+  const source = 'payerfsp'
+  const resource = 'quotes'
+  const version = '1.0'
   // TODO: See API section 3.2.1; what should we do about X-Forwarded-For? Also, should we
   // add/append to this field in all 'queueResponse' calls?
   return {
-    'accept': `application/vnd.interoperability.${resource}+json;version=1`,
-    'fspiop-destination': destination ? destination : '',
+    accept: `application/vnd.interoperability.${resource}+json;version=1`,
+    'fspiop-destination': destination || '',
     'content-type': `application/vnd.interoperability.${resource}+json;version=${version}`,
-    'date': (new Date()).toUTCString(),
+    date: (new Date()).toUTCString(),
     'fspiop-source': source
   }
 }

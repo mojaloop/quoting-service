@@ -41,7 +41,7 @@ const Errors = require('./errors.js')
 const quoteRules = require('./rules.js')
 const Enums = require('../lib/enums')
 
-delete axios.defaults.headers.common['Accept']
+delete axios.defaults.headers.common.Accept
 delete axios.defaults.headers.common['Content-Type']
 
 /**
@@ -50,7 +50,7 @@ delete axios.defaults.headers.common['Content-Type']
  * @returns {undefined}
  */
 class QuotesModel {
-  constructor(config) {
+  constructor (config) {
     this.config = config
     this.db = config.db
     this.requestId = config.requestId
@@ -61,7 +61,7 @@ class QuotesModel {
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateQuoteRequest(fspiopSource, quoteRequest) {
+  async validateQuoteRequest (fspiopSource, quoteRequest) {
     // note that the framework should validate the form of the request
     // here we can do some hard-coded rule validations to ensure requests
     // do not lead to unsupported scenarios or use-cases.
@@ -82,7 +82,7 @@ class QuotesModel {
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateQuoteUpdate() {
+  async validateQuoteUpdate () {
     // todo: actually do the validation (use joi as per mojaloop)
     return Promise.resolve(null)
   }
@@ -92,7 +92,7 @@ class QuotesModel {
    *
    * @returns {object} - returns object containing keys for created database entities
    */
-  async handleQuoteRequest(headers, quoteRequest) {
+  async handleQuoteRequest (headers, quoteRequest) {
     const envConfig = new Config()
     let txn = null
 
@@ -100,7 +100,7 @@ class QuotesModel {
       const fspiopSource = headers['fspiop-source']
 
       // accumulate enum ids
-      let refs = {}
+      const refs = {}
 
       // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, quoteRequest)
@@ -193,7 +193,7 @@ class QuotesModel {
         // if we got here, all entities have been created in db correctly to record the quote request
 
         // check quote rules
-        let test = {...quoteRequest}
+        const test = { ...quoteRequest }
 
         const failures = await quoteRules.getFailures(test)
         if (failures && failures.length > 0) {
@@ -239,7 +239,7 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardTransactionRequest(headers, path, method, transaction) {
+  async forwardTransactionRequest (headers, path, method, transaction) {
     let endpoint
     const fspiopSource = headers['fspiop-source']
     const fspiopDest = headers['fspiop-destination']
@@ -293,7 +293,7 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardTransactionRequestError(headers, to, path, method, transactionRequestId, err) {
+  async forwardTransactionRequestError (headers, to, path, method, transactionRequestId, err) {
     let endpoint
     const fspiopSource = headers['fspiop-source']
     try {
@@ -346,7 +346,7 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardQuoteRequest(headers, quoteId, originalQuoteRequest) {
+  async forwardQuoteRequest (headers, quoteId, originalQuoteRequest) {
     let endpoint
     const fspiopSource = headers['fspiop-source']
     const fspiopDest = headers['fspiop-destination']
@@ -409,7 +409,7 @@ class QuotesModel {
    * Deals with resends of quote requests (POST) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
-  async handleQuoteRequestResend(headers, quoteRequest) {
+  async handleQuoteRequestResend (headers, quoteRequest) {
     try {
       const fspiopSource = headers['fspiop-source']
       this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource} to ${headers['fspiop-destination']}`)
@@ -443,15 +443,13 @@ class QuotesModel {
    *
    * @returns {object} - object containing updated entities
    */
-  async handleQuoteUpdate(headers, quoteId, quoteUpdateRequest) {
+  async handleQuoteUpdate (headers, quoteId, quoteUpdateRequest) {
     let txn = null
     const envConfig = new Config()
     try {
-
       // accumulate enum ids
-      let refs = {}
+      const refs = {}
       if (!envConfig.simpleRoutingMode) {
-
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
 
@@ -558,7 +556,7 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardQuoteUpdate(headers, quoteId, originalQuoteResponse) {
+  async forwardQuoteUpdate (headers, quoteId, originalQuoteResponse) {
     let endpoint = null
     const envConfig = new Config()
     const fspiopSource = headers['fspiop-source']
@@ -586,11 +584,11 @@ class QuotesModel {
           `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYER party`, fspiopSource, Errors.ApiErrorCodes.COMMUNICATION_ERROR), quoteId)
       }
 
-      let fullUrl = `${endpoint}/quotes/${quoteId}`
+      const fullUrl = `${endpoint}/quotes/${quoteId}`
 
       this.writeLog(`Forwarding quote response to endpoint: ${fullUrl}`)
 
-      let opts = {
+      const opts = {
         method: 'PUT',
         body: JSON.stringify(originalQuoteResponse),
         headers: this.generateRequestHeaders(headers)
@@ -621,7 +619,7 @@ class QuotesModel {
    * Deals with resends of quote responses (PUT) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
-  async handleQuoteUpdateResend(headers, quoteId, quoteUpdate) {
+  async handleQuoteUpdateResend (headers, quoteId, quoteUpdate) {
     try {
       const fspiopSource = headers['fspiop-source']
       const fspiopDest = headers['fspiop-destination']
@@ -656,16 +654,17 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async handleQuoteError(headers, quoteId, error) {
+  async handleQuoteError (headers, quoteId, error) {
     let txn = null
     const envConfig = new Config()
     try {
+      let newError
       if (!envConfig.simpleRoutingMode) {
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
 
         // persist the error
-        const newError = await this.db.createQuoteError(txn, {
+        newError = await this.db.createQuoteError(txn, {
           quoteId: quoteId,
           errorCode: Number(error.errorCode),
           errorDescription: error.errorDescription
@@ -704,7 +703,7 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async handleQuoteGet(headers, quoteId) {
+  async handleQuoteGet (headers, quoteId) {
     try {
       // make call to destination dfsp in a setImmediate;
       // attempting to give fair execution of async events...
@@ -730,7 +729,7 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardQuoteGet(headers, quoteId) {
+  async forwardQuoteGet (headers, quoteId) {
     let endpoint
 
     try {
@@ -788,7 +787,7 @@ class QuotesModel {
    * Attempts to handle an exception in a sensible manner by forwarding it on to the
    * source of the request that caused the error.
    */
-  async handleException(fspiopSource, quoteId, exception) {
+  async handleException (fspiopSource, quoteId, exception) {
     // is this exception already wrapped as an API spec compatible type?
     if (!(exception instanceof Errors.FSPIOPError)) {
       // we need to wrap the error in a generic API compatible error
@@ -815,7 +814,7 @@ class QuotesModel {
    *
    * @returns {promise}
    */
-  async sendErrorCallback(fspiopErr, quoteId) {
+  async sendErrorCallback (fspiopErr, quoteId) {
     try {
       if (!(fspiopErr instanceof Errors.FSPIOPError)) {
         throw new Error('fspiopErr not an instance of FSPIOPError')
@@ -831,13 +830,13 @@ class QuotesModel {
         throw new Error(`No FSPIOP_CALLBACK_URL_QUOTES found for ${fspiopErr.replyTo} unable to make error callback`)
       }
 
-      let fullCallbackUrl = `${endpoint}/quotes/${quoteId}/error`
+      const fullCallbackUrl = `${endpoint}/quotes/${quoteId}/error`
 
       // log the original error
       this.writeLog(`Making error callback to participant '${fspiopErr.replyTo}' for quoteId '${quoteId}' to ${fullCallbackUrl} for error: ${util.inspect(fspiopErr.toFullErrorObject())}`)
 
       // make an error callback
-      let opts = {
+      const opts = {
         method: 'PUT',
         url: fullCallbackUrl,
         data: JSON.stringify(fspiopErr.toApiErrorObject()),
@@ -873,7 +872,7 @@ class QuotesModel {
    *
    * @returns {promise} - resolves to an object thus: { isResend: {boolean}, isDuplicateId: {boolean} }
    */
-  async checkDuplicateQuoteRequest(quoteRequest) {
+  async checkDuplicateQuoteRequest (quoteRequest) {
     try {
       // calculate a SHA-256 of the request
       const hash = this.calculateRequestHash(quoteRequest)
@@ -916,7 +915,7 @@ class QuotesModel {
    *
    * @returns {promise} - resolves to an object thus: { isResend: {boolean}, isDuplicateId: {boolean} }
    */
-  async checkDuplicateQuoteResponse(quoteId, quoteResponse) {
+  async checkDuplicateQuoteResponse (quoteId, quoteResponse) {
     try {
       // calculate a SHA-256 of the request
       const hash = this.calculateRequestHash(quoteResponse)
@@ -959,8 +958,8 @@ class QuotesModel {
    *
    * @returns {object}
    */
-  removeEmptyKeys(originalObject) {
-    let obj = {...originalObject}
+  removeEmptyKeys (originalObject) {
+    const obj = { ...originalObject }
     Object.keys(obj).forEach(key => {
       if (obj[key] && typeof obj[key] === 'object') {
         if (Object.keys(obj[key]).length < 1) {
@@ -983,7 +982,7 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  calculateRequestHash(request) {
+  calculateRequestHash (request) {
     // calculate a SHA-256 of the request
     const requestStr = JSON.stringify(request)
     return crypto.createHash('sha256').update(requestStr).digest('hex')
@@ -994,21 +993,21 @@ class QuotesModel {
    *
    * @returns {object}
    */
-  generateRequestHeaders(headers, noAccept) {
-    let ret = {
+  generateRequestHeaders (headers, noAccept) {
+    const ret = {
       'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
-      'Date': new Date().toUTCString(),
+      Date: new Date().toUTCString(),
       'FSPIOP-Source': headers['fspiop-source'],
       'FSPIOP-Destination': headers['fspiop-destination'],
       'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
       'FSPIOP-Signature': headers['fspiop-signature'],
       'FSPIOP-URI': headers['fspiop-uri'],
       'User-Agent': null, // yuck! node-fetch INSISTS on sending a user-agent header!? infuriating!
-      'Accept': null
+      Accept: null
     }
 
     if (!noAccept) {
-      ret['Accept'] = 'application/vnd.interoperability.quotes+json;version=1'
+      ret.Accept = 'application/vnd.interoperability.quotes+json;version=1'
     }
 
     return this.removeEmptyKeys(ret)
@@ -1019,7 +1018,7 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  writeLog(message) {
+  writeLog (message) {
     // eslint-disable-next-line no-console
     // console.log(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
   }

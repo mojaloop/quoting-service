@@ -433,7 +433,7 @@ class Database {
      */
   async createQuoteParty (txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency) {
     try {
-      let refs = {}
+      const refs = {}
 
       // get various enum ids (async, as parallel as possible)
       const enumVals = await Promise.all([
@@ -457,7 +457,7 @@ class Database {
       }
 
       // insert a new quote party
-      let newQuoteParty = {
+      const newQuoteParty = {
         quoteId: quoteId,
         partyTypeId: refs.partyTypeId,
         partyIdentifierTypeId: refs.partyIdentifierTypeId,
@@ -484,7 +484,7 @@ class Database {
 
       if (party.personalInfo) {
         // we need to store personal info also
-        let newParty = {
+        const newParty = {
           firstName: party.personalInfo.complexName.firstName,
           middleName: party.personalInfo.complexName.middleName,
           lastName: party.personalInfo.complexName.lastName,
@@ -586,7 +586,7 @@ class Database {
      */
   async createParty (txn, quotePartyId, party) {
     try {
-      let newParty = {
+      const newParty = {
         ...party,
         quotePartyId: quotePartyId
       }
@@ -796,7 +796,7 @@ class Database {
      */
   async createQuoteResponse (txn, quoteId, quoteResponse) {
     try {
-      let newQuoteResponse = {
+      const newQuoteResponse = {
         quoteId: quoteId,
         transferAmountCurrencyId: quoteResponse.transferAmount.currency,
         transferAmount: quoteResponse.transferAmount.amount,
@@ -832,7 +832,7 @@ class Database {
      */
   async createQuoteResponseIlpPacket (txn, quoteResponseId, ilpPacket) {
     try {
-      let newPacket = {
+      const newPacket = {
         quoteResponseId: quoteResponseId,
         value: ilpPacket
       }
@@ -856,7 +856,7 @@ class Database {
      */
   async createGeoCode (txn, geoCode) {
     try {
-      let newGeoCode = {
+      const newGeoCode = {
         quotePartyId: geoCode.quotePartyId,
         latitude: geoCode.latitude,
         longitude: geoCode.longitude
@@ -883,7 +883,7 @@ class Database {
      */
   async createQuoteError (txn, error) {
     try {
-      let newError = {
+      const newError = {
         quoteId: error.quoteId,
         errorCode: error.errorCode,
         errorDescription: error.errorDescription
