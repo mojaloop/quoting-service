@@ -25,15 +25,14 @@ module.exports = {
 
     try {
       // call the quote request handler in the model
-      const result = await model.forwardTransactionRequestError(request.headers, request.headers['fspiop-destination'], Enums.endpoints.TRANSACTION_REQUEST_PUT_ERROR, request.method.toUpperCase(), request.params.ID, request.payload)
+      const result = await model.forwardTransactionRequestError(request.headers, request.headers['fspiop-destination'],Enums.endpoints.TRANSACTION_REQUEST_PUT_ERROR, request.method.toUpperCase(), request.params.ID, request.payload)
       request.server.log(['info'], `PUT transactionRequests/{ID}/error request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /transactionRequests/{ID}/error: ${err.stack || util.inspect(err)}`)
-      return await model.forwardTransactionRequestError(request.headers, request.headers['fspiop-source'], Enums.endpoints.TRANSACTION_REQUEST_PUT_ERROR, Enums.restMethods.PUT, request.params.ID, err)
+      return await model.forwardTransactionRequestError(request.headers, request.headers['fspiop-source'],Enums.endpoints.TRANSACTION_REQUEST_PUT_ERROR, Enums.restMethods.PUT, request.params.ID, err)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(202)
-    }
-  }
+    }  }
 }

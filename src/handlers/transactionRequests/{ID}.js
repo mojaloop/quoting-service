@@ -25,12 +25,12 @@ module.exports = {
 
     try {
       // call the quote request handler in the model
-      const result = await model.forwardTransactionRequest(request.headers, Enums.endpoints.TRANSACTION_REQUEST_GET, request.method.toUpperCase(), { transactionRequestId: request.params.ID })
+      const result = await model.forwardTransactionRequest(request.headers, Enums.endpoints.TRANSACTION_REQUEST_GET, request.method.toUpperCase(), {transactionRequestId: request.params.ID})
       request.server.log(['info'], `GET transactionRequests/{ID} request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - GET /transactionRequests/{ID}: ${err.stack || util.inspect(err)}`)
-      return await model.forwardTransactionRequestError(request.headers, request.headers['fspiop-source'], Enums.endpoints.TRANSACTION_REQUEST_PUT_ERROR, Enums.restMethods.PUT, request.params.ID, err)
+      return await model.forwardTransactionRequestError(request.headers, request.headers['fspiop-source'],Enums.endpoints.TRANSACTION_REQUEST_PUT_ERROR, Enums.restMethods.PUT, request.params.ID, err)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(202)
@@ -59,7 +59,7 @@ module.exports = {
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /transactionRequests/{ID}: ${err.stack || util.inspect(err)}`)
-      return await model.forwardTransactionRequestError(request.headers, request.headers['fspiop-source'], Enums.endpoints.TRANSACTION_REQUEST_PUT_ERROR, Enums.restMethods.PUT, request.params.ID, err)
+      return await model.forwardTransactionRequestError(request.headers, request.headers['fspiop-source'],Enums.endpoints.TRANSACTION_REQUEST_PUT_ERROR, Enums.restMethods.PUT, request.params.ID, err)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(202)
