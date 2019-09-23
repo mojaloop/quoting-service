@@ -51,8 +51,32 @@ class Config {
         database: RC.DATABASE.SCHEMA
       },
       pool: {
-        min: RC.DATABASE.POOL_MINSIZE,
-        max: RC.DATABASE.POOL_MAXSIZE
+        // minimum size
+        min: RC.DATABASE.POOL_MINSIZE ? RC.DATABASE.POOL_MINSIZE : 2,
+
+        // maximum size
+        max: RC.DATABASE.POOL_MAXSIZE ?  RC.DATABASE.POOL_MAXSIZE : 10,
+        // acquire promises are rejected after this many milliseconds
+        // if a resource cannot be acquired
+        acquireTimeoutMillis: RC.DATABASE.ACQUIRETIMEOUTMILLIS ? RC.DATABASE.ACQUIRETIMEOUTMILLIS : 30000,
+
+        // create operations are cancelled after this many milliseconds
+        // if a resource cannot be acquired
+        createTimeoutMillis: RC.DATABASE.CREATETIMEOUTMILLIS ? RC.DATABASE.CREATETIMEOUTMILLIS : 3000,
+
+        // destroy operations are awaited for at most this many milliseconds
+        // new resources will be created after this timeout
+        destroyTimeoutMillis: RC.DATABASE.DESTROYTIMEOUTMILLIS ? RC.DATABASE.DESTROYTIMEOUTMILLIS : 5000,
+
+        // free resouces are destroyed after this many milliseconds
+        idleTimeoutMillis: RC.DATABASE.IDLETIMEOUTMILLIS ? RC.DATABASE.IDLETIMEOUTMILLIS : 30000,
+
+        // how often to check for idle resources to destroy
+        reapIntervalMillis: RC.DATABASE.REAPINTERVALMILLIS ? RC.DATABASE.REAPINTERVALMILLIS : 1000,
+
+        // long long to idle after failed create before trying again
+        createRetryIntervalMillis: RC.DATABASE.CREATERETRYINTERVALMILLIS ? RC.DATABASE.CREATERETRYINTERVALMILLIS : 200,
+        // ping: function (conn, cb) { conn.query('SELECT 1', cb) }
       },
       debug: RC.DATABASE.DEBUG ? RC.DATABASE.DEBUG : false
     }
