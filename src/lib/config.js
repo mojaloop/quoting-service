@@ -53,7 +53,8 @@ class Config {
       pool: {
         min: RC.DATABASE.POOL_MINSIZE,
         max: RC.DATABASE.POOL_MAXSIZE
-      }
+      },
+      debug: RC.DATABASE.DEBUG ? RC.DATABASE.DEBUG : false
     }
   }
 }
