@@ -32,7 +32,6 @@
 
 'use strict'
 
-const Test = require('tape')
 const Hapi = require('@hapi/hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
@@ -42,7 +41,7 @@ const helper = require('../../util/helper')
 /**
  * Test for /quotes/{ID}
  */
-Test('/quotes/{ID}', function (t) {
+describe('/quotes/{ID}', function () {
   /**
      * summary: QuotesByID
      * description: The HTTP request GET /quotes/&lt;ID&gt; is used to get information regarding an earlier created or requested quote. The &lt;ID&gt; in the URI should contain the quoteId that was used for the creation of the quote.
@@ -50,7 +49,7 @@ Test('/quotes/{ID}', function (t) {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  t.test('test QuotesByID get operation', async function (t) {
+  test('test QuotesByID get operation', async () => {
     const server = new Hapi.Server()
 
     await server.register({
@@ -73,8 +72,8 @@ Test('/quotes/{ID}', function (t) {
 
     const mock = await requests
 
-    t.ok(mock)
-    t.ok(mock.request)
+    expect(mock).toBeTruthy()
+    expect(mock.request).toBeTruthy()
     // Get the resolved path from mock request
     // Mock request Path templates({}) are resolved using path parameters
     const options = {
@@ -94,8 +93,7 @@ Test('/quotes/{ID}', function (t) {
 
     const response = await server.inject(options)
 
-    t.equal(response.statusCode, 202, 'Ok response status')
-    t.end()
+    expect(response.statusCode).toBe(202)
   })
   /**
      * summary: QuotesByID
@@ -104,7 +102,7 @@ Test('/quotes/{ID}', function (t) {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  t.test('test QuotesByID1 put operation', async function (t) {
+  test('test QuotesByID1 put operation', async () => {
     const server = new Hapi.Server()
 
     await server.register({
@@ -127,8 +125,8 @@ Test('/quotes/{ID}', function (t) {
 
     const mock = await requests
 
-    t.ok(mock)
-    t.ok(mock.request)
+    expect(mock).toBeTruthy()
+    expect(mock.request).toBeTruthy()
     // Get the resolved path from mock request
     // Mock request Path templates({}) are resolved using path parameters
     const options = {
@@ -148,7 +146,6 @@ Test('/quotes/{ID}', function (t) {
 
     const response = await server.inject(options)
 
-    t.equal(response.statusCode, 202, 'Ok response status')
-    t.end()
+    expect(response.statusCode).toBe(202)
   })
 })
