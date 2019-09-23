@@ -33,7 +33,6 @@
 'use strict'
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Test = require('tape')
 const Hapi = require('@hapi/hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
@@ -43,7 +42,7 @@ const helper = require('../util/helper')
 /**
  * Test for /quotes
  */
-Test('/quotes', function (t) {
+describe('/quotes', function () {
   /**
      * summary: Quotes
      * description: The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.
@@ -51,7 +50,7 @@ Test('/quotes', function (t) {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  t.test('test Quotes post operation', async function (t) {
+  test('test Quotes post operation', async () => {
     const server = new Hapi.Server()
 
     await server.register([{
@@ -74,8 +73,8 @@ Test('/quotes', function (t) {
 
     const mock = await requests
 
-    t.ok(mock)
-    t.ok(mock.request)
+    expect(mock).toBeTruthy()
+    expect(mock.request).toBeTruthy()
     // Get the resolved path from mock request
     // Mock request Path templates({}) are resolved using path parameters
     const options = {
@@ -95,7 +94,6 @@ Test('/quotes', function (t) {
 
     const response = await server.inject(options)
 
-    t.equal(response.statusCode, 202, 'Ok response status')
-    t.end()
+    expect(response.statusCode).toBe(202)
   })
 })
