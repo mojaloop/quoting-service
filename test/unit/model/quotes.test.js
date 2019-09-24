@@ -100,7 +100,7 @@ describe('quotesModel', () => {
     }
 
     conf.SIMPLE_ROUTING_MODE = false
-    const transaction = { commit: () => { } }
+    const transaction = { commit: () => { }, rollback: () => { } } // mock rollback so we can better see the error causing test failures
     Sinon.stub(db, 'newTransaction').returns(transaction)
     Sinon.stub(db, 'getQuoteDuplicateCheck').returns(null)
     Sinon.stub(db, 'createQuoteDuplicateCheck').returns(quoteRequest.quoteId)

@@ -14,10 +14,13 @@
         {
           "fact": "payload",
           "path": ".amount.currency",
-          "operator": "notEqual",
+          "operator": "notIn",
           "value": {
-            "fact": "payee",
-            "path": ".currency"
+            "fact": "json-path",
+            "params": {
+              "fact": "payee",
+              "path": "$.payee.accounts[*].currency"
+            }
           }
         }
       ]
@@ -44,10 +47,13 @@
         {
           "fact": "payload",
           "path": ".amount.currency",
-          "operator": "notEqual",
+          "operator": "notIn",
           "value": {
-            "fact": "payee",
-            "path": ".currency"
+            "fact": "json-path",
+            "params": {
+              "fact": "payee",
+              "path": "$.payee.accounts[*].currency"
+            }
           }
         }
       ]

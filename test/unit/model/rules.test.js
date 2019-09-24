@@ -126,7 +126,9 @@ test('Test rules engine example config INTERCEPT_QUOTE event', async () => {
   const rules = require(`${__ROOT__}/config/rules.example.json`)
   const testFacts = {
     payee: {
-      currency: "ZAR"
+      accounts: [{
+        currency: "ZAR"
+      }]
     },
     payload: {
       amount: {
@@ -143,11 +145,36 @@ test('Test rules engine example config INTERCEPT_QUOTE event', async () => {
   expect(events).toEqual([ rules[0].event ])
 })
 
+test('Test rules engine example config INTERCEPT_QUOTE event negative case', async () => {
+  const rules = require(`${__ROOT__}/config/rules.example.json`)
+  const testFacts = {
+    payee: {
+      accounts: [{
+        currency: "XOF"
+      }]
+    },
+    payload: {
+      amount: {
+        currency: "XOF"
+      },
+      extensionList: [
+        { key: 'blah', value: 'whatever' },
+        { key: 'KYCPayerTier', value: '1' },
+        { key: 'noise', value: 'blah' }
+      ]
+    }
+  }
+  const { events } = await RulesEngine.run(rules, testFacts)
+  expect(events).toEqual([])
+})
+
 test('Test rules engine example config INVALID_QUOTE_REQUEST event', async () => {
   const rules = require(`${__ROOT__}/config/rules.example.json`)
   const testFacts = {
     payee: {
-      currency: "ZAR"
+      accounts: [{
+        currency: "ZAR"
+      }]
     },
     payload: {
       amount: {
@@ -162,4 +189,27 @@ test('Test rules engine example config INVALID_QUOTE_REQUEST event', async () =>
   }
   const { events } = await RulesEngine.run(rules, testFacts)
   expect(events).toEqual([ rules[1].event ])
+})
+
+test('Test rules engine example config INVALID_QUOTE_REQUEST event negative case', async () => {
+  const rules = require(`${__ROOT__}/config/rules.example.json`)
+  const testFacts = {
+    payee: {
+      accounts: [{
+        currency: "XOF"
+      }]
+    },
+    payload: {
+      amount: {
+        currency: "XOF"
+      },
+      extensionList: [
+        { key: 'blah', value: 'whatever' },
+        { key: 'KYCPayerTier', value: '2' },
+        { key: 'noise', value: 'blah' }
+      ]
+    }
+  }
+  const { events } = await RulesEngine.run(rules, testFacts)
+  expect(events).toEqual([])
 })

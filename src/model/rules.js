@@ -112,11 +112,9 @@ const createEngine = () => {
    *     ...
    *   }
    *
-   * Supported top-level keys are:
+   * Supported top-level keys (facts) are:
    * - payload
    * - headers
-   * - method
-   * - url
    * - payer
    * - payee
    *
