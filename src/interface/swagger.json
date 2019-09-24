@@ -12,6 +12,9 @@
   "schemes": [
     "http"
   ],
+  "consumes": [
+    "application/json"
+  ],
   "produces": [
     "application/json"
   ],
@@ -24,6 +27,9 @@
           "quotes"
         ],
         "operationId": "QuotesByIDAndError",
+        "consumes": [
+          "application/json"
+        ],
         "produces": [
           "application/json"
         ],
@@ -206,6 +212,9 @@
           "quotes"
         ],
         "operationId": "QuotesByID1",
+        "consumes": [
+          "application/json"
+        ],
         "produces": [
           "application/json"
         ],
@@ -300,6 +309,9 @@
           "quotes"
         ],
         "operationId": "Quotes",
+        "consumes": [
+          "application/json"
+        ],
         "produces": [
           "application/json"
         ],
@@ -466,6 +478,9 @@
           "bulkQuotes"
         ],
         "operationId": "BulkQuotesErrorByID",
+        "consumes": [
+          "application/json"
+        ],
         "produces": [
           "application/json"
         ],
@@ -648,6 +663,9 @@
           "bulkQuotes"
         ],
         "operationId": "BulkQuotesByID1",
+        "consumes": [
+          "application/json"
+        ],
         "produces": [
           "application/json"
         ],
@@ -767,6 +785,9 @@
           "bulkQuotes"
         ],
         "operationId": "BulkQuotes",
+        "consumes": [
+          "application/json"
+        ],
         "produces": [
           "application/json"
         ],
