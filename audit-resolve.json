@@ -1,0 +1,107 @@
+{
+  "decisions": {
+    "880|axios": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1065|knex>lodash": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1065|eslint>inquirer>lodash": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1065|eslint>lodash": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1065|eslint>table>lodash": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1065|sinon>@sinonjs/formatio>@sinonjs/samsam>lodash": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1065|sinon>@sinonjs/samsam>lodash": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1065|sinon>nise>@sinonjs/formatio>@sinonjs/samsam>lodash": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1065|tap-xunit>xmlbuilder>lodash": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1012|knex>liftoff>findup-sync>micromatch>braces>snapdragon>base>cache-base>set-value": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1012|knex>liftoff>findup-sync>micromatch>extglob>expand-brackets>snapdragon>base>cache-base>set-value": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1012|knex>liftoff>findup-sync>micromatch>extglob>snapdragon>base>cache-base>set-value": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1012|knex>liftoff>findup-sync>micromatch>nanomatch>snapdragon>base>cache-base>set-value": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1012|knex>liftoff>findup-sync>micromatch>snapdragon>base>cache-base>set-value": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1012|knex>liftoff>findup-sync>micromatch>braces>snapdragon>base>cache-base>union-value>set-value": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1012|knex>liftoff>findup-sync>micromatch>extglob>expand-brackets>snapdragon>base>cache-base>union-value>set-value": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1012|knex>liftoff>findup-sync>micromatch>extglob>snapdragon>base>cache-base>union-value>set-value": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1012|knex>liftoff>findup-sync>micromatch>nanomatch>snapdragon>base>cache-base>union-value>set-value": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1012|knex>liftoff>findup-sync>micromatch>snapdragon>base>cache-base>union-value>set-value": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1013|knex>liftoff>findup-sync>micromatch>braces>snapdragon>base>mixin-deep": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1013|knex>liftoff>findup-sync>micromatch>extglob>expand-brackets>snapdragon>base>mixin-deep": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1013|knex>liftoff>findup-sync>micromatch>extglob>snapdragon>base>mixin-deep": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1013|knex>liftoff>findup-sync>micromatch>nanomatch>snapdragon>base>mixin-deep": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1013|knex>liftoff>findup-sync>micromatch>snapdragon>base>mixin-deep": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "1164|nyc>istanbul-reports>handlebars": {
+      "decision": "ignore",
+      "madeAt": 1569403899016,
+      "expiresAt": 1571995883605
+    }
+  },
+  "rules": {},
+  "version": 1
+}
