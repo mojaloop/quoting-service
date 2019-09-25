@@ -41,6 +41,7 @@
     "eslint": "6.3.0",
     "istanbul": "1.1.0-alpha.1",
     "npm-audit-resolver": "1.5.0",
+    "npm-check-updates": "3.1.23",
     "proxyquire": "2.1.3",
     "sinon": "7.4.1",
     "swagmock": "1.0.0",
@@ -62,7 +63,9 @@
     "docker:up": "docker-compose -f docker-compose.yml -f docker-compose.base.yml up",
     "docker:stop": "docker-compose -f docker-compose.yml -f docker-compose.base.yml stop",
     "audit:resolve": "SHELL=sh resolve-audit",
-    "audit:check": "SHELL=sh check-audit"
+    "audit:check": "SHELL=sh check-audit",
+    "dep:check": "npx ncu -e 2",
+    "dep:update": "npx ncu -u"
   },
   "generator-swaggerize": {
     "version": "4.11.0"
