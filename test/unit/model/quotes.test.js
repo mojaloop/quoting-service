@@ -30,6 +30,7 @@
  ******/
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Logger = require('@mojaloop/central-services-logger')
 const Test = require('tapes')(require('tape'))
 const proxyquire = require('proxyquire')
 const Sinon = require('sinon')
@@ -198,7 +199,7 @@ Test('QuotesModel should', quotesTest => {
       test.end()
     } catch (err) {
       test.fail('Error should not be thrown')
-      console.log(err)
+      Logger.error(err)
       test.end()
     }
   })

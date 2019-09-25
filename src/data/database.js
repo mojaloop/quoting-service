@@ -34,6 +34,7 @@
 
 const util = require('util')
 const Knex = require('knex')
+const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * Abstracts operations against the database
@@ -908,8 +909,7 @@ class Database {
      */
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
-    // eslint-disable-next-line no-console
-    // console.log(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
+    Logger.debug(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
   }
 }
 

@@ -34,6 +34,7 @@ const request = require('@mojaloop/central-services-shared').Util.Request
 const CSutil = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Logger = require('@mojaloop/central-services-logger')
 const util = require('util')
 const crypto = require('crypto')
 const Config = require('../lib/config')
@@ -893,8 +894,7 @@ class QuotesModel {
      */
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
-    // eslint-disable-next-line no-console
-    console.log(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
+    Logger.info(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
   }
 }
 

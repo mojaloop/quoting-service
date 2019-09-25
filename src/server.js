@@ -6,6 +6,8 @@ const Path = require('path')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Logger = require('@mojaloop/central-services-logger')
+const util = require('util')
 
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase.js')
@@ -34,8 +36,7 @@ const initServer = async function (db, config) {
     routes: {
       validate: {
         failAction: async (request, h, err) => {
-          // eslint-disable-next-line no-console
-          // console.log(`validation failure: ${err.stack || util.inspect(err)}`)
+          Logger.error(`validation failure: ${err.stack || util.inspect(err)}`)
           throw err
         }
       }
@@ -89,8 +90,7 @@ initDb(config.database).then(db => {
   process.on('SIGTERM', () => {
     server.log(['info'], 'Received SIGTERM, closing server...')
     server.stop({ timeout: 10000 }).then(err => {
-      // eslint-disable-next-line no-console
-      // console.log(`server stopped. ${err ? (err.stack || util.inspect(err)) : ''}`)
+      Logger.warn(`server stopped. ${err ? (err.stack || util.inspect(err)) : ''}`)
       process.exit((err) ? 1 : 0)
     })
   })
@@ -99,6 +99,5 @@ initDb(config.database).then(db => {
   server.log(['info'], `Server running on ${server.info.uri}`)
 // eslint-disable-next-line no-unused-vars
 }).catch(err => {
-  // eslint-disable-next-line no-console
-  //console.log(`Error initializing server: ${err.stack || util.inspect(err)}`)
+  Logger.error(`Error initializing server: ${err.stack || util.inspect(err)}`)
 })
