@@ -95,11 +95,6 @@
     "1013|knex>liftoff>findup-sync>micromatch>snapdragon>base>mixin-deep": {
       "madeAt": 0,
       "decision": "fix"
-    },
-    "1164|nyc>istanbul-reports>handlebars": {
-      "decision": "ignore",
-      "madeAt": 1569403899016,
-      "expiresAt": 1571995883605
     }
   },
   "rules": {},
