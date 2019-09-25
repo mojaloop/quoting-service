@@ -6,7 +6,7 @@
           "fact": "json-path",
           "params": {
             "fact": "payload",
-            "path": "$.payload.extensionList[?(@.key === 'KYCPayerTier')].value"
+            "path": "$.payload.extensionList[?(@.key == 'KYCPayerTier')].value"
           },
           "operator": "deepEqual",
           "value": [ "1" ]
@@ -19,7 +19,7 @@
             "fact": "json-path",
             "params": {
               "fact": "payee",
-              "path": "$.payee.accounts[*].currency"
+              "path": "$.payee.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
             }
           }
         }
@@ -39,7 +39,7 @@
           "fact": "json-path",
           "params": {
             "fact": "payload",
-            "path": "$.payload.extensionList[?(@.key === 'KYCPayerTier')].value"
+            "path": "$.payload.extensionList[?(@.key == 'KYCPayerTier')].value"
           },
           "operator": "notDeepEqual",
           "value": [ "1" ]
@@ -52,7 +52,7 @@
             "fact": "json-path",
             "params": {
               "fact": "payee",
-              "path": "$.payee.accounts[*].currency"
+              "path": "$.payee.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
             }
           }
         }

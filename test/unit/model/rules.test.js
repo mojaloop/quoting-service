@@ -127,6 +127,7 @@ test('Test rules engine example config INTERCEPT_QUOTE event', async () => {
   const testFacts = {
     payee: {
       accounts: [{
+        ledgerAccountType: "SETTLEMENT",
         currency: "ZAR"
       }]
     },
@@ -150,6 +151,7 @@ test('Test rules engine example config INTERCEPT_QUOTE event negative case', asy
   const testFacts = {
     payee: {
       accounts: [{
+        ledgerAccountType: "SETTLEMENT",
         currency: "XOF"
       }]
     },
@@ -173,6 +175,7 @@ test('Test rules engine example config INVALID_QUOTE_REQUEST event', async () =>
   const testFacts = {
     payee: {
       accounts: [{
+        ledgerAccountType: "SETTLEMENT",
         currency: "ZAR"
       }]
     },
@@ -196,6 +199,7 @@ test('Test rules engine example config INVALID_QUOTE_REQUEST event negative case
   const testFacts = {
     payee: {
       accounts: [{
+        ledgerAccountType: "SETTLEMENT",
         currency: "XOF"
       }]
     },
