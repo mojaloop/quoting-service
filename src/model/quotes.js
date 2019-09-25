@@ -72,6 +72,12 @@ class QuotesModel {
     // if (quoteRequest.transactionType.initiator !== 'PAYER') {
     //   throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Only PAYER initiated transactions are supported', null, fspiopSource)
     // }
+
+    // Any quoteRequest specific validations to be added here
+    if (!quoteRequest) {
+      throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
+    }
+
     await this.db.getParticipant(fspiopSource)
     await this.db.getParticipant(fspiopDestination)
   }
@@ -153,6 +159,7 @@ class QuotesModel {
         refs.amountTypeId = await this.db.getAmountType(quoteRequest.amountType)
 
         // create the quote row itself
+        // eslint-disable-next-line require-atomic-updates
         refs.quoteId = await this.db.createQuote(txn, {
           quoteId: quoteRequest.quoteId,
           transactionReferenceId: refs.transactionReferenceId,
@@ -169,14 +176,17 @@ class QuotesModel {
           currencyId: quoteRequest.amount.currency
         })
 
+        // eslint-disable-next-line require-atomic-updates
         refs.payerId = await this.db.createPayerQuoteParty(txn, refs.quoteId, quoteRequest.payer,
           quoteRequest.amount.amount, quoteRequest.amount.currency)
 
+        // eslint-disable-next-line require-atomic-updates
         refs.payeeId = await this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
           quoteRequest.amount.amount, quoteRequest.amount.currency)
 
         // did we get a geoCode for the initiator?
         if (quoteRequest.geoCode) {
+          // eslint-disable-next-line require-atomic-updates
           refs.geoCodeId = await this.db.createGeoCode(txn, {
             quotePartyId: quoteRequest.transactionType.initiator === 'PAYER' ? refs.payerId : refs.payeeId,
             latitude: quoteRequest.geoCode.latitude,
