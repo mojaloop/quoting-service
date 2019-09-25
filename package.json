@@ -20,6 +20,25 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
+  "jest-junit": {
+    "outputDirectory": "./test/results",
+    "outputName": "junit.xml"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "**/src/handlers/**/*.js",
+      "src/data/database.js",
+      "**/src/model/**/*.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 90,
+        "functions": 90,
+        "branches": 90,
+        "lines": 90
+      }
+    }
+  },
   "dependencies": {
     "@hapi/good": "8.2.3",
     "@hapi/hapi": "18.4.0",
@@ -40,16 +59,14 @@
   },
   "devDependencies": {
     "eslint": "6.4.0",
+    "jest": "24.9.0",
+    "jest-junit": "8.0.0",
     "npm-audit-resolver": "2.0.0",
     "npm-check-updates": "3.1.23",
-    "nyc": "14.1.1",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",
     "sinon": "7.5.0",
-    "swagmock": "1.0.0",
-    "tap-xunit": "2.4.1",
-    "tape": "4.11.0",
-    "tapes": "4.1.0"
+    "swagmock": "1.0.0"
   },
   "pre-commit": [
     "lint",
@@ -58,10 +75,10 @@
   ],
   "scripts": {
     "start": "node src/server.js",
-    "test": "tape 'test/unit/**/*.test.js'",
-    "test:xunit": "tape 'test/unit/**/*.test.js' | tap-xunit",
-    "test:coverage": "nyc --reporter=lcov --reporter=text-summary tapes -- 'test/unit/**/**.test.js'",
-    "test:coverage-check": "npm run test:coverage && nyc check-coverage",
+    "test": "jest --testMatch '**/test/unit/**/*.test.js'",
+    "test:coverage": "jest --coverage --coverageThreshold='{}' --testMatch '**/test/unit/**/*.test.js'",
+    "test:coverage-check": "jest --coverage --testMatch '**/test/unit/**/*.test.js'",
+    "test:junit": "jest --reporters=default --reporters=jest-junit --testMatch '**/test/unit/**/*.test.js'",
     "lint": "eslint .",
     "regenerate": "yo swaggerize:test --framework hapi --apiPath './src/interface/swagger.json'",
     "build": "docker build -t quoting-service:local -f ./Dockerfile ../",

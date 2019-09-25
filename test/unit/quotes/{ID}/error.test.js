@@ -32,7 +32,6 @@
 
 'use strict'
 
-const Test = require('tapes')(require('tape'))
 const Hapi = require('@hapi/hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
@@ -44,18 +43,15 @@ const Logger = require('@mojaloop/central-services-logger')
 /**
  * Test for /quotes/{ID}/error
  */
-Test('/quotes/{ID}/error', t => {
-
+describe('/quotes/{ID}/error', () => {
   let sandbox
 
-  t.beforeEach(test => {
+  beforeEach(() => {
     sandbox = Sinon.createSandbox()
-    test.end()
   })
 
-  t.beforeEach(test => {
+  beforeEach(() => {
     sandbox.restore()
-    test.end()
   })
   /**
      * summary: QuotesByIDAndError
@@ -64,7 +60,7 @@ Test('/quotes/{ID}/error', t => {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  t.test('test QuotesByIDAndError put operation', async function (t) {
+  test('test QuotesByIDAndError put operation', async () => {
     const server = new Hapi.Server()
 
     await server.register({
@@ -87,8 +83,8 @@ Test('/quotes/{ID}/error', t => {
 
     const mock = await requests
 
-    t.ok(mock)
-    t.ok(mock.request)
+    expect(mock).toBeTruthy()
+    expect(mock.request).toBeTruthy()
     // Get the resolved path from mock request
     // Mock request Path templates({}) are resolved using path parameters
     const options = {
@@ -113,8 +109,6 @@ Test('/quotes/{ID}/error', t => {
 
     const response = await server.inject(options)
 
-    t.equal(response.statusCode, 200, 'Ok response status')
-    t.end()
+    expect(response.statusCode).toBe(200)
   })
-  t.end()
 })
