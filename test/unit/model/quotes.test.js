@@ -29,6 +29,20 @@
  --------------
  ******/
 
+/* replace nested tests with `describe`
+ * removed all test.end calls:
+ *   %g/test.end/:norm dd
+ * replaced all test.ok calls with expect.toBeTruthy:
+ *   %s/test\.ok(\([^)]*\))/expect(\1).toBeTruthy/g
+ * replaced all `test` test parameters with no parameters:
+ *   %s/async test =>/async () =>/g
+ * replaced all test.equal with expect.toBe
+ *   %s/test.equal(\([^,]*\), \([^)]*\))/expect(\1).toBe(\2)
+ * replaced all deepEqual calls manually
+ * replace all toBeTruthy 'properties'
+ *   %s/toBeTruthy$/toBeTruthy()
+ */
+
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Sinon = require('sinon')
 const conf = require('../../../config/default')
