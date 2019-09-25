@@ -905,6 +905,20 @@ class Database {
   }
 
   /**
+   * @function getIsMigrationLocked
+   *
+   * @description Gets whether or not the database is locked based on the migration_lock
+   * @returns {Promise<boolean>} - true if locked, false if not. Rejects if an error occours
+   */
+  async getIsMigrationLocked () {
+    const result = await this.queryBuilder('migration_lock')
+      .orderBy('index', 'desc')
+      .first()
+      .select('is_locked AS isLocked')
+    return result.isLocked
+  }
+
+  /**
      * Writes a formatted log message to the console
      */
   // eslint-disable-next-line no-unused-vars
