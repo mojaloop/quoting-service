@@ -225,9 +225,9 @@ class QuotesModel {
           // get the model to handle it
           this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
           if (envConfig.simpleRoutingMode) {
-            await this.handleException(fspiopSource, quoteRequest.quoteId, err)
+            await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers)
           } else {
-            await this.handleException(fspiopSource, refs.quoteId, err)
+            await this.handleException(fspiopSource, refs.quoteId, err, headers)
           }
         }
       })
@@ -341,7 +341,7 @@ class QuotesModel {
           // get the model to handle it
           this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
           const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-          await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError)
+          await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers)
         }
       })
     } catch (err) {
@@ -455,7 +455,7 @@ class QuotesModel {
           // get the model to handle it
           const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
           this.writeLog(`Error forwarding quote update: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err)
+          await this.handleException(fspiopSource, quoteId, err, headers)
         }
       })
 
@@ -570,7 +570,7 @@ class QuotesModel {
           // as we are on our own in this context, dont just rethrow the error, instead...
           // get the model to handle it
           this.writeLog(`Error forwarding quote response: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err)
+          await this.handleException(fspiopSource, quoteId, err, headers)
         }
       })
     } catch (err) {
@@ -639,7 +639,7 @@ class QuotesModel {
           // as we are on our own in this context, dont just rethrow the error, instead...
           // get the model to handle it
           this.writeLog(`Error forwarding quote get: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err)
+          await this.handleException(fspiopSource, quoteId, err, headers)
         }
       })
     } catch (err) {
@@ -720,7 +720,7 @@ class QuotesModel {
      * Attempts to handle an exception in a sensible manner by forwarding it on to the
      * source of the request that caused the error.
      */
-  async handleException (fspiopSource, quoteId, error) {
+  async handleException (fspiopSource, quoteId, error, headers) {
     // is this exception already wrapped as an API spec compatible type?
     const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
 
@@ -728,7 +728,7 @@ class QuotesModel {
     // to play nicely with other events
     setImmediate(async () => {
       try {
-        return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId)
+        return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers)
       } catch (err) {
         // not much we can do other than log the error
         this.writeLog(`Error occured handling error. check service logs as this error may not have been propogated successfully to any other party: ${err.stack || util.inspect(err)}`)
