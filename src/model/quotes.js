@@ -39,11 +39,8 @@ const crypto = require('crypto')
 const Config = require('../lib/config')
 
 const fetch = require('node-fetch')
-const axios = require('axios')
-const quoteRules = require('./rules.js')
-
-delete axios.defaults.headers.common['Accept']
-delete axios.defaults.headers.common['Content-Type']
+const RuleEngine = require('./rules.js')
+const rules = require('../../config/rules.example.json')
 
 /**
  * Encapsulates operations on the quotes domain model
@@ -62,17 +59,32 @@ class QuotesModel {
      *
      * @returns {promise} - promise will reject if request is not valid
      */
-  async validateQuoteRequest (fspiopSource, fspiopDestination, quoteRequest) {
-    // note that the framework should validate the form of the request
-    // here we can do some hard-coded rule validations to ensure requests
-    // do not lead to unsupported scenarios or use-cases.
+  async validateQuoteRequest(headers, quoteRequest) {
+    // Collect facts to supply to the rule engine
+    // Get quote participants from central ledger admin
+    const { switchEndpoint } = new Config()
+    const url = `${switchEndpoint}/participants`
+    const [ payer, payee ] = await Promise.all([
+      fetch(`${url}/${headers['fspiop-source']}`),
+      fetch(`${url}/${headers['fspiop-destination']}`),
+    ].map(p => p.then(res => res.json())))
 
-    // This validation is being removed because it prevents the switch from supporting PAYEE initiated use cases
-    // if (quoteRequest.transactionType.initiator !== 'PAYER') {
-    //   throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Only PAYER initiated transactions are supported', null, fspiopSource)
-    // }
-    await this.db.getParticipant(fspiopSource)
-    await this.db.getParticipant(fspiopDestination)
+    const { events } = RuleEngine.run(rules, {
+      payer,
+      payee,
+      payload,
+      headers
+    })
+
+        // // check quote rules
+        // const test = { ...quoteRequest }
+        //
+        // const failures = await quoteRules.getFailures(test)
+        // if (failures && failures.length > 0) {
+        //   // quote broke business rules, queue up an error callback to the caller
+        //   this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`)
+        //   // todo: make error callback
+        // }
   }
 
   /**
@@ -187,16 +199,6 @@ class QuotesModel {
         this.writeLog(`create quote transaction committed to db: ${util.inspect(refs)}`)
 
         // if we got here, all entities have been created in db correctly to record the quote request
-
-        // check quote rules
-        const test = { ...quoteRequest }
-
-        const failures = await quoteRules.getFailures(test)
-        if (failures && failures.length > 0) {
-          // quote broke business rules, queue up an error callback to the caller
-          this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`)
-          // todo: make error callback
-        }
       }
       // make call to payee dfsp in a setImmediate;
       // attempting to give fair execution of async events...

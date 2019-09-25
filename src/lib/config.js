@@ -41,6 +41,7 @@ class Config {
     this.listenAddress = RC.LISTEN_ADDRESS
     this.listenPort = RC.PORT
     this.simpleRoutingMode = RC.SIMPLE_ROUTING_MODE
+    this.switchEndpoint = RC.SWITCH_ENDPOINT
     this.database = {
       client: RC.DATABASE.DIALECT,
       connection: {

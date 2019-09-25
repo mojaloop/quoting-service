@@ -115,6 +115,8 @@ describe('quotesModel', () => {
     Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://test.com/dfsp2')
     Sinon.stub(db, 'getParticipant').returns(5)
 
+    Sinon.stub(quotesModel, 'validateQuoteRequest')
+
     const refs = await quotesModel.handleQuoteRequest(headers, quoteRequest)
     expect(refs).toBeTruthy()
     expect(refs).toEqual({
@@ -204,6 +206,8 @@ describe('quotesModel', () => {
       Sinon.stub(db, 'getParticipant').returns(3)
       Sinon.stub(db, 'getQuoteDuplicateCheck').returns({ hash: '85b6067dc6e271c53e2bbc2218e94187022677e80267f95ca28c80707b3009bc' })
 
+      Sinon.stub(quotesModel, 'validateQuoteRequest')
+
       await quotesModel.handleQuoteRequest(headers, quoteRequest)
     } catch (err) {
       expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
@@ -235,6 +239,8 @@ describe('quotesModel', () => {
     Sinon.stub(db, 'getParticipant').returns(2)
     Sinon.stub(db, 'getQuoteDuplicateCheck').returns({ hash: 'e31fed1d22e622737fea8f40f60359b374b51ff543d840934b7ee5b5ead22edd' })
     Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://test.com/dfsp2')
+
+    Sinon.stub(quotesModel, 'validateQuoteRequest')
 
     await quotesModel.handleQuoteRequest(headers, quoteRequest)
   })

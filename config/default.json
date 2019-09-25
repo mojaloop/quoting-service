@@ -12,5 +12,6 @@
     "POOL_MINSIZE": 10,
     "POOL_MAXSIZE": 10
   },
+  "SWITCH_ENDPOINT": "http://localhost:3001",
   "SIMPLE_ROUTING_MODE": true
 }
