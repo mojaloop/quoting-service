@@ -39,7 +39,7 @@ const Mockgen = require('../../../util/mockgen.js')
 const helper = require('../../../util/helper')
 const Sinon = require('sinon')
 const Db = require('../../../../src/data/database')
-
+const Logger = require('@mojaloop/central-services-logger')
 /**
  * Test for /quotes/{ID}/error
  */
@@ -103,7 +103,10 @@ describe('/quotes/{ID}/error', () => {
     }
     sandbox.stub(Db.prototype, 'getParticipantEndpoint').callsFake(
       (err, info) => {
-        console.info(info)
+        if (err) {
+          Logger.error(err)
+        }
+        Logger.info(info)
       }
     )
 

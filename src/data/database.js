@@ -34,6 +34,7 @@
 
 const util = require('util')
 const Knex = require('knex')
+const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * Abstracts operations against the database
@@ -433,7 +434,7 @@ class Database {
      */
   async createQuoteParty (txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency) {
     try {
-      let refs = {}
+      const refs = {}
 
       // get various enum ids (async, as parallel as possible)
       const enumVals = await Promise.all([
@@ -457,7 +458,7 @@ class Database {
       }
 
       // insert a new quote party
-      let newQuoteParty = {
+      const newQuoteParty = {
         quoteId: quoteId,
         partyTypeId: refs.partyTypeId,
         partyIdentifierTypeId: refs.partyIdentifierTypeId,
@@ -484,7 +485,7 @@ class Database {
 
       if (party.personalInfo) {
         // we need to store personal info also
-        let newParty = {
+        const newParty = {
           firstName: party.personalInfo.complexName.firstName,
           middleName: party.personalInfo.complexName.middleName,
           lastName: party.personalInfo.complexName.lastName,
@@ -586,7 +587,7 @@ class Database {
      */
   async createParty (txn, quotePartyId, party) {
     try {
-      let newParty = {
+      const newParty = {
         ...party,
         quotePartyId: quotePartyId
       }
@@ -796,7 +797,7 @@ class Database {
      */
   async createQuoteResponse (txn, quoteId, quoteResponse) {
     try {
-      let newQuoteResponse = {
+      const newQuoteResponse = {
         quoteId: quoteId,
         transferAmountCurrencyId: quoteResponse.transferAmount.currency,
         transferAmount: quoteResponse.transferAmount.amount,
@@ -832,7 +833,7 @@ class Database {
      */
   async createQuoteResponseIlpPacket (txn, quoteResponseId, ilpPacket) {
     try {
-      let newPacket = {
+      const newPacket = {
         quoteResponseId: quoteResponseId,
         value: ilpPacket
       }
@@ -856,7 +857,7 @@ class Database {
      */
   async createGeoCode (txn, geoCode) {
     try {
-      let newGeoCode = {
+      const newGeoCode = {
         quotePartyId: geoCode.quotePartyId,
         latitude: geoCode.latitude,
         longitude: geoCode.longitude
@@ -883,7 +884,7 @@ class Database {
      */
   async createQuoteError (txn, error) {
     try {
-      let newError = {
+      const newError = {
         quoteId: error.quoteId,
         errorCode: error.errorCode,
         errorDescription: error.errorDescription
@@ -904,12 +905,25 @@ class Database {
   }
 
   /**
+   * @function getIsMigrationLocked
+   *
+   * @description Gets whether or not the database is locked based on the migration_lock
+   * @returns {Promise<boolean>} - true if locked, false if not. Rejects if an error occours
+   */
+  async getIsMigrationLocked () {
+    const result = await this.queryBuilder('migration_lock')
+      .orderBy('index', 'desc')
+      .first()
+      .select('is_locked AS isLocked')
+    return result.isLocked
+  }
+
+  /**
      * Writes a formatted log message to the console
      */
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
-    // eslint-disable-next-line no-console
-    // console.log(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
+    Logger.debug(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
   }
 }
 
