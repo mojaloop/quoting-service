@@ -43,7 +43,7 @@ const fetch = require('node-fetch')
 const axios = require('axios')
 const quoteRules = require('./rules.js')
 
-delete axios.defaults.headers.common['Accept']
+delete axios.defaults.headers.common.Accept
 delete axios.defaults.headers.common['Content-Type']
 
 /**

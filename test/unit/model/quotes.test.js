@@ -48,14 +48,14 @@ const Sinon = require('sinon')
 const conf = require('../../../config/default')
 const Db = require('../../../src/data/database')
 
-jest.mock('node-fetch', () => (function(url) {
+jest.mock('node-fetch', () => function (url) {
   if (url === 'http://invalid.com/dfsp2/quotes') {
     return Promise.reject(new Error('Unable to reach host'))
   } else if (url === 'http://invalidresponse.com/dfsp2/quotes') {
     return Promise.resolve({ ok: false })
   }
   return Promise.resolve({ ok: true })
-}))
+})
 
 describe('quotesModel', () => {
   let quotesModel

@@ -55,7 +55,7 @@ class Config {
         min: RC.DATABASE.POOL_MINSIZE ? RC.DATABASE.POOL_MINSIZE : 2,
 
         // maximum size
-        max: RC.DATABASE.POOL_MAXSIZE ?  RC.DATABASE.POOL_MAXSIZE : 10,
+        max: RC.DATABASE.POOL_MAXSIZE ? RC.DATABASE.POOL_MAXSIZE : 10,
         // acquire promises are rejected after this many milliseconds
         // if a resource cannot be acquired
         acquireTimeoutMillis: RC.DATABASE.ACQUIRETIMEOUTMILLIS ? RC.DATABASE.ACQUIRETIMEOUTMILLIS : 30000,
@@ -75,7 +75,7 @@ class Config {
         reapIntervalMillis: RC.DATABASE.REAPINTERVALMILLIS ? RC.DATABASE.REAPINTERVALMILLIS : 1000,
 
         // long long to idle after failed create before trying again
-        createRetryIntervalMillis: RC.DATABASE.CREATERETRYINTERVALMILLIS ? RC.DATABASE.CREATERETRYINTERVALMILLIS : 200,
+        createRetryIntervalMillis: RC.DATABASE.CREATERETRYINTERVALMILLIS ? RC.DATABASE.CREATERETRYINTERVALMILLIS : 200
         // ping: function (conn, cb) { conn.query('SELECT 1', cb) }
       },
       debug: RC.DATABASE.DEBUG ? RC.DATABASE.DEBUG : false

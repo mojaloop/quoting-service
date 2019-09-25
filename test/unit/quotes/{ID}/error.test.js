@@ -103,6 +103,9 @@ describe('/quotes/{ID}/error', () => {
     }
     sandbox.stub(Db.prototype, 'getParticipantEndpoint').callsFake(
       (err, info) => {
+        if (err) {
+          Logger.error(err)
+        }
         Logger.info(info)
       }
     )

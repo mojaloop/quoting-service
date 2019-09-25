@@ -17,7 +17,7 @@ const Database = require('./data/cachedDatabase.js')
  */
 const initDb = function (config) {
   // try open a db connection pool
-  let database = new Database(config)
+  const database = new Database(config)
   return database.connect()
 }
 
