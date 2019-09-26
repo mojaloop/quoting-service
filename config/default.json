@@ -19,5 +19,5 @@
     "CREATERETRYINTERVALMILLIS": 200,
     "DEBUG": false
   },
-  "SIMPLE_ROUTING_MODE": true
+  "SIMPLE_ROUTING_MODE": false
 }
