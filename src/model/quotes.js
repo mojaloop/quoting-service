@@ -529,7 +529,7 @@ class QuotesModel {
       }
       this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`)
 
-      if (!res.ok) {
+      if (res.status !== Enum.Http.ReturnCodes.OK.CODE) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote response', null, fspiopSource, [
           { key: 'url', value: fullUrl },
           { key: 'sourceFsp', value: fspiopSource },
