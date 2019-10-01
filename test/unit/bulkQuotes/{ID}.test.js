@@ -33,7 +33,6 @@
 'use strict'
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Test = require('tape')
 const Hapi = require('@hapi/hapi')
 const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
@@ -43,7 +42,7 @@ const helper = require('../../util/helper')
 /**
  * Test for /bulkQuotes/{ID}
  */
-Test('/bulkQuotes/{ID}', function (t) {
+describe('/bulkQuotes/{ID}', function () {
   /**
      * summary: BulkQuotesByID
      * description: The HTTP request GET /bulkQuotes/&lt;ID&gt; is used to get information regarding an earlier created or requested bulk quote. The &lt;ID&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote.
@@ -51,7 +50,7 @@ Test('/bulkQuotes/{ID}', function (t) {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  t.test('test BulkQuotesByID get operation', async function (t) {
+  test('test BulkQuotesByID get operation', async () => {
     const server = new Hapi.Server()
 
     await server.register([{
@@ -74,8 +73,8 @@ Test('/bulkQuotes/{ID}', function (t) {
 
     const mock = await requests
 
-    t.ok(mock)
-    t.ok(mock.request)
+    expect(mock).toBeTruthy()
+    expect(mock.request).toBeTruthy()
     // Get the resolved path from mock request
     // Mock request Path templates({}) are resolved using path parameters
     const options = {
@@ -95,8 +94,7 @@ Test('/bulkQuotes/{ID}', function (t) {
 
     const response = await server.inject(options)
 
-    t.equal(response.statusCode, 501, 'Not Implemented response status')
-    t.end()
+    expect(response.statusCode).toBe(501)
   })
   /**
      * summary: BulkQuotesByID
@@ -105,7 +103,7 @@ Test('/bulkQuotes/{ID}', function (t) {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  t.test('test BulkQuotesByID1 put operation', async function (t) {
+  test('test BulkQuotesByID1 put operation', async () => {
     const server = new Hapi.Server()
 
     await server.register([{
@@ -132,8 +130,8 @@ Test('/bulkQuotes/{ID}', function (t) {
 
     const mock = await requests
 
-    t.ok(mock)
-    t.ok(mock.request)
+    expect(mock).toBeTruthy()
+    expect(mock.request).toBeTruthy()
     // Get the resolved path from mock request
     // Mock request Path templates({}) are resolved using path parameters
     const options = {
@@ -153,7 +151,6 @@ Test('/bulkQuotes/{ID}', function (t) {
 
     const response = await server.inject(options)
 
-    t.equal(response.statusCode, 501, 'Not Implemented response status')
-    t.end()
+    expect(response.statusCode).toBe(501)
   })
 })

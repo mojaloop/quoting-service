@@ -34,6 +34,7 @@ const request = require('@mojaloop/central-services-shared').Util.Request
 const CSutil = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Logger = require('@mojaloop/central-services-logger')
 const util = require('util')
 const crypto = require('crypto')
 const Config = require('../lib/config')
@@ -42,7 +43,7 @@ const fetch = require('node-fetch')
 const axios = require('axios')
 const quoteRules = require('./rules.js')
 
-delete axios.defaults.headers.common['Accept']
+delete axios.defaults.headers.common.Accept
 delete axios.defaults.headers.common['Content-Type']
 
 /**
@@ -71,6 +72,12 @@ class QuotesModel {
     // if (quoteRequest.transactionType.initiator !== 'PAYER') {
     //   throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Only PAYER initiated transactions are supported', null, fspiopSource)
     // }
+
+    // Any quoteRequest specific validations to be added here
+    if (!quoteRequest) {
+      throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
+    }
+
     await this.db.getParticipant(fspiopSource)
     await this.db.getParticipant(fspiopDestination)
   }
@@ -152,6 +159,7 @@ class QuotesModel {
         refs.amountTypeId = await this.db.getAmountType(quoteRequest.amountType)
 
         // create the quote row itself
+        // eslint-disable-next-line require-atomic-updates
         refs.quoteId = await this.db.createQuote(txn, {
           quoteId: quoteRequest.quoteId,
           transactionReferenceId: refs.transactionReferenceId,
@@ -168,14 +176,17 @@ class QuotesModel {
           currencyId: quoteRequest.amount.currency
         })
 
+        // eslint-disable-next-line require-atomic-updates
         refs.payerId = await this.db.createPayerQuoteParty(txn, refs.quoteId, quoteRequest.payer,
           quoteRequest.amount.amount, quoteRequest.amount.currency)
 
+        // eslint-disable-next-line require-atomic-updates
         refs.payeeId = await this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
           quoteRequest.amount.amount, quoteRequest.amount.currency)
 
         // did we get a geoCode for the initiator?
         if (quoteRequest.geoCode) {
+          // eslint-disable-next-line require-atomic-updates
           refs.geoCodeId = await this.db.createGeoCode(txn, {
             quotePartyId: quoteRequest.transactionType.initiator === 'PAYER' ? refs.payerId : refs.payeeId,
             latitude: quoteRequest.geoCode.latitude,
@@ -214,9 +225,9 @@ class QuotesModel {
           // get the model to handle it
           this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
           if (envConfig.simpleRoutingMode) {
-            await this.handleException(fspiopSource, quoteRequest.quoteId, err)
+            await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers)
           } else {
-            await this.handleException(fspiopSource, refs.quoteId, err)
+            await this.handleException(fspiopSource, refs.quoteId, err, headers)
           }
         }
       })
@@ -330,7 +341,7 @@ class QuotesModel {
           // get the model to handle it
           this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
           const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-          await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError)
+          await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers)
         }
       })
     } catch (err) {
@@ -444,7 +455,7 @@ class QuotesModel {
           // get the model to handle it
           const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
           this.writeLog(`Error forwarding quote update: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err)
+          await this.handleException(fspiopSource, quoteId, err, headers)
         }
       })
 
@@ -518,7 +529,7 @@ class QuotesModel {
       }
       this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`)
 
-      if (!res.ok) {
+      if (res.status !== Enum.Http.ReturnCodes.OK.CODE) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote response', null, fspiopSource, [
           { key: 'url', value: fullUrl },
           { key: 'sourceFsp', value: fspiopSource },
@@ -559,7 +570,7 @@ class QuotesModel {
           // as we are on our own in this context, dont just rethrow the error, instead...
           // get the model to handle it
           this.writeLog(`Error forwarding quote response: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err)
+          await this.handleException(fspiopSource, quoteId, err, headers)
         }
       })
     } catch (err) {
@@ -628,7 +639,7 @@ class QuotesModel {
           // as we are on our own in this context, dont just rethrow the error, instead...
           // get the model to handle it
           this.writeLog(`Error forwarding quote get: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err)
+          await this.handleException(fspiopSource, quoteId, err, headers)
         }
       })
     } catch (err) {
@@ -709,7 +720,7 @@ class QuotesModel {
      * Attempts to handle an exception in a sensible manner by forwarding it on to the
      * source of the request that caused the error.
      */
-  async handleException (fspiopSource, quoteId, error) {
+  async handleException (fspiopSource, quoteId, error, headers) {
     // is this exception already wrapped as an API spec compatible type?
     const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
 
@@ -717,7 +728,7 @@ class QuotesModel {
     // to play nicely with other events
     setImmediate(async () => {
       try {
-        return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId)
+        return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers)
       } catch (err) {
         // not much we can do other than log the error
         this.writeLog(`Error occured handling error. check service logs as this error may not have been propogated successfully to any other party: ${err.stack || util.inspect(err)}`)
@@ -893,8 +904,7 @@ class QuotesModel {
      */
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
-    // eslint-disable-next-line no-console
-    // console.log(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
+    Logger.info(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
   }
 }
 

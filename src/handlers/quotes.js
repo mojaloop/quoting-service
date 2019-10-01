@@ -71,7 +71,7 @@ module.exports = {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - POST /quotes: ${err.stack || util.inspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      await model.handleException(fspiopSource, quoteId, fspiopError)
+      await model.handleException(fspiopSource, quoteId, fspiopError, request.headers)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)

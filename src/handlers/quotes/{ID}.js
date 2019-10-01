@@ -71,7 +71,7 @@ module.exports = {
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - GET /quotes/{id}: ${err.stack || util.inspect(err)}`)
-      await model.handleException(fspiopSource, quoteId, err)
+      await model.handleException(fspiopSource, quoteId, err, request.headers)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(202)
@@ -107,7 +107,7 @@ module.exports = {
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /quotes/{id}: ${err.stack || util.inspect(err)}`)
-      await model.handleException(fspiopSource, quoteId, err)
+      await model.handleException(fspiopSource, quoteId, err, request.headers)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(202)

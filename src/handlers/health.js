@@ -19,11 +19,21 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Henk Kodde <henk.kodde@modusbox.com>
+ * ModusBox
+ - Henk Kodde <henk.kodde@modusbox.com>
+ - Miguel de Barros <miguel.debarros@modusbox.com>
  --------------
  ******/
-
 'use strict'
+
+const { HealthCheck } = require('@mojaloop/central-services-shared').HealthCheck
+const { responseCode, statusEnum, serviceName } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
+const Logger = require('@mojaloop/central-services-logger')
+const Config = require('../lib/config.js')
+const packageJson = require('../../package.json')
+
+const envConfig = new Config()
+
 /**
  * Operations on /health
  */
@@ -35,7 +45,67 @@ module.exports = {
    * produces: application/json
    * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
    */
-  get: function HealthGet(request, h) {
-    return h.response({ status: 'OK' }).code(200)
+  get: async (request, h) => {
+    let db
+    // lets check to see if we are NOT in simpleRoutingMode
+    if (!envConfig.simpleRoutingMode) {
+      // assign the db object
+      db = request.server.app.database
+    }
+
+    // Create function to query DB health
+    /**
+     * @function getSubServiceHealthDatastore
+     *
+     * @description
+     *   Gets the health of the Datastore by ensuring the table is currently locked
+     *   in a migration state. This implicity checks the connection with the database.
+     *
+     * @returns Promise<SubServiceHealth> The SubService health object for the broker
+     */
+    const getSubServiceHealthDatastore = async () => {
+      let status = statusEnum.OK
+
+      try {
+        const isLocked = await db.getIsMigrationLocked()
+        if (isLocked) {
+          status = statusEnum.DOWN
+        }
+      } catch (err) {
+        Logger.debug(`getSubServiceHealthDatastore failed with error ${err.message}.`)
+        status = statusEnum.DOWN
+      }
+
+      return {
+        name: serviceName.datastore,
+        status
+      }
+    }
+
+    // lets check to see if we are running in simpleRoutingMode
+    let serviceHealthList = []
+    if (!envConfig.simpleRoutingMode) {
+      serviceHealthList = [
+        getSubServiceHealthDatastore
+      ]
+    }
+
+    // create healthCheck object
+    const healthCheck = new HealthCheck(packageJson, serviceHealthList)
+
+    // query health status
+    const healthCheckResponse = await healthCheck.getHealth()
+
+    // set default code
+    let code = responseCode.success
+
+    // check for errors
+    if (!healthCheckResponse || healthCheckResponse.status !== statusEnum.OK) {
+      // Set Error
+      code = responseCode.gatewayTimeout
+    }
+
+    // return response
+    return h.response(healthCheckResponse).code(code)
   }
 }
