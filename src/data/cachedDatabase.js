@@ -33,6 +33,7 @@
 const util = require('util')
 const Database = require('./database.js')
 const Cache = require('memory-cache').Cache
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const DEFAULT_TTL_SECONDS = 60
 
@@ -112,7 +113,7 @@ class CachedDatabase extends Database {
       return value
     } catch (err) {
       this.writeLog(`Error in getCacheValue: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
