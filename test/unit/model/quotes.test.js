@@ -291,7 +291,7 @@ describe('quotesModel', () => {
     } catch (err) {
       expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
       expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code)
-      expect(err.message).toBe('Network error forwarding quote request to dfsp2')
+      expect(err.message).toBe('Got non-success response forwarding quote request')
     }
   })
 
@@ -312,7 +312,7 @@ describe('quotesModel', () => {
     } catch (err) {
       expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
       expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code)
-      expect(err.message).toBe('Got non-success response forwarding quote request')
+      expect(err.message).toBe('Network error forwarding quote request to dfsp2')
     }
   })
 })
