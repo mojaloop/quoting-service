@@ -41,6 +41,10 @@ class Config {
     this.listenAddress = RC.LISTEN_ADDRESS
     this.listenPort = RC.PORT
     this.simpleRoutingMode = RC.SIMPLE_ROUTING_MODE
+    this.amount = {
+      precision: RC.AMOUNT.PRECISION ? RC.AMOUNT.PRECISION : 18,
+      scale: RC.AMOUNT.SCALE ? RC.AMOUNT.SCALE : 4
+    }
     this.database = {
       client: RC.DATABASE.DIALECT,
       connection: {

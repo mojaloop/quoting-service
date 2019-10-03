@@ -35,6 +35,7 @@ const CSutil = require('@mojaloop/central-services-shared').Util
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
+const MLNumber = require('@mojaloop/ml-number')
 const util = require('util')
 const crypto = require('crypto')
 const Config = require('../lib/config')
@@ -172,7 +173,7 @@ class QuotesModel {
           balanceOfPaymentsId: quoteRequest.transactionType.balanceOfPayments ? Number(quoteRequest.transactionType.balanceOfPayments) : null,
           transactionSubScenarioId: refs.transactionSubScenarioId,
           amountTypeId: refs.amountTypeId,
-          amount: quoteRequest.amount.amount,
+          amount: new MLNumber(quoteRequest.amount.amount).toFixed(envConfig.amount.scale),
           currencyId: quoteRequest.amount.currency
         })
 
@@ -392,8 +393,8 @@ class QuotesModel {
 
         // create the quote response row in the db
         const newQuoteResponse = await this.db.createQuoteResponse(txn, quoteId, {
-          transferAmount: quoteUpdateRequest.transferAmount,
-          payeeReceiveAmount: quoteUpdateRequest.payeeReceiveAmount,
+          transferAmount: new MLNumber(quoteUpdateRequest.transferAmount).toFixed(envConfig.amount.scale),
+          payeeReceiveAmount: new MLNumber(quoteUpdateRequest.payeeReceiveAmount).toFixed(envConfig.amount.scale),
           payeeFspFee: quoteUpdateRequest.payeeFspFee,
           payeeFspCommission: quoteUpdateRequest.payeeFspCommission,
           condition: quoteUpdateRequest.condition,
