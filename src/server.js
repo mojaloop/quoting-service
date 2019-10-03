@@ -8,7 +8,6 @@ const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
 const util = require('util')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase.js')
