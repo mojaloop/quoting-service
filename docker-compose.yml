@@ -9,3 +9,5 @@ services:
       container_name: qs_quoting-service
       ports:
         - "3002:3002"
+      volumes:
+       - ./docker/quoting-service/default.json:/opt/quoting-service/config/default.json
