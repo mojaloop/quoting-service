@@ -682,6 +682,7 @@ class Database {
         .where('endpointType.name', endpointType)
         .andWhere('partyType.name', partyType)
         .andWhere('quote.quoteId', quoteId)
+        .andWhere('participantEndpoint.isActive', 1)
         .select('participantEndpoint.value')
 
       if ((!rows) || rows.length < 1) {
@@ -707,6 +708,7 @@ class Database {
         .innerJoin('endpointType', 'endpointType.endpointTypeId', 'participantEndpoint.endpointTypeId')
         .where('participant.name', participantName)
         .andWhere('endpointType.name', endpointType)
+        .andWhere('participantEndpoint.isActive', 1)
         .select('participantEndpoint.value')
 
       if ((!rows) || rows.length < 1) {
