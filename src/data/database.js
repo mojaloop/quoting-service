@@ -37,6 +37,8 @@ const Knex = require('knex')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const MLNumber = require('@mojaloop/ml-number')
+const EnvironmentConfig = require('../lib/config')
+const Config = new EnvironmentConfig()
 
 /**
  * Abstracts operations against the database
@@ -472,7 +474,7 @@ class Database {
         partyName: party.partyName,
         transferParticipantRoleTypeId: refs.transferParticipantRoleTypeId,
         ledgerEntryTypeId: refs.ledgerEntryTypeId,
-        amount: new MLNumber(amount).toFixed(this.config.amount.scale),
+        amount: new MLNumber(amount).toFixed(Config.amount.scale),
         currencyId: currency
       }
 
@@ -627,7 +629,7 @@ class Database {
           balanceOfPaymentsId: quote.balanceOfPaymentsId,
           transactionSubScenarioId: quote.transactionSubScenarioId,
           amountTypeId: quote.amountTypeId,
-          amount: new MLNumber(quote.amount).toFixed(this.config.amount.scale),
+          amount: new MLNumber(quote.amount).toFixed(Config.amount.scale),
           currencyId: quote.currencyId
         })
 
@@ -802,13 +804,13 @@ class Database {
       const newQuoteResponse = {
         quoteId: quoteId,
         transferAmountCurrencyId: quoteResponse.transferAmount.currency,
-        transferAmount: new MLNumber(quoteResponse.transferAmount.amount).toFixed(this.config.amount.scale),
+        transferAmount: new MLNumber(quoteResponse.transferAmount.amount).toFixed(Config.amount.scale),
         payeeReceiveAmountCurrencyId: quoteResponse.payeeReceiveAmount ? quoteResponse.payeeReceiveAmount.currency : null,
-        payeeReceiveAmount: quoteResponse.payeeReceiveAmount ? new MLNumber(quoteResponse.payeeReceiveAmount.amount).toFixed(this.config.amount.scale) : null,
+        payeeReceiveAmount: quoteResponse.payeeReceiveAmount ? new MLNumber(quoteResponse.payeeReceiveAmount.amount).toFixed(Config.amount.scale) : null,
         payeeFspFeeCurrencyId: quoteResponse.payeeFspFee ? quoteResponse.payeeFspFee.currency : null,
-        payeeFspFeeAmount: quoteResponse.payeeFspFee ? new MLNumber(quoteResponse.payeeFspFee.amount).toFixed(this.config.amount.scale) : null,
+        payeeFspFeeAmount: quoteResponse.payeeFspFee ? new MLNumber(quoteResponse.payeeFspFee.amount).toFixed(Config.amount.scale) : null,
         payeeFspCommissionCurrencyId: quoteResponse.payeeFspCommission ? quoteResponse.payeeFspCommission.currency : null,
-        payeeFspCommissionAmount: quoteResponse.payeeFspCommission ? new MLNumber(quoteResponse.payeeFspCommission.amount).toFixed(this.config.amount.scale) : null,
+        payeeFspCommissionAmount: quoteResponse.payeeFspCommission ? new MLNumber(quoteResponse.payeeFspCommission.amount).toFixed(Config.amount.scale) : null,
         ilpCondition: quoteResponse.condition,
         responseExpirationDate: quoteResponse.expiration,
         isValid: quoteResponse.isValid
