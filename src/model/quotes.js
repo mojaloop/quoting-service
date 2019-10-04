@@ -936,7 +936,7 @@ class QuotesModel {
   generateRequestHeaders (headers, noAccept) {
     const ret = {
       'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
-      Date: new Date().toUTCString(),
+      Date: headers.date,
       'FSPIOP-Source': headers['fspiop-source'],
       'FSPIOP-Destination': headers['fspiop-destination'],
       'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
