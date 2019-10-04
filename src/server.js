@@ -84,7 +84,7 @@ const initServer = async function (db, config) {
 const config = new Config()
 
 // initialise database connection pool and start the api server
-initDb(config.database).then(db => {
+initDb(config).then(db => {
   return initServer(db, config)
 }).then(server => {
   process.on('SIGTERM', () => {

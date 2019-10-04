@@ -124,7 +124,7 @@ class CachedDatabase extends Database {
      */
   cachePut (type, params, value) {
     const key = this.getCacheKey(type, params)
-    this.cache.put(key, value, (this.config.cacheTtlSeconds || DEFAULT_TTL_SECONDS) * 1000)
+    this.cache.put(key, value, (this.config.database.cacheTtlSeconds || DEFAULT_TTL_SECONDS) * 1000)
   }
 
   /**
