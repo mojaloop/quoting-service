@@ -36,6 +36,7 @@
 const util = require('util')
 const Knex = require('knex')
 const Logger = require('@mojaloop/central-services-logger')
+const MLNumber = require('@mojaloop/ml-number')
 
 /**
  * Abstracts operations against the database
@@ -471,7 +472,7 @@ class Database {
         partyName: party.partyName,
         transferParticipantRoleTypeId: refs.transferParticipantRoleTypeId,
         ledgerEntryTypeId: refs.ledgerEntryTypeId,
-        amount: amount,
+        amount: new MLNumber(amount).toFixed(this.config.amount.scale),
         currencyId: currency
       }
 
@@ -626,7 +627,7 @@ class Database {
           balanceOfPaymentsId: quote.balanceOfPaymentsId,
           transactionSubScenarioId: quote.transactionSubScenarioId,
           amountTypeId: quote.amountTypeId,
-          amount: quote.amount,
+          amount: new MLNumber(quote.amount).toFixed(this.config.amount.scale),
           currencyId: quote.currencyId
         })
 
@@ -803,13 +804,13 @@ class Database {
       const newQuoteResponse = {
         quoteId: quoteId,
         transferAmountCurrencyId: quoteResponse.transferAmount.currency,
-        transferAmount: quoteResponse.transferAmount.amount,
+        transferAmount: new MLNumber(quoteResponse.transferAmount.amount).toFixed(this.config.amount.scale),
         payeeReceiveAmountCurrencyId: quoteResponse.payeeReceiveAmount ? quoteResponse.payeeReceiveAmount.currency : null,
-        payeeReceiveAmount: quoteResponse.payeeReceiveAmount ? quoteResponse.payeeReceiveAmount.amount : null,
+        payeeReceiveAmount: quoteResponse.payeeReceiveAmount ? new MLNumber(quoteResponse.payeeReceiveAmount.amount).toFixed(this.config.amount.scale) : null,
         payeeFspFeeCurrencyId: quoteResponse.payeeFspFee ? quoteResponse.payeeFspFee.currency : null,
-        payeeFspFeeAmount: quoteResponse.payeeFspFee ? quoteResponse.payeeFspFee.amount : null,
+        payeeFspFeeAmount: quoteResponse.payeeFspFee ? new MLNumber(quoteResponse.payeeFspFee.amount).toFixed(this.config.amount.scale) : null,
         payeeFspCommissionCurrencyId: quoteResponse.payeeFspCommission ? quoteResponse.payeeFspCommission.currency : null,
-        payeeFspCommissionAmount: quoteResponse.payeeFspCommission ? quoteResponse.payeeFspCommission.amount : null,
+        payeeFspCommissionAmount: quoteResponse.payeeFspCommission ? new MLNumber(quoteResponse.payeeFspCommission.amount).toFixed(this.config.amount.scale) : null,
         ilpCondition: quoteResponse.condition,
         responseExpirationDate: quoteResponse.expiration,
         isValid: quoteResponse.isValid
