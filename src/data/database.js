@@ -53,7 +53,7 @@ class Database {
      * @returns {promise}
      */
   async connect () {
-    this.queryBuilder = Knex(this.config)
+    this.queryBuilder = Knex(this.config.database)
 
     return this
   }
