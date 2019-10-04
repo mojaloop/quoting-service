@@ -9,7 +9,7 @@
   "DATABASE": {
     "DIALECT": "mysql",
     "HOST": "localhost",
-    "PORT": 3308,
+    "PORT": 3306,
     "USER": "central_ledger",
     "PASSWORD": "password",
     "SCHEMA": "central_ledger",
@@ -23,5 +23,5 @@
     "CREATERETRYINTERVALMILLIS": 200,
     "DEBUG": false
   },
-  "SIMPLE_ROUTING_MODE": false
+  "SIMPLE_ROUTING_MODE": true
 }
