@@ -1,0 +1,23 @@
+{
+  "HOSTNAME": "http://quoting-service",
+  "LISTEN_ADDRESS": "0.0.0.0",
+  "PORT": 3002,
+  "DATABASE": {
+    "DIALECT": "mysql",
+    "HOST": "central_ledger",
+    "PORT": 3306,
+    "USER": "central_ledger",
+    "PASSWORD": "password",
+    "SCHEMA": "central_ledger",
+    "POOL_MINSIZE": 10,
+    "POOL_MAXSIZE": 10,
+    "ACQUIRETIMEOUTMILLIS": 30000,
+    "CREATETIMEOUTMILLIS": 30000,
+    "DESTROYTIMEOUTMILLIS": 5000,
+    "IDLETIMEOUTMILLIS": 30000,
+    "REAPINTERVALMILLIS": 1000,
+    "CREATERETRYINTERVALMILLIS": 200,
+    "DEBUG": false
+  },
+  "SIMPLE_ROUTING_MODE": true
+}
