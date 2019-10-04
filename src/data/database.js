@@ -36,6 +36,8 @@
 const util = require('util')
 const Knex = require('knex')
 const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const MLNumber = require('@mojaloop/ml-number')
 
 /**
  * Abstracts operations against the database
@@ -103,7 +105,7 @@ class Database {
       return rows.map(r => JSON.parse(r.rule))
     } catch (err) {
       this.writeLog(`Error in getTransferRules: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -120,12 +122,12 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // initiatorType does not exist, this is an error
-        throw new Error(`Unsupported initiatorType '${initiatorType}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported initiatorType '${initiatorType}'`)
       }
       return rows[0].transactionInitiatorTypeId
     } catch (err) {
       this.writeLog(`Error in getInitiatorType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -142,12 +144,12 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // initiator does not exist, this is an error
-        throw new Error(`Unsupported initiator '${initiator}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported initiator '${initiator}'`)
       }
       return rows[0].transactionInitiatorId
     } catch (err) {
       this.writeLog(`Error in getInitiator: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -169,7 +171,7 @@ class Database {
       return rows[0].transactionScenarioId
     } catch (err) {
       this.writeLog(`Error in getScenario: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -186,12 +188,12 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // sub-scenario does not exist, this is an error
-        throw new Error(`Unsupported transaction sub-scenario '${subScenario}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported transaction sub-scenario '${subScenario}'`)
       }
       return rows[0].transactionSubScenarioId
     } catch (err) {
       this.writeLog(`Error in getSubScenario: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -208,12 +210,12 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // amount type does not exist, this is an error
-        throw new Error(`Unsupported amount type '${amountType}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported amount type '${amountType}'`)
       }
       return rows[0].amountTypeId
     } catch (err) {
       this.writeLog(`Error in getAmountType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -235,7 +237,7 @@ class Database {
       return transactionReferenceId
     } catch (err) {
       this.writeLog(`Error in createTransactionReference: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -257,7 +259,7 @@ class Database {
       return quoteId
     } catch (err) {
       this.writeLog(`Error in createQuoteDuplicateCheck: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -280,7 +282,7 @@ class Database {
       return quoteId
     } catch (err) {
       this.writeLog(`Error in createQuoteUpdateDuplicateCheck: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -297,13 +299,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // party type does not exist, this is an error
-        throw new Error(`Unsupported party type '${partyType}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported party type '${partyType}'`)
       }
 
       return rows[0].partyTypeId
     } catch (err) {
       this.writeLog(`Error in getPartyType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -320,13 +322,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // identifier type does not exist, this is an error
-        throw new Error(`Unsupported party identifier type '${partyIdentifierType}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported party identifier type '${partyIdentifierType}'`)
       }
 
       return rows[0].partyIdentifierTypeId
     } catch (err) {
       this.writeLog(`Error in getPartyIdentifierType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -346,13 +348,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // active participant does not exist, this is an error
-        throw new Error(`Unsupported participant '${participantName}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported participant '${participantName}'`)
       }
 
       return rows[0].participantId
     } catch (err) {
       this.writeLog(`Error in getPartyIdentifierType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -372,13 +374,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // active role type does not exist, this is an error
-        throw new Error(`Unsupported transfer participant role type '${name}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported transfer participant role type '${name}'`)
       }
 
       return rows[0].transferParticipantRoleTypeId
     } catch (err) {
       this.writeLog(`Error in getTransferParticipantRoleType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -398,13 +400,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // active ledger entry type does not exist, this is an error
-        throw new Error(`Unsupported ledger entry type '${name}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported ledger entry type '${name}'`)
       }
 
       return rows[0].ledgerEntryTypeId
     } catch (err) {
       this.writeLog(`Error in getLedgerEntryType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -471,7 +473,7 @@ class Database {
         partyName: party.partyName,
         transferParticipantRoleTypeId: refs.transferParticipantRoleTypeId,
         ledgerEntryTypeId: refs.ledgerEntryTypeId,
-        amount: amount,
+        amount: new MLNumber(amount).toFixed(this.config.amount.scale),
         currencyId: currency
       }
 
@@ -500,7 +502,7 @@ class Database {
       return quotePartyId
     } catch (err) {
       this.writeLog(`Error in createQuoteParty: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -521,7 +523,7 @@ class Database {
       return rows
     } catch (err) {
       this.writeLog(`Error in getQuotePartyView: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -543,13 +545,13 @@ class Database {
       }
 
       if (rows.length > 1) {
-        throw new Error(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`)
       }
 
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteView: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -571,13 +573,13 @@ class Database {
       }
 
       if (rows.length > 1) {
-        throw new Error(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`)
       }
 
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteResponseView: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -601,7 +603,7 @@ class Database {
       return newParty
     } catch (err) {
       this.writeLog(`Error in createParty: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -626,7 +628,7 @@ class Database {
           balanceOfPaymentsId: quote.balanceOfPaymentsId,
           transactionSubScenarioId: quote.transactionSubScenarioId,
           amountTypeId: quote.amountTypeId,
-          amount: quote.amount,
+          amount: new MLNumber(quote.amount).toFixed(this.config.amount.scale),
           currencyId: quote.currencyId
         })
 
@@ -634,7 +636,7 @@ class Database {
       return quote.quoteId
     } catch (err) {
       this.writeLog(`Error in createQuote: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -656,13 +658,13 @@ class Database {
       }
 
       if (rows.length > 1) {
-        throw new Error(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
       }
 
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteParty: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -691,7 +693,7 @@ class Database {
       return rows[0].value
     } catch (err) {
       this.writeLog(`Error in getQuotePartyEndpoint: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -717,7 +719,7 @@ class Database {
       return rows[0].value
     } catch (err) {
       this.writeLog(`Error in getParticipantEndpoint: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -741,7 +743,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteDuplicateCheck: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -765,7 +767,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteResponseDuplicateCheck: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -789,7 +791,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getTransactionReference: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -803,13 +805,13 @@ class Database {
       const newQuoteResponse = {
         quoteId: quoteId,
         transferAmountCurrencyId: quoteResponse.transferAmount.currency,
-        transferAmount: quoteResponse.transferAmount.amount,
+        transferAmount: new MLNumber(quoteResponse.transferAmount.amount).toFixed(this.config.amount.scale),
         payeeReceiveAmountCurrencyId: quoteResponse.payeeReceiveAmount ? quoteResponse.payeeReceiveAmount.currency : null,
-        payeeReceiveAmount: quoteResponse.payeeReceiveAmount ? quoteResponse.payeeReceiveAmount.amount : null,
+        payeeReceiveAmount: quoteResponse.payeeReceiveAmount ? new MLNumber(quoteResponse.payeeReceiveAmount.amount).toFixed(this.config.amount.scale) : null,
         payeeFspFeeCurrencyId: quoteResponse.payeeFspFee ? quoteResponse.payeeFspFee.currency : null,
-        payeeFspFeeAmount: quoteResponse.payeeFspFee ? quoteResponse.payeeFspFee.amount : null,
+        payeeFspFeeAmount: quoteResponse.payeeFspFee ? new MLNumber(quoteResponse.payeeFspFee.amount).toFixed(this.config.amount.scale) : null,
         payeeFspCommissionCurrencyId: quoteResponse.payeeFspCommission ? quoteResponse.payeeFspCommission.currency : null,
-        payeeFspCommissionAmount: quoteResponse.payeeFspCommission ? quoteResponse.payeeFspCommission.amount : null,
+        payeeFspCommissionAmount: quoteResponse.payeeFspCommission ? new MLNumber(quoteResponse.payeeFspCommission.amount).toFixed(this.config.amount.scale) : null,
         ilpCondition: quoteResponse.condition,
         responseExpirationDate: quoteResponse.expiration,
         isValid: quoteResponse.isValid
@@ -825,7 +827,7 @@ class Database {
       return newQuoteResponse
     } catch (err) {
       this.writeLog(`Error in createQuoteResponse: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -849,7 +851,7 @@ class Database {
       return res
     } catch (err) {
       this.writeLog(`Error in createIlpPacket: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -876,7 +878,7 @@ class Database {
       return res
     } catch (err) {
       this.writeLog(`Error in createGeoCode: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -903,7 +905,7 @@ class Database {
       return res
     } catch (err) {
       this.writeLog(`Error in createQuoteError: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
