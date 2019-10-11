@@ -38,7 +38,7 @@ const initServer = async function (db, config) {
       validate: {
         failAction: async (request, h, err) => {
           Logger.error(`validation failure: ${err.stack || util.inspect(err)}`)
-          throw ErrorHandler.Factory.reformatFSPIOPError(err)
+          throw err
         }
       }
     }

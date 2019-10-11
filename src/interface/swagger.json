@@ -1828,7 +1828,7 @@
       "description": "Data model for the complex type IndividualQuote.",
       "properties": {
         "quoteId": {
-          "type": "string",
+          "$ref": "#/definitions/QuoteId",
           "description": "Identifies quote message."
         },
         "transactionId": {
@@ -1879,7 +1879,7 @@
       "description": "Data model for the complex type IndividualQuoteResult.",
       "properties": {
         "quoteId": {
-          "type": "string",
+          "$ref": "#/definitions/QuoteId",
           "description": "Identifies quote message."
         },
         "payee": {
@@ -2356,7 +2356,7 @@
           "description": "ID of the transaction, the ID is decided by the Payer FSP during the creation of the quote."
         },
         "quoteId": {
-          "type": "string",
+          "$ref": "#/definitions/QuoteId",
           "description": "ID of the quote, the ID is decided by the Payer FSP during the creation of the quote."
         },
         "payee": {
