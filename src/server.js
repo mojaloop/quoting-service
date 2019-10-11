@@ -6,6 +6,7 @@ const Path = require('path')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
 const Logger = require('@mojaloop/central-services-logger')
 const util = require('util')
 
@@ -37,7 +38,7 @@ const initServer = async function (db, config) {
       validate: {
         failAction: async (request, h, err) => {
           Logger.error(`validation failure: ${err.stack || util.inspect(err)}`)
-          throw ErrorHandler.Factory.reformatFSPIOPError(err)
+          throw err
         }
       }
     }
@@ -70,6 +71,9 @@ const initServer = async function (db, config) {
         }, 'stdout']
       }
     }
+  },
+  {
+    plugin: HeaderValidation
   },
   Blipp,
   ErrorHandler])
