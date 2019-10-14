@@ -79,8 +79,6 @@ class QuotesModel {
     if (!quoteRequest) {
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
-
-    // TODO: enums needed
     await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP)
     await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP)
   }

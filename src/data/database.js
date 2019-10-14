@@ -424,8 +424,7 @@ class Database {
      */
   async createPayerQuoteParty (txn, quoteId, party, amount, currency) {
     // note amount is negative for payee and positive for payer
-    // TODO: enums needed
-    return this.createQuoteParty(txn, quoteId, 'PAYER', 'PAYER_DFSP', 'PRINCIPLE_VALUE', party, amount, currency)
+    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYER, LOCAL_ENUM.PAYER_DFSP, LOCAL_ENUM.PRINCIPLE_VALUE, party, amount, currency)
   }
 
   /**
@@ -435,8 +434,7 @@ class Database {
      */
   async createPayeeQuoteParty (txn, quoteId, party, amount, currency) {
     // note amount is negative for payee and positive for payer
-    // TODO: enums needed
-    return this.createQuoteParty(txn, quoteId, 'PAYEE', 'PAYEE_DFSP', 'PRINCIPLE_VALUE', party, -amount, currency)
+    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYEE, LOCAL_ENUM.PAYEE_DFSP, LOCAL_ENUM.PRINCIPLE_VALUE, party, -amount, currency)
   }
 
   /**

@@ -30,11 +30,20 @@
 
 'use strict'
 
+const PAYER = 'PAYER'
+
+const PAYEE = 'PAYEE'
+
 const PAYER_DFSP = 'PAYER_DFSP'
 
 const PAYEE_DFSP = 'PAYEE_DFSP'
 
+const PRINCIPLE_VALUE = 'PRINCIPLE_VALUE'
+
 module.exports = {
+  PAYEE,
+  PAYER,
   PAYER_DFSP,
-  PAYEE_DFSP
+  PAYEE_DFSP,
+  PRINCIPLE_VALUE
 }
