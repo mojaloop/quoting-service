@@ -32,7 +32,8 @@
 
 // const request = require('@mojaloop/central-services-shared').Util.Request
 // const CSutil = require('@mojaloop/central-services-shared').Util
-const Enum = require('@mojaloop/central-services-shared').Enum
+const ENUM = require('@mojaloop/central-services-shared').Enum
+const LOCAL_ENUM = require('../lib/enum')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
@@ -78,9 +79,8 @@ class QuotesModel {
     if (!quoteRequest) {
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
-
-    await this.db.getParticipant(fspiopSource)
-    await this.db.getParticipant(fspiopDestination)
+    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP)
+    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP)
   }
 
   /**
@@ -103,8 +103,8 @@ class QuotesModel {
     let txn = null
 
     try {
-      const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
-      const fspiopDestination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+      const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+      const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
       // accumulate enum ids
       const refs = {}
 
@@ -251,8 +251,8 @@ class QuotesModel {
      */
   async forwardQuoteRequest (headers, quoteId, originalQuoteRequest) {
     let endpoint
-    const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
-    const fspiopDest = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     const envConfig = new Config()
     try {
       if (!originalQuoteRequest) {
@@ -279,7 +279,7 @@ class QuotesModel {
       this.writeLog(`Forwarding quote request to endpoint: ${fullUrl}`)
 
       const opts = {
-        method: Enum.Http.RestMethods.POST,
+        method: ENUM.Http.RestMethods.POST,
         body: JSON.stringify(originalQuoteRequest),
         headers: this.generateRequestHeaders(headers)
       }
@@ -323,8 +323,8 @@ class QuotesModel {
      */
   async handleQuoteRequestResend (headers, quoteRequest) {
     try {
-      const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
-      this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource} to ${headers[Enum.Http.Headers.FSPIOP.DESTINATION]}`)
+      const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+      this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource} to ${headers[ENUM.Http.Headers.FSPIOP.DESTINATION]}`)
 
       // we are ok to assume the quoteRequest object passed to us is the same as the original...
       // as it passed a hash duplicate check...so go ahead and use it to resend rather than
@@ -358,7 +358,7 @@ class QuotesModel {
      */
   async handleQuoteUpdate (headers, quoteId, quoteUpdateRequest) {
     let txn = null
-    const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
+    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const envConfig = new Config()
     try {
       // ensure no 'accept' header is present in the request headers.
@@ -454,7 +454,7 @@ class QuotesModel {
         } catch (err) {
           // as we are on our own in this context, dont just rethrow the error, instead...
           // get the model to handle it
-          const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
+          const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
           this.writeLog(`Error forwarding quote update: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
           await this.handleException(fspiopSource, quoteId, err, headers)
         }
@@ -479,8 +479,8 @@ class QuotesModel {
   async forwardQuoteUpdate (headers, quoteId, originalQuoteResponse) {
     let endpoint = null
     const envConfig = new Config()
-    const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
-    const fspiopDestination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       if (!originalQuoteResponse) {
         // we need to recreate the quote response
@@ -509,7 +509,7 @@ class QuotesModel {
       this.writeLog(`Forwarding quote response to endpoint: ${fullUrl}`)
 
       const opts = {
-        method: Enum.Http.RestMethods.PUT,
+        method: ENUM.Http.RestMethods.PUT,
         body: JSON.stringify(originalQuoteResponse),
         headers: this.generateRequestHeaders(headers)
       }
@@ -530,7 +530,7 @@ class QuotesModel {
       }
       this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`)
 
-      if (res.status !== Enum.Http.ReturnCodes.OK.CODE) {
+      if (res.status !== ENUM.Http.ReturnCodes.OK.CODE) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote response', null, fspiopSource, [
           { key: 'url', value: fullUrl },
           { key: 'sourceFsp', value: fspiopSource },
@@ -552,8 +552,8 @@ class QuotesModel {
      */
   async handleQuoteUpdateResend (headers, quoteId, quoteUpdate) {
     try {
-      const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
-      const fspiopDest = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+      const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+      const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
       this.writeLog(`Handling resend of quoteUpdate: ${util.inspect(quoteUpdate)} from ${fspiopSource} to ${fspiopDest}`)
 
       // we are ok to assume the quoteUpdate object passed to us is the same as the original...
@@ -611,7 +611,7 @@ class QuotesModel {
       // attempting to give fair execution of async events...
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(() => {
-        this.sendErrorCallback(headers[Enum.Http.Headers.FSPIOP.SOURCE], fspiopError, quoteId, headers)
+        this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.SOURCE], fspiopError, quoteId, headers)
       })
 
       return newError
@@ -628,7 +628,7 @@ class QuotesModel {
      * @returns {undefined}
      */
   async handleQuoteGet (headers, quoteId) {
-    const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
+    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     try {
       // make call to destination dfsp in a setImmediate;
       // attempting to give fair execution of async events...
@@ -663,8 +663,8 @@ class QuotesModel {
 
       // lookup payee dfsp callback endpoint
       // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-      const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
-      const fspiopDest = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+      const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+      const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
       endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
 
       this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_QUOTES endpoint for quote GET ${quoteId} to: ${util.inspect(endpoint)}`)
@@ -680,7 +680,7 @@ class QuotesModel {
       this.writeLog(`Forwarding quote get request to endpoint: ${fullUrl}`)
 
       const opts = {
-        method: Enum.Http.RestMethods.GET,
+        method: ENUM.Http.RestMethods.GET,
         headers: this.generateRequestHeaders(headers)
       }
 
@@ -745,7 +745,7 @@ class QuotesModel {
      * @returns {promise}
      */
   async sendErrorCallback (fspiopSource, fspiopError, quoteId, headers) {
-    const fspiopDest = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+    const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       // look up the callback base url
       const endpoint = await this.db.getParticipantEndpoint(fspiopSource, 'FSPIOP_CALLBACK_URL_QUOTES')
@@ -764,15 +764,15 @@ class QuotesModel {
 
       // make an error callback
       const opts = {
-        method: Enum.Http.RestMethods.PUT,
+        method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
         data: JSON.stringify(fspiopError.toApiErrorObject()),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
         headers: this.generateRequestHeaders(headers || {
           'fspiop-destination': fspiopSource,
-          'fspiop-source': Enum.Http.Headers.FSPIOP.SWITCH.value,
-          'fspiop-http-method': Enum.Http.RestMethods.PUT
+          'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
+          'fspiop-http-method': ENUM.Http.RestMethods.PUT
         }, true)
       }
       let res
@@ -789,7 +789,7 @@ class QuotesModel {
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
-      if (res.status !== Enum.Http.ReturnCodes.OK.CODE) {
+      if (res.status !== ENUM.Http.ReturnCodes.OK.CODE) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response sending error callback', null, fspiopSource, [
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
