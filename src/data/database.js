@@ -34,6 +34,7 @@
 'use strict'
 
 const util = require('util')
+const LOCAL_ENUM = require('../lib/enum')
 const Knex = require('knex')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -348,9 +349,9 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // active participant does not exist, this is an error
-        if (participantType === 'PAYEE_DFSP') {
+        if (participantType && participantType === LOCAL_ENUM.PAYEE_DFSP) {
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${participantName}'`)
-        } else if (participantType === 'PAYER_DFSP') {
+        } else if (participantType && participantType === LOCAL_ENUM.PAYER_DFSP) {
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND, `Unsupported participant '${participantName}'`)
         } else {
           throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported participant '${participantName}'`)
@@ -464,9 +465,11 @@ class Database {
 
       // todo: possibly push this subIdType lookup onto the array that gets awaited async...
       // otherwise requests that have a subIdType will be a little slower due to the extra wait time
+      // TODO: this will not work as the partyIdentifierType table only caters for the 8 main partyTypes
+      // discuss adding a partyIdSubType database table to perform this lookup against
       if (party.partyIdInfo.partySubIdOrType) {
         // TODO: review method signature
-        refs.partySubIdOrTypeId = await this.getPartyIdentifierType(txn, party.partyIdInfo.partySubIdOrType)
+        refs.partySubIdOrTypeId = await this.getPartyIdentifierType(party.partyIdInfo.partySubIdOrType)
       }
 
       // insert a new quote party
