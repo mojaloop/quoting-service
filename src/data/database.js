@@ -337,7 +337,7 @@ class Database {
      *
      * @returns {promise} - id of the participant
      */
-  async getParticipant (participantName) {
+  async getParticipant (participantName, participantType) {
     try {
       const rows = await this.queryBuilder('participant')
         .where({
@@ -348,7 +348,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // active participant does not exist, this is an error
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${participantName}'`)
+        if (participantType === 'PAYEE_DFSP') {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${participantName}'`)
+        } else if (participantType === 'PAYER_DFSP') {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND, `Unsupported participant '${participantName}'`)
+        } else {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported participant '${participantName}'`)
+        }
       }
 
       return rows[0].participantId
@@ -417,6 +423,7 @@ class Database {
      */
   async createPayerQuoteParty (txn, quoteId, party, amount, currency) {
     // note amount is negative for payee and positive for payer
+    // TODO: enums needed
     return this.createQuoteParty(txn, quoteId, 'PAYER', 'PAYER_DFSP', 'PRINCIPLE_VALUE', party, amount, currency)
   }
 
@@ -427,6 +434,7 @@ class Database {
      */
   async createPayeeQuoteParty (txn, quoteId, party, amount, currency) {
     // note amount is negative for payee and positive for payer
+    // TODO: enums needed
     return this.createQuoteParty(txn, quoteId, 'PAYEE', 'PAYEE_DFSP', 'PRINCIPLE_VALUE', party, -amount, currency)
   }
 
@@ -457,6 +465,7 @@ class Database {
       // todo: possibly push this subIdType lookup onto the array that gets awaited async...
       // otherwise requests that have a subIdType will be a little slower due to the extra wait time
       if (party.partyIdInfo.partySubIdOrType) {
+        // TODO: review method signature
         refs.partySubIdOrTypeId = await this.getPartyIdentifierType(txn, party.partyIdInfo.partySubIdOrType)
       }
 
