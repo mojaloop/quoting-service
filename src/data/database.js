@@ -348,7 +348,7 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // active participant does not exist, this is an error
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported participant '${participantName}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${participantName}'`)
       }
 
       return rows[0].participantId
