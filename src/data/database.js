@@ -28,12 +28,14 @@
  * Henk Kodde <henk.kodde@modusbox.com>
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Steven Oderayi <steven.oderayi@modusbox.com>
+ * Juan Correa <juan.correa@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
 const util = require('util')
+const LOCAL_ENUM = require('../lib/enum')
 const Knex = require('knex')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -337,7 +339,7 @@ class Database {
      *
      * @returns {promise} - id of the participant
      */
-  async getParticipant (participantName) {
+  async getParticipant (participantName, participantType) {
     try {
       const rows = await this.queryBuilder('participant')
         .where({
@@ -348,7 +350,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // active participant does not exist, this is an error
-        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported participant '${participantName}'`)
+        if (participantType && participantType === LOCAL_ENUM.PAYEE_DFSP) {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${participantName}'`)
+        } else if (participantType && participantType === LOCAL_ENUM.PAYER_DFSP) {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND, `Unsupported participant '${participantName}'`)
+        } else {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported participant '${participantName}'`)
+        }
       }
 
       return rows[0].participantId
@@ -417,7 +425,7 @@ class Database {
      */
   async createPayerQuoteParty (txn, quoteId, party, amount, currency) {
     // note amount is negative for payee and positive for payer
-    return this.createQuoteParty(txn, quoteId, 'PAYER', 'PAYER_DFSP', 'PRINCIPLE_VALUE', party, amount, currency)
+    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYER, LOCAL_ENUM.PAYER_DFSP, LOCAL_ENUM.PRINCIPLE_VALUE, party, amount, currency)
   }
 
   /**
@@ -427,7 +435,7 @@ class Database {
      */
   async createPayeeQuoteParty (txn, quoteId, party, amount, currency) {
     // note amount is negative for payee and positive for payer
-    return this.createQuoteParty(txn, quoteId, 'PAYEE', 'PAYEE_DFSP', 'PRINCIPLE_VALUE', party, -amount, currency)
+    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYEE, LOCAL_ENUM.PAYEE_DFSP, LOCAL_ENUM.PRINCIPLE_VALUE, party, -amount, currency)
   }
 
   /**
@@ -456,8 +464,11 @@ class Database {
 
       // todo: possibly push this subIdType lookup onto the array that gets awaited async...
       // otherwise requests that have a subIdType will be a little slower due to the extra wait time
+      // TODO: this will not work as the partyIdentifierType table only caters for the 8 main partyTypes
+      // discuss adding a partyIdSubType database table to perform this lookup against
       if (party.partyIdInfo.partySubIdOrType) {
-        refs.partySubIdOrTypeId = await this.getPartyIdentifierType(txn, party.partyIdInfo.partySubIdOrType)
+        // TODO: review method signature
+        refs.partySubIdOrTypeId = await this.getPartyIdentifierType(party.partyIdInfo.partySubIdOrType)
       }
 
       // insert a new quote party
