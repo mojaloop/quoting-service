@@ -167,6 +167,36 @@
         "parameters": [
           {
             "$ref": "#/parameters/Accept"
+          },
+          {
+            "$ref": "#/parameters/ID"
+          },
+          {
+            "$ref": "#/parameters/Content-Type"
+          },
+          {
+            "$ref": "#/parameters/Date"
+          },
+          {
+            "$ref": "#/parameters/X-Forwarded-For"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Source"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Destination"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Encryption"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Signature"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-URI"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-HTTP-Method"
           }
         ],
         "responses": {
@@ -219,7 +249,37 @@
             }
           },
           {
+            "$ref": "#/parameters/ID"
+          },
+          {
             "$ref": "#/parameters/Content-Length"
+          },
+          {
+            "$ref": "#/parameters/Content-Type"
+          },
+          {
+            "$ref": "#/parameters/Date"
+          },
+          {
+            "$ref": "#/parameters/X-Forwarded-For"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Source"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Destination"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Encryption"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Signature"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-URI"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-HTTP-Method"
           }
         ],
         "x-examples": {
