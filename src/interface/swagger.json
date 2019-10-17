@@ -297,9 +297,10 @@
         "description": "The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.",
         "summary": "Quotes",
         "tags": [
-          "quotes"
+          "quotes",
+          "sampled"
         ],
-        "operationId": "Quotes",
+        "operationId": "Quotes-------111",
         "produces": [
           "application/json"
         ],
