@@ -93,9 +93,9 @@ class CachedDatabase extends Database {
     return this.getCacheValue('getLedgerEntryType', [name])
   }
 
-  async getParticipantEndpoint (participantName, endpointType) {
-    return this.getCacheValue('getParticipantEndpoint', [participantName, endpointType])
-  }
+  // async getParticipantEndpoint (participantName, endpointType) {
+  //  return this.getCacheValue('getParticipantEndpoint', [participantName, endpointType])
+  // }
 
   async getCacheValue (type, params) {
     try {
