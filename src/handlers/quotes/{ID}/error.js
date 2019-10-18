@@ -25,16 +25,19 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Henk Kodde <henk.kodde@modusbox.com>
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Henk Kodde <henk.kodde@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
 const util = require('util')
-const QuotesModel = require('../../../model/quotes.js')
+const EventSdk = require('@mojaloop/event-sdk')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const LibUtil = require('../../../lib/util')
+const QuotesModel = require('../../../model/quotes')
 
 /**
  * Operations on /quotes/{ID}/error
@@ -62,9 +65,15 @@ module.exports = {
     const quoteId = request.params.ID
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
+    const span = request.span
     try {
+      span.setTags(LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.ABORT))
+      await span.audit({
+        headers: request.headers,
+        payload: request.payload
+      }, EventSdk.AuditEventAction.start)
       // call the quote error handler in the model
-      const result = await model.handleQuoteError(request.headers, quoteId, request.payload.errorInformation)
+      const result = await model.handleQuoteError(request.headers, quoteId, request.payload.errorInformation, span)
       request.server.log(['info'], `PUT quote error request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way

@@ -21,9 +21,10 @@
         "description": "If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/<ID>/error is used. The <ID> in the URI should contain the quoteId that was used for the creation of the quote, or the <ID> that was used in the GET /quotes/<ID>.",
         "summary": "QuotesByIDAndError",
         "tags": [
-          "quotes"
+          "quotes",
+          "sampled"
         ],
-        "operationId": "QuotesByIDAndError",
+        "operationId": "quote_error",
         "produces": [
           "application/json"
         ],
@@ -158,9 +159,10 @@
         "description": "The HTTP request GET /quotes/<ID> is used to get information regarding an earlier created or requested quote. The <ID> in the URI should contain the quoteId that was used for the creation of the quote.",
         "summary": "QuotesByID",
         "tags": [
-          "quotes"
+          "quotes",
+          "sampled"
         ],
-        "operationId": "QuotesByID",
+        "operationId": "quote_getById",
         "produces": [
           "application/json"
         ],
@@ -233,9 +235,10 @@
         "description": "The callback PUT /quotes/<ID> is used to inform the client of a requested or created quote. The <ID> in the URI should contain the quoteId that was used for the creation of the quote, or the <ID> that was used in the GET /quotes/<ID>GET /quotes/<ID>.",
         "summary": "QuotesByID",
         "tags": [
-          "quotes"
+          "quotes",
+          "sampled"
         ],
-        "operationId": "QuotesByID1",
+        "operationId": "quote_response",
         "produces": [
           "application/json"
         ],
@@ -360,7 +363,7 @@
           "quotes",
           "sampled"
         ],
-        "operationId": "Quotes-------111",
+        "operationId": "quote_request",
         "produces": [
           "application/json"
         ],
@@ -524,9 +527,10 @@
         "description": "If the server is unable to find or create a bulk quote, or another processing error occurs, the error callback PUT /bulkQuotes/<ID>/error is used. The <ID> in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the <ID> that was used in the GET /bulkQuotes/<ID>.",
         "summary": "BulkQuotesErrorByID",
         "tags": [
-          "bulkQuotes"
+          "bulkQuotes",
+          "sampled"
         ],
-        "operationId": "BulkQuotesErrorByID",
+        "operationId": "bulk_quote_error",
         "produces": [
           "application/json"
         ],
@@ -661,9 +665,10 @@
         "description": "The HTTP request GET /bulkQuotes/<ID> is used to get information regarding an earlier created or requested bulk quote. The <ID> in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote.",
         "summary": "BulkQuotesByID",
         "tags": [
-          "bulkQuotes"
+          "bulkQuotes",
+          "sampled"
         ],
-        "operationId": "BulkQuotesByID",
+        "operationId": "bulk_quote_getById",
         "produces": [
           "application/json"
         ],
@@ -706,9 +711,10 @@
         "description": "The callback PUT /bulkQuotes/<ID> is used to inform the client of a requested or created bulk quote. The <ID> in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the <ID> that was used in the GET /bulkQuotes/<ID>.",
         "summary": "BulkQuotesByID",
         "tags": [
-          "bulkQuotes"
+          "bulkQuotes",
+          "sampled"
         ],
-        "operationId": "BulkQuotesByID1",
+        "operationId": "bulk_quote_fulfil",
         "produces": [
           "application/json"
         ],
@@ -825,9 +831,10 @@
         "description": "The HTTP request POST /bulkQuotes is used to request the creation of a bulk quote for the provided financial transactions in the server.",
         "summary": "BulkQuotes",
         "tags": [
-          "bulkQuotes"
+          "bulkQuotes",
+          "sampled"
         ],
-        "operationId": "BulkQuotes",
+        "operationId": "bulk_quote_prepare",
         "produces": [
           "application/json"
         ],
@@ -1005,7 +1012,7 @@
         "tags": [
           "health"
         ],
-        "operationId": "HealthGet",
+        "operationId": "health",
         "produces": [
           "application/json"
         ],

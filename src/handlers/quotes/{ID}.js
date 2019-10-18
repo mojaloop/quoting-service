@@ -25,16 +25,19 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Henk Kodde <henk.kodde@modusbox.com>
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Henk Kodde <henk.kodde@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
 const util = require('util')
-const QuotesModel = require('../../model/quotes.js')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const EventSdk = require('@mojaloop/event-sdk')
+const LibUtil = require('../../lib/util')
+const QuotesModel = require('../../model/quotes.js')
 
 /**
  * Operations on /quotes/{ID}
@@ -62,11 +65,17 @@ module.exports = {
     const quoteId = request.params.ID
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
+    const span = request.span
     try {
+      span.setTags(LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.GET))
+      await span.audit({
+        headers: request.headers,
+        payload: request.payload
+      }, EventSdk.AuditEventAction.start)
       // call the model to re-forward the quote update to the correct party
       // note that we do not check if our caller is the correct party, but we
       // will send the callback to the correct party regardless.
-      const result = await model.handleQuoteGet(request.headers, quoteId)
+      const result = await model.handleQuoteGet(request.headers, quoteId, span)
       request.server.log(['info'], `GET quotes/{id} request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
@@ -100,9 +109,15 @@ module.exports = {
     const quoteId = request.params.ID
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
+    const span = request.span
     try {
+      span.setTags(LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.FULFIL))
+      await span.audit({
+        headers: request.headers,
+        payload: request.payload
+      }, EventSdk.AuditEventAction.start)
       // call the quote update handler in the model
-      const result = await model.handleQuoteUpdate(request.headers, quoteId, request.payload)
+      const result = await model.handleQuoteUpdate(request.headers, quoteId, request.payload, span)
       request.server.log(['info'], `PUT quote request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
