@@ -25,25 +25,24 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Henk Kodde <henk.kodde@modusbox.com>
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Henk Kodde <henk.kodde@modusbox.com>
  --------------
  ******/
 
-// const request = require('@mojaloop/central-services-shared').Util.Request
-// const CSutil = require('@mojaloop/central-services-shared').Util
-const ENUM = require('@mojaloop/central-services-shared').Enum
-const LOCAL_ENUM = require('../lib/enum')
+const axios = require('axios')
+const crypto = require('crypto')
+const util = require('util')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
-const MLNumber = require('@mojaloop/ml-number')
+const getCircularReplacer = require('@mojaloop/central-services-shared').Util.getCircularReplacer
+const ENUM = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
-const util = require('util')
-const crypto = require('crypto')
-const Config = require('../lib/config')
-
-const axios = require('axios')
+const MLNumber = require('@mojaloop/ml-number')
 const quoteRules = require('./rules.js')
+const Config = require('../lib/config')
+const LOCAL_ENUM = require('../lib/enum')
 
 delete axios.defaults.headers.common.Accept
 delete axios.defaults.headers.common['Content-Type']
@@ -217,11 +216,14 @@ class QuotesModel {
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
         // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleQuoteRequest', span.spanContext)
         try {
           if (envConfig.simpleRoutingMode) {
-            await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, span)
+            await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
+            await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan)
           } else {
-            await this.forwardQuoteRequest(headers, refs.quoteId, quoteRequest, span)
+            await childSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
+            await this.forwardQuoteRequest(headers, refs.quoteId, quoteRequest, childSpan)
           }
         } catch (err) {
           // any-error
@@ -229,13 +231,13 @@ class QuotesModel {
           // get the model to handle it
           this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
           if (envConfig.simpleRoutingMode) {
-            await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers, span)
+            await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers, childSpan)
           } else {
-            await this.handleException(fspiopSource, refs.quoteId, err, headers, span)
+            await this.handleException(fspiopSource, refs.quoteId, err, headers, childSpan)
           }
         } finally {
-          if (!span.isFinished) {
-            await span.finish()
+          if (!childSpan.isFinished) {
+            await childSpan.finish()
           }
         }
       })
@@ -300,9 +302,8 @@ class QuotesModel {
       }
 
       if (span) {
-        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_forward_request', span.spanContext)
-        opts = childSpan.injectContextToHttpRequest(opts)
-        childSpan.audit(opts, EventSdk.AuditEventAction.egress)
+        opts = span.injectContextToHttpRequest(opts)
+        span.audit(opts, EventSdk.AuditEventAction.egress)
       }
 
       // Network errors log an exception. Bare in mind 3xx 4xx and 5xx are not network errors
@@ -317,21 +318,21 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts.method },
-          { key: 'request', value: JSON.stringify(opts) }
+          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
         ])
       }
       this.writeLog(`forwarding quote request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
 
       // handle non network related errors below
-      if (!res.ok) {
+      if (res.status !== ENUM.Http.ReturnCodes.ACCEPTED.CODE) {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote request', null, fspiopSource, [
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts.method },
-          { key: 'request', value: JSON.stringify(opts) },
-          { key: 'response', value: JSON.stringify(res) }
+          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
+          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
         ])
       }
     } catch (err) {
@@ -359,18 +360,20 @@ class QuotesModel {
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
         // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleQuoteRequestResend', span.spanContext)
         try {
-          await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, span)
+          await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
+          await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan)
         } catch (err) {
           // any-error
           // as we are on our own in this context, dont just rethrow the error, instead...
           // get the model to handle it
           this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
           const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-          await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers, span)
+          await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers, childSpan)
         } finally {
-          if (!span.isFinished) {
-            await span.finish()
+          if (!childSpan.isFinished) {
+            await childSpan.finish()
           }
         }
       })
@@ -482,18 +485,20 @@ class QuotesModel {
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
         // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleQuoteUpdate', span.spanContext)
         try {
-          await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, span)
+          await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdateRequest }, EventSdk.AuditEventAction.start)
+          await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, childSpan)
         } catch (err) {
           // any-error
           // as we are on our own in this context, dont just rethrow the error, instead...
           // get the model to handle it
           const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
           this.writeLog(`Error forwarding quote update: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err, headers, span)
+          await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
         } finally {
-          if (!span.isFinished) {
-            await span.finish()
+          if (!childSpan.isFinished) {
+            await childSpan.finish()
           }
         }
       })
@@ -560,9 +565,8 @@ class QuotesModel {
       }
 
       if (span) {
-        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_forward_fulfil', span.spanContext)
-        opts = childSpan.injectContextToHttpRequest(opts)
-        childSpan.audit(opts, EventSdk.AuditEventAction.egress)
+        opts = span.injectContextToHttpRequest(opts)
+        span.audit(opts, EventSdk.AuditEventAction.egress)
       }
 
       // Network errors log an exception. Bare in mind 3xx 4xx and 5xx are not network errors
@@ -577,7 +581,7 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDestination },
           { key: 'method', value: opts.method },
-          { key: 'request', value: JSON.stringify(opts) }
+          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
         ])
       }
       this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`)
@@ -589,8 +593,8 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDestination },
           { key: 'method', value: opts.method },
-          { key: 'request', value: JSON.stringify(opts) },
-          { key: 'response', value: JSON.stringify(res) }
+          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
+          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
         ])
       }
     } catch (err) {
@@ -619,17 +623,19 @@ class QuotesModel {
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
         // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleQuoteUpdateResend', span.spanContext)
         try {
-          await this.forwardQuoteUpdate(headers, quoteId, quoteUpdate, span)
+          await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdate }, EventSdk.AuditEventAction.start)
+          await this.forwardQuoteUpdate(headers, quoteId, quoteUpdate, childSpan)
         } catch (err) {
           // any-error
           // as we are on our own in this context, dont just rethrow the error, instead...
           // get the model to handle it
           this.writeLog(`Error forwarding quote response: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err, headers, span)
+          await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
         } finally {
-          if (!span.isFinished) {
-            await span.finish()
+          if (!childSpan.isFinished) {
+            await childSpan.finish()
           }
         }
       })
@@ -699,17 +705,19 @@ class QuotesModel {
       // attempting to give fair execution of async events...
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
+        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleQuoteGet', span.spanContext)
         try {
-          await this.forwardQuoteGet(headers, quoteId, span)
+          await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
+          await this.forwardQuoteGet(headers, quoteId, childSpan)
         } catch (err) {
           // any-error
           // as we are on our own in this context, dont just rethrow the error, instead...
           // get the model to handle it
           this.writeLog(`Error forwarding quote get: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err, headers, span)
+          await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
         } finally {
-          if (!span.isFinished) {
-            await span.finish()
+          if (!childSpan.isFinished) {
+            await childSpan.finish()
           }
         }
       })
@@ -762,9 +770,8 @@ class QuotesModel {
       }
 
       if (span) {
-        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_forward_get', span.spanContext)
-        opts = childSpan.injectContextToHttpRequest(opts)
-        childSpan.audit(opts, EventSdk.AuditEventAction.egress)
+        opts = span.injectContextToHttpRequest(opts)
+        span.audit(opts, EventSdk.AuditEventAction.egress)
       }
 
       // Network errors log an exception. Bare in mind 3xx 4xx and 5xx are not network errors
@@ -779,21 +786,21 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts.method },
-          { key: 'request', value: JSON.stringify(opts) }
+          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
         ])
       }
       this.writeLog(`forwarding quote get request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
 
       // handle non network related errors below
-      if (!res.ok) {
+      if (res.status !== ENUM.Http.ReturnCodes.ACCEPTED.CODE) {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote get request', null, fspiopSource, [
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts.method },
-          { key: 'request', value: JSON.stringify(opts) },
-          { key: 'response', value: JSON.stringify(res) }
+          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
+          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
         ])
       }
     } catch (err) {
@@ -814,15 +821,17 @@ class QuotesModel {
     // do the error callback in a future event loop iteration
     // to play nicely with other events
     setImmediate(async () => {
+      const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleException', span.spanContext)
       try {
-        return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, span)
+        await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
+        return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan)
       } catch (err) {
         // any-error
         // not much we can do other than log the error
         this.writeLog(`Error occured handling error. check service logs as this error may not have been propogated successfully to any other party: ${err.stack || util.inspect(err)}`)
       } finally {
-        if (!span.isFinished) {
-          await span.finish()
+        if (!childSpan.isFinished) {
+          await childSpan.finish()
         }
       }
     })
@@ -869,9 +878,8 @@ class QuotesModel {
       }
 
       if (span) {
-        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_error_callback', span.spanContext)
-        opts = childSpan.injectContextToHttpRequest(opts)
-        childSpan.audit(opts, EventSdk.AuditEventAction.egress)
+        opts = span.injectContextToHttpRequest(opts)
+        span.audit(opts, EventSdk.AuditEventAction.egress)
       }
 
       let res
@@ -884,7 +892,7 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts.method },
-          { key: 'request', value: JSON.stringify(opts) }
+          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
         ])
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
@@ -896,8 +904,8 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts.method },
-          { key: 'request', value: JSON.stringify(opts) },
-          { key: 'response', value: JSON.stringify(res) }
+          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
+          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
         ])
       }
     } catch (err) {
