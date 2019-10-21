@@ -40,19 +40,19 @@ const LibUtil = require('../../lib/util')
 const QuotesModel = require('../../model/quotes.js')
 
 /**
- * Operations on /quotes/{ID}
+ * Operations on /quotes/{id}
  */
 module.exports = {
   /**
-     * summary: QuotesByID
-     * description: The HTTP request GET /quotes/&lt;ID&gt; is used to get information regarding an earlier created or requested quote. The &lt;ID&gt; in the URI should contain the quoteId that was used for the creation of the quote.
+     * summary: QuotesById
+     * description: The HTTP request GET /quotes/&lt;id&gt; is used to get information regarding an earlier created or requested quote. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote.
      * parameters: Accept
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
   get: async function getQuotesById (request, h) {
     // log request
-    request.server.log(['info'], `got a GET /quotes/{id} request for quoteId ${request.params.ID}`)
+    request.server.log(['info'], `got a GET /quotes/{id} request for quoteId ${request.params.id}`)
 
     // instantiate a new quote model
     const model = new QuotesModel({
@@ -62,12 +62,13 @@ module.exports = {
 
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
-    const quoteId = request.params.ID
+    const quoteId = request.params.id
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
     const span = request.span
     try {
-      span.setTags(LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.GET))
+      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.GET)
+      span.setTags(spanTags)
       await span.audit({
         headers: request.headers,
         payload: request.payload
@@ -88,13 +89,13 @@ module.exports = {
   },
 
   /**
-     * summary: QuotesByID
-     * description: The callback PUT /quotes/&lt;ID&gt; is used to inform the client of a requested or created quote. The &lt;ID&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;ID&gt; that was used in the GET /quotes/&lt;ID&gt;GET /quotes/&lt;ID&gt;.
+     * summary: QuotesById
+     * description: The callback PUT /quotes/&lt;id&gt; is used to inform the client of a requested or created quote. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;GET /quotes/&lt;id&gt;.
      * parameters: body, Content-Length
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  put: async function putQuotesByID (request, h) {
+  put: async function putQuotesById (request, h) {
     // log request
     request.server.log(['info'], `got a PUT /quotes/{id} request: ${util.inspect(request.payload)}`)
 
@@ -106,12 +107,13 @@ module.exports = {
 
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
-    const quoteId = request.params.ID
+    const quoteId = request.params.id
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
     const span = request.span
     try {
-      span.setTags(LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.FULFIL))
+      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.FULFIL)
+      span.setTags(spanTags)
       await span.audit({
         headers: request.headers,
         payload: request.payload

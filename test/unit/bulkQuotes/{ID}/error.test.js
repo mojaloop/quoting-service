@@ -40,17 +40,17 @@ const Mockgen = require('../../../util/mockgen.js')
 const helper = require('../../../util/helper')
 
 /**
- * Test for /bulkQuotes/{ID}/error
+ * Test for /bulkQuotes/{id}/error
  */
-describe('/bulkQuotes/{ID}/error', function () {
+describe('/bulkQuotes/{id}/error', function () {
   /**
-     * summary: BulkQuotesErrorByID
-     * description: If the server is unable to find or create a bulk quote, or another processing error occurs, the error callback PUT /bulkQuotes/&lt;ID&gt;/error is used. The &lt;ID&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;ID&gt; that was used in the GET /bulkQuotes/&lt;ID&gt;.
-     * parameters: ID, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
+     * summary: BulkQuotesErrorById
+     * description: If the server is unable to find or create a bulk quote, or another processing error occurs, the error callback PUT /bulkQuotes/&lt;id&gt;/error is used. The &lt;id&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;id&gt; that was used in the GET /bulkQuotes/&lt;id&gt;.
+     * parameters: id, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  test('test BulkQuotesErrorByID put operation', async () => {
+  test('test BulkQuotesErrorById put operation', async () => {
     const server = new Hapi.Server()
 
     await server.register([{
@@ -64,7 +64,7 @@ describe('/bulkQuotes/{ID}/error', function () {
 
     const requests = new Promise((resolve, reject) => {
       Mockgen().requests({
-        path: '/bulkQuotes/{ID}/error',
+        path: '/bulkQuotes/{id}/error',
         operation: 'put'
       }, function (error, mock) {
         return error ? reject(error) : resolve(mock)

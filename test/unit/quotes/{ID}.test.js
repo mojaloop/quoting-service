@@ -39,17 +39,17 @@ const Mockgen = require('../../util/mockgen.js')
 const helper = require('../../util/helper')
 
 /**
- * Test for /quotes/{ID}
+ * Test for /quotes/{id}
  */
-describe('/quotes/{ID}', function () {
+describe('/quotes/{id}', function () {
   /**
-     * summary: QuotesByID
-     * description: The HTTP request GET /quotes/&lt;ID&gt; is used to get information regarding an earlier created or requested quote. The &lt;ID&gt; in the URI should contain the quoteId that was used for the creation of the quote.
+     * summary: QuotesById
+     * description: The HTTP request GET /quotes/&lt;id&gt; is used to get information regarding an earlier created or requested quote. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote.
      * parameters: Accept
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  test('test QuotesByID get operation', async () => {
+  test('test QuotesById get operation', async () => {
     const server = new Hapi.Server()
 
     await server.register({
@@ -63,7 +63,7 @@ describe('/quotes/{ID}', function () {
 
     const requests = new Promise((resolve, reject) => {
       Mockgen().requests({
-        path: '/quotes/{ID}',
+        path: '/quotes/{id}',
         operation: 'get'
       }, function (error, mock) {
         return error ? reject(error) : resolve(mock)
@@ -96,13 +96,13 @@ describe('/quotes/{ID}', function () {
     expect(response.statusCode).toBe(202)
   })
   /**
-     * summary: QuotesByID
-     * description: The callback PUT /quotes/&lt;ID&gt; is used to inform the client of a requested or created quote. The &lt;ID&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;ID&gt; that was used in the GET /quotes/&lt;ID&gt;GET /quotes/&lt;ID&gt;.
+     * summary: QuotesById
+     * description: The callback PUT /quotes/&lt;id&gt; is used to inform the client of a requested or created quote. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;GET /quotes/&lt;id&gt;.
      * parameters: body, Content-Length
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  test('test QuotesByID1 put operation', async () => {
+  test('test QuotesById1 put operation', async () => {
     const server = new Hapi.Server()
 
     await server.register({
@@ -116,7 +116,7 @@ describe('/quotes/{ID}', function () {
 
     const requests = new Promise((resolve, reject) => {
       Mockgen().requests({
-        path: '/quotes/{ID}',
+        path: '/quotes/{id}',
         operation: 'put'
       }, function (error, mock) {
         return error ? reject(error) : resolve(mock)

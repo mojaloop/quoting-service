@@ -207,7 +207,7 @@ class QuotesModel {
         const failures = await quoteRules.getFailures(test)
         if (failures && failures.length > 0) {
           // quote broke business rules, queue up an error callback to the caller
-          this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`)
+          this.writeLog(`Rules failed  for quoteId ${refs.quoteId}: ${util.inspect(failures)}`)
           // todo: make error callback
         }
       }
@@ -216,7 +216,7 @@ class QuotesModel {
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
         // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleQuoteRequest', span.spanContext)
+        const childSpan = span.getChild('qs_quote_forwardQuoteRequest')
         try {
           if (envConfig.simpleRoutingMode) {
             await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
@@ -360,7 +360,7 @@ class QuotesModel {
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
         // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleQuoteRequestResend', span.spanContext)
+        const childSpan = span.getChild('qs_quote_forwardQuoteRequestResend')
         try {
           await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
           await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan)
@@ -485,7 +485,7 @@ class QuotesModel {
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
         // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleQuoteUpdate', span.spanContext)
+        const childSpan = span.getChild('qs_quote_forwardQuoteUpdate')
         try {
           await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdateRequest }, EventSdk.AuditEventAction.start)
           await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, childSpan)
@@ -623,7 +623,7 @@ class QuotesModel {
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
         // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleQuoteUpdateResend', span.spanContext)
+        const childSpan = span.getChild('qs_quote_forwardQuoteUpdateResend')
         try {
           await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdate }, EventSdk.AuditEventAction.start)
           await this.forwardQuoteUpdate(headers, quoteId, quoteUpdate, childSpan)
@@ -647,7 +647,7 @@ class QuotesModel {
   }
 
   /**
-     * Handles error reports from clients e.g. POST quotes/{ID}/error
+     * Handles error reports from clients e.g. POST quotes/{id}/error
      *
      * @returns {undefined}
      */
@@ -705,7 +705,7 @@ class QuotesModel {
       // attempting to give fair execution of async events...
       // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
       setImmediate(async () => {
-        const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleQuoteGet', span.spanContext)
+        const childSpan = span.getChild('qs_quote_forwardQuoteGet')
         try {
           await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
           await this.forwardQuoteGet(headers, quoteId, childSpan)
@@ -821,7 +821,7 @@ class QuotesModel {
     // do the error callback in a future event loop iteration
     // to play nicely with other events
     setImmediate(async () => {
-      const childSpan = EventSdk.Tracer.createChildSpanFromContext('quote_handleException', span.spanContext)
+      const childSpan = span.getChild('qs_quote_sendErrorCallback')
       try {
         await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
         return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan)

@@ -41,9 +41,9 @@ const Sinon = require('sinon')
 const Db = require('../../../../src/data/database')
 const Logger = require('@mojaloop/central-services-logger')
 /**
- * Test for /quotes/{ID}/error
+ * Test for /quotes/{id}/error
  */
-describe('/quotes/{ID}/error', () => {
+describe('/quotes/{id}/error', () => {
   let sandbox
 
   beforeEach(() => {
@@ -54,13 +54,13 @@ describe('/quotes/{ID}/error', () => {
     sandbox.restore()
   })
   /**
-     * summary: QuotesByIDAndError
-     * description: If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/&lt;ID&gt;/error is used. The &lt;ID&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;ID&gt; that was used in the GET /quotes/&lt;ID&gt;.
-     * parameters: ID, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
+     * summary: QuotesByIdAndError
+     * description: If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/&lt;id&gt;/error is used. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;.
+     * parameters: id, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  test('test QuotesByIDAndError put operation', async () => {
+  test('test QuotesByIdAndError put operation', async () => {
     const server = new Hapi.Server()
 
     await server.register({
@@ -74,7 +74,7 @@ describe('/quotes/{ID}/error', () => {
 
     const requests = new Promise((resolve, reject) => {
       Mockgen().requests({
-        path: '/quotes/{ID}/error',
+        path: '/quotes/{id}/error',
         operation: 'put'
       }, function (error, mock) {
         return error ? reject(error) : resolve(mock)

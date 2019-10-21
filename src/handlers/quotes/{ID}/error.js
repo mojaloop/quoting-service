@@ -40,19 +40,19 @@ const LibUtil = require('../../../lib/util')
 const QuotesModel = require('../../../model/quotes')
 
 /**
- * Operations on /quotes/{ID}/error
+ * Operations on /quotes/{id}/error
  */
 module.exports = {
   /**
-     * summary: QuotesByIDAndError
-     * description: If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/&lt;ID&gt;/error is used. The &lt;ID&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;ID&gt; that was used in the GET /quotes/&lt;ID&gt;.
-     * parameters: ID, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
+     * summary: QuotesByIdAndError
+     * description: If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/&lt;id&gt;/error is used. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;.
+     * parameters: id, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  put: async function QuotesByIDAndError (request, h) {
+  put: async function QuotesByIdAndError (request, h) {
     // log request
-    request.server.log(['info'], `got a PUT /quotes/{ID}/error request: ${util.inspect(request.payload)}`)
+    request.server.log(['info'], `got a PUT /quotes/{id}/error request: ${util.inspect(request.payload)}`)
 
     // instantiate a new quote model
     const model = new QuotesModel({
@@ -62,12 +62,13 @@ module.exports = {
 
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
-    const quoteId = request.params.ID
+    const quoteId = request.params.id
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
     const span = request.span
     try {
-      span.setTags(LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.ABORT))
+      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.ABORT)
+      span.setTags(spanTags)
       await span.audit({
         headers: request.headers,
         payload: request.payload
@@ -77,7 +78,7 @@ module.exports = {
       request.server.log(['info'], `PUT quote error request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - PUT /quotes/{ID}/error: ${err.stack || util.inspect(err)}`)
+      request.server.log(['error'], `ERROR - PUT /quotes/{id}/error: ${err.stack || util.inspect(err)}`)
       await model.handleException(fspiopSource, quoteId, err, request.headers)
     } finally {
       // eslint-disable-next-line no-unsafe-finally

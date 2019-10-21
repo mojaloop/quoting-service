@@ -68,7 +68,8 @@ module.exports = {
 
     const span = request.span
     try {
-      span.setTags(LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.PREPARE))
+      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.PREPARE)
+      span.setTags(spanTags)
       await span.audit({
         headers: request.headers,
         payload: request.payload
