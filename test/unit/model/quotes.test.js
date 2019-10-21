@@ -47,17 +47,22 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Sinon = require('sinon')
 const conf = require('../../../config/default')
 const Db = require('../../../src/data/database')
+const AxiosMock = require('axios')
 
-jest.mock('node-fetch', () => function (url) {
-  if (url === 'http://invalid.com/dfsp2/quotes') {
+jest.mock('axios')
+
+AxiosMock.request = (opts1) => {
+  if (opts1.url === 'http://invalid.com/dfsp2/quotes') {
     return Promise.reject(new Error('Unable to reach host'))
-  } else if (url === 'http://invalidresponse.com/dfsp2/quotes') {
-    return Promise.resolve({ ok: false })
+  } else if (opts1.url === 'http://invalidresponse.com/dfsp2/quotes') {
+    return Promise.resolve({ status: 200 })
   }
-  return Promise.resolve({ ok: true })
-})
+  return Promise.resolve({ status: 202 })
+}
 
 describe('quotesModel', () => {
+  let sandbox
+  let SpanStub
   let quotesModel
   let db
 
@@ -69,6 +74,17 @@ describe('quotesModel', () => {
       db: db,
       requestId: 'test123'
     })
+    sandbox = Sinon.createSandbox()
+    SpanStub = {
+      audit: sandbox.stub().callsFake(),
+      error: sandbox.stub().callsFake(),
+      finish: sandbox.stub().callsFake(),
+      debug: sandbox.stub().callsFake(),
+      info: sandbox.stub().callsFake(),
+      getChild: sandbox.stub().returns(SpanStub),
+      setTags: sandbox.stub().callsFake(),
+      injectContextToHttpRequest: sandbox.stub().callsFake(o => o)
+    }
   })
 
   afterEach(() => {})
@@ -186,7 +202,7 @@ describe('quotesModel', () => {
     Sinon.stub(db, 'createTransactionReference').returns(quoteRequest.transactionId)
     Sinon.stub(quotesModel, 'checkDuplicateQuoteResponse').returns({ isDuplicatedId: false, isResend: false })
 
-    const refs = await quotesModel.handleQuoteUpdate(headers, quoteRequest.id, quoteRequest)
+    const refs = await quotesModel.handleQuoteUpdate(headers, quoteRequest.id, quoteRequest, SpanStub)
     expect(refs).toBeTruthy()
     expect(refs).toEqual({ quoteResponseId: quoteRequest.transactionId })
   })
@@ -218,7 +234,7 @@ describe('quotesModel', () => {
       Sinon.stub(db, 'getParticipant').returns(3)
       Sinon.stub(db, 'getQuoteDuplicateCheck').returns({ hash: '85b6067dc6e271c53e2bbc2218e94187022677e80267f95ca28c80707b3009bc' })
 
-      await quotesModel.handleQuoteRequest(headers, quoteRequest)
+      await quotesModel.handleQuoteRequest(headers, quoteRequest, SpanStub)
     } catch (err) {
       expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
       expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code)
@@ -250,7 +266,7 @@ describe('quotesModel', () => {
     Sinon.stub(db, 'getQuoteDuplicateCheck').returns({ hash: 'e31fed1d22e622737fea8f40f60359b374b51ff543d840934b7ee5b5ead22edd' })
     Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://test.com/dfsp2')
 
-    await quotesModel.handleQuoteRequest(headers, quoteRequest)
+    await quotesModel.handleQuoteRequest(headers, quoteRequest, SpanStub)
   })
 
   test('throw an error if the destination endpoint is not found', async () => {
@@ -266,7 +282,7 @@ describe('quotesModel', () => {
 
       Sinon.stub(db, 'getQuotePartyEndpoint').returns(null)
 
-      await quotesModel.forwardQuoteRequest(headers, 'test123', quoteRequest)
+      await quotesModel.forwardQuoteRequest(headers, 'test123', quoteRequest, SpanStub)
     } catch (err) {
       expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
       expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
@@ -287,7 +303,7 @@ describe('quotesModel', () => {
 
       Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://invalid.com/dfsp2')
 
-      await quotesModel.forwardQuoteRequest(headers, 'test123', quoteRequest)
+      await quotesModel.forwardQuoteRequest(headers, 'test123', quoteRequest, SpanStub)
     } catch (err) {
       expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
       expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code)
@@ -308,7 +324,7 @@ describe('quotesModel', () => {
 
       Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://invalidresponse.com/dfsp2')
 
-      await quotesModel.forwardQuoteRequest(headers, 'test123', quoteRequest)
+      await quotesModel.forwardQuoteRequest(headers, 'test123', quoteRequest, SpanStub)
     } catch (err) {
       expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
       expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code)

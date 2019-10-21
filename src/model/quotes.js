@@ -252,8 +252,10 @@ class QuotesModel {
       }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      await span.error(fspiopError, state)
-      await span.finish(fspiopError.message, state)
+      if (span) {
+        await span.error(fspiopError, state)
+        await span.finish(fspiopError.message, state)
+      }
       throw fspiopError
     }
   }
@@ -317,7 +319,7 @@ class QuotesModel {
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts.method },
+          { key: 'method', value: opts && opts.method },
           { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
         ])
       }
@@ -330,7 +332,7 @@ class QuotesModel {
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts.method },
+          { key: 'method', value: opts && opts.method },
           { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
           { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
         ])
@@ -513,8 +515,10 @@ class QuotesModel {
       }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      await span.error(fspiopError, state)
-      await span.finish(fspiopError.message, state)
+      if (span) {
+        await span.error(fspiopError, state)
+        await span.finish(fspiopError.message, state)
+      }
       throw fspiopError
     }
   }
@@ -580,7 +584,7 @@ class QuotesModel {
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDestination },
-          { key: 'method', value: opts.method },
+          { key: 'method', value: opts && opts.method },
           { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
         ])
       }
@@ -592,7 +596,7 @@ class QuotesModel {
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDestination },
-          { key: 'method', value: opts.method },
+          { key: 'method', value: opts && opts.method },
           { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
           { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
         ])
@@ -687,8 +691,10 @@ class QuotesModel {
       txn.rollback(err)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      await span.error(fspiopError, state)
-      await span.finish(fspiopError.message, state)
+      if (span) {
+        await span.error(fspiopError, state)
+        await span.finish(fspiopError.message, state)
+      }
       throw fspiopError
     }
   }
@@ -726,8 +732,10 @@ class QuotesModel {
       this.writeLog(`Error in handleQuoteGet: ${err.stack || util.inspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      await span.error(fspiopError, state)
-      await span.finish(fspiopError.message, state)
+      if (span) {
+        await span.error(fspiopError, state)
+        await span.finish(fspiopError.message, state)
+      }
       throw fspiopError
     }
   }
@@ -785,7 +793,7 @@ class QuotesModel {
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts.method },
+          { key: 'method', value: opts && opts.method },
           { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
         ])
       }
@@ -798,7 +806,7 @@ class QuotesModel {
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts.method },
+          { key: 'method', value: opts && opts.method },
           { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
           { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
         ])
@@ -891,7 +899,7 @@ class QuotesModel {
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts.method },
+          { key: 'method', value: opts && opts.method },
           { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
         ])
       }
@@ -903,7 +911,7 @@ class QuotesModel {
           { key: 'url', value: fullCallbackUrl },
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts.method },
+          { key: 'method', value: opts && opts.method },
           { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
           { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
         ])
@@ -913,8 +921,10 @@ class QuotesModel {
       this.writeLog(`Error in sendErrorCallback: ${err.stack || util.inspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      await span.error(fspiopError, state)
-      await span.finish(fspiopError.message, state)
+      if (span) {
+        await span.error(fspiopError, state)
+        await span.finish(fspiopError.message, state)
+      }
       throw fspiopError
     }
   }
