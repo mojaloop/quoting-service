@@ -16,20 +16,21 @@
     "application/json"
   ],
   "paths": {
-    "/quotes/{ID}/error": {
+    "/quotes/{id}/error": {
       "put": {
-        "description": "If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/<ID>/error is used. The <ID> in the URI should contain the quoteId that was used for the creation of the quote, or the <ID> that was used in the GET /quotes/<ID>.",
-        "summary": "QuotesByIDAndError",
+        "description": "If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/<id>/error is used. The <id> in the URI should contain the quoteId that was used for the creation of the quote, or the <id> that was used in the GET /quotes/<id>.",
+        "summary": "QuotesByIdAndError",
         "tags": [
-          "quotes"
+          "quotes",
+          "sampled"
         ],
-        "operationId": "QuotesByIDAndError",
+        "operationId": "qs_quote_error",
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "$ref": "#/parameters/ID"
+            "$ref": "#/parameters/id"
           },
           {
             "name": "body",
@@ -121,10 +122,10 @@
         }
       }
     },
-    "/quotes/{ID}": {
+    "/quotes/{id}": {
       "parameters": [
         {
-          "$ref": "#/parameters/ID"
+          "$ref": "#/parameters/id"
         },
         {
           "$ref": "#/parameters/Content-Type"
@@ -155,12 +156,13 @@
         }
       ],
       "get": {
-        "description": "The HTTP request GET /quotes/<ID> is used to get information regarding an earlier created or requested quote. The <ID> in the URI should contain the quoteId that was used for the creation of the quote.",
-        "summary": "QuotesByID",
+        "description": "The HTTP request GET /quotes/<id> is used to get information regarding an earlier created or requested quote. The <id> in the URI should contain the quoteId that was used for the creation of the quote.",
+        "summary": "QuotesById",
         "tags": [
-          "quotes"
+          "quotes",
+          "sampled"
         ],
-        "operationId": "QuotesByID",
+        "operationId": "qs_quote_getById",
         "produces": [
           "application/json"
         ],
@@ -169,7 +171,7 @@
             "$ref": "#/parameters/Accept"
           },
           {
-            "$ref": "#/parameters/ID"
+            "$ref": "#/parameters/id"
           },
           {
             "$ref": "#/parameters/Content-Type"
@@ -230,12 +232,13 @@
         }
       },
       "put": {
-        "description": "The callback PUT /quotes/<ID> is used to inform the client of a requested or created quote. The <ID> in the URI should contain the quoteId that was used for the creation of the quote, or the <ID> that was used in the GET /quotes/<ID>GET /quotes/<ID>.",
-        "summary": "QuotesByID",
+        "description": "The callback PUT /quotes/<id> is used to inform the client of a requested or created quote. The <id> in the URI should contain the quoteId that was used for the creation of the quote, or the <id> that was used in the GET /quotes/<id>GET /quotes/<id>.",
+        "summary": "QuotesById",
         "tags": [
-          "quotes"
+          "quotes",
+          "sampled"
         ],
-        "operationId": "QuotesByID1",
+        "operationId": "qs_quote_response",
         "produces": [
           "application/json"
         ],
@@ -249,7 +252,7 @@
             }
           },
           {
-            "$ref": "#/parameters/ID"
+            "$ref": "#/parameters/id"
           },
           {
             "$ref": "#/parameters/Content-Length"
@@ -357,9 +360,10 @@
         "description": "The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.",
         "summary": "Quotes",
         "tags": [
-          "quotes"
+          "quotes",
+          "sampled"
         ],
-        "operationId": "Quotes",
+        "operationId": "qs_quote_request",
         "produces": [
           "application/json"
         ],
@@ -518,20 +522,21 @@
         }
       }
     },
-    "/bulkQuotes/{ID}/error": {
+    "/bulkQuotes/{id}/error": {
       "put": {
-        "description": "If the server is unable to find or create a bulk quote, or another processing error occurs, the error callback PUT /bulkQuotes/<ID>/error is used. The <ID> in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the <ID> that was used in the GET /bulkQuotes/<ID>.",
-        "summary": "BulkQuotesErrorByID",
+        "description": "If the server is unable to find or create a bulk quote, or another processing error occurs, the error callback PUT /bulkQuotes/<id>/error is used. The <id> in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the <id> that was used in the GET /bulkQuotes/<id>.",
+        "summary": "BulkQuotesErrorById",
         "tags": [
-          "bulkQuotes"
+          "bulkQuotes",
+          "sampled"
         ],
-        "operationId": "BulkQuotesErrorByID",
+        "operationId": "qs_bulk_quote_error",
         "produces": [
           "application/json"
         ],
         "parameters": [
           {
-            "$ref": "#/parameters/ID"
+            "$ref": "#/parameters/id"
           },
           {
             "name": "body",
@@ -623,10 +628,10 @@
         }
       }
     },
-    "/bulkQuotes/{ID}": {
+    "/bulkQuotes/{id}": {
       "parameters": [
         {
-          "$ref": "#/parameters/ID"
+          "$ref": "#/parameters/id"
         },
         {
           "$ref": "#/parameters/Content-Type"
@@ -657,12 +662,13 @@
         }
       ],
       "get": {
-        "description": "The HTTP request GET /bulkQuotes/<ID> is used to get information regarding an earlier created or requested bulk quote. The <ID> in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote.",
-        "summary": "BulkQuotesByID",
+        "description": "The HTTP request GET /bulkQuotes/<id> is used to get information regarding an earlier created or requested bulk quote. The <id> in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote.",
+        "summary": "BulkQuotesById",
         "tags": [
-          "bulkQuotes"
+          "bulkQuotes",
+          "sampled"
         ],
-        "operationId": "BulkQuotesByID",
+        "operationId": "qs_bulk_quote_getById",
         "produces": [
           "application/json"
         ],
@@ -702,12 +708,13 @@
         }
       },
       "put": {
-        "description": "The callback PUT /bulkQuotes/<ID> is used to inform the client of a requested or created bulk quote. The <ID> in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the <ID> that was used in the GET /bulkQuotes/<ID>.",
-        "summary": "BulkQuotesByID",
+        "description": "The callback PUT /bulkQuotes/<id> is used to inform the client of a requested or created bulk quote. The <id> in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the <id> that was used in the GET /bulkQuotes/<id>.",
+        "summary": "BulkQuotesById",
         "tags": [
-          "bulkQuotes"
+          "bulkQuotes",
+          "sampled"
         ],
-        "operationId": "BulkQuotesByID1",
+        "operationId": "qs_bulk_quote_fulfil",
         "produces": [
           "application/json"
         ],
@@ -824,9 +831,10 @@
         "description": "The HTTP request POST /bulkQuotes is used to request the creation of a bulk quote for the provided financial transactions in the server.",
         "summary": "BulkQuotes",
         "tags": [
-          "bulkQuotes"
+          "bulkQuotes",
+          "sampled"
         ],
-        "operationId": "BulkQuotes",
+        "operationId": "qs_bulk_quote_prepare",
         "produces": [
           "application/json"
         ],
@@ -1004,7 +1012,7 @@
         "tags": [
           "health"
         ],
-        "operationId": "HealthGet",
+        "operationId": "health",
         "produces": [
           "application/json"
         ],
@@ -1454,7 +1462,7 @@
         "IBAN",
         "ALIAS"
       ],
-      "description": "Below are the allowed values for the enumeration - MSISDN An MSISDN (Mobile Station International Subscriber Directory Number, that is, the phone number) is used as reference to a participant. The MSISDN identifier should be in international format according to the ITU-T E.164 standard. Optionally, the MSISDN may be prefixed by a single plus sign, indicating the international prefix. - EMAIL An email is used as reference to a participant. The format of the email should be according to the informational RFC 3696. - PERSONAL_ID A personal identifier is used as reference to a participant. Examples of personal identification are passport number, birth certificate number, and national registration number. The identifier number is added in the PartyIdentifier element. The personal identifier type is added in the PartySubIdOrType element. - BUSINESS A specific Business (for example, an organization or a company) is used as reference to a participant. The BUSINESS identifier can be in any format. To make a transaction connected to a specific username or bill number in a Business, the PartySubIdOrType element should be used. - DEVICE A specific device (for example, a POS or ATM) ID connected to a specific business or organization is used as reference to a Party. For referencing a specific device under a specific business or organization, use the PartySubIdOrType element. - ACCOUNT_ID A bank account number or FSP account ID should be used as reference to a participant. The ACCOUNT_ID identifier can be in any format, as formats can greatly differ depending on country and FSP. - IBAN A bank account number or FSP account ID is used as reference to a participant. The IBAN identifier can consist of up to 34 alphanumeric characters and should be entered without whitespace. - ALIAS An alias is used as reference to a participant. The alias should be created in the FSP as an alternative reference to an account owner. Another example of an alias is a username in the FSP system. The ALIAS identifier can be in any format. It is also possible to use the PartySubIdOrType element for identifying an account under an Alias defined by the PartyIdentifier."
+      "description": "Below are the allowed values for the enumeration - MSISDN An MSISDN (Mobile Station International Subscriber Directory Number, that is, the phone number) is used as reference to a participant. The MSISDN identifier should be in international format according to the ITU-T E.164 standard. Optionally, the MSISDN may be prefixed by a single plus sign, indicating the international prefix. - EMAIL An email is used as reference to a participant. The format of the email should be according to the informational RFC 3696. - PERSONAL_ID A personal identifier is used as reference to a participant. Examples of personal identification are passport number, birth certificate number, and national registration number. The identifier number is added in the PartyIdentifier element. The personal identifier type is added in the PartySubIdOrType element. - BUSINESS A specific Business (for example, an organization or a company) is used as reference to a participant. The BUSINESS identifier can be in any format. To make a transaction connected to a specific username or bill number in a Business, the PartySubIdOrType element should be used. - DEVICE A specific device (for example, a POS or ATM) id connected to a specific business or organization is used as reference to a Party. For referencing a specific device under a specific business or organization, use the PartySubIdOrType element. - ACCOUNT_ID A bank account number or FSP account id should be used as reference to a participant. The ACCOUNT_ID identifier can be in any format, as formats can greatly differ depending on country and FSP. - IBAN A bank account number or FSP account id is used as reference to a participant. The IBAN identifier can consist of up to 34 alphanumeric characters and should be entered without whitespace. - ALIAS An alias is used as reference to a participant. The alias should be created in the FSP as an alternative reference to an account owner. Another example of an alias is a username in the FSP system. The ALIAS identifier can be in any format. It is also possible to use the PartySubIdOrType element for identifying an account under an Alias defined by the PartyIdentifier."
     },
     "PartyName": {
       "title": "PartyName",
@@ -1488,7 +1496,7 @@
         "UNITED_NATIONS",
         "OTHER_ID"
       ],
-      "description": "Below are the allowed values for the enumeration - PASSPORT A passport number is used as reference to a Party. - NATIONAL_REGISTRATION A national registration number is used as reference to a Party. - DRIVING_LICENSE A driving license is used as reference to a Party. - ALIEN_REGISTRATION An alien registration number is used as reference to a Party. - NATIONAL_ID_CARD A national ID card number is used as reference to a Party. - EMPLOYER_ID A tax identification number is used as reference to a Party. - TAX_ID_NUMBER A tax identification number is used as reference to a Party. - SENIOR_CITIZENS_CARD A senior citizens card number is used as reference to a Party. - MARRIAGE_CERTIFICATE A marriage certificate number is used as reference to a Party. - HEALTH_CARD A health card number is used as reference to a Party. - VOTERS_ID A voter’s identification number is used as reference to a Party. - UNITED_NATIONS An UN (United Nations) number is used as reference to a Party. - OTHER_ID Any other type of identification type number is used as reference to a Party."
+      "description": "Below are the allowed values for the enumeration - PASSPORT A passport number is used as reference to a Party. - NATIONAL_REGISTRATION A national registration number is used as reference to a Party. - DRIVING_LICENSE A driving license is used as reference to a Party. - ALIEN_REGISTRATION An alien registration number is used as reference to a Party. - NATIONAL_ID_CARD A national id card number is used as reference to a Party. - EMPLOYER_ID A tax identification number is used as reference to a Party. - TAX_ID_NUMBER A tax identification number is used as reference to a Party. - SENIOR_CITIZENS_CARD A senior citizens card number is used as reference to a Party. - MARRIAGE_CERTIFICATE A marriage certificate number is used as reference to a Party. - HEALTH_CARD A health card number is used as reference to a Party. - VOTERS_ID A voter’s identification number is used as reference to a Party. - UNITED_NATIONS An UN (United Nations) number is used as reference to a Party. - OTHER_ID Any other type of identification type number is used as reference to a Party."
     },
     "QuoteId": {
       "title": "QuoteId",
@@ -1619,7 +1627,7 @@
     "AuthorizationsIDPutResponse": {
       "title": "AuthorizationsIDPutResponse",
       "type": "object",
-      "description": "PUT /authorizations/{ID} object",
+      "description": "PUT /authorizations/{id} object",
       "properties": {
         "authenticationInfo": {
           "type": "string",
@@ -1641,7 +1649,7 @@
       "properties": {
         "bulkQuoteId": {
           "type": "string",
-          "description": "Common ID between the FSPs for the bulk quote object, decided by the Payer FSP. The ID should be reused for resends of the same bulk quote. A new ID should be generated for each new bulk quote."
+          "description": "Common id between the FSPs for the bulk quote object, decided by the Payer FSP. The id should be reused for resends of the same bulk quote. A new id should be generated for each new bulk quote."
         },
         "payer": {
           "$ref": "#/definitions/Party",
@@ -1678,7 +1686,7 @@
     "BulkQuotesIDPutResponse": {
       "title": "BulkQuotesIDPutResponse",
       "type": "object",
-      "description": "PUT /bulkQuotes/{ID} object",
+      "description": "PUT /bulkQuotes/{id} object",
       "properties": {
         "individualQuoteResults": {
           "type": "array",
@@ -1708,11 +1716,11 @@
       "properties": {
         "bulkTransferId": {
           "type": "string",
-          "description": "Common ID between the FSPs and the optional Switch for the bulk transfer object, decided by the Payer FSP. The ID should be reused for resends of the same bulk transfer. A new ID should be generated for each new bulk transfer."
+          "description": "Common id between the FSPs and the optional Switch for the bulk transfer object, decided by the Payer FSP. The id should be reused for resends of the same bulk transfer. A new id should be generated for each new bulk transfer."
         },
         "bulkQuoteId": {
           "type": "string",
-          "description": "ID of the related bulk quote."
+          "description": "id of the related bulk quote."
         },
         "payerFsp": {
           "type": "string",
@@ -1752,7 +1760,7 @@
     "BulkTransfersIDPutResponse": {
       "title": "BulkTransfersIDPutResponse",
       "type": "object",
-      "description": "PUT /bulkTransfers/{ID} object",
+      "description": "PUT /bulkTransfers/{id} object",
       "properties": {
         "completedTimestamp": {
           "type": "string",
@@ -2064,7 +2072,7 @@
     "ParticipantsTypeIDSubIDPostRequest": {
       "title": "ParticipantsTypeIDSubIDPostRequest",
       "type": "object",
-      "description": "POST /participants/{Type}/{ID}/{SubId}, /participants/{Type}/{ID} object",
+      "description": "POST /participants/{Type}/{id}/{SubId}, /participants/{Type}/{id} object",
       "properties": {
         "fspId": {
           "type": "string",
@@ -2082,7 +2090,7 @@
     "ParticipantsTypeIDPutResponse": {
       "title": "ParticipantsTypeIDPutResponse",
       "type": "object",
-      "description": "PUT /participants/{Type}/{ID}/{SubId}, /participants/{Type}/{ID} object",
+      "description": "PUT /participants/{Type}/{id}/{SubId}, /participants/{Type}/{id} object",
       "properties": {
         "fspId": {
           "type": "string",
@@ -2093,7 +2101,7 @@
     "ParticipantsIDPutResponse": {
       "title": "ParticipantsIDPutResponse",
       "type": "object",
-      "description": "PUT /participants/{ID} object",
+      "description": "PUT /participants/{id} object",
       "properties": {
         "partyList": {
           "type": "array",
@@ -2120,7 +2128,7 @@
       "properties": {
         "requestId": {
           "type": "string",
-          "description": "The ID of the request, decided by the client. Used for identification of the callback from the server."
+          "description": "The id of the request, decided by the client. Used for identification of the callback from the server."
         },
         "partyList": {
           "type": "array",
@@ -2148,7 +2156,7 @@
       "properties": {
         "partyIdInfo": {
           "$ref": "#/definitions/PartyIdInfo",
-          "description": "Party Id type, id, sub ID or type, and FSP Id."
+          "description": "Party Id type, id, sub id or type, and FSP Id."
         },
         "merchantClassificationCode": {
           "type": "string",
@@ -2205,7 +2213,7 @@
         },
         "fspId": {
           "type": "string",
-          "description": "FSP ID (if known)"
+          "description": "FSP id (if known)"
         }
       },
       "required": [
@@ -2216,7 +2224,7 @@
     "PartiesTypeIDPutResponse": {
       "title": "PartiesTypeIDPutResponse",
       "type": "object",
-      "description": "PUT /parties/{Type}/{ID} object",
+      "description": "PUT /parties/{Type}/{id} object",
       "properties": {
         "party": {
           "$ref": "#/definitions/Party",
@@ -2249,7 +2257,7 @@
       "properties": {
         "partyId": {
           "$ref": "#/definitions/PartyIdInfo",
-          "description": "Party Id type, id, sub ID or type, and FSP Id."
+          "description": "Party Id type, id, sub id or type, and FSP Id."
         },
         "errorInformation": {
           "$ref": "#/definitions/ErrorInformation",
@@ -2267,11 +2275,11 @@
       "properties": {
         "quoteId": {
           "$ref": "#/definitions/QuoteId",
-          "description": "Common ID between the FSPs for the quote object, decided by the Payer FSP. The ID should be reused for resends of the same quote for a transaction. A new ID should be generated for each new quote for a transaction."
+          "description": "Common id between the FSPs for the quote object, decided by the Payer FSP. The id should be reused for resends of the same quote for a transaction. A new id should be generated for each new quote for a transaction."
         },
         "transactionId": {
           "$ref": "#/definitions/TransactionId",
-          "description": "Common ID (decided by the Payer FSP) between the FSPs for the future transaction object. The actual transaction will be created as part of a successful transfer process. The ID should be reused for resends of the same quote for a transaction. A new ID should be generated for each new quote for a transaction."
+          "description": "Common id (decided by the Payer FSP) between the FSPs for the future transaction object. The actual transaction will be created as part of a successful transfer process. The id should be reused for resends of the same quote for a transaction. A new id should be generated for each new quote for a transaction."
         },
         "transactionRequestId": {
           "type": "string",
@@ -2331,7 +2339,7 @@
     "QuotesIDPutResponse": {
       "title": "QuotesIDPutResponse",
       "type": "object",
-      "description": "PUT /quotes/{ID} object",
+      "description": "PUT /quotes/{id} object",
       "properties": {
         "transferAmount": {
           "$ref": "#/definitions/Money",
@@ -2384,7 +2392,7 @@
       "properties": {
         "originalTransactionId": {
           "type": "string",
-          "description": "Reference to the original transaction ID that is requested to be refunded."
+          "description": "Reference to the original transaction id that is requested to be refunded."
         },
         "refundReason": {
           "type": "string",
@@ -2413,11 +2421,11 @@
       "properties": {
         "transactionId": {
           "type": "string",
-          "description": "ID of the transaction, the ID is decided by the Payer FSP during the creation of the quote."
+          "description": "id of the transaction, the id is decided by the Payer FSP during the creation of the quote."
         },
         "quoteId": {
           "$ref": "#/definitions/QuoteId",
-          "description": "ID of the quote, the ID is decided by the Payer FSP during the creation of the quote."
+          "description": "id of the quote, the id is decided by the Payer FSP during the creation of the quote."
         },
         "payee": {
           "$ref": "#/definitions/Party",
@@ -2456,7 +2464,7 @@
     "TransactionRequestsIDPutResponse": {
       "title": "TransactionRequestsIDPutResponse",
       "type": "object",
-      "description": "PUT /transactionRequests/{ID} object",
+      "description": "PUT /transactionRequests/{id} object",
       "properties": {
         "transactionId": {
           "type": "string",
@@ -2478,7 +2486,7 @@
     "TransactionsIDPutResponse": {
       "title": "TransactionsIDPutResponse",
       "type": "object",
-      "description": "PUT /transactions/{ID} object",
+      "description": "PUT /transactions/{id} object",
       "properties": {
         "completedTimestamp": {
           "type": "string",
@@ -2544,7 +2552,7 @@
       "properties": {
         "transferId": {
           "type": "string",
-          "description": "The common ID between the FSPs and the optional Switch for the transfer object, decided by the Payer FSP. The ID should be reused for resends of the same transfer. A new ID should be generated for each new transfer."
+          "description": "The common id between the FSPs and the optional Switch for the transfer object, decided by the Payer FSP. The id should be reused for resends of the same transfer. A new id should be generated for each new transfer."
         },
         "payeeFsp": {
           "type": "string",
@@ -2592,7 +2600,7 @@
       "properties": {
         "transactionRequestId": {
           "type": "string",
-          "description": "Common ID between the FSPs for the transaction request object, decided by the Payee FSP. The ID should be reused for resends of the same transaction request. A new ID should be generated for each new transaction request."
+          "description": "Common id between the FSPs for the transaction request object, decided by the Payee FSP. The id should be reused for resends of the same transaction request. A new id should be generated for each new transaction request."
         },
         "payee": {
           "$ref": "#/definitions/Party",
@@ -2642,7 +2650,7 @@
     "TransfersIDPutResponse": {
       "title": "TransfersIDPutResponse",
       "type": "object",
-      "description": "PUT /transfers/{ID} object",
+      "description": "PUT /transfers/{id} object",
       "properties": {
         "fulfilment": {
           "type": "string",
@@ -2886,8 +2894,8 @@
       "required": false,
       "description": "The FSPIOP-HTTP-Method header field is a non-HTTP standard field used by the API for signature verification, should contain the service HTTP method. Required if signature verification is used, for more information see API Signature document."
     },
-    "ID": {
-      "name": "ID",
+    "id": {
+      "name": "id",
       "in": "path",
       "required": true,
       "type": "string"
