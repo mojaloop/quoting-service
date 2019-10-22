@@ -145,7 +145,7 @@ describe('quotesModel', () => {
     Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://test.com/dfsp2')
     Sinon.stub(db, 'getParticipant').returns(5)
 
-    const refs = await quotesModel.handleQuoteRequest(headers, quoteRequest)
+    const refs = await quotesModel.handleQuoteRequest(headers, quoteRequest, SpanStub)
     expect(refs).toBeTruthy()
     expect(refs).toEqual({
       transactionReferenceId: 'abc123',
