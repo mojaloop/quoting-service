@@ -491,6 +491,6 @@ describe('/quotes', function () {
 
     const response = await server.inject(options)
 
-    expect(response.statusCode).toBe(502)
+    expect(response.statusCode).toBe(400)
   })
 })
