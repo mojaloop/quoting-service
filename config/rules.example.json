@@ -28,7 +28,7 @@
     "event": {
       "type": "INTERCEPT_QUOTE",
       "params": {
-        "redirectAddress": "http://forexquotehandler/EUR"
+        "rerouteToFsp": "DFSPEUR"
       }
     }
   },

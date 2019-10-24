@@ -127,13 +127,13 @@ test('Test rules engine example config INTERCEPT_QUOTE event', async () => {
   const testFacts = {
     payee: {
       accounts: [{
-        ledgerAccountType: "SETTLEMENT",
-        currency: "ZAR"
+        ledgerAccountType: 'SETTLEMENT',
+        currency: 'ZAR'
       }]
     },
     payload: {
       amount: {
-        currency: "XOF"
+        currency: 'XOF'
       },
       extensionList: [
         { key: 'blah', value: 'whatever' },
@@ -151,13 +151,13 @@ test('Test rules engine example config INTERCEPT_QUOTE event negative case', asy
   const testFacts = {
     payee: {
       accounts: [{
-        ledgerAccountType: "SETTLEMENT",
-        currency: "XOF"
+        ledgerAccountType: 'SETTLEMENT',
+        currency: 'XOF'
       }]
     },
     payload: {
       amount: {
-        currency: "XOF"
+        currency: 'XOF'
       },
       extensionList: [
         { key: 'blah', value: 'whatever' },
@@ -170,18 +170,41 @@ test('Test rules engine example config INTERCEPT_QUOTE event negative case', asy
   expect(events).toEqual([])
 })
 
-test('Test rules engine example config INVALID_QUOTE_REQUEST event', async () => {
+test('Test rules engine example config INVALID_QUOTE_REQUEST triggered by missing extension value', async () => {
   const rules = require(`${__ROOT__}/config/rules.example.json`)
   const testFacts = {
     payee: {
       accounts: [{
-        ledgerAccountType: "SETTLEMENT",
-        currency: "ZAR"
+        ledgerAccountType: 'SETTLEMENT',
+        currency: 'ZAR'
       }]
     },
     payload: {
       amount: {
-        currency: "XOF"
+        currency: 'XOF'
+      },
+      extensionList: [
+        { key: 'blah', value: 'whatever' },
+        { key: 'noise', value: 'blah' }
+      ]
+    }
+  }
+  const { events } = await RulesEngine.run(rules, testFacts)
+  expect(events).toEqual([ rules[1].event ])
+})
+
+test('Test rules engine example config INVALID_QUOTE_REQUEST triggered by incorrect extension value', async () => {
+  const rules = require(`${__ROOT__}/config/rules.example.json`)
+  const testFacts = {
+    payee: {
+      accounts: [{
+        ledgerAccountType: 'SETTLEMENT',
+        currency: 'ZAR'
+      }]
+    },
+    payload: {
+      amount: {
+        currency: 'XOF'
       },
       extensionList: [
         { key: 'blah', value: 'whatever' },
@@ -199,13 +222,13 @@ test('Test rules engine example config INVALID_QUOTE_REQUEST event negative case
   const testFacts = {
     payee: {
       accounts: [{
-        ledgerAccountType: "SETTLEMENT",
-        currency: "XOF"
+        ledgerAccountType: 'SETTLEMENT',
+        currency: 'XOF'
       }]
     },
     payload: {
       amount: {
-        currency: "XOF"
+        currency: 'XOF'
       },
       extensionList: [
         { key: 'blah', value: 'whatever' },

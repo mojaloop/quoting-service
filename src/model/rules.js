@@ -53,7 +53,7 @@ const createEngine = () => {
 
   const deepEqual = (factValue, ruleValue) => {
     try {
-      assert.deepEqual(factValue, ruleValue);
+      assert.deepEqual(factValue, ruleValue)
       return true
     } catch (err) {
       return false
@@ -155,7 +155,7 @@ const createEngine = () => {
       .then((fact) => {
         return jsonpath.query({ [params.fact]: fact }, params.path)
       })
-  };
+  }
   engine.addFact('json-path', jsonPathFact)
 
   return engine
@@ -167,7 +167,7 @@ const createEngine = () => {
  * @returns {promise} - array of failure cases, may be empty
  */
 module.exports.run = (rules, runtimeFacts) => {
-  const engine = createEngine();
-  const engineRules = rules.forEach(r => engine.addRule(new jre.Rule(r)))
+  const engine = createEngine()
+  rules.map(r => new jre.Rule(r)).forEach(r => engine.addRule(r))
   return engine.run(runtimeFacts)
 }

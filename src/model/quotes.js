@@ -39,7 +39,7 @@ const crypto = require('crypto')
 const Config = require('../lib/config')
 
 const fetch = require('node-fetch')
-const RuleEngine = require('./rules.js')
+const RulesEngine = require('./rules.js')
 const rules = require('../../config/rules.example.json')
 
 /**
@@ -54,12 +54,11 @@ class QuotesModel {
     this.requestId = config.requestId
   }
 
-  /**
-     * Validates the quote request object
-     *
-     * @returns {promise} - promise will reject if request is not valid
-     */
-  async validateQuoteRequest(headers, quoteRequest) {
+  async executeRules(headers, quoteRequest) {
+    if (rules.length === 0) {
+      return []
+    }
+
     // Collect facts to supply to the rule engine
     // Get quote participants from central ledger admin
     const { switchEndpoint } = new Config()
@@ -69,22 +68,57 @@ class QuotesModel {
       fetch(`${url}/${headers['fspiop-destination']}`),
     ].map(p => p.then(res => res.json())))
 
-    const { events } = RuleEngine.run(rules, {
+    this.writeLog(`Got rules engine facts payer ${ payer } and payee ${ payee }`)
+
+    const facts = {
       payer,
       payee,
-      payload,
+      payload: quoteRequest,
       headers
-    })
+    }
+    const { events } = RulesEngine.run(rules, facts)
 
-        // // check quote rules
-        // const test = { ...quoteRequest }
-        //
-        // const failures = await quoteRules.getFailures(test)
-        // if (failures && failures.length > 0) {
-        //   // quote broke business rules, queue up an error callback to the caller
-        //   this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`)
-        //   // todo: make error callback
-        // }
+    this.writeLog(`Rules engine returned events ${ events }`)
+
+    return events
+  }
+
+  async handleRuleEvents(events, headers, quoteRequest) {
+    // At the time of writing, all events cause the "normal" flow of execution to be interrupted.
+    // So we'll return false when there have been no events whatsoever.
+    if (events.length === 0) {
+      return { terminate: false, quoteRequest, headers }
+    }
+
+    const { INVALID_QUOTE_REQUEST, INTERCEPT_QUOTE } = RulesEngine.events
+
+    const invalidQuoteRequestEvents = events.filter(ev => ev.type === INVALID_QUOTE_REQUEST)
+    if (invalidQuoteRequestEvents.length > 0) {
+      // Use the first event, ignore the others for now. This is ergonomically worse for someone
+      // developing against this service, as they can't see all reasons their quote was invalid at
+      // once. But is a valid solution in the short-term.
+      const { FSPIOPError: code, message } = invalidQuoteRequestEvents[0].params
+      // Will throw an internal server error if property doesn't exist
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes[code],
+        `Quote request ${quoteRequest.quoteId} failed: ${message}`, null, headers['fspiop-source'])
+    }
+
+    const interceptQuoteEvents = events.filter(ev => ev.type === INTERCEPT_QUOTE)
+    if (interceptQuoteEvents.length > 1) {
+      // TODO: handle priority. Can we stream events?
+      throw new Error('Multiple intercept quote events received')
+    }
+    if (interceptQuoteEvents.length > 0) {
+      // send the quote request to the recipient in the event
+      return {
+        terminate: false,
+        quoteRequest,
+        headers: {
+          ...headers,
+          'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp
+        }
+      }
+    }
   }
 
   /**
@@ -108,14 +142,21 @@ class QuotesModel {
 
     try {
       const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
-      const fspiopDestination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+
+      // Run the rules engine. If the user does not want to run the rules engine, they need only to
+      // supply a rules file containing an empty array.
+      const events = await this.executeRules(headers, quoteRequest)
+      const { terminate, quoteRequest: sendRequest, headers: sendHeaders } =
+        this.handleRuleEvents(events, headers, quoteRequest)
+      if (terminate) {
+        return
+      }
+
       // accumulate enum ids
       const refs = {}
 
-      // validate - this will throw if the request is invalid
-      await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
-
       if (!envConfig.simpleRoutingMode) {
+
         // do everything in a db txn so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
 
@@ -200,28 +241,24 @@ class QuotesModel {
 
         // if we got here, all entities have been created in db correctly to record the quote request
       }
-      // make call to payee dfsp in a setImmediate;
-      // attempting to give fair execution of async events...
-      // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
-      setImmediate(async () => {
-        // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-        try {
-          if (envConfig.simpleRoutingMode) {
-            await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest)
-          } else {
-            await this.forwardQuoteRequest(headers, refs.quoteId, quoteRequest)
-          }
-        } catch (err) {
-          // as we are on our own in this context, dont just rethrow the error, instead...
-          // get the model to handle it
-          this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          if (envConfig.simpleRoutingMode) {
-            await this.handleException(fspiopSource, quoteRequest.quoteId, err)
-          } else {
-            await this.handleException(fspiopSource, refs.quoteId, err)
-          }
+
+      // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+      try {
+        if (envConfig.simpleRoutingMode) {
+          await this.forwardQuoteRequest(sendHeaders, quoteRequest.quoteId, sendRequest)
+        } else {
+          await this.forwardQuoteRequest(sendHeaders, refs.quoteId, sendRequest)
         }
-      })
+      } catch (err) {
+        // as we are on our own in this context, dont just rethrow the error, instead...
+        // get the model to handle it
+        this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        if (envConfig.simpleRoutingMode) {
+          await this.handleException(fspiopSource, quoteRequest.quoteId, err)
+        } else {
+          await this.handleException(fspiopSource, refs.quoteId, err)
+        }
+      }
 
       // all ok, return refs
       return refs
