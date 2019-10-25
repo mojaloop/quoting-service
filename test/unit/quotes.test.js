@@ -394,7 +394,7 @@ describe('/quotes', function () {
 
     const response = await server.inject(options)
 
-    expect(response.statusCode).toBe(501)
+    expect(response.statusCode).toBe(413)
   })
   /**
    * summary: Quotes
