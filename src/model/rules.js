@@ -150,7 +150,7 @@ const createEngine = () => {
    *     value: [ '1' ]
    *   }
    */
-  let jsonPathFact = function(params, almanac) {
+  const jsonPathFact = function (params, almanac) {
     return almanac.factValue(params.fact)
       .then((fact) => {
         return jsonpath.query({ [params.fact]: fact }, params.path)

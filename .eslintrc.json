@@ -3,7 +3,7 @@
     "ecmaVersion": 9
   },
   "rules": {
-    "no-console": ["off"],
+    "no-console": ["error"],
     "indent": [
       2,
       2
@@ -23,7 +23,8 @@
   },
   "env": {
     "es6": true,
-    "node": true
+    "node": true,
+    "jest": true
   },
-  "extends": "eslint:recommended"
+  "extends": "standard"
 }

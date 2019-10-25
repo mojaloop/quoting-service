@@ -27,13 +27,19 @@
 
  * Henk Kodde <henk.kodde@modusbox.com>
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * Steven Oderayi <steven.oderayi@modusbox.com>
+ * Juan Correa <juan.correa@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
 const util = require('util')
+const LOCAL_ENUM = require('../lib/enum')
 const Knex = require('knex')
+const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const MLNumber = require('@mojaloop/ml-number')
 
 /**
  * Abstracts operations against the database
@@ -49,7 +55,7 @@ class Database {
      * @returns {promise}
      */
   async connect () {
-    this.queryBuilder = Knex(this.config)
+    this.queryBuilder = Knex(this.config.database)
 
     return this
   }
@@ -101,7 +107,7 @@ class Database {
       return rows.map(r => JSON.parse(r.rule))
     } catch (err) {
       this.writeLog(`Error in getTransferRules: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -118,12 +124,12 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // initiatorType does not exist, this is an error
-        throw new Error(`Unsupported initiatorType '${initiatorType}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported initiatorType '${initiatorType}'`)
       }
       return rows[0].transactionInitiatorTypeId
     } catch (err) {
       this.writeLog(`Error in getInitiatorType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -140,12 +146,12 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // initiator does not exist, this is an error
-        throw new Error(`Unsupported initiator '${initiator}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported initiator '${initiator}'`)
       }
       return rows[0].transactionInitiatorId
     } catch (err) {
       this.writeLog(`Error in getInitiator: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -167,7 +173,7 @@ class Database {
       return rows[0].transactionScenarioId
     } catch (err) {
       this.writeLog(`Error in getScenario: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -184,12 +190,12 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // sub-scenario does not exist, this is an error
-        throw new Error(`Unsupported transaction sub-scenario '${subScenario}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported transaction sub-scenario '${subScenario}'`)
       }
       return rows[0].transactionSubScenarioId
     } catch (err) {
       this.writeLog(`Error in getSubScenario: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -206,12 +212,12 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // amount type does not exist, this is an error
-        throw new Error(`Unsupported amount type '${amountType}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported amount type '${amountType}'`)
       }
       return rows[0].amountTypeId
     } catch (err) {
       this.writeLog(`Error in getAmountType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -233,7 +239,7 @@ class Database {
       return transactionReferenceId
     } catch (err) {
       this.writeLog(`Error in createTransactionReference: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -255,7 +261,7 @@ class Database {
       return quoteId
     } catch (err) {
       this.writeLog(`Error in createQuoteDuplicateCheck: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -278,7 +284,7 @@ class Database {
       return quoteId
     } catch (err) {
       this.writeLog(`Error in createQuoteUpdateDuplicateCheck: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -295,13 +301,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // party type does not exist, this is an error
-        throw new Error(`Unsupported party type '${partyType}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported party type '${partyType}'`)
       }
 
       return rows[0].partyTypeId
     } catch (err) {
       this.writeLog(`Error in getPartyType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -318,13 +324,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // identifier type does not exist, this is an error
-        throw new Error(`Unsupported party identifier type '${partyIdentifierType}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported party identifier type '${partyIdentifierType}'`)
       }
 
       return rows[0].partyIdentifierTypeId
     } catch (err) {
       this.writeLog(`Error in getPartyIdentifierType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -333,7 +339,7 @@ class Database {
      *
      * @returns {promise} - id of the participant
      */
-  async getParticipant (participantName) {
+  async getParticipant (participantName, participantType) {
     try {
       const rows = await this.queryBuilder('participant')
         .where({
@@ -344,13 +350,19 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // active participant does not exist, this is an error
-        throw new Error(`Unsupported participant '${participantName}'`)
+        if (participantType && participantType === LOCAL_ENUM.PAYEE_DFSP) {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${participantName}'`)
+        } else if (participantType && participantType === LOCAL_ENUM.PAYER_DFSP) {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND, `Unsupported participant '${participantName}'`)
+        } else {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported participant '${participantName}'`)
+        }
       }
 
       return rows[0].participantId
     } catch (err) {
       this.writeLog(`Error in getPartyIdentifierType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -370,13 +382,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // active role type does not exist, this is an error
-        throw new Error(`Unsupported transfer participant role type '${name}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported transfer participant role type '${name}'`)
       }
 
       return rows[0].transferParticipantRoleTypeId
     } catch (err) {
       this.writeLog(`Error in getTransferParticipantRoleType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -396,13 +408,13 @@ class Database {
 
       if ((!rows) || rows.length < 1) {
         // active ledger entry type does not exist, this is an error
-        throw new Error(`Unsupported ledger entry type '${name}'`)
+        throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported ledger entry type '${name}'`)
       }
 
       return rows[0].ledgerEntryTypeId
     } catch (err) {
       this.writeLog(`Error in getLedgerEntryType: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -413,7 +425,7 @@ class Database {
      */
   async createPayerQuoteParty (txn, quoteId, party, amount, currency) {
     // note amount is negative for payee and positive for payer
-    return this.createQuoteParty(txn, quoteId, 'PAYER', 'PAYER_DFSP', 'PRINCIPLE_VALUE', party, amount, currency)
+    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYER, LOCAL_ENUM.PAYER_DFSP, LOCAL_ENUM.PRINCIPLE_VALUE, party, amount, currency)
   }
 
   /**
@@ -423,7 +435,7 @@ class Database {
      */
   async createPayeeQuoteParty (txn, quoteId, party, amount, currency) {
     // note amount is negative for payee and positive for payer
-    return this.createQuoteParty(txn, quoteId, 'PAYEE', 'PAYEE_DFSP', 'PRINCIPLE_VALUE', party, -amount, currency)
+    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYEE, LOCAL_ENUM.PAYEE_DFSP, LOCAL_ENUM.PRINCIPLE_VALUE, party, -amount, currency)
   }
 
   /**
@@ -433,7 +445,7 @@ class Database {
      */
   async createQuoteParty (txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency) {
     try {
-      let refs = {}
+      const refs = {}
 
       // get various enum ids (async, as parallel as possible)
       const enumVals = await Promise.all([
@@ -452,12 +464,15 @@ class Database {
 
       // todo: possibly push this subIdType lookup onto the array that gets awaited async...
       // otherwise requests that have a subIdType will be a little slower due to the extra wait time
+      // TODO: this will not work as the partyIdentifierType table only caters for the 8 main partyTypes
+      // discuss adding a partyIdSubType database table to perform this lookup against
       if (party.partyIdInfo.partySubIdOrType) {
-        refs.partySubIdOrTypeId = await this.getPartyIdentifierType(txn, party.partyIdInfo.partySubIdOrType)
+        // TODO: review method signature
+        refs.partySubIdOrTypeId = await this.getPartyIdentifierType(party.partyIdInfo.partySubIdOrType)
       }
 
       // insert a new quote party
-      let newQuoteParty = {
+      const newQuoteParty = {
         quoteId: quoteId,
         partyTypeId: refs.partyTypeId,
         partyIdentifierTypeId: refs.partyIdentifierTypeId,
@@ -469,7 +484,7 @@ class Database {
         partyName: party.partyName,
         transferParticipantRoleTypeId: refs.transferParticipantRoleTypeId,
         ledgerEntryTypeId: refs.ledgerEntryTypeId,
-        amount: amount,
+        amount: new MLNumber(amount).toFixed(this.config.amount.scale),
         currencyId: currency
       }
 
@@ -484,7 +499,7 @@ class Database {
 
       if (party.personalInfo) {
         // we need to store personal info also
-        let newParty = {
+        const newParty = {
           firstName: party.personalInfo.complexName.firstName,
           middleName: party.personalInfo.complexName.middleName,
           lastName: party.personalInfo.complexName.lastName,
@@ -498,7 +513,7 @@ class Database {
       return quotePartyId
     } catch (err) {
       this.writeLog(`Error in createQuoteParty: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -519,7 +534,7 @@ class Database {
       return rows
     } catch (err) {
       this.writeLog(`Error in getQuotePartyView: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -541,13 +556,13 @@ class Database {
       }
 
       if (rows.length > 1) {
-        throw new Error(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`)
       }
 
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteView: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -569,13 +584,13 @@ class Database {
       }
 
       if (rows.length > 1) {
-        throw new Error(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`)
       }
 
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteResponseView: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -586,7 +601,7 @@ class Database {
      */
   async createParty (txn, quotePartyId, party) {
     try {
-      let newParty = {
+      const newParty = {
         ...party,
         quotePartyId: quotePartyId
       }
@@ -599,7 +614,7 @@ class Database {
       return newParty
     } catch (err) {
       this.writeLog(`Error in createParty: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -624,7 +639,7 @@ class Database {
           balanceOfPaymentsId: quote.balanceOfPaymentsId,
           transactionSubScenarioId: quote.transactionSubScenarioId,
           amountTypeId: quote.amountTypeId,
-          amount: quote.amount,
+          amount: new MLNumber(quote.amount).toFixed(this.config.amount.scale),
           currencyId: quote.currencyId
         })
 
@@ -632,7 +647,7 @@ class Database {
       return quote.quoteId
     } catch (err) {
       this.writeLog(`Error in createQuote: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -654,13 +669,13 @@ class Database {
       }
 
       if (rows.length > 1) {
-        throw new Error(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
       }
 
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteParty: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -679,6 +694,7 @@ class Database {
         .where('endpointType.name', endpointType)
         .andWhere('partyType.name', partyType)
         .andWhere('quote.quoteId', quoteId)
+        .andWhere('participantEndpoint.isActive', 1)
         .select('participantEndpoint.value')
 
       if ((!rows) || rows.length < 1) {
@@ -688,7 +704,7 @@ class Database {
       return rows[0].value
     } catch (err) {
       this.writeLog(`Error in getQuotePartyEndpoint: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -704,6 +720,7 @@ class Database {
         .innerJoin('endpointType', 'endpointType.endpointTypeId', 'participantEndpoint.endpointTypeId')
         .where('participant.name', participantName)
         .andWhere('endpointType.name', endpointType)
+        .andWhere('participantEndpoint.isActive', 1)
         .select('participantEndpoint.value')
 
       if ((!rows) || rows.length < 1) {
@@ -713,7 +730,7 @@ class Database {
       return rows[0].value
     } catch (err) {
       this.writeLog(`Error in getParticipantEndpoint: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -737,7 +754,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteDuplicateCheck: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -761,7 +778,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteResponseDuplicateCheck: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -785,7 +802,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getTransactionReference: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -796,16 +813,16 @@ class Database {
      */
   async createQuoteResponse (txn, quoteId, quoteResponse) {
     try {
-      let newQuoteResponse = {
+      const newQuoteResponse = {
         quoteId: quoteId,
         transferAmountCurrencyId: quoteResponse.transferAmount.currency,
-        transferAmount: quoteResponse.transferAmount.amount,
+        transferAmount: new MLNumber(quoteResponse.transferAmount.amount).toFixed(this.config.amount.scale),
         payeeReceiveAmountCurrencyId: quoteResponse.payeeReceiveAmount ? quoteResponse.payeeReceiveAmount.currency : null,
-        payeeReceiveAmount: quoteResponse.payeeReceiveAmount ? quoteResponse.payeeReceiveAmount.amount : null,
+        payeeReceiveAmount: quoteResponse.payeeReceiveAmount ? new MLNumber(quoteResponse.payeeReceiveAmount.amount).toFixed(this.config.amount.scale) : null,
         payeeFspFeeCurrencyId: quoteResponse.payeeFspFee ? quoteResponse.payeeFspFee.currency : null,
-        payeeFspFeeAmount: quoteResponse.payeeFspFee ? quoteResponse.payeeFspFee.amount : null,
+        payeeFspFeeAmount: quoteResponse.payeeFspFee ? new MLNumber(quoteResponse.payeeFspFee.amount).toFixed(this.config.amount.scale) : null,
         payeeFspCommissionCurrencyId: quoteResponse.payeeFspCommission ? quoteResponse.payeeFspCommission.currency : null,
-        payeeFspCommissionAmount: quoteResponse.payeeFspCommission ? quoteResponse.payeeFspCommission.amount : null,
+        payeeFspCommissionAmount: quoteResponse.payeeFspCommission ? new MLNumber(quoteResponse.payeeFspCommission.amount).toFixed(this.config.amount.scale) : null,
         ilpCondition: quoteResponse.condition,
         responseExpirationDate: quoteResponse.expiration,
         isValid: quoteResponse.isValid
@@ -821,7 +838,7 @@ class Database {
       return newQuoteResponse
     } catch (err) {
       this.writeLog(`Error in createQuoteResponse: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -832,7 +849,7 @@ class Database {
      */
   async createQuoteResponseIlpPacket (txn, quoteResponseId, ilpPacket) {
     try {
-      let newPacket = {
+      const newPacket = {
         quoteResponseId: quoteResponseId,
         value: ilpPacket
       }
@@ -845,7 +862,7 @@ class Database {
       return res
     } catch (err) {
       this.writeLog(`Error in createIlpPacket: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -856,7 +873,7 @@ class Database {
      */
   async createGeoCode (txn, geoCode) {
     try {
-      let newGeoCode = {
+      const newGeoCode = {
         quotePartyId: geoCode.quotePartyId,
         latitude: geoCode.latitude,
         longitude: geoCode.longitude
@@ -872,7 +889,7 @@ class Database {
       return res
     } catch (err) {
       this.writeLog(`Error in createGeoCode: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -883,7 +900,7 @@ class Database {
      */
   async createQuoteError (txn, error) {
     try {
-      let newError = {
+      const newError = {
         quoteId: error.quoteId,
         errorCode: error.errorCode,
         errorDescription: error.errorDescription
@@ -899,8 +916,22 @@ class Database {
       return res
     } catch (err) {
       this.writeLog(`Error in createQuoteError: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
+  }
+
+  /**
+   * @function getIsMigrationLocked
+   *
+   * @description Gets whether or not the database is locked based on the migration_lock
+   * @returns {Promise<boolean>} - true if locked, false if not. Rejects if an error occours
+   */
+  async getIsMigrationLocked () {
+    const result = await this.queryBuilder('migration_lock')
+      .orderBy('index', 'desc')
+      .first()
+      .select('is_locked AS isLocked')
+    return result.isLocked
   }
 
   /**
@@ -908,8 +939,7 @@ class Database {
      */
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
-    // eslint-disable-next-line no-console
-    // console.log(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
+    Logger.debug(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
   }
 }
 

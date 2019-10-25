@@ -33,6 +33,7 @@
 const util = require('util')
 const Database = require('./database.js')
 const Cache = require('memory-cache').Cache
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const DEFAULT_TTL_SECONDS = 60
 
@@ -92,9 +93,9 @@ class CachedDatabase extends Database {
     return this.getCacheValue('getLedgerEntryType', [name])
   }
 
-  async getParticipantEndpoint (participantName, endpointType) {
-    return this.getCacheValue('getParticipantEndpoint', [participantName, endpointType])
-  }
+  // async getParticipantEndpoint (participantName, endpointType) {
+  //  return this.getCacheValue('getParticipantEndpoint', [participantName, endpointType])
+  // }
 
   async getCacheValue (type, params) {
     try {
@@ -112,7 +113,7 @@ class CachedDatabase extends Database {
       return value
     } catch (err) {
       this.writeLog(`Error in getCacheValue: ${err.stack || util.inspect(err)}`)
-      throw err
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
@@ -123,7 +124,7 @@ class CachedDatabase extends Database {
      */
   cachePut (type, params, value) {
     const key = this.getCacheKey(type, params)
-    this.cache.put(key, value, (this.config.cacheTtlSeconds || DEFAULT_TTL_SECONDS) * 1000)
+    this.cache.put(key, value, (this.config.database.cacheTtlSeconds || DEFAULT_TTL_SECONDS) * 1000)
   }
 
   /**

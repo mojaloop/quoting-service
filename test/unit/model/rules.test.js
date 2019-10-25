@@ -10,7 +10,7 @@ test('Test rules engine jsonpath and notDeepEqual operator', async () => {
         path: '$.payload.payer.partyIdInfo.fspId'
       },
       operator: 'notDeepEqual',
-      value: [ 'payerfsp' ]
+      value: ['payerfsp']
     }]
   }
   const event = {
@@ -26,7 +26,7 @@ test('Test rules engine jsonpath and notDeepEqual operator', async () => {
     }
   }
   const { events } = await RulesEngine.run([{ conditions, event }], testFacts)
-  expect(events).toEqual([ event ])
+  expect(events).toEqual([event])
 })
 
 test('Test rules engine jsonpath fact-fact comparison', async () => {
@@ -63,7 +63,7 @@ test('Test rules engine jsonpath fact-fact comparison', async () => {
     }
   }
   const { events } = await RulesEngine.run([{ conditions, event }], testFacts)
-  expect(events).toEqual([ event ])
+  expect(events).toEqual([event])
 })
 
 test('Test rules engine jsonpath array filter', async () => {
@@ -75,7 +75,7 @@ test('Test rules engine jsonpath array filter', async () => {
         path: '$.payload.extensionList[?(@.key === \'KYCPayerTier\')].value'
       },
       operator: 'notDeepEqual',
-      value: [ '1' ]
+      value: ['1']
     }]
   }
   const event = {
@@ -91,7 +91,7 @@ test('Test rules engine jsonpath array filter', async () => {
     }
   }
   const { events } = await RulesEngine.run([{ conditions, event }], testFacts)
-  expect(events).toEqual([ event ])
+  expect(events).toEqual([event])
 })
 
 test('Test rules engine deepEqual operator', async () => {
@@ -103,7 +103,7 @@ test('Test rules engine deepEqual operator', async () => {
         path: '$.payload.extensionList[?(@.key === \'KYCPayerTier\')].value'
       },
       operator: 'deepEqual',
-      value: [ '1' ]
+      value: ['1']
     }]
   }
   const event = {
@@ -119,7 +119,7 @@ test('Test rules engine deepEqual operator', async () => {
     }
   }
   const { events } = await RulesEngine.run([{ conditions, event }], testFacts)
-  expect(events).toEqual([ event ])
+  expect(events).toEqual([event])
 })
 
 test('Test rules engine example config INTERCEPT_QUOTE event', async () => {
@@ -143,7 +143,7 @@ test('Test rules engine example config INTERCEPT_QUOTE event', async () => {
     }
   }
   const { events } = await RulesEngine.run(rules, testFacts)
-  expect(events).toEqual([ rules[0].event ])
+  expect(events).toEqual([rules[0].event])
 })
 
 test('Test rules engine example config INTERCEPT_QUOTE event negative case', async () => {
@@ -190,7 +190,7 @@ test('Test rules engine example config INVALID_QUOTE_REQUEST triggered by missin
     }
   }
   const { events } = await RulesEngine.run(rules, testFacts)
-  expect(events).toEqual([ rules[1].event ])
+  expect(events).toEqual([rules[1].event])
 })
 
 test('Test rules engine example config INVALID_QUOTE_REQUEST triggered by incorrect extension value', async () => {
@@ -214,7 +214,7 @@ test('Test rules engine example config INVALID_QUOTE_REQUEST triggered by incorr
     }
   }
   const { events } = await RulesEngine.run(rules, testFacts)
-  expect(events).toEqual([ rules[1].event ])
+  expect(events).toEqual([rules[1].event])
 })
 
 test('Test rules engine example config INVALID_QUOTE_REQUEST event negative case', async () => {

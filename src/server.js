@@ -6,6 +6,10 @@ const Path = require('path')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const CentralServices = require('@mojaloop/central-services-shared')
+const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
+const Logger = require('@mojaloop/central-services-logger')
+const util = require('util')
 
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase.js')
@@ -15,7 +19,7 @@ const Database = require('./data/cachedDatabase.js')
  */
 const initDb = function (config) {
   // try open a db connection pool
-  let database = new Database(config)
+  const database = new Database(config)
   return database.connect()
 }
 
@@ -34,8 +38,7 @@ const initServer = async function (db, config) {
     routes: {
       validate: {
         failAction: async (request, h, err) => {
-          // eslint-disable-next-line no-console
-          // console.log(`validation failure: ${err.stack || util.inspect(err)}`)
+          Logger.error(`validation failure: ${err.stack || util.inspect(err)}`)
           throw err
         }
       }
@@ -70,8 +73,12 @@ const initServer = async function (db, config) {
       }
     }
   },
+  {
+    plugin: HeaderValidation
+  },
   Blipp,
-  ErrorHandler])
+  ErrorHandler,
+  CentralServices.Util.Hapi.HapiEventPlugin])
 
   // start the server
   await server.start()
@@ -83,14 +90,13 @@ const initServer = async function (db, config) {
 const config = new Config()
 
 // initialise database connection pool and start the api server
-initDb(config.database).then(db => {
+initDb(config).then(db => {
   return initServer(db, config)
 }).then(server => {
   process.on('SIGTERM', () => {
     server.log(['info'], 'Received SIGTERM, closing server...')
     server.stop({ timeout: 10000 }).then(err => {
-      // eslint-disable-next-line no-console
-      // console.log(`server stopped. ${err ? (err.stack || util.inspect(err)) : ''}`)
+      Logger.warn(`server stopped. ${err ? (err.stack || util.inspect(err)) : ''}`)
       process.exit((err) ? 1 : 0)
     })
   })
@@ -99,6 +105,5 @@ initDb(config.database).then(db => {
   server.log(['info'], `Server running on ${server.info.uri}`)
 // eslint-disable-next-line no-unused-vars
 }).catch(err => {
-  // eslint-disable-next-line no-console
-  //console.log(`Error initializing server: ${err.stack || util.inspect(err)}`)
+  Logger.error(`Error initializing server: ${err.stack || util.inspect(err)}`)
 })
