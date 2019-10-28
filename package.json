@@ -67,7 +67,7 @@
     "rc": "1.2.8"
   },
   "devDependencies": {
-    "eslint": "6.5.1",
+    "eslint": "6.6.0",
     "jest": "24.9.0",
     "jest-junit": "8.0.0",
     "npm-audit-resolver": "2.0.1",
