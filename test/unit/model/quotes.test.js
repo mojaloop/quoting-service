@@ -1,4 +1,3 @@
-// (C)2018 ModusBox Inc.
 /*****
  License
  --------------
@@ -25,81 +24,169 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Neal Donnan <neal.donnan@modusbox.com>
+ * Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
+'use strict'
 
-/* replace nested tests with `describe`
- * removed all test.end calls:
- *   %g/test.end/:norm dd
- * replaced all test.ok calls with expect.toBeTruthy:
- *   %s/test\.ok(\([^)]*\))/expect(\1).toBeTruthy/g
- * replaced all `test` test parameters with no parameters:
- *   %s/async test =>/async () =>/g
- * replaced all test.equal with expect.toBe
- *   %s/test.equal(\([^,]*\), \([^)]*\))/expect(\1).toBe(\2)
- * replaced all deepEqual calls manually
- * replace all toBeTruthy 'properties'
- *   %s/toBeTruthy$/toBeTruthy()
- */
-
+const QuotesModel = require('../../../src/model/quotes')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const Sinon = require('sinon')
-const conf = require('../../../config/default')
+const EventSdk = require('@mojaloop/event-sdk')
+const Config = require('../../../config/default')
+const QuoteRules = require('../../../src/model/rules')
+const clone = require('@mojaloop/central-services-shared').Util.clone
+
 const Db = require('../../../src/data/database')
-const AxiosMock = require('axios')
-
-jest.mock('axios')
-
-AxiosMock.request = (opts1) => {
-  if (opts1.url === 'http://invalid.com/dfsp2/quotes') {
-    return Promise.reject(new Error('Unable to reach host'))
-  } else if (opts1.url === 'http://invalidresponse.com/dfsp2/quotes') {
-    return Promise.resolve({ status: 200 })
-  }
-  return Promise.resolve({ status: 202 })
+const mockTransaction = {
+  commit: jest.fn(),
+  rollback: jest.fn()
 }
-
-describe('quotesModel', () => {
-  let sandbox
-  let SpanStub
-  let quotesModel
-  let db
-
-  const QuotesModel = require('../../../src/model/quotes')
-
-  beforeEach(() => {
-    db = new Db()
-    quotesModel = new QuotesModel({
-      db: db,
-      requestId: 'test123'
-    })
-    sandbox = Sinon.createSandbox()
-    SpanStub = {
-      audit: sandbox.stub().callsFake(),
-      error: sandbox.stub().callsFake(),
-      finish: sandbox.stub().callsFake(),
-      debug: sandbox.stub().callsFake(),
-      info: sandbox.stub().callsFake(),
-      getChild: sandbox.stub().returns(SpanStub),
-      setTags: sandbox.stub().callsFake(),
-      injectContextToHttpRequest: sandbox.stub().callsFake(o => o)
+const mockDb = {
+  getParticipant: jest.fn(),
+  newTransaction: jest.fn(() => mockTransaction),
+  getQuoteDuplicateCheck: jest.fn(),
+  createQuoteDuplicateCheck: jest.fn(),
+  createTransactionReference: jest.fn(),
+  getInitiatorType: jest.fn(),
+  getInitiator: jest.fn(),
+  getScenario: jest.fn(),
+  getAmountType: jest.fn(),
+  createQuote: jest.fn(),
+  createPayerQuoteParty: jest.fn(),
+  createPayeeQuoteParty: jest.fn(),
+  getSubScenario: jest.fn(),
+  createGeoCode: jest.fn()
+}
+jest.mock('../../../src/data/database', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      getParticipant: mockDb.getParticipant,
+      newTransaction: mockDb.newTransaction,
+      getQuoteDuplicateCheck: mockDb.getQuoteDuplicateCheck,
+      createQuoteDuplicateCheck: mockDb.createQuoteDuplicateCheck,
+      createTransactionReference: mockDb.createTransactionReference,
+      getInitiatorType: mockDb.getInitiatorType,
+      getInitiator: mockDb.getInitiator,
+      getScenario: mockDb.getScenario,
+      getAmountType: mockDb.getAmountType,
+      createQuote: mockDb.createQuote,
+      createPayerQuoteParty: mockDb.createPayerQuoteParty,
+      createPayeeQuoteParty: mockDb.createPayeeQuoteParty,
+      getSubScenario: mockDb.getSubScenario,
+      createGeoCode: mockDb.createGeoCode
     }
   })
+})
 
+const mockChildSpan = {
+  audit: jest.fn(),
+  isFinished: undefined,
+  finish: jest.fn()
+}
+const mockSpan = {
+  getChild: jest.fn(() => mockChildSpan),
+  error: jest.fn(),
+  finish: jest.fn()
+}
+
+jest.mock('../../../src/model/rules', () => {
+  return {
+    getFailures: jest.fn()
+  }
+})
+
+jest.mock('@mojaloop/central-services-logger', () => {
+  return {
+    info: jest.fn() // suppress info output
+  }
+})
+
+jest.useFakeTimers()
+
+describe('quotesModel', () => {
+  let quotesModel
+
+  beforeAll(() => {})
+  beforeEach(() => {
+    quotesModel = new QuotesModel({
+      db: new Db(),
+      requestId: 'test1234'
+    })
+    Db.mockClear()
+    mockTransaction.commit.mockClear()
+    mockTransaction.rollback.mockClear()
+    mockDb.getParticipant.mockClear()
+    mockDb.newTransaction.mockClear()
+    mockDb.getQuoteDuplicateCheck.mockClear()
+    mockDb.createQuoteDuplicateCheck.mockClear()
+    mockDb.createTransactionReference.mockClear()
+    mockDb.getInitiatorType.mockClear()
+    mockDb.getInitiator.mockClear()
+    mockDb.getScenario.mockClear()
+    mockDb.getAmountType.mockClear()
+    mockDb.createQuote.mockClear()
+    mockDb.createPayerQuoteParty.mockClear()
+    mockDb.createPayeeQuoteParty.mockClear()
+    mockDb.getSubScenario.mockClear()
+    mockDb.createGeoCode.mockClear()
+    mockChildSpan.audit.mockClear()
+    mockChildSpan.finish.mockClear()
+    mockSpan.getChild.mockClear()
+    mockSpan.error.mockClear()
+    mockSpan.finish.mockClear()
+    QuoteRules.getFailures.mockClear()
+  })
   afterEach(() => {})
+  afterAll(() => {})
 
-  test('validate quote update', async () => {
-    await quotesModel.validateQuoteUpdate()
-    expect(quotesModel).toBeTruthy()
+  describe('validateQuoteRequest', () => {
+    it('should validate fspiopSource and fspiopDestination', async () => {
+      expect.assertions(5)
+      const fspiopSource = 'dfsp1'
+      const fspiopDestination = 'dfsp2'
+      const quoteRequest = { quoteId: 'uuid4' }
+
+      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
+
+      await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
+
+      expect(quotesModel.db).toBeTruthy() // Constructor should have been called
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopSource)
+      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(fspiopDestination)
+    })
+
+    it('should throw internal error if no quoteRequest was supplied', async () => {
+      expect.assertions(5)
+      const fspiopSource = 'dfsp1'
+      const fspiopDestination = 'dfsp2'
+      const quoteRequest = undefined
+
+      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
+
+      try {
+        await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
+      } catch (err) {
+        expect(quotesModel.db).toBeTruthy() // Constructor should have been called
+        expect(quotesModel.db.getParticipant).not.toHaveBeenCalled()
+        expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
+        expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+      }
+    })
   })
 
-  test('handle a quote request', async () => {
+  describe('validateQuoteUpdate', () => {
+    it('should validate quote update', async () => {
+      const result = await quotesModel.validateQuoteUpdate()
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('handleQuoteRequest', () => {
     const headers = {
       'fspiop-source': 'dfsp1',
       'fspiop-destination': 'dfsp2'
     }
-
     const quoteRequest = {
       quoteId: 'test123',
       transactionId: 'abc123',
@@ -129,206 +216,255 @@ describe('quotesModel', () => {
       }
     }
 
-    conf.SIMPLE_ROUTING_MODE = false
-    const transaction = { commit: () => { } }
-    Sinon.stub(db, 'newTransaction').returns(transaction)
-    Sinon.stub(db, 'getQuoteDuplicateCheck').returns(null)
-    Sinon.stub(db, 'createQuoteDuplicateCheck').returns(quoteRequest.quoteId)
-    Sinon.stub(db, 'createTransactionReference').returns(quoteRequest.transactionId)
-    Sinon.stub(db, 'getInitiatorType').returns(1)
-    Sinon.stub(db, 'getInitiator').returns(2)
-    Sinon.stub(db, 'getScenario').returns(3)
-    Sinon.stub(db, 'getAmountType').returns(4)
-    Sinon.stub(db, 'createQuote').returns(quoteRequest.quoteId)
-    Sinon.stub(db, 'createPayerQuoteParty').returns(5)
-    Sinon.stub(db, 'createPayeeQuoteParty').returns(6)
-    Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://test.com/dfsp2')
-    Sinon.stub(db, 'getParticipant').returns(5)
+    it('should forward quote request in simple routing mode', async () => {
+      expect.assertions(5)
+      Config.SIMPLE_ROUTING_MODE = true
+      quotesModel.validateQuoteRequest = jest.fn()
+      quotesModel.forwardQuoteRequest = jest.fn()
+      mockChildSpan.isFinished = false
 
-    const refs = await quotesModel.handleQuoteRequest(headers, quoteRequest, SpanStub)
-    expect(refs).toBeTruthy()
-    expect(refs).toEqual({
-      transactionReferenceId: 'abc123',
-      transactionInitiatorTypeId: 1,
-      transactionInitiatorId: 2,
-      transactionScenarioId: 3,
-      amountTypeId: 4,
-      quoteId: 'test123',
-      payerId: 5,
-      payeeId: 6
+      const refs = await quotesModel.handleQuoteRequest(headers, quoteRequest, mockSpan)
+      await jest.runAllImmediates()
+
+      let args = [headers['fspiop-source'], headers['fspiop-destination'], quoteRequest]
+      expect(quotesModel.validateQuoteRequest).toBeCalledWith(...args)
+      expect(mockSpan.getChild.mock.calls.length).toBe(1)
+      args = [{ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start]
+      expect(mockChildSpan.audit).toBeCalledWith(...args)
+      args = [headers, quoteRequest.quoteId, quoteRequest, mockChildSpan]
+      expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
+      expect(refs).toEqual({})
     })
-  })
 
-  test('fail quote update since "accept" header is specified', async () => {
-    const headers = {
-      accept: '*.*'
-    }
+    it('should handle exception in simple routing mode', async () => {
+      expect.assertions(7)
+      Config.SIMPLE_ROUTING_MODE = true
+      quotesModel.validateQuoteRequest = jest.fn()
+      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR)
+      quotesModel.forwardQuoteRequest = jest.fn(() => { throw fspiopError })
+      quotesModel.handleException = jest.fn()
+      mockChildSpan.isFinished = false
 
-    // Idiomatic Jest- no `fail` function
-    expect.assertions(2)
-    try {
-      await quotesModel.handleQuoteUpdate(headers)
-    } catch (err) {
-      expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
-      expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code)
-    }
-  })
+      const refs = await quotesModel.handleQuoteRequest(headers, quoteRequest, mockSpan)
+      await jest.runAllImmediates()
 
-  test('update quote successfully', async () => {
-    const headers = {
-      'fspiop-source': 'dfsp1',
-      'fspiop-destination': 'dfsp2'
-    }
+      let args = [headers['fspiop-source'], headers['fspiop-destination'], quoteRequest]
+      expect(quotesModel.validateQuoteRequest).toBeCalledWith(...args)
+      expect(mockSpan.getChild.mock.calls.length).toBe(1)
+      args = [{ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start]
+      expect(mockChildSpan.audit).toBeCalledWith(...args)
+      args = [headers, quoteRequest.quoteId, quoteRequest, mockChildSpan]
+      expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
+      args = [headers['fspiop-source'], quoteRequest.quoteId, fspiopError, headers, mockChildSpan]
+      expect(quotesModel.handleException).toBeCalledWith(...args)
+      expect(quotesModel.handleException.mock.calls.length).toBe(1)
 
-    const quoteRequest = {
-      quoteId: 'test123',
-      transactionId: 'abc123',
-      amountType: 'SEND',
-      transactionType: {
-        scenario: 'TRANSFER',
-        initiator: 'PAYER',
-        initiatorType: 'CONSUMER'
+      expect(refs).toEqual({})
+    })
+
+    it('should throw modified request error when duplicate request is not a resend', async () => {
+      expect.assertions(8)
+      Config.SIMPLE_ROUTING_MODE = false
+      quotesModel.validateQuoteRequest = jest.fn()
+      quotesModel.checkDuplicateQuoteRequest = jest.fn(() => { return { isDuplicateId: true, isResend: false } })
+
+      try {
+        await quotesModel.handleQuoteRequest(headers, quoteRequest, mockSpan)
+      } catch (err) {
+        const args = [headers['fspiop-source'], headers['fspiop-destination'], quoteRequest]
+        expect(quotesModel.validateQuoteRequest).toBeCalledWith(...args)
+        expect(mockDb.newTransaction.mock.calls.length).toBe(1)
+        expect(quotesModel.checkDuplicateQuoteRequest).toBeCalledWith(quoteRequest)
+        expect(mockTransaction.rollback.mock.calls.length).toBe(1)
+        expect(mockSpan.error.mock.calls[0][0]).toEqual(err)
+        expect(mockSpan.finish.mock.calls[0][0]).toEqual(err.message)
+        expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
+        expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code)
       }
-    }
+    })
 
-    const transaction = {
-      commit: () => {},
-      rollback: () => { }
-    }
-    Sinon.stub(db, 'newTransaction').returns(transaction)
-    Sinon.stub(db, 'createQuoteResponse').returns({ quoteResponseId: quoteRequest.transactionId })
-    Sinon.stub(db, 'createQuoteUpdateDuplicateCheck').returns(null)
-    Sinon.stub(db, 'createQuoteResponseIlpPacket').returns(null)
-    Sinon.stub(db, 'createTransactionReference').returns(quoteRequest.transactionId)
-    Sinon.stub(quotesModel, 'checkDuplicateQuoteResponse').returns({ isDuplicatedId: false, isResend: false })
+    it('should handle quote request resend when duplicate request matches original', async () => {
+      expect.assertions(5)
+      Config.SIMPLE_ROUTING_MODE = false
+      quotesModel.validateQuoteRequest = jest.fn()
+      quotesModel.checkDuplicateQuoteRequest = jest.fn(() => { return { isDuplicateId: true, isResend: true } })
+      quotesModel.handleQuoteRequestResend = jest.fn(() => 'handleQuoteRequestResendResult')
 
-    const refs = await quotesModel.handleQuoteUpdate(headers, quoteRequest.id, quoteRequest, SpanStub)
-    expect(refs).toBeTruthy()
-    expect(refs).toEqual({ quoteResponseId: quoteRequest.transactionId })
-  })
+      const refs = await quotesModel.handleQuoteRequest(headers, quoteRequest, mockSpan)
 
-  test('throw an error on duplicate quote with a different body', async () => {
-    // Idiomatic Jest- no `fail` function
-    expect.assertions(3)
-    try {
-      const headers = {
-        'fspiop-source': 'dfsp1',
-        'fspiop-destination': 'dfsp2'
+      let args = [headers['fspiop-source'], headers['fspiop-destination'], quoteRequest]
+      expect(quotesModel.validateQuoteRequest).toBeCalledWith(...args)
+      expect(mockDb.newTransaction.mock.calls.length).toBe(1)
+      expect(quotesModel.checkDuplicateQuoteRequest).toBeCalledWith(quoteRequest)
+      args = [headers, quoteRequest, mockSpan]
+      expect(quotesModel.handleQuoteRequestResend).toBeCalledWith(...args)
+      expect(refs).toBe('handleQuoteRequestResendResult')
+    })
+
+    it('should store to db and forward quote request when switch mode', async () => {
+      expect.assertions(12)
+      Config.SIMPLE_ROUTING_MODE = false
+      quotesModel.validateQuoteRequest = jest.fn()
+      quotesModel.checkDuplicateQuoteRequest = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
+      quotesModel.calculateRequestHash = jest.fn(() => 'hash')
+      const expected = {
+        transactionReferenceId: 'txRef',
+        transactionInitiatorTypeId: 'initiatorType',
+        transactionInitiatorId: 'initiator',
+        transactionScenarioId: 'scenario',
+        amountTypeId: 'amountTypeId',
+        quoteId: quoteRequest.quoteId,
+        payerId: quoteRequest.payer.partyIdInfo.fspId,
+        payeeId: quoteRequest.payee.partyIdInfo.fspId
       }
+      mockDb.createTransactionReference.mockReturnValueOnce(expected.transactionReferenceId)
+      mockDb.getInitiatorType.mockReturnValueOnce(expected.transactionInitiatorTypeId)
+      mockDb.getInitiator.mockReturnValueOnce(expected.transactionInitiatorId)
+      mockDb.getScenario.mockReturnValueOnce(expected.transactionScenarioId)
+      mockDb.getAmountType.mockReturnValueOnce(expected.amountTypeId)
+      mockDb.createQuote.mockReturnValueOnce(expected.quoteId)
+      mockDb.createPayerQuoteParty.mockReturnValueOnce(expected.payerId)
+      mockDb.createPayeeQuoteParty.mockReturnValueOnce(expected.payeeId)
 
-      const quoteRequest = {
-        quoteId: 'test123',
-        transactionId: 'abc123',
-        amountType: 'SEND',
-        transactionType: {
-          scenario: 'TRANSFER',
-          initiator: 'PAYER',
-          initiatorType: 'CONSUMER'
-        }
+      QuoteRules.getFailures = jest.fn(() => [1, 2, 3])
+      quotesModel.forwardQuoteRequest = jest.fn()
+      mockChildSpan.isFinished = true
+
+      const refs = await quotesModel.handleQuoteRequest(headers, quoteRequest, mockSpan)
+      await jest.runAllImmediates()
+
+      let args = [headers['fspiop-source'], headers['fspiop-destination'], quoteRequest]
+      expect(quotesModel.validateQuoteRequest).toBeCalledWith(...args)
+      expect(mockDb.newTransaction.mock.calls.length).toBe(1)
+      expect(quotesModel.checkDuplicateQuoteRequest).toBeCalledWith(quoteRequest)
+      expect(mockTransaction.rollback.mock.calls.length).toBe(0)
+      expect(mockTransaction.commit.mock.calls.length).toBe(1)
+      expect(QuoteRules.getFailures.mock.calls.length).toBe(1)
+      expect(QuoteRules.getFailures.mock.results[0].value.length).toBeGreaterThan(0)
+      expect(mockSpan.getChild.mock.calls.length).toBe(1)
+      args = [{ headers, payload: refs }, EventSdk.AuditEventAction.start]
+      expect(mockChildSpan.audit).toBeCalledWith(...args)
+      args = [headers, refs.quoteId, quoteRequest, mockChildSpan]
+      expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
+      expect(mockChildSpan.finish).not.toBeCalled()
+      expect(refs).toMatchObject(expected)
+    })
+
+    it('should store to db and forward quote request when switch mode and PAYEE is initiator', async () => {
+      expect.assertions(11)
+      Config.SIMPLE_ROUTING_MODE = false
+
+      const localQuoteRequest = clone(quoteRequest)
+      localQuoteRequest.transactionType.initiator = 'PAYEE'
+      localQuoteRequest.geoCode = 'geoCodeId'
+      quotesModel.validateQuoteRequest = jest.fn()
+      quotesModel.checkDuplicateQuoteRequest = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
+      quotesModel.calculateRequestHash = jest.fn(() => 'hash')
+
+      quotesModel.forwardQuoteRequest = jest.fn()
+      mockChildSpan.isFinished = true
+
+      const refs = await quotesModel.handleQuoteRequest(headers, localQuoteRequest, mockSpan)
+      await jest.runAllImmediates()
+
+      let args = [headers['fspiop-source'], headers['fspiop-destination'], localQuoteRequest]
+      expect(quotesModel.validateQuoteRequest).toBeCalledWith(...args)
+      expect(mockDb.newTransaction.mock.calls.length).toBe(1)
+      expect(quotesModel.checkDuplicateQuoteRequest).toBeCalledWith(localQuoteRequest)
+      expect(mockTransaction.rollback.mock.calls.length).toBe(0)
+      expect(mockTransaction.commit.mock.calls.length).toBe(1)
+      expect(QuoteRules.getFailures.mock.calls.length).toBe(1)
+      expect(mockSpan.getChild.mock.calls.length).toBe(1)
+      args = [{ headers, payload: refs }, EventSdk.AuditEventAction.start]
+      expect(mockChildSpan.audit).toBeCalledWith(...args)
+      args = [headers, refs.quoteId, localQuoteRequest, mockChildSpan]
+      expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
+      expect(mockChildSpan.finish).not.toBeCalled()
+      expect(refs).toEqual({})
+    })
+
+    it('should store to db and handle exception when forward quote request fails in switch mode', async () => {
+      expect.assertions(12)
+      Config.SIMPLE_ROUTING_MODE = false
+
+      const localQuoteRequest = clone(quoteRequest)
+      localQuoteRequest.transactionType.subScenario = 'subScenario'
+      localQuoteRequest.expiration = new Date()
+      localQuoteRequest.transactionType.balanceOfPayments = 'balanceOfPayments'
+      localQuoteRequest.geoCode = 'geoCodeId'
+      quotesModel.validateQuoteRequest = jest.fn()
+      quotesModel.checkDuplicateQuoteRequest = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
+      quotesModel.calculateRequestHash = jest.fn(() => 'hash')
+      const expected = {
+        transactionReferenceId: 'txRef',
+        transactionInitiatorTypeId: 'initiatorType',
+        transactionInitiatorId: 'initiator',
+        transactionScenarioId: 'scenario',
+        amountTypeId: 'amountTypeId',
+        quoteId: localQuoteRequest.quoteId,
+        payerId: localQuoteRequest.payer.partyIdInfo.fspId,
+        payeeId: localQuoteRequest.payee.partyIdInfo.fspId,
+        transactionSubScenarioId: localQuoteRequest.transactionType.subScenario,
+        geoCodeId: localQuoteRequest.geoCode
       }
+      mockDb.createTransactionReference.mockReturnValueOnce(expected.transactionReferenceId)
+      mockDb.getInitiatorType.mockReturnValueOnce(expected.transactionInitiatorTypeId)
+      mockDb.getInitiator.mockReturnValueOnce(expected.transactionInitiatorId)
+      mockDb.getScenario.mockReturnValueOnce(expected.transactionScenarioId)
+      mockDb.getAmountType.mockReturnValueOnce(expected.amountTypeId)
+      mockDb.createQuote.mockReturnValueOnce(expected.quoteId)
+      mockDb.createPayerQuoteParty.mockReturnValueOnce(expected.payerId)
+      mockDb.createPayeeQuoteParty.mockReturnValueOnce(expected.payeeId)
+      mockDb.createPayeeQuoteParty.mockReturnValueOnce(expected.payeeId)
+      mockDb.getSubScenario.mockReturnValueOnce(expected.transactionSubScenarioId)
+      mockDb.createGeoCode.mockReturnValueOnce(expected.geoCodeId)
 
-      const transaction = {
-        rollback: () => { }
+      QuoteRules.getFailures = jest.fn()
+      const customError = new Error('Custom error')
+      delete customError.stack
+      quotesModel.forwardQuoteRequest = jest.fn(() => { throw customError })
+      quotesModel.handleException = jest.fn()
+      mockChildSpan.isFinished = false
+
+      const refs = await quotesModel.handleQuoteRequest(headers, localQuoteRequest, mockSpan)
+      await jest.runAllImmediates()
+
+      let args = [headers['fspiop-source'], headers['fspiop-destination'], localQuoteRequest]
+      expect(quotesModel.validateQuoteRequest).toBeCalledWith(...args)
+      expect(mockDb.newTransaction.mock.calls.length).toBe(1)
+      expect(quotesModel.checkDuplicateQuoteRequest).toBeCalledWith(localQuoteRequest)
+      expect(mockTransaction.rollback.mock.calls.length).toBe(0)
+      expect(mockTransaction.commit.mock.calls.length).toBe(1)
+      expect(QuoteRules.getFailures.mock.results[0].value).toBe(undefined)
+      expect(mockSpan.getChild.mock.calls.length).toBe(1)
+      args = [{ headers, payload: refs }, EventSdk.AuditEventAction.start]
+      expect(mockChildSpan.audit).toBeCalledWith(...args)
+      args = [headers, refs.quoteId, localQuoteRequest, mockChildSpan]
+      expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
+      args = [headers['fspiop-source'], refs.quoteId, customError, headers, mockChildSpan]
+      expect(quotesModel.handleException).toBeCalledWith(...args)
+
+      await jest.runAllImmediates()
+      expect(mockChildSpan.finish).toBeCalled()
+      expect(refs).toMatchObject(expected)
+    })
+
+    it('should throw internal error when validation fails', async () => {
+      expect.assertions(4)
+      const customError = new Error('Custom error')
+      delete customError.stack
+      quotesModel.validateQuoteRequest = jest.fn(() => { throw customError })
+      const mockSpan = undefined
+
+      try {
+        await quotesModel.handleQuoteRequest(headers, quoteRequest, mockSpan)
+      } catch (err) {
+        const args = [headers['fspiop-source'], headers['fspiop-destination'], quoteRequest]
+        expect(quotesModel.validateQuoteRequest).toBeCalledWith(...args)
+        expect(mockTransaction.rollback.mock.calls.length).toBe(0)
+        expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
+        expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
       }
-      Sinon.stub(db, 'newTransaction').returns(transaction)
-      Sinon.stub(db, 'getParticipant').returns(3)
-      Sinon.stub(db, 'getQuoteDuplicateCheck').returns({ hash: '85b6067dc6e271c53e2bbc2218e94187022677e80267f95ca28c80707b3009bc' })
-
-      await quotesModel.handleQuoteRequest(headers, quoteRequest, SpanStub)
-    } catch (err) {
-      expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
-      expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code)
-      expect(err.message).toBe('Quote test123 is a duplicate but hashes dont match')
-    }
-  })
-
-  test('handle a quote resend', async () => {
-    const headers = {
-      'fspiop-source': 'dfsp1',
-      'fspiop-destination': 'dfsp2'
-    }
-
-    const quoteRequest = {
-      quoteId: 'test123',
-      transactionId: 'abc123',
-      transactionType: {
-        scenario: 'TRANSFER',
-        initiator: 'PAYER',
-        initiatorType: 'CONSUMER'
-      }
-    }
-
-    const transaction = {
-      rollback: () => { }
-    }
-    Sinon.stub(db, 'newTransaction').returns(transaction)
-    Sinon.stub(db, 'getParticipant').returns(2)
-    Sinon.stub(db, 'getQuoteDuplicateCheck').returns({ hash: 'e31fed1d22e622737fea8f40f60359b374b51ff543d840934b7ee5b5ead22edd' })
-    Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://test.com/dfsp2')
-
-    await quotesModel.handleQuoteRequest(headers, quoteRequest, SpanStub)
-  })
-
-  test('throw an error if the destination endpoint is not found', async () => {
-    // Idiomatic Jest- no `fail` function
-    expect.assertions(3)
-    try {
-      const headers = {
-        'fspiop-source': 'dfsp1',
-        'fspiop-destination': 'dfsp2'
-      }
-
-      const quoteRequest = { }
-
-      Sinon.stub(db, 'getQuotePartyEndpoint').returns(null)
-
-      await quotesModel.forwardQuoteRequest(headers, 'test123', quoteRequest, SpanStub)
-    } catch (err) {
-      expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
-      expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
-      expect(err.message).toBe('No FSPIOP_CALLBACK_URL_QUOTES found for quote test123 PAYEE party')
-    }
-  })
-
-  test('handle a network communication error forwarding a request', async () => {
-    // Idiomatic Jest- no `fail` function
-    expect.assertions(3)
-    try {
-      const headers = {
-        'fspiop-source': 'dfsp1',
-        'fspiop-destination': 'dfsp2'
-      }
-
-      const quoteRequest = { }
-
-      Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://invalid.com/dfsp2')
-
-      await quotesModel.forwardQuoteRequest(headers, 'test123', quoteRequest, SpanStub)
-    } catch (err) {
-      expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
-      expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code)
-      expect(err.message).toBe('Network error forwarding quote request to dfsp2')
-    }
-  })
-
-  test('handle a network communication error forwarding a request', async () => {
-    // Idiomatic Jest- no `fail` function
-    expect.assertions(3)
-    try {
-      const headers = {
-        'fspiop-source': 'dfsp1',
-        'fspiop-destination': 'dfsp2'
-      }
-
-      const quoteRequest = { }
-
-      Sinon.stub(db, 'getQuotePartyEndpoint').returns('http://invalidresponse.com/dfsp2')
-
-      await quotesModel.forwardQuoteRequest(headers, 'test123', quoteRequest, SpanStub)
-    } catch (err) {
-      expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
-      expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code)
-      expect(err.message).toBe('Got non-success response forwarding quote request')
-    }
+    })
   })
 })
