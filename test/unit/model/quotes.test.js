@@ -153,6 +153,39 @@ describe('quotesModel', () => {
       initiatorType: 'CONSUMER'
     }
   }
+  // TODO: enable for testing QuotesIDPutResponse
+  // const quoteUpdate = {
+  //   quoteId: 'test123',
+  //   transferAmount: {
+  //     amount: '100',
+  //     currency: 'USD'
+  //   },
+  //   payeeReceiveAmount: {
+  //     amount: '95',
+  //     currency: 'USD'
+  //   },
+  //   payeeFspFee: {
+  //     amount: '3',
+  //     currency: 'USD'
+  //   },
+  //   payeeFspCommission: {
+  //     amount: '2',
+  //     currency: 'USD'
+  //   },
+  //   expiration: '2019-10-30T10:30:19.899Z',
+  //   geoCode: {
+  //     latitude: '42.69751',
+  //     longitude: '23.32415'
+  //   },
+  //   ilpPacket: '<ilpPacket>',
+  //   condition: 'HOr22-H3AfTDHrSkPjJtVPRdKouuMkDXTR4ejlQa8Ks',
+  //   extensionList: {
+  //     extension: [{
+  //       key: 'key1',
+  //       value: 'value1'
+  //     }]
+  //   }
+  // }
   const endpoints = {
     payerfsp: 'http://localhost:8444/payerfsp',
     payeefsp: 'http://localhost:8444/payeefsp',
