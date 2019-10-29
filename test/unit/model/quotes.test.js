@@ -35,6 +35,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const Config = require('../../../config/default')
 const QuoteRules = require('../../../src/model/rules')
 const clone = require('@mojaloop/central-services-shared').Util.clone
+const mockAxios = require('axios')
 
 const Db = require('../../../src/data/database')
 const mockTransaction = {
@@ -55,7 +56,9 @@ const mockDb = {
   createPayerQuoteParty: jest.fn(),
   createPayeeQuoteParty: jest.fn(),
   getSubScenario: jest.fn(),
-  createGeoCode: jest.fn()
+  createGeoCode: jest.fn(),
+  getParticipantEndpoint: jest.fn(),
+  getQuotePartyEndpoint: jest.fn()
 }
 jest.mock('../../../src/data/database', () => {
   return jest.fn().mockImplementation(() => {
@@ -73,12 +76,15 @@ jest.mock('../../../src/data/database', () => {
       createPayerQuoteParty: mockDb.createPayerQuoteParty,
       createPayeeQuoteParty: mockDb.createPayeeQuoteParty,
       getSubScenario: mockDb.getSubScenario,
-      createGeoCode: mockDb.createGeoCode
+      createGeoCode: mockDb.createGeoCode,
+      getParticipantEndpoint: mockDb.getParticipantEndpoint,
+      getQuotePartyEndpoint: mockDb.getQuotePartyEndpoint
     }
   })
 })
 
 const mockChildSpan = {
+  injectContextToHttpRequest: jest.fn(opts => opts),
   audit: jest.fn(),
   isFinished: undefined,
   finish: jest.fn()
@@ -101,9 +107,58 @@ jest.mock('@mojaloop/central-services-logger', () => {
   }
 })
 
+jest.mock('axios')
+mockAxios.request = (opts) => {
+  if (opts.url === 'http://invalid.com/payeefsp/quotes') {
+    return Promise.reject(new Error('Unable to reach host'))
+  } else if (opts.url === 'http://invalidresponse.com/payeefsp/quotes') {
+    return Promise.resolve({ status: 200 })
+  }
+  return Promise.resolve({ status: 202 })
+}
+
 jest.useFakeTimers()
+const flushPromises = () => new Promise(setImmediate)
 
 describe('quotesModel', () => {
+  const headers = {
+    'fspiop-source': 'dfsp1',
+    'fspiop-destination': 'dfsp2'
+  }
+  const quoteRequest = {
+    quoteId: 'test123',
+    transactionId: 'abc123',
+    payee: {
+      partyIdInfo: {
+        partyIdType: 'MSISDN',
+        partyIdentifier: '27824592509',
+        fspId: 'dfsp2'
+      }
+    },
+    payer: {
+      partyIdInfo: {
+        partyIdType: 'MSISDN',
+        partyIdentifier: '27713803905',
+        fspId: 'dfsp1'
+      }
+    },
+    amountType: 'SEND',
+    amount: {
+      amount: 100,
+      currency: 'USD'
+    },
+    transactionType: {
+      scenario: 'TRANSFER',
+      initiator: 'PAYER',
+      initiatorType: 'CONSUMER'
+    }
+  }
+  const endpoints = {
+    payerfsp: 'http://localhost:8444/payerfsp',
+    payeefsp: 'http://localhost:8444/payeefsp',
+    invalid: 'http://invalid.com/payeefsp',
+    invalidresponse: 'http://invalidresponse.com/payeefsp'
+  }
   let quotesModel
 
   beforeAll(() => {})
@@ -129,6 +184,9 @@ describe('quotesModel', () => {
     mockDb.createPayeeQuoteParty.mockClear()
     mockDb.getSubScenario.mockClear()
     mockDb.createGeoCode.mockClear()
+    mockDb.getParticipantEndpoint.mockClear()
+    mockDb.getQuotePartyEndpoint.mockClear()
+    mockChildSpan.injectContextToHttpRequest.mockClear()
     mockChildSpan.audit.mockClear()
     mockChildSpan.finish.mockClear()
     mockSpan.getChild.mockClear()
@@ -155,7 +213,6 @@ describe('quotesModel', () => {
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopSource)
       expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(fspiopDestination)
     })
-
     it('should throw internal error if no quoteRequest was supplied', async () => {
       expect.assertions(5)
       const fspiopSource = 'dfsp1'
@@ -183,39 +240,6 @@ describe('quotesModel', () => {
   })
 
   describe('handleQuoteRequest', () => {
-    const headers = {
-      'fspiop-source': 'dfsp1',
-      'fspiop-destination': 'dfsp2'
-    }
-    const quoteRequest = {
-      quoteId: 'test123',
-      transactionId: 'abc123',
-      payee: {
-        partyIdInfo: {
-          partyIdType: 'MSISDN',
-          partyIdentifier: '27824592509',
-          fspId: 'dfsp2'
-        }
-      },
-      payer: {
-        partyIdInfo: {
-          partyIdType: 'MSISDN',
-          partyIdentifier: '27713803905',
-          fspId: 'dfsp1'
-        }
-      },
-      amountType: 'SEND',
-      amount: {
-        amount: 100,
-        currency: 'USD'
-      },
-      transactionType: {
-        scenario: 'TRANSFER',
-        initiator: 'PAYER',
-        initiatorType: 'CONSUMER'
-      }
-    }
-
     it('should forward quote request in simple routing mode', async () => {
       expect.assertions(5)
       Config.SIMPLE_ROUTING_MODE = true
@@ -235,7 +259,6 @@ describe('quotesModel', () => {
       expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
       expect(refs).toEqual({})
     })
-
     it('should handle exception in simple routing mode', async () => {
       expect.assertions(7)
       Config.SIMPLE_ROUTING_MODE = true
@@ -261,7 +284,6 @@ describe('quotesModel', () => {
 
       expect(refs).toEqual({})
     })
-
     it('should throw modified request error when duplicate request is not a resend', async () => {
       expect.assertions(8)
       Config.SIMPLE_ROUTING_MODE = false
@@ -282,7 +304,6 @@ describe('quotesModel', () => {
         expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code)
       }
     })
-
     it('should handle quote request resend when duplicate request matches original', async () => {
       expect.assertions(5)
       Config.SIMPLE_ROUTING_MODE = false
@@ -300,7 +321,6 @@ describe('quotesModel', () => {
       expect(quotesModel.handleQuoteRequestResend).toBeCalledWith(...args)
       expect(refs).toBe('handleQuoteRequestResendResult')
     })
-
     it('should store to db and forward quote request when switch mode', async () => {
       expect.assertions(12)
       Config.SIMPLE_ROUTING_MODE = false
@@ -349,7 +369,6 @@ describe('quotesModel', () => {
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toMatchObject(expected)
     })
-
     it('should store to db and forward quote request when switch mode and PAYEE is initiator', async () => {
       expect.assertions(11)
       Config.SIMPLE_ROUTING_MODE = false
@@ -382,7 +401,6 @@ describe('quotesModel', () => {
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toEqual({})
     })
-
     it('should store to db and handle exception when forward quote request fails in switch mode', async () => {
       expect.assertions(12)
       Config.SIMPLE_ROUTING_MODE = false
@@ -448,20 +466,202 @@ describe('quotesModel', () => {
       expect(mockChildSpan.finish).toBeCalled()
       expect(refs).toMatchObject(expected)
     })
-
     it('should throw internal error when validation fails', async () => {
       expect.assertions(4)
-      const customError = new Error('Custom error')
-      delete customError.stack
-      quotesModel.validateQuoteRequest = jest.fn(() => { throw customError })
-      const mockSpan = undefined
+      const customErrorNoStack = new Error('Custom error')
+      delete customErrorNoStack.stack
+      quotesModel.validateQuoteRequest = jest.fn(() => { throw customErrorNoStack })
 
       try {
-        await quotesModel.handleQuoteRequest(headers, quoteRequest, mockSpan)
+        await quotesModel.handleQuoteRequest(headers, quoteRequest)
       } catch (err) {
         const args = [headers['fspiop-source'], headers['fspiop-destination'], quoteRequest]
         expect(quotesModel.validateQuoteRequest).toBeCalledWith(...args)
         expect(mockTransaction.rollback.mock.calls.length).toBe(0)
+        expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
+        expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+      }
+    })
+  })
+
+  describe('forwardQuoteRequest', () => {
+    it('should get http status code 202 Accepted in simple routing mode', async () => {
+      expect.assertions(3)
+      Config.SIMPLE_ROUTING_MODE = true
+      mockDb.getParticipantEndpoint.mockReturnValueOnce(endpoints.payeefsp)
+
+      let err
+      try {
+        await quotesModel.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, mockChildSpan)
+      } catch (e) {
+        err = e
+      }
+      expect(err).toBe(undefined)
+      expect(mockDb.getParticipantEndpoint).toBeCalled()
+      expect(mockDb.getQuotePartyEndpoint).not.toBeCalled()
+    })
+    it('should get http status code 202 Accepted in switch mode', async () => {
+      expect.assertions(3)
+      Config.SIMPLE_ROUTING_MODE = false
+      mockDb.getQuotePartyEndpoint.mockReturnValueOnce(endpoints.payeefsp)
+
+      let err
+      try {
+        await quotesModel.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, mockChildSpan)
+      } catch (e) {
+        err = e
+      }
+      expect(err).toBe(undefined)
+      expect(mockDb.getParticipantEndpoint).not.toBeCalled()
+      expect(mockDb.getQuotePartyEndpoint).toBeCalled()
+    })
+    it('should throw when quoteRequest is undefined', async () => {
+      expect.assertions(2)
+      try {
+        const originalQuoteRequest = undefined
+        await quotesModel.forwardQuoteRequest(headers, quoteRequest.quoteId, originalQuoteRequest, mockChildSpan)
+      } catch (err) {
+        expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
+        expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+      }
+    })
+    it('should throw when participant endpoint is not found', async () => {
+      expect.assertions(2)
+      Config.SIMPLE_ROUTING_MODE = false
+      const endpoint = undefined
+      mockDb.getQuotePartyEndpoint.mockReturnValueOnce(endpoint)
+      try {
+        await quotesModel.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, mockChildSpan)
+      } catch (err) {
+        expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
+        expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
+      }
+    })
+    it('should not use spans when undefined and should throw when participant endpoint is invalid', async () => {
+      expect.assertions(4)
+      Config.SIMPLE_ROUTING_MODE = false
+      mockDb.getQuotePartyEndpoint.mockReturnValueOnce(endpoints.invalid)
+      try {
+        await quotesModel.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest)
+      } catch (err) {
+        expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
+        expect(mockChildSpan.audit).not.toHaveBeenCalled()
+        expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
+        expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code)
+      }
+    })
+    it('should throw when participant endpoint returns invalid response', async () => {
+      expect.assertions(4)
+      Config.SIMPLE_ROUTING_MODE = false
+      mockDb.getQuotePartyEndpoint.mockReturnValueOnce(endpoints.invalidresponse)
+      try {
+        await quotesModel.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest)
+      } catch (err) {
+        expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
+        expect(mockChildSpan.audit).not.toHaveBeenCalled()
+        expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
+        expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code)
+      }
+    })
+    it('should inspect and throw custom error as FSPIOPerror', async () => {
+      expect.assertions(4)
+      Config.SIMPLE_ROUTING_MODE = false
+      const customErrorNoStack = new Error('Custom error')
+      delete customErrorNoStack.stack
+      mockDb.getQuotePartyEndpoint.mockRejectedValueOnce(customErrorNoStack)
+      try {
+        await quotesModel.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest)
+      } catch (err) {
+        expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
+        expect(mockChildSpan.audit).not.toHaveBeenCalled()
+        expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
+        expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+      }
+    })
+  })
+
+  describe('handleQuoteRequestResend', () => {
+    it('forward quote request', async () => {
+      expect.assertions(5)
+      mockChildSpan.isFinished = false
+      quotesModel.forwardQuoteRequest = jest.fn()
+
+      let err
+      try {
+        await quotesModel.handleQuoteRequestResend(headers, quoteRequest, mockSpan)
+        await jest.runAllImmediates()
+        await flushPromises()
+      } catch (e) {
+        err = e
+      }
+      expect(err).toBe(undefined)
+      expect(mockSpan.getChild).toBeCalled()
+      expect(mockChildSpan.audit).toBeCalled()
+      const args = [headers, quoteRequest.quoteId, quoteRequest, mockChildSpan]
+      expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
+      expect(mockChildSpan.finish).toBeCalled()
+    })
+    it('handle fspiopError when forward quote fails', async () => {
+      expect.assertions(4)
+      mockChildSpan.isFinished = true
+      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR)
+      quotesModel.forwardQuoteRequest = jest.fn(() => { throw fspiopError })
+      quotesModel.handleException = jest.fn()
+
+      let err
+      try {
+        await quotesModel.handleQuoteRequestResend(headers, quoteRequest, mockSpan)
+        await jest.runAllImmediates()
+      } catch (e) {
+        err = e
+      }
+      expect(err).toBe(undefined)
+      expect(mockChildSpan.audit).toBeCalled()
+      const args = [headers['fspiop-source'], quoteRequest.quoteId, fspiopError, headers, mockChildSpan]
+      expect(quotesModel.handleException).toBeCalledWith(...args)
+      expect(mockChildSpan.finish).not.toBeCalled()
+    })
+    it('handle custom error without stack when forward quote fails', async () => {
+      expect.assertions(4)
+      const customErrorNoStack = new Error('Custom error')
+      delete customErrorNoStack.stack
+      quotesModel.forwardQuoteRequest = jest.fn(() => { throw customErrorNoStack })
+      quotesModel.handleException = jest.fn()
+
+      let err
+      try {
+        await quotesModel.handleQuoteRequestResend(headers, quoteRequest, mockSpan)
+        await jest.runAllImmediates()
+      } catch (e) {
+        err = e
+      }
+      expect(err).toBe(undefined)
+      expect(mockChildSpan.audit).toBeCalled()
+      const args = [headers['fspiop-source'], quoteRequest.quoteId, customErrorNoStack, headers, mockChildSpan]
+      expect(quotesModel.handleException).toBeCalledWith(...args)
+      expect(mockChildSpan.finish).not.toBeCalled()
+    })
+    it('handle custom error without stack when writeLog fails', async () => {
+      expect.assertions(1)
+      const errorMessage = 'Custom error'
+      const customErrorNoStack = new Error(errorMessage)
+      delete customErrorNoStack.stack
+      quotesModel.writeLog = jest.fn(() => { throw customErrorNoStack })
+
+      try {
+        await quotesModel.handleQuoteRequestResend(headers, quoteRequest, mockSpan)
+      } catch (err) {
+        expect(err.message).toBe(errorMessage)
+      }
+    })
+    it('handle custom error without stack when writeLog fails', async () => {
+      expect.assertions(2)
+      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+      quotesModel.writeLog = jest.fn().mockImplementationOnce(cb => cb(fspiopError))
+
+      try {
+        await quotesModel.handleQuoteRequestResend(headers, quoteRequest, mockSpan)
+      } catch (err) {
         expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
         expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
       }
