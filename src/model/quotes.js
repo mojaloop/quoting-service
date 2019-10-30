@@ -36,13 +36,13 @@ const crypto = require('crypto')
 const util = require('util')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
-const getCircularReplacer = require('@mojaloop/central-services-shared').Util.getCircularReplacer
 const ENUM = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
 const MLNumber = require('@mojaloop/ml-number')
 const quoteRules = require('./rules.js')
 const Config = require('../lib/config')
 const LOCAL_ENUM = require('../lib/enum')
+const LibUtil = require('@mojaloop/central-services-shared').Util
 
 delete axios.defaults.headers.common.Accept
 delete axios.defaults.headers.common['Content-Type']
@@ -320,7 +320,7 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
+          { key: 'request', value: JSON.stringify(opts, LibUtil.getCircularReplacer()) }
         ])
       }
       this.writeLog(`forwarding quote request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
@@ -333,8 +333,8 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
-          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
+          { key: 'request', value: JSON.stringify(opts, LibUtil.getCircularReplacer()) },
+          { key: 'response', value: JSON.stringify(res, LibUtil.getCircularReplacer()) }
         ])
       }
     } catch (err) {
@@ -585,7 +585,7 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDestination },
           { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
+          { key: 'request', value: JSON.stringify(opts, LibUtil.getCircularReplacer()) }
         ])
       }
       this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`)
@@ -597,8 +597,8 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDestination },
           { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
-          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
+          { key: 'request', value: JSON.stringify(opts, LibUtil.getCircularReplacer()) },
+          { key: 'response', value: JSON.stringify(res, LibUtil.getCircularReplacer()) }
         ])
       }
     } catch (err) {
@@ -794,7 +794,7 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
+          { key: 'request', value: JSON.stringify(opts, LibUtil.getCircularReplacer()) }
         ])
       }
       this.writeLog(`forwarding quote get request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
@@ -807,8 +807,8 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
-          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
+          { key: 'request', value: JSON.stringify(opts, LibUtil.getCircularReplacer()) },
+          { key: 'response', value: JSON.stringify(res, LibUtil.getCircularReplacer()) }
         ])
       }
     } catch (err) {
@@ -871,11 +871,16 @@ class QuotesModel {
       // log the original error
       this.writeLog(`Making error callback to participant '${fspiopSource}' for quoteId '${quoteId}' to ${fullCallbackUrl} for error: ${util.inspect(fspiopError.toFullErrorObject())}`)
 
+      const logData = fspiopError.toApiErrorObject()
+      const callbackData = LibUtil.clone(logData)
+      callbackData.errorInformation.extensionList.extension =
+        LibUtil.filterExtensions(callbackData.errorInformation.extensionList.extension, ['request', 'response'])
+
       // make an error callback
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
-        data: JSON.stringify(fspiopError.toApiErrorObject()),
+        data: JSON.stringify(callbackData, LibUtil.getCircularReplacer()),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
         headers: this.generateRequestHeaders(headers || {
@@ -893,6 +898,7 @@ class QuotesModel {
       let res
       try {
         res = await axios.request(opts)
+        this.writeLog(`Error callback successfully sent for: ${JSON.stringify(logData, LibUtil.getCircularReplacer())}`)
       } catch (err) {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, err, fspiopSource, [
@@ -900,7 +906,7 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
+          { key: 'request', value: JSON.stringify(opts, LibUtil.getCircularReplacer()) }
         ])
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
@@ -912,8 +918,8 @@ class QuotesModel {
           { key: 'sourceFsp', value: fspiopSource },
           { key: 'destinationFsp', value: fspiopDest },
           { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
-          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
+          { key: 'request', value: JSON.stringify(opts, LibUtil.getCircularReplacer()) },
+          { key: 'response', value: JSON.stringify(res, LibUtil.getCircularReplacer()) }
         ])
       }
     } catch (err) {
