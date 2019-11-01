@@ -23,5 +23,9 @@
     "CREATE_RETRY_INTERVAL_MILLIS": 200,
     "DEBUG": false
   },
+  "ERROR_HANDLING": {
+    "includeCauseExtension": true,
+    "truncateCause": false
+  },
   "SIMPLE_ROUTING_MODE": true
 }
