@@ -317,13 +317,12 @@ class QuotesModel {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `Network error forwarding quote request to ${fspiopDest}`, {
           error: err,
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
           request: JSON.stringify(opts, LibUtil.getCircularReplacer())
-        }, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method }
-        ])
+        }, fspiopSource)
       }
       this.writeLog(`forwarding quote request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
 
@@ -331,14 +330,13 @@ class QuotesModel {
       if (res.status !== ENUM.Http.ReturnCodes.ACCEPTED.CODE) {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote request', {
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
           request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
           response: JSON.stringify(res, LibUtil.getCircularReplacer())
-        }, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method }
-        ])
+        }, fspiopSource)
       }
     } catch (err) {
       // any-error
@@ -535,7 +533,7 @@ class QuotesModel {
     let endpoint = null
     const envConfig = new Config()
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+    const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       if (!originalQuoteResponse) {
         // we need to recreate the quote response
@@ -545,7 +543,7 @@ class QuotesModel {
 
       // lookup payer dfsp callback endpoint
       if (envConfig.simpleRoutingMode) {
-        endpoint = await this.db.getParticipantEndpoint(fspiopDestination, 'FSPIOP_CALLBACK_URL_QUOTES')
+        endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
       } else {
         // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
         endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
@@ -585,27 +583,25 @@ class QuotesModel {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error forwarding quote response', {
           error: err,
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
           request: JSON.stringify(opts, LibUtil.getCircularReplacer())
-        }, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDestination },
-          { key: 'method', value: opts && opts.method }
-        ])
+        }, fspiopSource)
       }
       this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`)
 
       if (res.status !== ENUM.Http.ReturnCodes.OK.CODE) {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote response', {
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
           request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
           response: JSON.stringify(res, LibUtil.getCircularReplacer())
-        }, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDestination },
-          { key: 'method', value: opts && opts.method }
-        ])
+        }, fspiopSource)
       }
     } catch (err) {
       // any-error
@@ -797,13 +793,12 @@ class QuotesModel {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error forwarding quote get request', {
           error: err,
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
           request: JSON.stringify(opts, LibUtil.getCircularReplacer())
-        }, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method }
-        ])
+        }, fspiopSource)
       }
       this.writeLog(`forwarding quote get request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
 
@@ -811,14 +806,13 @@ class QuotesModel {
       if (res.status !== ENUM.Http.ReturnCodes.ACCEPTED.CODE) {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote get request', {
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
           request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
           response: JSON.stringify(res, LibUtil.getCircularReplacer())
-        }, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method }
-        ])
+        }, fspiopSource)
       }
     } catch (err) {
       // any-error
@@ -907,27 +901,25 @@ class QuotesModel {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, {
           error: err,
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
           request: JSON.stringify(opts, LibUtil.getCircularReplacer())
-        }, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method }
-        ])
+        }, fspiopSource)
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
       if (res.status !== ENUM.Http.ReturnCodes.OK.CODE) {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response sending error callback', {
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
           request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
           response: JSON.stringify(res, LibUtil.getCircularReplacer())
-        }, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method }
-        ])
+        }, fspiopSource)
       }
     } catch (err) {
       // any-error
