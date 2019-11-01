@@ -31,15 +31,21 @@
  ******/
 
 'use strict'
-const Swagmock = require('swagmock')
-const Path = require('path')
-const apiPath = Path.resolve(__dirname, '../../src/interface/swagger.json')
-let mockgen
 
-module.exports = function () {
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+
+/**
+ * Operations on /bulkQuotes/{id}/error
+ */
+module.exports = {
   /**
-     * Cached mock generator
+     * summary: BulkQuotesErrorById
+     * description: If the server is unable to find or create a bulk quote, or another processing error occurs, the error callback PUT /bulkQuotes/&lt;id&gt;/error is used. The &lt;id&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;id&gt; that was used in the GET /bulkQuotes/&lt;id&gt;.
+     * parameters: id, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
+     * produces: application/json
+     * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  mockgen = mockgen || Swagmock(apiPath)
-  return mockgen
+  put: function BulkQuotesErrorById () {
+    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Bulk quotes not implemented')
+  }
 }
