@@ -31,18 +31,127 @@
  ******/
 
 'use strict'
-var Mockgen = require('../../../../test/util/mockgen.js')
+var Mockgen = require('../../../test/util/mockgen.js')
 /**
- * Operations on /bulkQuotes/{ID}/error
+ * Operations on /bulkQuotes/{id}
  */
 module.exports = {
   /**
-     * summary: BulkQuotesErrorByID
-     * description: If the server is unable to find or create a bulk quote, or another processing error occurs, the error callback PUT /bulkQuotes/&lt;ID&gt;/error is used. The &lt;ID&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;ID&gt; that was used in the GET /bulkQuotes/&lt;ID&gt;.
-     * parameters: ID, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
+     * summary: BulkQuotesById
+     * description: The HTTP request GET /bulkQuotes/&lt;id&gt; is used to get information regarding an earlier created or requested bulk quote. The &lt;id&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote.
+     * parameters: Accept
+     * produces: application/json
+     * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
+     * operationId: BulkQuotesById
+     */
+  get: {
+    202: function (req, res, callback) {
+      /**
+             * Using mock data generator module.
+             * Replace this by actual data for the api.
+             */
+      Mockgen().responses({
+        path: '/bulkQuotes/{id}',
+        operation: 'get',
+        response: '202'
+      }, callback)
+    },
+    400: function (req, res, callback) {
+      /**
+             * Using mock data generator module.
+             * Replace this by actual data for the api.
+             */
+      Mockgen().responses({
+        path: '/bulkQuotes/{id}',
+        operation: 'get',
+        response: '400'
+      }, callback)
+    },
+    401: function (req, res, callback) {
+      /**
+             * Using mock data generator module.
+             * Replace this by actual data for the api.
+             */
+      Mockgen().responses({
+        path: '/bulkQuotes/{id}',
+        operation: 'get',
+        response: '401'
+      }, callback)
+    },
+    403: function (req, res, callback) {
+      /**
+             * Using mock data generator module.
+             * Replace this by actual data for the api.
+             */
+      Mockgen().responses({
+        path: '/bulkQuotes/{id}',
+        operation: 'get',
+        response: '403'
+      }, callback)
+    },
+    404: function (req, res, callback) {
+      /**
+             * Using mock data generator module.
+             * Replace this by actual data for the api.
+             */
+      Mockgen().responses({
+        path: '/bulkQuotes/{id}',
+        operation: 'get',
+        response: '404'
+      }, callback)
+    },
+    405: function (req, res, callback) {
+      /**
+             * Using mock data generator module.
+             * Replace this by actual data for the api.
+             */
+      Mockgen().responses({
+        path: '/bulkQuotes/{id}',
+        operation: 'get',
+        response: '405'
+      }, callback)
+    },
+    406: function (req, res, callback) {
+      /**
+             * Using mock data generator module.
+             * Replace this by actual data for the api.
+             */
+      Mockgen().responses({
+        path: '/bulkQuotes/{id}',
+        operation: 'get',
+        response: '406'
+      }, callback)
+    },
+    501: function (req, res, callback) {
+      /**
+             * Using mock data generator module.
+             * Replace this by actual data for the api.
+             */
+      Mockgen().responses({
+        path: '/bulkQuotes/{id}',
+        operation: 'get',
+        response: '501'
+      }, callback)
+    },
+    503: function (req, res, callback) {
+      /**
+             * Using mock data generator module.
+             * Replace this by actual data for the api.
+             */
+      Mockgen().responses({
+        path: '/bulkQuotes/{id}',
+        operation: 'get',
+        response: '503'
+      }, callback)
+    }
+  },
+  /**
+     * summary: BulkQuotesById
+     * description: The callback PUT /bulkQuotes/&lt;id&gt; is used to inform the client of a requested or created bulk quote. The &lt;id&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;id&gt; that was used in the GET /bulkQuotes/&lt;id&gt;.
+     * parameters: body, Content-Length
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
-     * operationId: BulkQuotesErrorByID
+     * operationId: BulkQuotesById1
      */
   put: {
     200: function (req, res, callback) {
@@ -51,7 +160,7 @@ module.exports = {
              * Replace this by actual data for the api.
              */
       Mockgen().responses({
-        path: '/bulkQuotes/{ID}/error',
+        path: '/bulkQuotes/{id}',
         operation: 'put',
         response: '200'
       }, callback)
@@ -62,7 +171,7 @@ module.exports = {
              * Replace this by actual data for the api.
              */
       Mockgen().responses({
-        path: '/bulkQuotes/{ID}/error',
+        path: '/bulkQuotes/{id}',
         operation: 'put',
         response: '400'
       }, callback)
@@ -73,7 +182,7 @@ module.exports = {
              * Replace this by actual data for the api.
              */
       Mockgen().responses({
-        path: '/bulkQuotes/{ID}/error',
+        path: '/bulkQuotes/{id}',
         operation: 'put',
         response: '401'
       }, callback)
@@ -84,7 +193,7 @@ module.exports = {
              * Replace this by actual data for the api.
              */
       Mockgen().responses({
-        path: '/bulkQuotes/{ID}/error',
+        path: '/bulkQuotes/{id}',
         operation: 'put',
         response: '403'
       }, callback)
@@ -95,7 +204,7 @@ module.exports = {
              * Replace this by actual data for the api.
              */
       Mockgen().responses({
-        path: '/bulkQuotes/{ID}/error',
+        path: '/bulkQuotes/{id}',
         operation: 'put',
         response: '404'
       }, callback)
@@ -106,7 +215,7 @@ module.exports = {
              * Replace this by actual data for the api.
              */
       Mockgen().responses({
-        path: '/bulkQuotes/{ID}/error',
+        path: '/bulkQuotes/{id}',
         operation: 'put',
         response: '405'
       }, callback)
@@ -117,7 +226,7 @@ module.exports = {
              * Replace this by actual data for the api.
              */
       Mockgen().responses({
-        path: '/bulkQuotes/{ID}/error',
+        path: '/bulkQuotes/{id}',
         operation: 'put',
         response: '406'
       }, callback)
@@ -128,7 +237,7 @@ module.exports = {
              * Replace this by actual data for the api.
              */
       Mockgen().responses({
-        path: '/bulkQuotes/{ID}/error',
+        path: '/bulkQuotes/{id}',
         operation: 'put',
         response: '501'
       }, callback)
@@ -139,7 +248,7 @@ module.exports = {
              * Replace this by actual data for the api.
              */
       Mockgen().responses({
-        path: '/bulkQuotes/{ID}/error',
+        path: '/bulkQuotes/{id}',
         operation: 'put',
         response: '503'
       }, callback)
