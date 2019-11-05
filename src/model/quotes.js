@@ -839,7 +839,7 @@ class QuotesModel {
       } catch (err) {
         // any-error
         // not much we can do other than log the error
-        this.writeLog(`Error occured handling error. check service logs as this error may not have been propogated successfully to any other party: ${err.stack || util.inspect(err)}`)
+        this.writeLog(`Error occured handling error. check service logs as this error may not have been propagated successfully to any other party: ${err.stack || util.inspect(err)}`)
       } finally {
         if (!childSpan.isFinished) {
           await childSpan.finish()
