@@ -24,8 +24,8 @@
     "DEBUG": false
   },
   "ERROR_HANDLING": {
-    "includeCauseExtension": true,
-    "truncateCause": false
+    "includeCauseExtension": false,
+    "truncateCause": true
   },
   "SIMPLE_ROUTING_MODE": true
 }
