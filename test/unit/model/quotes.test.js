@@ -38,18 +38,11 @@ const clone = require('@mojaloop/central-services-shared').Util.clone
 const mockAxios = require('axios')
 
 const Db = require('../../../src/data/database')
+const Config = jest.requireActual('../../../src/lib/config')
 
-const mockConfig = {
-  simpleRoutingMode: true
-}
-
+const mockConfig = new Config()
 jest.mock('../../../src/lib/config', () => {
-  return jest.fn().mockImplementation(() => {
-    const Config = jest.requireActual('../../../src/lib/config')
-    const result = new Config()
-    result.simpleRoutingMode = mockConfig.simpleRoutingMode
-    return result
-  })
+  return jest.fn().mockImplementation(() => mockConfig)
 })
 
 const mockTransaction = {
