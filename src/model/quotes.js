@@ -37,7 +37,6 @@ const crypto = require('crypto')
 const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
-const getCircularReplacer = require('@mojaloop/central-services-shared').Util.getCircularReplacer
 const LibUtil = require('@mojaloop/central-services-shared').Util
 const LOCAL_ENUM = require('../lib/enum')
 const Logger = require('@mojaloop/central-services-logger')
@@ -132,6 +131,30 @@ class QuotesModel {
   }
 
   /**
+     * Validates the quote request object
+     *
+     * @returns {promise} - promise will reject if request is not valid
+     */
+  async validateQuoteRequest (fspiopSource, fspiopDestination, quoteRequest) {
+    // note that the framework should validate the form of the request
+    // here we can do some hard-coded rule validations to ensure requests
+    // do not lead to unsupported scenarios or use-cases.
+
+    // This validation is being removed because it prevents the switch from supporting PAYEE initiated use cases
+    // if (quoteRequest.transactionType.initiator !== 'PAYER') {
+    //   throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Only PAYER initiated transactions are supported', null, fspiopSource)
+    // }
+
+    // Any quoteRequest specific validations to be added here
+    if (!quoteRequest) {
+      // internal-error
+      throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
+    }
+    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP)
+    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP)
+  }
+
+  /**
      * Validates the form of a quote update object
      *
      * @returns {promise} - promise will reject if request is not valid
@@ -152,6 +175,7 @@ class QuotesModel {
 
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+      const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
       // supply a rules file containing an empty array.
@@ -164,6 +188,9 @@ class QuotesModel {
 
       // accumulate enum ids
       const refs = {}
+
+      // validate - this will throw if the request is invalid
+      await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
       if (!envConfig.simpleRoutingMode) {
         // do everything in a db txn so we can rollback multiple operations if something goes wrong
@@ -261,12 +288,13 @@ class QuotesModel {
       try {
         if (envConfig.simpleRoutingMode) {
           await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
-          await this.forwardQuoteRequest(sendHeaders, quoteRequest.quoteId, sendRequest)
+          await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan)
         } else {
           await childSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
-          await this.forwardQuoteRequest(sendHeaders, refs.quoteId, sendRequest)
+          await this.forwardQuoteRequest(headers, refs.quoteId, quoteRequest, childSpan)
         }
       } catch (err) {
+        // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
         // get the model to handle it
         this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
@@ -875,7 +903,7 @@ class QuotesModel {
     } catch (err) {
       // any-error
       // not much we can do other than log the error
-      this.writeLog(`Error occurred handling error. check service logs as this error may not have been propagated successfully to any other party: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error occured handling error. check service logs as this error may not have been propagated successfully to any other party: ${err.stack || util.inspect(err)}`)
     } finally {
       if (!childSpan.isFinished) {
         await childSpan.finish()
