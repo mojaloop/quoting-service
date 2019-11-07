@@ -79,6 +79,7 @@ class Config {
       },
       debug: RC.DATABASE.DEBUG ? RC.DATABASE.DEBUG : false
     }
+    this.errorHandling = RC.ERROR_HANDLING
   }
 }
 

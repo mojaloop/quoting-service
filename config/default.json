@@ -24,5 +24,9 @@
     "DEBUG": false
   },
   "SWITCH_ENDPOINT": "http://localhost:3001",
+  "ERROR_HANDLING": {
+    "includeCauseExtension": false,
+    "truncateCause": true
+  },
   "SIMPLE_ROUTING_MODE": true
 }

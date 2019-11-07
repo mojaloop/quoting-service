@@ -38,8 +38,11 @@ const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const getCircularReplacer = require('@mojaloop/central-services-shared').Util.getCircularReplacer
+const LibUtil = require('@mojaloop/central-services-shared').Util
+const LOCAL_ENUM = require('../lib/enum')
 const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
+const quoteRules = require('./rules.js')
 const RulesEngine = require('./rules.js')
 const rules = require('../../config/rules.example.json')
 const util = require('util')
@@ -351,27 +354,28 @@ class QuotesModel {
         res = await axios.request(opts)
       } catch (err) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `Network error forwarding quote request to ${fspiopDest}`, err, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
-        ])
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `Network error forwarding quote request to ${fspiopDest}`, {
+          error: err,
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
+          request: JSON.stringify(opts, LibUtil.getCircularReplacer())
+        }, fspiopSource)
       }
       this.writeLog(`forwarding quote request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
 
       // handle non network related errors below
       if (res.status !== ENUM.Http.ReturnCodes.ACCEPTED.CODE) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote request', null, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
-          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
-        ])
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote request', {
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
+          request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
+          response: JSON.stringify(res, LibUtil.getCircularReplacer())
+        }, fspiopSource)
       }
     } catch (err) {
       // any-error
@@ -568,7 +572,7 @@ class QuotesModel {
     let endpoint = null
     const envConfig = new Config()
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+    const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       if (!originalQuoteResponse) {
         // we need to recreate the quote response
@@ -578,7 +582,7 @@ class QuotesModel {
 
       // lookup payer dfsp callback endpoint
       if (envConfig.simpleRoutingMode) {
-        endpoint = await this.db.getParticipantEndpoint(fspiopDestination, 'FSPIOP_CALLBACK_URL_QUOTES')
+        endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
       } else {
         // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
         endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
@@ -616,26 +620,27 @@ class QuotesModel {
         res = await axios.request(opts)
       } catch (err) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error forwarding quote response', err, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDestination },
-          { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
-        ])
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error forwarding quote response', {
+          error: err,
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
+          request: JSON.stringify(opts, LibUtil.getCircularReplacer())
+        }, fspiopSource)
       }
       this.writeLog(`forwarding quote response got response ${res.status} ${res.statusText}`)
 
       if (res.status !== ENUM.Http.ReturnCodes.OK.CODE) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote response', null, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDestination },
-          { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
-          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
-        ])
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote response', {
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
+          request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
+          response: JSON.stringify(res, LibUtil.getCircularReplacer())
+        }, fspiopSource)
       }
     } catch (err) {
       // any-error
@@ -825,27 +830,28 @@ class QuotesModel {
         res = await axios.request(opts)
       } catch (err) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error forwarding quote get request', err, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
-        ])
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error forwarding quote get request', {
+          error: err,
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
+          request: JSON.stringify(opts, LibUtil.getCircularReplacer())
+        }, fspiopSource)
       }
       this.writeLog(`forwarding quote get request ${quoteId} from ${fspiopSource} to ${fspiopDest} got response ${res.status} ${res.statusText}`)
 
       // handle non network related errors below
       if (res.status !== ENUM.Http.ReturnCodes.ACCEPTED.CODE) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote get request', null, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
-          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
-        ])
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response forwarding quote get request', {
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
+          request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
+          response: JSON.stringify(res, LibUtil.getCircularReplacer())
+        }, fspiopSource)
       }
     } catch (err) {
       // any-error
@@ -885,6 +891,7 @@ class QuotesModel {
      * @returns {promise}
      */
   async sendErrorCallback (fspiopSource, fspiopError, quoteId, headers, span) {
+    const envConfig = new Config()
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       // look up the callback base url
@@ -907,7 +914,7 @@ class QuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
-        data: JSON.stringify(fspiopError.toApiErrorObject()),
+        data: JSON.stringify(fspiopError.toApiErrorObject(envConfig.errorHandling), LibUtil.getCircularReplacer()),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
         headers: this.generateRequestHeaders(headers || {
@@ -927,26 +934,27 @@ class QuotesModel {
         res = await axios.request(opts)
       } catch (err) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, err, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) }
-        ])
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, {
+          error: err,
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
+          request: JSON.stringify(opts, LibUtil.getCircularReplacer())
+        }, fspiopSource)
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
       if (res.status !== ENUM.Http.ReturnCodes.OK.CODE) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response sending error callback', null, fspiopSource, [
-          { key: 'url', value: fullCallbackUrl },
-          { key: 'sourceFsp', value: fspiopSource },
-          { key: 'destinationFsp', value: fspiopDest },
-          { key: 'method', value: opts && opts.method },
-          { key: 'request', value: JSON.stringify(opts, getCircularReplacer()) },
-          { key: 'response', value: JSON.stringify(res, getCircularReplacer()) }
-        ])
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response sending error callback', {
+          url: fullCallbackUrl,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          method: opts && opts.method,
+          request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
+          response: JSON.stringify(res, LibUtil.getCircularReplacer())
+        }, fspiopSource)
       }
     } catch (err) {
       // any-error
