@@ -169,5 +169,6 @@ const createEngine = () => {
 module.exports.run = (rules, runtimeFacts) => {
   const engine = createEngine()
   rules.map(r => new jre.Rule(r)).forEach(r => engine.addRule(r))
+
   return engine.run(runtimeFacts)
 }

@@ -34,7 +34,7 @@ const QuotesModel = require('../../../src/model/quotes')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const Config = require('../../../config/default')
-const QuoteRules = require('../../../src/model/rules')
+const RulesEngine = require('../../../src/model/rules')
 const clone = require('@mojaloop/central-services-shared').Util.clone
 const mockAxios = require('axios')
 
@@ -104,9 +104,19 @@ const mockSpan = {
   finish: jest.fn()
 }
 
+const rules = require(`${__ROOT__}/config/rules.example.json`)
+
 jest.mock('../../../src/model/rules', () => {
   return {
-    getFailures: jest.fn()
+    events: {
+      INTERCEPT_QUOTE: 'INTERCEPT_QUOTE',
+      INVALID_QUOTE_REQUEST: 'INVALID_QUOTE_REQUEST'
+    },
+    run: jest.fn(() => {
+      return {
+        events: []
+      }
+    })
   }
 })
 
@@ -237,7 +247,7 @@ describe('quotesModel', () => {
     mockSpan.getChild.mockClear()
     mockSpan.error.mockClear()
     mockSpan.finish.mockClear()
-    QuoteRules.getFailures.mockClear()
+    RulesEngine.run.mockClear()
   })
   afterEach(() => {})
   afterAll(() => {})
@@ -391,7 +401,12 @@ describe('quotesModel', () => {
       mockDb.createPayerQuoteParty.mockReturnValueOnce(expected.payerId)
       mockDb.createPayeeQuoteParty.mockReturnValueOnce(expected.payeeId)
 
-      QuoteRules.getFailures = jest.fn(() => [1, 2, 3])
+      RulesEngine.run = jest.fn(() => {
+        return {
+          events: [rules[0].event]
+        }
+      })
+
       quotesModel.forwardQuoteRequest = jest.fn()
       mockChildSpan.isFinished = true
 
@@ -404,8 +419,8 @@ describe('quotesModel', () => {
       expect(quotesModel.checkDuplicateQuoteRequest).toBeCalledWith(quoteRequest)
       expect(mockTransaction.rollback.mock.calls.length).toBe(0)
       expect(mockTransaction.commit.mock.calls.length).toBe(1)
-      expect(QuoteRules.getFailures.mock.calls.length).toBe(1)
-      expect(QuoteRules.getFailures.mock.results[0].value.length).toBeGreaterThan(0)
+      expect(RulesEngine.run.mock.calls.length).toBe(1)
+      expect(RulesEngine.run.mock.results[0].value.events.length).toBeGreaterThan(0)
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
       args = [{ headers, payload: refs }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)
@@ -437,7 +452,7 @@ describe('quotesModel', () => {
       expect(quotesModel.checkDuplicateQuoteRequest).toBeCalledWith(localQuoteRequest)
       expect(mockTransaction.rollback.mock.calls.length).toBe(0)
       expect(mockTransaction.commit.mock.calls.length).toBe(1)
-      expect(QuoteRules.getFailures.mock.calls.length).toBe(1)
+      expect(RulesEngine.run.mock.calls.length).toBe(1)
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
       args = [{ headers, payload: refs }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)
@@ -482,7 +497,11 @@ describe('quotesModel', () => {
       mockDb.getSubScenario.mockReturnValueOnce(expected.transactionSubScenarioId)
       mockDb.createGeoCode.mockReturnValueOnce(expected.geoCodeId)
 
-      QuoteRules.getFailures = jest.fn()
+      RulesEngine.run = jest.fn(() => {
+        return {
+          events: []
+        }
+      })
       const customError = new Error('Custom error')
       delete customError.stack
       quotesModel.forwardQuoteRequest = jest.fn(() => { throw customError })
@@ -498,7 +517,7 @@ describe('quotesModel', () => {
       expect(quotesModel.checkDuplicateQuoteRequest).toBeCalledWith(localQuoteRequest)
       expect(mockTransaction.rollback.mock.calls.length).toBe(0)
       expect(mockTransaction.commit.mock.calls.length).toBe(1)
-      expect(QuoteRules.getFailures.mock.results[0].value).toBe(undefined)
+      expect(RulesEngine.run.mock.results[0].value.events).toEqual([])
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
       args = [{ headers, payload: refs }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)
