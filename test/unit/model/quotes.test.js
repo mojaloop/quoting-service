@@ -222,11 +222,6 @@ describe('quotesModel', () => {
       db: new Db(),
       requestId: 'test1234'
     })
-    quotesModel.handleRuleEvents = (events, headers, quoteRequest) => ({
-      quoteRequest,
-      headers,
-      terminate: false
-    })
     Db.mockClear()
     mockTransaction.commit.mockClear()
     mockTransaction.rollback.mockClear()
@@ -429,7 +424,11 @@ describe('quotesModel', () => {
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
       args = [{ headers, payload: refs }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [headers, refs.quoteId, quoteRequest, mockChildSpan]
+      const forwardedHeaders = {
+        'fspiop-source': 'dfsp1',
+        'fspiop-destination': rules[0].event.params.rerouteToFsp
+      }
+      args = [forwardedHeaders, refs.quoteId, quoteRequest, mockChildSpan]
       expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toMatchObject(expected)
@@ -461,7 +460,11 @@ describe('quotesModel', () => {
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
       args = [{ headers, payload: refs }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [headers, refs.quoteId, localQuoteRequest, mockChildSpan]
+      const forwardedHeaders = {
+        'fspiop-source': 'dfsp1',
+        'fspiop-destination': rules[0].event.params.rerouteToFsp
+      }
+      args = [forwardedHeaders, refs.quoteId, localQuoteRequest, mockChildSpan]
       expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toEqual({})
