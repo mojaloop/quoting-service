@@ -222,6 +222,11 @@ describe('quotesModel', () => {
       db: new Db(),
       requestId: 'test1234'
     })
+    quotesModel.handleRuleEvents = (events, headers, quoteRequest) => ({
+      quoteRequest,
+      headers,
+      terminate: false
+    })
     Db.mockClear()
     mockTransaction.commit.mockClear()
     mockTransaction.rollback.mockClear()
