@@ -212,7 +212,7 @@ class QuotesModel {
         if (dupe.isResend && dupe.isDuplicateId) {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-          return this.handleQuoteRequestResend(headers, quoteRequest, span)
+          return this.handleQuoteRequestResend(sendHeaders, sendRequest, span)
         }
 
         // todo: validation
@@ -289,10 +289,10 @@ class QuotesModel {
       try {
         if (envConfig.simpleRoutingMode) {
           await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
-          await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan)
+          await this.forwardQuoteRequest(sendHeaders, quoteRequest.quoteId, sendRequest, childSpan)
         } else {
           await childSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
-          await this.forwardQuoteRequest(headers, refs.quoteId, quoteRequest, childSpan)
+          await this.forwardQuoteRequest(sendHeaders, refs.quoteId, sendRequest, childSpan)
         }
       } catch (err) {
         // any-error
