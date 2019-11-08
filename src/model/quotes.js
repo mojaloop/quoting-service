@@ -72,7 +72,7 @@ class QuotesModel {
     const [payer, payee] = await Promise.all([
       axios.request({ url: `${url}/${headers['fspiop-source']}` }),
       axios.request({ url: `${url}/${headers['fspiop-destination']}` })
-    ].map(p => p.then(res => res)))
+    ])
 
     this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
 
