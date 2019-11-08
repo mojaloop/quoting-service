@@ -41,7 +41,6 @@ const LibUtil = require('@mojaloop/central-services-shared').Util
 const LOCAL_ENUM = require('../lib/enum')
 const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
-const quoteRules = require('./rules.js')
 const RulesEngine = require('./rules.js')
 const rules = require('../../config/rules.example.json')
 const util = require('util')
@@ -73,7 +72,7 @@ class QuotesModel {
     const [payer, payee] = await Promise.all([
       axios.request({ url: `${url}/${headers['fspiop-source']}` }),
       axios.request({ url: `${url}/${headers['fspiop-destination']}` })
-    ].map(p => p.then(res => res.json())))
+    ].map(p => p.then(res => res)))
 
     this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
 
@@ -83,7 +82,8 @@ class QuotesModel {
       payload: quoteRequest,
       headers
     }
-    const { events } = RulesEngine.run(rules, facts)
+
+    const { events } = await RulesEngine.run(rules, facts)
 
     this.writeLog(`Rules engine returned events ${events}`)
 
@@ -180,6 +180,7 @@ class QuotesModel {
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
       // supply a rules file containing an empty array.
       const events = await this.executeRules(headers, quoteRequest)
+
       const { terminate, quoteRequest: sendRequest, headers: sendHeaders } =
         await this.handleRuleEvents(events, headers, quoteRequest)
       if (terminate) {
@@ -317,6 +318,7 @@ class QuotesModel {
       if (txn) {
         txn.rollback(err)
       }
+
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
