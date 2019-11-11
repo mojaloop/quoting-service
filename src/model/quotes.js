@@ -28,6 +28,8 @@
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Henk Kodde <henk.kodde@modusbox.com>
+ - Matt Kingston <matt.kingston@modusbox.com>
+ - Vassilis Barzokas <vassilis.barzokas@modusbox.com>
  --------------
  ******/
 
@@ -449,28 +451,23 @@ class QuotesModel {
       // as it passed a hash duplicate check...so go ahead and use it to resend rather than
       // hit the db again
 
-      // make call to payee dfsp in a setImmediate;
-      // attempting to give fair execution of async events...
-      // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
-      setImmediate(async () => {
-        // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-        const childSpan = span.getChild('qs_quote_forwardQuoteRequestResend')
-        try {
-          await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
-          await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan)
-        } catch (err) {
-          // any-error
-          // as we are on our own in this context, dont just rethrow the error, instead...
-          // get the model to handle it
-          this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-          await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers, childSpan)
-        } finally {
-          if (!childSpan.isFinished) {
-            await childSpan.finish()
-          }
+      // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+      const childSpan = span.getChild('qs_quote_forwardQuoteRequestResend')
+      try {
+        await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan)
+      } catch (err) {
+        // any-error
+        // as we are on our own in this context, dont just rethrow the error, instead...
+        // get the model to handle it
+        this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+        await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers, childSpan)
+      } finally {
+        if (!childSpan.isFinished) {
+          await childSpan.finish()
         }
-      })
+      }
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleQuoteRequestResend: ${err.stack || util.inspect(err)}`)
@@ -574,28 +571,23 @@ class QuotesModel {
         // todo: make error callback
         // }
       }
-      // make call to payee dfsp in a setImmediate;
-      // attempting to give fair execution of async events...
-      // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
-      setImmediate(async () => {
-        // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-        const childSpan = span.getChild('qs_quote_forwardQuoteUpdate')
-        try {
-          await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdateRequest }, EventSdk.AuditEventAction.start)
-          await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, childSpan)
-        } catch (err) {
-          // any-error
-          // as we are on our own in this context, dont just rethrow the error, instead...
-          // get the model to handle it
-          const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-          this.writeLog(`Error forwarding quote update: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
-        } finally {
-          if (!childSpan.isFinished) {
-            await childSpan.finish()
-          }
+      // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+      const childSpan = span.getChild('qs_quote_forwardQuoteUpdate')
+      try {
+        await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdateRequest }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, childSpan)
+      } catch (err) {
+        // any-error
+        // as we are on our own in this context, dont just rethrow the error, instead...
+        // get the model to handle it
+        const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+        this.writeLog(`Error forwarding quote update: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
+      } finally {
+        if (!childSpan.isFinished) {
+          await childSpan.finish()
         }
-      })
+      }
 
       // all ok, return refs
       return refs
@@ -694,27 +686,22 @@ class QuotesModel {
       // as it passed a hash duplicate check...so go ahead and use it to resend rather than
       // hit the db again
 
-      // make call to payee dfsp in a setImmediate;
-      // attempting to give fair execution of async events...
-      // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
-      setImmediate(async () => {
-        // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-        const childSpan = span.getChild('qs_quote_forwardQuoteUpdateResend')
-        try {
-          await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdate }, EventSdk.AuditEventAction.start)
-          await this.forwardQuoteUpdate(headers, quoteId, quoteUpdate, childSpan)
-        } catch (err) {
-          // any-error
-          // as we are on our own in this context, dont just rethrow the error, instead...
-          // get the model to handle it
-          this.writeLog(`Error forwarding quote response: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
-        } finally {
-          if (!childSpan.isFinished) {
-            await childSpan.finish()
-          }
+      // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+      const childSpan = span.getChild('qs_quote_forwardQuoteUpdateResend')
+      try {
+        await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdate }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteUpdate(headers, quoteId, quoteUpdate, childSpan)
+      } catch (err) {
+        // any-error
+        // as we are on our own in this context, dont just rethrow the error, instead...
+        // get the model to handle it
+        this.writeLog(`Error forwarding quote response: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
+      } finally {
+        if (!childSpan.isFinished) {
+          await childSpan.finish()
         }
-      })
+      }
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleQuoteUpdateResend: ${err.stack || util.inspect(err)}`)
@@ -749,12 +736,7 @@ class QuotesModel {
       // create a new object to represent the error
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
 
-      // send the callback in a future event loop step
-      // attempting to give fair execution of async events...
-      // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
-      setImmediate(() => {
-        this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.SOURCE], fspiopError, quoteId, headers, span)
-      })
+      this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.SOURCE], fspiopError, quoteId, headers, span)
 
       return newError
     } catch (err) {
@@ -779,26 +761,21 @@ class QuotesModel {
   async handleQuoteGet (headers, quoteId, span) {
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     try {
-      // make call to destination dfsp in a setImmediate;
-      // attempting to give fair execution of async events...
-      // see https://rclayton.silvrback.com/scheduling-execution-in-node-js etc...
-      setImmediate(async () => {
-        const childSpan = span.getChild('qs_quote_forwardQuoteGet')
-        try {
-          await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
-          await this.forwardQuoteGet(headers, quoteId, childSpan)
-        } catch (err) {
-          // any-error
-          // as we are on our own in this context, dont just rethrow the error, instead...
-          // get the model to handle it
-          this.writeLog(`Error forwarding quote get: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-          await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
-        } finally {
-          if (!childSpan.isFinished) {
-            await childSpan.finish()
-          }
+      const childSpan = span.getChild('qs_quote_forwardQuoteGet')
+      try {
+        await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteGet(headers, quoteId, childSpan)
+      } catch (err) {
+        // any-error
+        // as we are on our own in this context, dont just rethrow the error, instead...
+        // get the model to handle it
+        this.writeLog(`Error forwarding quote get: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
+      } finally {
+        if (!childSpan.isFinished) {
+          await childSpan.finish()
         }
-      })
+      }
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleQuoteGet: ${err.stack || util.inspect(err)}`)
@@ -1017,7 +994,7 @@ class QuotesModel {
   }
 
   /**
-     * Tests to see if this quote reqponse is a RESEND of a previous response or an inadvertant duplicate quoteId.
+     * Tests to see if this quote response is a RESEND of a previous response or an inadvertent duplicate quoteId.
      *
      * See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
      *
