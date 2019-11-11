@@ -389,7 +389,7 @@ class QuotesModel {
     try {
       if (!originalQuoteRequest) {
         // internal-error
-        throw ErrorHandler.CreateFSPIOPError('No quote request to forward', null, fspiopSource)
+        throw ErrorHandler.CreateInternalServerFSPIOPError('No quote request to forward', null, fspiopSource)
       }
 
       // lookup payee dfsp callback endpoint
