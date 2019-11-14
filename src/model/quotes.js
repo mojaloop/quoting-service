@@ -46,7 +46,7 @@ const MLNumber = require('@mojaloop/ml-number')
 
 const Config = require('../lib/config')
 const LOCAL_ENUM = require('../lib/enum')
-const rules = require('../../config/rules.example.json')
+const rules = require('../../config/rules.json')
 const RulesEngine = require('./rules.js')
 
 delete axios.defaults.headers.common.Accept

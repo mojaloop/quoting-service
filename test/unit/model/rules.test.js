@@ -123,7 +123,7 @@ test('Test rules engine deepEqual operator', async () => {
 })
 
 test('Test rules engine example config INTERCEPT_QUOTE event', async () => {
-  const rules = require(`${__ROOT__}/config/rules.example.json`)
+  const rules = require(`${__ROOT__}/config/rules.json`)
   const testFacts = {
     payee: {
       accounts: [{
@@ -147,7 +147,7 @@ test('Test rules engine example config INTERCEPT_QUOTE event', async () => {
 })
 
 test('Test rules engine example config INTERCEPT_QUOTE event negative case', async () => {
-  const rules = require(`${__ROOT__}/config/rules.example.json`)
+  const rules = require(`${__ROOT__}/config/rules.json`)
   const testFacts = {
     payee: {
       accounts: [{
@@ -171,7 +171,7 @@ test('Test rules engine example config INTERCEPT_QUOTE event negative case', asy
 })
 
 test('Test rules engine example config INVALID_QUOTE_REQUEST triggered by missing extension value', async () => {
-  const rules = require(`${__ROOT__}/config/rules.example.json`)
+  const rules = require(`${__ROOT__}/config/rules.json`)
   const testFacts = {
     payee: {
       accounts: [{
@@ -194,7 +194,7 @@ test('Test rules engine example config INVALID_QUOTE_REQUEST triggered by missin
 })
 
 test('Test rules engine example config INVALID_QUOTE_REQUEST triggered by incorrect extension value', async () => {
-  const rules = require(`${__ROOT__}/config/rules.example.json`)
+  const rules = require(`${__ROOT__}/config/rules.json`)
   const testFacts = {
     payee: {
       accounts: [{
@@ -218,7 +218,7 @@ test('Test rules engine example config INVALID_QUOTE_REQUEST triggered by incorr
 })
 
 test('Test rules engine example config INVALID_QUOTE_REQUEST event negative case', async () => {
-  const rules = require(`${__ROOT__}/config/rules.example.json`)
+  const rules = require(`${__ROOT__}/config/rules.json`)
   const testFacts = {
     payee: {
       accounts: [{
