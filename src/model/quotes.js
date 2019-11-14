@@ -44,7 +44,7 @@ const LOCAL_ENUM = require('../lib/enum')
 const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
 const RulesEngine = require('./rules.js')
-const rules = require('../../config/rules.example.json')
+const rules = require('../../config/rules.json')
 const util = require('util')
 
 delete axios.defaults.headers.common.Accept

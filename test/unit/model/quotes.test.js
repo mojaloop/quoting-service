@@ -104,7 +104,7 @@ const mockSpan = {
   finish: jest.fn()
 }
 
-const rules = require(`${__ROOT__}/config/rules.example.json`)
+const rules = require(`${__ROOT__}/config/rules.json`)
 
 jest.mock('../../../src/model/rules', () => {
   return {
