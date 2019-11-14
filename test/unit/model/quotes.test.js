@@ -2,9 +2,9 @@
  License
  --------------
  Copyright © 2017 Bill & Melinda Gates Foundation
- The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the "License") and you may not use these files except in compliance with the License. You may obtain a copy of the License at
+ The Mojaloop files are made available by the Bill & Melinda Gates Foundation under the Apache License, Version 2.0 (the 'License') and you may not use these files except in compliance with the License. You may obtain a copy of the License at
  http://www.apache.org/licenses/LICENSE-2.0
- Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
  Initial contribution
  --------------------
@@ -165,6 +165,75 @@ describe('QuotesModel', () => {
           }]
         }
       },
+      rules: [
+        {
+          conditions: {
+            all: [
+              {
+                fact: 'json-path',
+                params: {
+                  fact: 'payload',
+                  path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
+                },
+                operator: 'deepEqual',
+                value: [ '1' ]
+              },
+              {
+                fact: 'payload',
+                path: '.amount.currency',
+                operator: 'notIn',
+                value: {
+                  fact: 'json-path',
+                  params: {
+                    fact: 'payee',
+                    path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
+                  }
+                }
+              }
+            ]
+          },
+          event: {
+            type: 'INTERCEPT_QUOTE',
+            params: {
+              rerouteToFsp: 'DFSPEUR'
+            }
+          }
+        },
+        {
+          conditions: {
+            all: [
+              {
+                fact: 'json-path',
+                params: {
+                  fact: 'payload',
+                  path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
+                },
+                operator: 'notDeepEqual',
+                value: [ '1' ]
+              },
+              {
+                fact: 'payload',
+                path: '.amount.currency',
+                operator: 'notIn',
+                value: {
+                  fact: 'json-path',
+                  params: {
+                    fact: 'payee',
+                    path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
+                  }
+                }
+              }
+            ]
+          },
+          event: {
+            type: 'INVALID_QUOTE_REQUEST',
+            params: {
+              FSPIOPError: 'PAYEE_UNSUPPORTED_CURRENCY',
+              message: 'The requested payee does not support the payment currency'
+            }
+          }
+        }
+      ],
       scenario: 'fakeScenario',
       subScenario: 'fakeSubScenario',
       transactionReference: 'fakeTxRef'
@@ -222,6 +291,132 @@ describe('QuotesModel', () => {
     })
   })
 
+  describe('handleRuleEvents', () => {
+    beforeEach(() => {
+      quotesModel.handleRuleEvents.mockRestore()
+    })
+
+    describe('In case no events are passed', () => {
+      it('terminates execution and passes back an appropriate result', async () => {
+        await expect(quotesModel.handleRuleEvents([], mockData.headers, mockData.quoteRequest)).resolves.toStrictEqual({
+          terminate: false,
+          quoteRequest: mockData.quoteRequest,
+          headers: mockData.headers
+        })
+      })
+    })
+
+    describe('In case one event is passed', () => {
+      let mockEvents
+
+      describe('In case it has type of `INVALID_QUOTE_REQUEST`', () => {
+        beforeEach(() => {
+          mockEvents = [mockData.rules[1].event]
+        })
+
+        it('throws an exception according to the error type specified inside the event\'s parameters', async () => {
+          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+            .rejects
+            .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes[mockData.rules[1].event.params.FSPIOPError].code)
+        })
+      })
+      describe('In case it has type of `INTERCEPT_QUOTE`', () => {
+        beforeEach(() => {
+          mockEvents = [mockData.rules[0].event]
+        })
+
+        it('returns an expected response object', async () => {
+          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+            .resolves
+            .toStrictEqual({
+              terminate: false,
+              quoteRequest: mockData.quoteRequest,
+              headers: {
+                ...mockData.headers,
+                'fspiop-destination': mockEvents[0].params.rerouteToFsp
+              }
+            })
+        })
+      })
+      describe('In case it has an unknown type', () => {
+        beforeEach(() => {
+          mockEvents = [mockData.rules[0].event]
+          mockEvents[0].type = 'something-that-is-not-known'
+        })
+
+        it('throws an exception with an appropriate error message', async () => {
+          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+            .rejects
+            .toHaveProperty('message', 'Unhandled event returned by rules engine')
+        })
+      })
+    })
+
+    describe('In case multiple events are passed', () => {
+      let mockEvents
+
+      describe('In case one of them has type of `INVALID_QUOTE_REQUEST`', () => {
+        beforeEach(() => {
+          mockEvents = [mockData.rules[0].event, mockData.rules[1].event]
+        })
+
+        it('throws an exception according to the error type specified inside the event\'s parameters', async () => {
+          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+            .rejects
+            .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes[mockData.rules[1].event.params.FSPIOPError].code)
+        })
+      })
+      describe('In case more than one have type of `INTERCEPT_QUOTE`', () => {
+        beforeEach(() => {
+          mockEvents = [mockData.rules[0].event, mockData.rules[0].event]
+        })
+
+        it('throws an exception with an appropriate error message', async () => {
+          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+            .rejects
+            .toHaveProperty('message', 'Multiple intercept quote events received')
+        })
+      })
+      describe('In case one of them has an unknown type and one of them has type of `INTERCEPT_QUOTE`', () => {
+        beforeEach(() => {
+          mockEvents = [
+            clone(mockData.rules[0].event),
+            clone(mockData.rules[0].event)
+          ]
+          mockEvents[0].type = 'something-that-is-not-known'
+        })
+
+        it('returns an expected response object', async () => {
+          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+            .resolves
+            .toStrictEqual({
+              terminate: false,
+              quoteRequest: mockData.quoteRequest,
+              headers: {
+                ...mockData.headers,
+                'fspiop-destination': mockEvents[0].params.rerouteToFsp
+              }
+            })
+        })
+      })
+      describe('In case all of them have an unknown type', () => {
+        beforeEach(() => {
+          mockEvents = [
+            clone(mockData.rules[0].event),
+            clone(mockData.rules[0].event)
+          ]
+          mockEvents[0].type = 'something-that-is-not-known-1'
+          mockEvents[1].type = 'something-that-is-not-known-2'
+        })
+
+        it('throws an exception with an appropriate error message', async () => {
+          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+            .rejects
+            .toHaveProperty('message', 'Unhandled event returned by rules engine')
+        })
+      })
+    })
+  })
   describe('validateQuoteRequest', () => {
     beforeEach(() => {
       // restore the current method in test to its original implementation
