@@ -32,102 +32,16 @@
  ******/
 'use strict'
 
+const axios = require('axios')
 
-const QuotesModel = require('../../../src/model/quotes')
+const clone = require('@mojaloop/central-services-shared').Util.clone
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
-const Config = require('../../../config/default')
-const RulesEngine = require('../../../src/model/rules')
-const clone = require('@mojaloop/central-services-shared').Util.clone
-const mockAxios = require('axios')
 
 const Db = require('../../../src/data/database')
-const mockTransaction = {
-  commit: jest.fn(),
-  rollback: jest.fn()
-}
-const mockDb = {
-  getParticipant: jest.fn(),
-  newTransaction: jest.fn(() => mockTransaction),
-  getQuoteDuplicateCheck: jest.fn(),
-  createQuoteDuplicateCheck: jest.fn(),
-  createTransactionReference: jest.fn(),
-  getInitiatorType: jest.fn(),
-  getInitiator: jest.fn(),
-  getScenario: jest.fn(),
-  getAmountType: jest.fn(),
-  createQuote: jest.fn(),
-  createPayerQuoteParty: jest.fn(),
-  createPayeeQuoteParty: jest.fn(),
-  getSubScenario: jest.fn(),
-  createGeoCode: jest.fn(),
-  getParticipantEndpoint: jest.fn(),
-  getQuotePartyEndpoint: jest.fn(),
-  createQuoteResponse: jest.fn(),
-  createQuoteUpdateDuplicateCheck: jest.fn(),
-  createQuoteResponseIlpPacket: jest.fn(),
-  getQuoteParty: jest.fn()
-}
-jest.mock('../../../src/data/database', () => {
-  return jest.fn().mockImplementation(() => {
-    return {
-      getParticipant: mockDb.getParticipant,
-      newTransaction: mockDb.newTransaction,
-      getQuoteDuplicateCheck: mockDb.getQuoteDuplicateCheck,
-      createQuoteDuplicateCheck: mockDb.createQuoteDuplicateCheck,
-      createTransactionReference: mockDb.createTransactionReference,
-      getInitiatorType: mockDb.getInitiatorType,
-      getInitiator: mockDb.getInitiator,
-      getScenario: mockDb.getScenario,
-      getAmountType: mockDb.getAmountType,
-      createQuote: mockDb.createQuote,
-      createPayerQuoteParty: mockDb.createPayerQuoteParty,
-      createPayeeQuoteParty: mockDb.createPayeeQuoteParty,
-      getSubScenario: mockDb.getSubScenario,
-      createGeoCode: mockDb.createGeoCode,
-      getParticipantEndpoint: mockDb.getParticipantEndpoint,
-      getQuotePartyEndpoint: mockDb.getQuotePartyEndpoint,
-      createQuoteResponse: mockDb.createQuoteResponse,
-      createQuoteUpdateDuplicateCheck: mockDb.createQuoteUpdateDuplicateCheck,
-      createQuoteResponseIlpPacket: mockDb.createQuoteResponseIlpPacket,
-      getQuoteParty: mockDb.getQuoteParty
-    }
-  })
-})
-
-const mockChildSpan = {
-  injectContextToHttpRequest: jest.fn(opts => opts),
-  audit: jest.fn(),
-  isFinished: undefined,
-  finish: jest.fn()
-}
-const mockSpan = {
-  getChild: jest.fn(() => mockChildSpan),
-  error: jest.fn(),
-  finish: jest.fn()
-}
-
-const rules = require(`${__ROOT__}/config/rules.json`)
-
-jest.mock('../../../src/model/rules', () => {
-  return {
-    events: {
-      INTERCEPT_QUOTE: 'INTERCEPT_QUOTE',
-      INVALID_QUOTE_REQUEST: 'INVALID_QUOTE_REQUEST'
-    },
-    run: jest.fn(() => {
-      return {
-        events: []
-      }
-    })
-  }
-})
-
-jest.mock('@mojaloop/central-services-logger', () => {
-  return {
-    info: jest.fn() // suppress info output
-  }
-})
+const envConfig = require('../../../config/default')
+const QuotesModel = require('../../../src/model/quotes')
+const RulesEngine = require('../../../src/model/rules')
 
 jest.mock('axios')
 jest.mock('@mojaloop/central-services-logger')
