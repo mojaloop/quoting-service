@@ -386,17 +386,10 @@ describe('QuotesModel', () => {
           mockEvents[0].type = 'something-that-is-not-known'
         })
 
-        it('returns an expected response object', async () => {
+        it('throws an exception with an appropriate error message', async () => {
           await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
-            .resolves
-            .toStrictEqual({
-              terminate: false,
-              quoteRequest: mockData.quoteRequest,
-              headers: {
-                ...mockData.headers,
-                'fspiop-destination': mockEvents[0].params.rerouteToFsp
-              }
-            })
+            .rejects
+            .toHaveProperty('message', 'Unhandled event returned by rules engine')
         })
       })
       describe('In case all of them have an unknown type', () => {
@@ -497,7 +490,7 @@ describe('QuotesModel', () => {
             .toBe(fspiopError)
         })
         it('stops execution and returns an undefined value if `handleRuleEvents` returns a truthy value for `terminate`', async () => {
-          expect.assertions(1)
+          expect.assertions(3)
 
           quotesModel.handleRuleEvents = jest.fn(() => {
             return {
@@ -508,6 +501,8 @@ describe('QuotesModel', () => {
           await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
             .resolves
             .toBe(undefined)
+          expect(quotesModel.validateQuoteRequest).not.toBeCalled()
+          expect(quotesModel.forwardQuoteRequest).not.toBeCalled()
         })
         it('throws an exception if `validateQuoteRequest` fails', async () => {
           expect.assertions(1)

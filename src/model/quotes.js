@@ -146,6 +146,14 @@ class QuotesModel {
 
     const { INVALID_QUOTE_REQUEST, INTERCEPT_QUOTE } = RulesEngine.events
 
+    const unhandledEvents = events.filter(ev => !(ev.type in RulesEngine.events))
+
+    if (unhandledEvents.length > 0) {
+      // The rules configuration contains events not handled in the code
+      // TODO: validate supplied rules at startup and fail if any invalid rules are discovered.
+      throw new Error('Unhandled event returned by rules engine')
+    }
+
     const invalidQuoteRequestEvents = events.filter(ev => ev.type === INVALID_QUOTE_REQUEST)
     if (invalidQuoteRequestEvents.length > 0) {
       // Use the first event, ignore the others for now. This is ergonomically worse for someone
@@ -173,8 +181,6 @@ class QuotesModel {
         }
       }
     }
-
-    throw new Error('Unhandled event returned by rules engine')
   }
 
   /**
