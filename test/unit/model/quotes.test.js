@@ -266,7 +266,7 @@ describe('QuotesModel', () => {
       })
     })
 
-    // todo billy decide if we should follow this specific per method or the above generic approach
+    // some unit tests rely on specific results from some methods so we explicitly define them below
     jest.spyOn(quotesModel, 'handleRuleEvents').mockImplementation(jest.fn(() => {
       return {
         headers: mockData.headers,
@@ -312,6 +312,33 @@ describe('QuotesModel', () => {
           axios.request
             .mockImplementationOnce(() => { return { success: true } })
             .mockImplementationOnce(() => { throw new Error('foo') })
+
+          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
+            .rejects
+            .toHaveProperty('message', 'foo')
+
+          expect(axios.request.mock.calls.length).toBe(2)
+          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+          expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+        })
+
+        it('throws an unhandled exception if the first attempt of `axios.request` fails', async () => {
+          axios.request
+            .mockImplementationOnce(() => { return Promise.reject(new Error('foo')) })
+            .mockImplementationOnce(() => { return Promise.resolve({ ok: true }) })
+
+          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
+            .rejects
+            .toHaveProperty('message', 'foo')
+
+          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+          expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+        })
+
+        it('throws an unhandled exception if the second attempt of `axios.request` fails', async () => {
+          axios.request
+            .mockImplementationOnce(() => { return Promise.resolve({ ok: true }) })
+            .mockImplementationOnce(() => { return Promise.reject(new Error('foo')) })
 
           await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
             .rejects
