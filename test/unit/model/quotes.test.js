@@ -41,6 +41,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const Db = require('../../../src/data/database')
 const envConfig = require('../../../config/default')
 const QuotesModel = require('../../../src/model/quotes')
+const rules = require('../../../config/rules')
 const RulesEngine = require('../../../src/model/rules')
 
 jest.mock('axios')
@@ -48,10 +49,10 @@ jest.mock('@mojaloop/central-services-logger')
 jest.mock('../../../src/data/database')
 jest.mock('../../../src/model/rules')
 
-jest.useFakeTimers()
-
 describe('QuotesModel', () => {
   const defaultEnvConfig = JSON.parse(JSON.stringify(envConfig))
+  const defaultRules = JSON.parse(JSON.stringify(rules))
+
   let mockData
   let mockTransaction
   let mockChildSpan
@@ -272,12 +273,6 @@ describe('QuotesModel', () => {
         quoteRequest: mockData.quoteRequest
       }
     }))
-
-    RulesEngine.run.mockImplementation(() => {
-      return {
-        events: []
-      }
-    })
   })
   afterEach(() => {
     // Clears the mock.calls and mock.instances properties of all mocks.
@@ -289,6 +284,102 @@ describe('QuotesModel', () => {
     Object.keys(defaultEnvConfig).forEach(key => {
       envConfig[key] = defaultEnvConfig[key]
     })
+
+    Object.keys(defaultRules).forEach(key => {
+      rules[key] = defaultRules[key]
+    })
+  })
+
+  describe('executeRules', () => {
+    beforeEach(() => {
+      quotesModel.executeRules.mockRestore()
+    })
+
+    describe('Failures:', () => {
+      describe('In case a non empty set of rules is loaded', () => {
+        it('throws an unhandled exception if the first attempt of `axios.request` throws an exception', async () => {
+          axios.request.mockImplementationOnce(() => { throw new Error('foo') })
+
+          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
+            .rejects
+            .toHaveProperty('message', 'foo')
+
+          expect(axios.request.mock.calls.length).toBe(1)
+          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+        })
+
+        it('throws an unhandled exception if the second attempt of `axios.request` throws an exception', async () => {
+          axios.request
+            .mockImplementationOnce(() => { return { success: true } })
+            .mockImplementationOnce(() => { throw new Error('foo') })
+
+          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
+            .rejects
+            .toHaveProperty('message', 'foo')
+
+          expect(axios.request.mock.calls.length).toBe(2)
+          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+          expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+        })
+
+        it('throws an unhandled exception if `RulesEngine.run` throws an exception', async () => {
+          RulesEngine.run.mockImplementation(() => { throw new Error('foo') })
+
+          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
+            .rejects
+            .toHaveProperty('message', 'foo')
+
+          expect(axios.request.mock.calls.length).toBe(2)
+          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+          expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+        })
+      })
+    })
+
+    describe('Success:', () => {
+      describe('In case an empty set of rules is loaded', () => {
+        beforeEach(() => {
+          // keep the reference to the original rules array, as it the same values are used by
+          // the current unit tests file and the code's implementation
+          rules.length = 0
+        })
+
+        it('stops execution', async () => {
+          expect(rules.length).toBe(0)
+
+          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
+            .resolves
+            .toEqual([])
+
+          expect(axios.request.mock.calls.length).toBe(0)
+        })
+      })
+      describe('In case a non empty set of rules is loaded', () => {
+        it('returns the result of `RulesEngine.run`', async () => {
+          const expectedEvents = []
+
+          expect(rules.length).not.toBe(0)
+
+          rules.forEach((rule) => {
+            expectedEvents.push(rule.event)
+          })
+
+          RulesEngine.run.mockImplementation(() => {
+            return {
+              events: expectedEvents
+            }
+          })
+
+          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
+            .resolves
+            .toEqual(expectedEvents)
+
+          expect(axios.request.mock.calls.length).toBe(2)
+          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+          expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+        })
+      })
+    })
   })
 
   describe('handleRuleEvents', () => {
@@ -296,116 +387,122 @@ describe('QuotesModel', () => {
       quotesModel.handleRuleEvents.mockRestore()
     })
 
-    describe('In case no events are passed', () => {
-      it('terminates execution and passes back an appropriate result', async () => {
-        await expect(quotesModel.handleRuleEvents([], mockData.headers, mockData.quoteRequest)).resolves.toStrictEqual({
-          terminate: false,
-          quoteRequest: mockData.quoteRequest,
-          headers: mockData.headers
+    describe('Failures:', () => {
+      describe('In case one event is passed', () => {
+        let mockEvents
+
+        describe('In case it has type of `INVALID_QUOTE_REQUEST`', () => {
+          beforeEach(() => {
+            mockEvents = [mockData.rules[1].event]
+          })
+
+          it('throws an exception according to the error type specified inside the event\'s parameters', async () => {
+            await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+              .rejects
+              .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes[mockData.rules[1].event.params.FSPIOPError].code)
+          })
+        })
+        describe('In case it has an unknown type', () => {
+          beforeEach(() => {
+            mockEvents = [mockData.rules[0].event]
+            mockEvents[0].type = 'something-that-is-not-known'
+          })
+
+          it('throws an exception with an appropriate error message', async () => {
+            await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+              .rejects
+              .toHaveProperty('message', 'Unhandled event returned by rules engine')
+          })
+        })
+      })
+      describe('In case multiple events are passed', () => {
+        let mockEvents
+
+        describe('In case one of them has type of `INVALID_QUOTE_REQUEST`', () => {
+          beforeEach(() => {
+            mockEvents = [mockData.rules[0].event, mockData.rules[1].event]
+          })
+
+          it('throws an exception according to the error type specified inside the event\'s parameters', async () => {
+            await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+              .rejects
+              .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes[mockData.rules[1].event.params.FSPIOPError].code)
+          })
+        })
+        describe('In case more than one have type of `INTERCEPT_QUOTE`', () => {
+          beforeEach(() => {
+            mockEvents = [mockData.rules[0].event, mockData.rules[0].event]
+          })
+
+          it('throws an exception with an appropriate error message', async () => {
+            await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+              .rejects
+              .toHaveProperty('message', 'Multiple intercept quote events received')
+          })
+        })
+        describe('In case one of them has an unknown type and one of them has type of `INTERCEPT_QUOTE`', () => {
+          beforeEach(() => {
+            mockEvents = [
+              clone(mockData.rules[0].event),
+              clone(mockData.rules[0].event)
+            ]
+            mockEvents[0].type = 'something-that-is-not-known'
+          })
+
+          it('throws an exception with an appropriate error message', async () => {
+            await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+              .rejects
+              .toHaveProperty('message', 'Unhandled event returned by rules engine')
+          })
+        })
+        describe('In case all of them have an unknown type', () => {
+          beforeEach(() => {
+            mockEvents = [
+              clone(mockData.rules[0].event),
+              clone(mockData.rules[0].event)
+            ]
+            mockEvents[0].type = 'something-that-is-not-known-1'
+            mockEvents[1].type = 'something-that-is-not-known-2'
+          })
+
+          it('throws an exception with an appropriate error message', async () => {
+            await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+              .rejects
+              .toHaveProperty('message', 'Unhandled event returned by rules engine')
+          })
         })
       })
     })
-
-    describe('In case one event is passed', () => {
-      let mockEvents
-
-      describe('In case it has type of `INVALID_QUOTE_REQUEST`', () => {
-        beforeEach(() => {
-          mockEvents = [mockData.rules[1].event]
-        })
-
-        it('throws an exception according to the error type specified inside the event\'s parameters', async () => {
-          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
-            .rejects
-            .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes[mockData.rules[1].event.params.FSPIOPError].code)
+    describe('Success:', () => {
+      describe('In case no events are passed', () => {
+        it('terminates execution and passes back an appropriate result', async () => {
+          await expect(quotesModel.handleRuleEvents([], mockData.headers, mockData.quoteRequest)).resolves.toStrictEqual({
+            terminate: false,
+            quoteRequest: mockData.quoteRequest,
+            headers: mockData.headers
+          })
         })
       })
-      describe('In case it has type of `INTERCEPT_QUOTE`', () => {
-        beforeEach(() => {
-          mockEvents = [mockData.rules[0].event]
-        })
+      describe('In case one event is passed', () => {
+        let mockEvents
 
-        it('returns an expected response object', async () => {
-          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
-            .resolves
-            .toStrictEqual({
-              terminate: false,
-              quoteRequest: mockData.quoteRequest,
-              headers: {
-                ...mockData.headers,
-                'fspiop-destination': mockEvents[0].params.rerouteToFsp
-              }
-            })
-        })
-      })
-      describe('In case it has an unknown type', () => {
-        beforeEach(() => {
-          mockEvents = [mockData.rules[0].event]
-          mockEvents[0].type = 'something-that-is-not-known'
-        })
+        describe('In case it has type of `INTERCEPT_QUOTE`', () => {
+          beforeEach(() => {
+            mockEvents = [mockData.rules[0].event]
+          })
 
-        it('throws an exception with an appropriate error message', async () => {
-          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
-            .rejects
-            .toHaveProperty('message', 'Unhandled event returned by rules engine')
-        })
-      })
-    })
-
-    describe('In case multiple events are passed', () => {
-      let mockEvents
-
-      describe('In case one of them has type of `INVALID_QUOTE_REQUEST`', () => {
-        beforeEach(() => {
-          mockEvents = [mockData.rules[0].event, mockData.rules[1].event]
-        })
-
-        it('throws an exception according to the error type specified inside the event\'s parameters', async () => {
-          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
-            .rejects
-            .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes[mockData.rules[1].event.params.FSPIOPError].code)
-        })
-      })
-      describe('In case more than one have type of `INTERCEPT_QUOTE`', () => {
-        beforeEach(() => {
-          mockEvents = [mockData.rules[0].event, mockData.rules[0].event]
-        })
-
-        it('throws an exception with an appropriate error message', async () => {
-          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
-            .rejects
-            .toHaveProperty('message', 'Multiple intercept quote events received')
-        })
-      })
-      describe('In case one of them has an unknown type and one of them has type of `INTERCEPT_QUOTE`', () => {
-        beforeEach(() => {
-          mockEvents = [
-            clone(mockData.rules[0].event),
-            clone(mockData.rules[0].event)
-          ]
-          mockEvents[0].type = 'something-that-is-not-known'
-        })
-
-        it('throws an exception with an appropriate error message', async () => {
-          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
-            .rejects
-            .toHaveProperty('message', 'Unhandled event returned by rules engine')
-        })
-      })
-      describe('In case all of them have an unknown type', () => {
-        beforeEach(() => {
-          mockEvents = [
-            clone(mockData.rules[0].event),
-            clone(mockData.rules[0].event)
-          ]
-          mockEvents[0].type = 'something-that-is-not-known-1'
-          mockEvents[1].type = 'something-that-is-not-known-2'
-        })
-
-        it('throws an exception with an appropriate error message', async () => {
-          await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
-            .rejects
-            .toHaveProperty('message', 'Unhandled event returned by rules engine')
+          it('returns an expected response object', async () => {
+            await expect(quotesModel.handleRuleEvents(mockEvents, mockData.headers, mockData.quoteRequest))
+              .resolves
+              .toStrictEqual({
+                terminate: false,
+                quoteRequest: mockData.quoteRequest,
+                headers: {
+                  ...mockData.headers,
+                  'fspiop-destination': mockEvents[0].params.rerouteToFsp
+                }
+              })
+          })
         })
       })
     })
