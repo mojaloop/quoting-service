@@ -408,7 +408,6 @@ describe('QuotesModel', () => {
       })
     })
   })
-
   describe('handleRuleEvents', () => {
     beforeEach(() => {
       quotesModel.handleRuleEvents.mockRestore()
