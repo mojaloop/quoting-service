@@ -176,7 +176,7 @@ describe('QuotesModel', () => {
                   path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
                 },
                 operator: 'deepEqual',
-                value: [ '1' ]
+                value: ['1']
               },
               {
                 fact: 'payload',
@@ -209,7 +209,7 @@ describe('QuotesModel', () => {
                   path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
                 },
                 operator: 'notDeepEqual',
-                value: [ '1' ]
+                value: ['1']
               },
               {
                 fact: 'payload',
