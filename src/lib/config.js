@@ -30,7 +30,7 @@
  --------------
  ******/
 
-const RC = require('rc')('QUOTE', require('../../config/default.json'))
+const RC = require('parse-strings-in-object')(require('rc')('QUOTE', require('../../config/default.json')))
 
 /**
  * Loads config from environment
