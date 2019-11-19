@@ -566,7 +566,7 @@ class QuotesModel {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
         data: JSON.stringify(originalQuoteResponse),
-        headers: this.generateRequestHeaders(headers)
+        headers: this.generateRequestHeaders(headers, true)
       }
 
       if (span) {
