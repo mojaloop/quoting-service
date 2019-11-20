@@ -60,6 +60,7 @@
     "good-squeeze": "5.1.0",
     "hapi-openapi": "1.2.4",
     "json-rules-engine": "4.1.0",
+    "jsonpath": "^1.0.2",
     "knex": "0.20.2",
     "memory-cache": "0.2.0",
     "mysql": "2.17.1",
