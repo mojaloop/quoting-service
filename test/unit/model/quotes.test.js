@@ -283,10 +283,11 @@ describe('QuotesModel', () => {
     // Equivalent to calling .mockClear() on every mocked function.
     jest.clearAllMocks()
 
-    // reset the configuration values to their initials, but without changing the object's reference
-    // as we use the same object between the current unit tests file and the code's implementation
+    // reset the configuration values to their initials
     mockConfig = new Config()
 
+    // reset the rules values to their initials, but without changing the object's reference
+    // as we use the same object between the current unit tests file and the code's implementation
     Object.keys(defaultRules).forEach(key => {
       rules[key] = defaultRules[key]
     })
