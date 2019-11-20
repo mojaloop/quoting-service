@@ -23,6 +23,7 @@
     "CREATE_RETRY_INTERVAL_MILLIS": 200,
     "DEBUG": false
   },
+  "SWITCH_ENDPOINT": "http://localhost:3001",
   "ERROR_HANDLING": {
     "includeCauseExtension": false,
     "truncateCause": true
