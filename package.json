@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "8.4.1-snapshot",
+  "version": "8.5.0-snapshot",
   "author": "Modusbox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
@@ -48,7 +48,7 @@
   "dependencies": {
     "@hapi/good": "8.2.4",
     "@hapi/hapi": "18.4.0",
-    "@mojaloop/central-services-error-handling": "8.3.0",
+    "@mojaloop/central-services-error-handling": "8.5.0",
     "@mojaloop/central-services-logger": "8.1.2",
     "@mojaloop/central-services-shared": "8.4.3",
     "@mojaloop/event-sdk": "8.3.0",
@@ -60,8 +60,7 @@
     "good-squeeze": "5.1.0",
     "hapi-openapi": "1.2.4",
     "json-rules-engine": "4.1.0",
-    "jsonpath": "^1.0.2",
-    "knex": "0.20.1",
+    "knex": "0.20.2",
     "memory-cache": "0.2.0",
     "mysql": "2.17.1",
     "node-fetch": "2.6.0",

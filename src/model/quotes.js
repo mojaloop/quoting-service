@@ -658,7 +658,7 @@ class QuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/master/API%20Definition%20v1.0.pdf
-      const newHeaders = this.generateRequestHeaders(headers, true)
+      const newHeaders = this.generateRequestHeaders(headers)
 
       this.writeLog(`Forwarding quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote response headers: ${JSON.stringify(newHeaders)}`)
