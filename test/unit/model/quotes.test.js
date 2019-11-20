@@ -39,18 +39,22 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 
 const Db = require('../../../src/data/database')
-const envConfig = require('../../../config/default')
+const Config = jest.requireActual('../../../src/lib/config')
 const QuotesModel = require('../../../src/model/quotes')
 const rules = require('../../../config/rules')
 const RulesEngine = require('../../../src/model/rules')
+
+let mockConfig = new Config()
 
 jest.mock('axios')
 jest.mock('@mojaloop/central-services-logger')
 jest.mock('../../../src/data/database')
 jest.mock('../../../src/model/rules')
+jest.mock('../../../src/lib/config', () => {
+  return jest.fn().mockImplementation(() => mockConfig)
+})
 
 describe('QuotesModel', () => {
-  const defaultEnvConfig = JSON.parse(JSON.stringify(envConfig))
   const defaultRules = JSON.parse(JSON.stringify(rules))
 
   let mockData
@@ -281,9 +285,7 @@ describe('QuotesModel', () => {
 
     // reset the configuration values to their initials, but without changing the object's reference
     // as we use the same object between the current unit tests file and the code's implementation
-    Object.keys(defaultEnvConfig).forEach(key => {
-      envConfig[key] = defaultEnvConfig[key]
-    })
+    mockConfig = new Config()
 
     Object.keys(defaultRules).forEach(key => {
       rules[key] = defaultRules[key]
@@ -640,7 +642,7 @@ describe('QuotesModel', () => {
         })
         describe('In case environment is not configured for simple routing mode', () => {
           beforeEach(() => {
-            envConfig.SIMPLE_ROUTING_MODE = false
+            mockConfig.simpleRoutingMode = false
           })
 
           it('throws an exception if `db.newTransaction` fails', async () => {
@@ -862,7 +864,7 @@ describe('QuotesModel', () => {
       describe('While forwarding the request:', () => {
         describe('In case environment is configured for simple routing mode', () => {
           beforeEach(() => {
-            envConfig.SIMPLE_ROUTING_MODE = true
+            mockConfig.simpleRoutingMode = true
           })
 
           it('calls `handleException` with the proper arguments if `span.audit` fails', async () => {
@@ -908,7 +910,7 @@ describe('QuotesModel', () => {
           let expectedResult
 
           beforeEach(() => {
-            envConfig.SIMPLE_ROUTING_MODE = false
+            mockConfig.simpleRoutingMode = false
 
             expectedResult = {
               amountTypeId: mockData.amountTypeId,
@@ -984,7 +986,7 @@ describe('QuotesModel', () => {
       describe('While forwarding the request:', () => {
         describe('In case environment is configured for simple routing mode', () => {
           beforeEach(() => {
-            envConfig.SIMPLE_ROUTING_MODE = true
+            mockConfig.simpleRoutingMode = true
           })
 
           it('forwards the quote request properly', async () => {
@@ -1010,7 +1012,7 @@ describe('QuotesModel', () => {
           let expectedResult
 
           beforeEach(() => {
-            envConfig.SIMPLE_ROUTING_MODE = false
+            mockConfig.simpleRoutingMode = false
 
             expectedResult = {
               amountTypeId: mockData.amountTypeId,
@@ -1055,7 +1057,7 @@ describe('QuotesModel', () => {
 
     it('should get http status code 202 Accepted in simple routing mode', async () => {
       expect.assertions(2)
-      envConfig.SIMPLE_ROUTING_MODE = true
+      mockConfig.simpleRoutingMode = true
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan)
@@ -1066,7 +1068,7 @@ describe('QuotesModel', () => {
     it('should get http status code 202 Accepted in switch mode', async () => {
       expect.assertions(2)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan)
@@ -1084,7 +1086,7 @@ describe('QuotesModel', () => {
     it('should throw when participant endpoint is not found', async () => {
       expect.assertions(1)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
 
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(undefined)
 
@@ -1094,7 +1096,7 @@ describe('QuotesModel', () => {
     })
     it('should not use spans when undefined and should throw when participant endpoint is invalid', async () => {
       expect.assertions(3)
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
@@ -1106,7 +1108,7 @@ describe('QuotesModel', () => {
     })
     it('should throw when participant endpoint returns invalid response', async () => {
       expect.assertions(3)
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
@@ -1119,7 +1121,7 @@ describe('QuotesModel', () => {
     it('should inspect and throw custom error as FSPIOPerror', async () => {
       expect.assertions(3)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       const customErrorNoStack = new Error('Custom error')
       delete customErrorNoStack.stack
       quotesModel.db.getQuotePartyEndpoint.mockRejectedValueOnce(customErrorNoStack)
@@ -1216,7 +1218,7 @@ describe('QuotesModel', () => {
     it('should forward quote update in simple routing mode', async () => {
       expect.assertions(4)
 
-      envConfig.SIMPLE_ROUTING_MODE = true
+      mockConfig.simpleRoutingMode = true
       mockChildSpan.isFinished = false
 
       const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
@@ -1231,7 +1233,7 @@ describe('QuotesModel', () => {
     it('should handle exception in simple routing mode', async () => {
       expect.assertions(6)
 
-      envConfig.SIMPLE_ROUTING_MODE = true
+      mockConfig.simpleRoutingMode = true
       const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR)
       quotesModel.forwardQuoteUpdate = jest.fn(() => { throw fspiopError })
       mockChildSpan.isFinished = false
@@ -1252,7 +1254,7 @@ describe('QuotesModel', () => {
     it('should throw modified update error when duplicate update is not a resend', async () => {
       expect.assertions(7)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: true, isResend: false } })
 
       try {
@@ -1270,7 +1272,7 @@ describe('QuotesModel', () => {
     it('should handle quote update resend when duplicate update matches original', async () => {
       expect.assertions(4)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: true, isResend: true } })
       quotesModel.handleQuoteUpdateResend = jest.fn(() => 'handleQuoteUpdateResendResult')
 
@@ -1285,7 +1287,7 @@ describe('QuotesModel', () => {
     it('should store to db and forward quote update when switch mode', async () => {
       expect.assertions(9)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
       quotesModel.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
@@ -1313,7 +1315,7 @@ describe('QuotesModel', () => {
     it('should store to db and forward quote update with geoCode in switch mode', async () => {
       expect.assertions(9)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
       quotesModel.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
@@ -1342,7 +1344,7 @@ describe('QuotesModel', () => {
     it('should store to db and handle exception when forward quote update fails in switch mode', async () => {
       expect.assertions(4)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
       quotesModel.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
@@ -1372,7 +1374,7 @@ describe('QuotesModel', () => {
     it('should throw partyNotFound error when getQuoteParty coldn\'t find a record in switch mode', async () => {
       expect.assertions(6)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
       quotesModel.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
@@ -1409,7 +1411,7 @@ describe('QuotesModel', () => {
     it('should store to db and throw custom error without error stack in switch mode', async () => {
       expect.assertions(3)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       const customErrorNoStack = new Error('Custom error')
       delete customErrorNoStack.stack
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { throw customErrorNoStack })
@@ -1430,7 +1432,7 @@ describe('QuotesModel', () => {
 
     it('should get http status code 200 OK in simple routing mode', async () => {
       expect.assertions(3)
-      envConfig.SIMPLE_ROUTING_MODE = true
+      mockConfig.simpleRoutingMode = true
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan))
@@ -1443,7 +1445,7 @@ describe('QuotesModel', () => {
     it('should get http status code 200 OK in switch mode', async () => {
       expect.assertions(3)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan))
@@ -1463,7 +1465,7 @@ describe('QuotesModel', () => {
     it('should throw when participant endpoint is not found', async () => {
       expect.assertions(1)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       const endpoint = undefined
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(endpoint)
       quotesModel.sendErrorCallback = jest.fn((_, fspiopError) => { throw fspiopError })
@@ -1475,7 +1477,7 @@ describe('QuotesModel', () => {
     it('should not use spans when undefined and should throw when participant endpoint is invalid', async () => {
       expect.assertions(3)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
@@ -1488,7 +1490,7 @@ describe('QuotesModel', () => {
     it('should throw when participant endpoint returns invalid response', async () => {
       expect.assertions(3)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
@@ -1501,7 +1503,7 @@ describe('QuotesModel', () => {
     it('should inspect and throw custom error as FSPIOPerror', async () => {
       expect.assertions(3)
 
-      envConfig.SIMPLE_ROUTING_MODE = false
+      mockConfig.simpleRoutingMode = false
       const customErrorNoStack = new Error('Custom error')
       delete customErrorNoStack.stack
       quotesModel.db.getQuotePartyEndpoint.mockRejectedValueOnce(customErrorNoStack)
