@@ -32,6 +32,21 @@
  ******/
 'use strict'
 
+// jest has a buggy system for mocking dependencies that can be overcome by mocking
+// the target module before requiring it.
+// more info on https://github.com/facebook/jest/issues/2582#issuecomment-321607875
+const mockRules = [{}]
+let mockConfig
+
+jest.mock('../../../config/rules.json', () => mockRules)
+jest.mock('axios')
+jest.mock('@mojaloop/central-services-logger')
+jest.mock('../../../src/data/database')
+jest.mock('../../../src/model/rules')
+jest.mock('../../../src/lib/config', () => {
+  return jest.fn().mockImplementation(() => mockConfig)
+})
+
 const axios = require('axios')
 
 const clone = require('@mojaloop/central-services-shared').Util.clone
@@ -44,24 +59,14 @@ const QuotesModel = require('../../../src/model/quotes')
 const rules = require('../../../config/rules')
 const RulesEngine = require('../../../src/model/rules')
 
-let mockConfig = new Config()
-
-jest.mock('axios')
-jest.mock('@mojaloop/central-services-logger')
-jest.mock('../../../src/data/database')
-jest.mock('../../../src/model/rules')
-jest.mock('../../../src/lib/config', () => {
-  return jest.fn().mockImplementation(() => mockConfig)
-})
-
 describe('QuotesModel', () => {
-  const defaultRules = JSON.parse(JSON.stringify(rules))
-
   let mockData
   let mockTransaction
   let mockChildSpan
   let mockSpan
   let quotesModel
+
+  mockConfig = new Config()
 
   beforeEach(() => {
     axios.request.mockImplementation((opts) => {
@@ -288,8 +293,8 @@ describe('QuotesModel', () => {
 
     // reset the rules values to their initials, but without changing the object's reference
     // as we use the same object between the current unit tests file and the code's implementation
-    Object.keys(defaultRules).forEach(key => {
-      rules[key] = defaultRules[key]
+    Object.keys(mockData.rules).forEach(key => {
+      rules[key] = mockData.rules[key]
     })
   })
 
