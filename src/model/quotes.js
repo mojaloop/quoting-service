@@ -897,23 +897,26 @@ class QuotesModel {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `No FSPIOP_CALLBACK_URL_QUOTES found for ${fspiopSource} unable to make error callback`, null, fspiopSource)
       }
 
-      const fullCallbackUrl = `${endpoint}/quotes/${quoteId}/error`
+      const fspiopUri = `/quotes/${quoteId}/error`
+      const fullCallbackUrl = `${endpoint}${fspiopUri}`
 
       // log the original error
       this.writeLog(`Making error callback to participant '${fspiopSource}' for quoteId '${quoteId}' to ${fullCallbackUrl} for error: ${util.inspect(fspiopError.toFullErrorObject())}`)
 
       // make an error callback
+      const fromSwitchHeaders = Object.assign({}, headers, {
+        'fspiop-destination': fspiopSource,
+        'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
+        'fspiop-http-method': ENUM.Http.RestMethods.PUT,
+        'fspiop-uri': fspiopUri
+      })
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
         data: JSON.stringify(fspiopError.toApiErrorObject(envConfig.errorHandling), LibUtil.getCircularReplacer()),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
-        headers: this.generateRequestHeaders(headers || {
-          'fspiop-destination': fspiopSource,
-          'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
-          'fspiop-http-method': ENUM.Http.RestMethods.PUT
-        }, true)
+        headers: this.generateRequestHeaders(fromSwitchHeaders, true)
       }
 
       if (span) {
