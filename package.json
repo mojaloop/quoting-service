@@ -71,7 +71,7 @@
   "devDependencies": {
     "eslint": "6.7.1",
     "jest": "24.9.0",
-    "jest-junit": "9.0.0",
+    "jest-junit": "10.0.0",
     "npm-audit-resolver": "2.1.0",
     "npm-check-updates": "3.2.2",
     "pre-commit": "1.2.2",
