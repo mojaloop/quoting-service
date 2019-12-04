@@ -25,17 +25,20 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Henk Kodde <henk.kodde@modusbox.com>
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Henk Kodde <henk.kodde@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
+const util = require('util')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const util = require('util')
-const QuotesModel = require('../model/quotes.js')
+const EventSdk = require('@mojaloop/event-sdk')
+const LibUtil = require('../lib/util')
+const QuotesModel = require('../model/quotes')
 
 /**
  * Operations on /quotes
@@ -63,15 +66,23 @@ module.exports = {
     const quoteId = request.payload.quoteId
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
+    const span = request.span
     try {
+      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.PREPARE)
+      span.setTags(spanTags)
+      await span.audit({
+        headers: request.headers,
+        payload: request.payload
+      }, EventSdk.AuditEventAction.start)
+
       // call the quote request handler in the model
-      const result = await model.handleQuoteRequest(request.headers, request.payload)
+      const result = await model.handleQuoteRequest(request.headers, request.payload, span)
       request.server.log(['info'], `POST quote request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - POST /quotes: ${err.stack || util.inspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      await model.handleException(fspiopSource, quoteId, fspiopError, request.headers)
+      await model.handleException(fspiopSource, quoteId, fspiopError, request.headers, span)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)

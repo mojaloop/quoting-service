@@ -25,27 +25,33 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Henk Kodde <henk.kodde@modusbox.com>
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Enum = require('@mojaloop/central-services-shared').Enum
 
-/**
- * Operations on /bulkQuotes/{ID}/error
- */
-module.exports = {
-  /**
-     * summary: BulkQuotesErrorByID
-     * description: If the server is unable to find or create a bulk quote, or another processing error occurs, the error callback PUT /bulkQuotes/&lt;ID&gt;/error is used. The &lt;ID&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;ID&gt; that was used in the GET /bulkQuotes/&lt;ID&gt;.
-     * parameters: ID, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
-     * produces: application/json
-     * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
-     */
-  put: function BulkQuotesErrorByID () {
-    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Bulk quotes not implemented')
+const getSpanTags = ({ payload, headers, params }, transactionType, transactionAction) => {
+  const tags = {
+    transactionType,
+    transactionAction,
+    transactionId: (payload && payload.transactionId) || (params && params.id),
+    quoteId: (payload && payload.quoteId) || (params && params.id),
+    source: headers[Enum.Http.Headers.FSPIOP.SOURCE],
+    destination: headers[Enum.Http.Headers.FSPIOP.DESTINATION]
   }
+  if (payload && payload.payee && payload.payee.partyIdInfo && payload.payee.partyIdInfo.fspId) {
+    tags.payeeFsp = payload.payee.partyIdInfo.fspId
+  }
+  if (payload && payload.payer && payload.payer.partyIdInfo && payload.payer.partyIdInfo.fspId) {
+    tags.payerFsp = payload.payer.partyIdInfo.fspId
+  }
+  return tags
+}
+
+module.exports = {
+  getSpanTags
 }

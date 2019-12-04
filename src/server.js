@@ -6,6 +6,8 @@ const Path = require('path')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const CentralServices = require('@mojaloop/central-services-shared')
+const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
 const Logger = require('@mojaloop/central-services-logger')
 const util = require('util')
 
@@ -71,8 +73,12 @@ const initServer = async function (db, config) {
       }
     }
   },
+  {
+    plugin: HeaderValidation
+  },
   Blipp,
-  ErrorHandler])
+  ErrorHandler,
+  CentralServices.Util.Hapi.HapiEventPlugin])
 
   // start the server
   await server.start()
@@ -84,7 +90,7 @@ const initServer = async function (db, config) {
 const config = new Config()
 
 // initialise database connection pool and start the api server
-initDb(config.database).then(db => {
+initDb(config).then(db => {
   return initServer(db, config)
 }).then(server => {
   process.on('SIGTERM', () => {

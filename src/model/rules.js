@@ -30,65 +30,135 @@
  --------------
  ******/
 
-const jre = require('json-rules-engine')
+/*
+ * This module presents a rules engine based on json-rules-engine with some Mojaloop-specific
+ * operators, events and dynamic facts for use by schemes. Note that the entire json-rules-engine
+ * API is still available to users of this module.
+ */
 
-const engine = new jre.Engine()
+const jre = require('json-rules-engine')
+const jsonpath = require('jsonpath')
+const assert = require('assert').strict
+
+module.exports.events = {
+  INTERCEPT_QUOTE: 'INTERCEPT_QUOTE',
+  INVALID_QUOTE_REQUEST: 'INVALID_QUOTE_REQUEST'
+}
 
 /**
  * Build helper to handle application of business rules to quotes
  */
+const createEngine = () => {
+  const engine = new jre.Engine()
 
-// const FLATLAND_FSPS = [
-//     'MobileMoney'
-// ];
-//
-// const forbidInterdimensionalTransfers = new jre.Rule({
-//     conditions: {
-//         any: [{
-//             all: [{
-//                 fact: 'payee',
-//                 path: '.partyIdInfo.partyIdentifier',
-//                 operator: 'in',
-//                 value: FLATLAND_FSPS
-//             },{
-//                 fact: 'payer',
-//                 path: '.partyIdInfo.partyIdentifier',
-//                 operator: 'notIn',
-//                 value: FLATLAND_FSPS
-//             }]
-//         }, {
-//             all: [{
-//                 fact: 'payer',
-//                 path: '.partyIdInfo.partyIdentifier',
-//                 operator: 'in',
-//                 value: FLATLAND_FSPS
-//             },{
-//                 fact: 'payee',
-//                 path: '.partyIdInfo.partyIdentifier',
-//                 operator: 'notIn',
-//                 value: FLATLAND_FSPS
-//             }]
-//         }]
-//     },
-//     event: {
-//         type: 'fsps-exist-within-different-dimensional-spaces',
-//         params: {
-//             message: 'FSPS exist within different dimensional spaces. Transfer not allowed.'
-//         }
-//     }
-// });
-//
-// engine.addRule(forbidInterdimensionalTransfers);
+  const deepEqual = (factValue, ruleValue) => {
+    try {
+      assert.deepEqual(factValue, ruleValue)
+      return true
+    } catch (err) {
+      return false
+    }
+  }
 
-/**
- * Load rules from the database
- *
- * @returns {undefined}
- */
-module.exports.loadRulesFromDb = async function (db) {
-  db.queryBuilder.transaction(async txn => {
-    (await db.getTransferRules(txn)).forEach(r => engine.addRule(r))
+  engine.addOperator('notDeepEqual', (factValue, ruleValue) => {
+    return !deepEqual(factValue, ruleValue)
   })
+  engine.addOperator('deepEqual', (factValue, ruleValue) => {
+    return deepEqual(factValue, ruleValue)
+  })
+
+  /**
+   * The json-rules-engine path only supports selectn paths. This is problematic, as selectn cannot
+   * traverse an array with filters, it can only use a static array index. For example, selectn
+   * cannot find the age of user with name 'Tutaia' in the following array, without knowing in
+   * advance that Tutaia will be the first element of the array:
+   *
+   *   [ { name: 'Tutaia', age: 25 }, { name: 'Kim', age: 66 } ]
+   *
+   * In many (most) cases we cannot know the order and content of our data in advance. We therefore
+   * provide a more flexible, but still declarative jsonpath dynamic fact. Note that the examples
+   * provided below in this comment are reproduced in the tests.
+   *
+   * Note that the jsonPathFact requires the deepEqual operator to function correctly, as jsonpath
+   * returns an array of results.
+   *
+   * See https://www.npmjs.com/package/jsonpath for more information on jsonpath.
+   *
+   * The json-path fact exploits the fact params as its API by allowing the user to specify the fact
+   * they'd like to retrieve and a jsonpath within that fact.
+   *
+   * The following example looks at the payload fact, and checks whether the payer fspId, at jsonpath
+   * `$.payload.payer.partyIdInfo.fspId` is not `payerfsp`:
+   *
+   *   {
+   *     fact: 'json-path',
+   *     params: {
+   *       fact: 'payload',
+   *       path: '$.payload.payer.partyIdInfo.fspId'
+   *     },
+   *     operator: 'notDeepEqual',
+   *     value: [ 'payerfsp' ]
+   *   }
+   *
+   * Note that the value of .params.fact will be a top-level key in the jsonpath query, and therefore
+   * must correspond to the top-level key in .params.path. A general example:
+   *
+   *   {
+   *     fact: 'json-path',
+   *     params: {
+   *       fact: 'top-level-key',
+   *       path: '$.top-level-key'
+   *     },
+   *     ...
+   *   }
+   *
+   * Supported top-level keys (facts) are:
+   * - payload
+   * - headers
+   * - payer
+   * - payee
+   *
+   * Another slightly more complex example, comparing the value of the fspiop-source header with the
+   * payer fspId in the payload:
+   *
+   *   {
+   *     fact: 'json-path',
+   *     params: {
+   *       fact: 'payload',
+   *       path: '$.payload.payer.partyIdInfo.fspId'
+   *     },
+   *     operator: 'deepEqual',
+   *     value: {
+   *       fact: 'json-path',
+   *       params: {
+   *         path: '$.headers[\'fspiop-source\']',
+   *         fact: 'headers'
+   *       }
+   *     }
+   *   }
+   *
+   * So far, no example rules have _required_ the use of jsonpath. The following rule filters the
+   * KYCPayerTier key in the extension list of the quote payload and verifies that it is '1':
+   *
+   *   {
+   *     fact: 'json-path',
+   *     params: {
+   *       fact: 'payload',
+   *       path: '$.payload.extensionList[?(@.key === \'KYCPayerTier\')].value'
+   *     },
+   *     operator: 'deepEqual',
+   *     value: [ '1' ]
+   *   }
+   */
+  const jsonPathFact = function (params, almanac) {
+    return almanac.factValue(params.fact)
+      .then((fact) => {
+        return jsonpath.query({ [params.fact]: fact }, params.path)
+      })
+  }
+  engine.addFact('json-path', jsonPathFact)
+
+  return engine
 }
 
 /**
@@ -96,4 +166,9 @@ module.exports.loadRulesFromDb = async function (db) {
  *
  * @returns {promise} - array of failure cases, may be empty
  */
-module.exports.getFailures = engine.run.bind(engine)
+module.exports.run = (rules, runtimeFacts) => {
+  const engine = createEngine()
+  rules.map(r => new jre.Rule(r)).forEach(r => engine.addRule(r))
+
+  return engine.run(runtimeFacts)
+}

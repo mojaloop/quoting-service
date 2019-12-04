@@ -25,31 +25,34 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Henk Kodde <henk.kodde@modusbox.com>
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Henk Kodde <henk.kodde@modusbox.com>
  --------------
  ******/
 
 'use strict'
 
 const util = require('util')
-const QuotesModel = require('../../model/quotes.js')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const EventSdk = require('@mojaloop/event-sdk')
+const LibUtil = require('../../lib/util')
+const QuotesModel = require('../../model/quotes.js')
 
 /**
- * Operations on /quotes/{ID}
+ * Operations on /quotes/{id}
  */
 module.exports = {
   /**
-     * summary: QuotesByID
-     * description: The HTTP request GET /quotes/&lt;ID&gt; is used to get information regarding an earlier created or requested quote. The &lt;ID&gt; in the URI should contain the quoteId that was used for the creation of the quote.
+     * summary: QuotesById
+     * description: The HTTP request GET /quotes/&lt;id&gt; is used to get information regarding an earlier created or requested quote. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote.
      * parameters: Accept
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
   get: async function getQuotesById (request, h) {
     // log request
-    request.server.log(['info'], `got a GET /quotes/{id} request for quoteId ${request.params.ID}`)
+    request.server.log(['info'], `got a GET /quotes/{id} request for quoteId ${request.params.id}`)
 
     // instantiate a new quote model
     const model = new QuotesModel({
@@ -59,19 +62,26 @@ module.exports = {
 
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
-    const quoteId = request.params.ID
+    const quoteId = request.params.id
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
+    const span = request.span
     try {
+      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.GET)
+      span.setTags(spanTags)
+      await span.audit({
+        headers: request.headers,
+        payload: request.payload
+      }, EventSdk.AuditEventAction.start)
       // call the model to re-forward the quote update to the correct party
       // note that we do not check if our caller is the correct party, but we
       // will send the callback to the correct party regardless.
-      const result = await model.handleQuoteGet(request.headers, quoteId)
+      const result = await model.handleQuoteGet(request.headers, quoteId, span)
       request.server.log(['info'], `GET quotes/{id} request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - GET /quotes/{id}: ${err.stack || util.inspect(err)}`)
-      await model.handleException(fspiopSource, quoteId, err, request.headers)
+      await model.handleException(fspiopSource, quoteId, err, request.headers, span)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(202)
@@ -79,13 +89,13 @@ module.exports = {
   },
 
   /**
-     * summary: QuotesByID
-     * description: The callback PUT /quotes/&lt;ID&gt; is used to inform the client of a requested or created quote. The &lt;ID&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;ID&gt; that was used in the GET /quotes/&lt;ID&gt;GET /quotes/&lt;ID&gt;.
+     * summary: QuotesById
+     * description: The callback PUT /quotes/&lt;id&gt; is used to inform the client of a requested or created quote. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;GET /quotes/&lt;id&gt;.
      * parameters: body, Content-Length
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  put: async function putQuotesByID (request, h) {
+  put: async function putQuotesById (request, h) {
     // log request
     request.server.log(['info'], `got a PUT /quotes/{id} request: ${util.inspect(request.payload)}`)
 
@@ -97,17 +107,24 @@ module.exports = {
 
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
-    const quoteId = request.params.ID
+    const quoteId = request.params.id
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
+    const span = request.span
     try {
+      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.FULFIL)
+      span.setTags(spanTags)
+      await span.audit({
+        headers: request.headers,
+        payload: request.payload
+      }, EventSdk.AuditEventAction.start)
       // call the quote update handler in the model
-      const result = await model.handleQuoteUpdate(request.headers, quoteId, request.payload)
+      const result = await model.handleQuoteUpdate(request.headers, quoteId, request.payload, span)
       request.server.log(['info'], `PUT quote request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /quotes/{id}: ${err.stack || util.inspect(err)}`)
-      await model.handleException(fspiopSource, quoteId, err, request.headers)
+      await model.handleException(fspiopSource, quoteId, err, request.headers, span)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(202)

@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "8.6.0",
+  "version": "8.6.2-snapshot",
   "author": "Modusbox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
@@ -63,6 +63,7 @@
     "memory-cache": "0.2.0",
     "mysql": "2.17.1",
     "node-fetch": "2.6.0",
+    "parse-strings-in-object": "1.2.0",
     "rc": "1.2.8"
   },
   "devDependencies": {
