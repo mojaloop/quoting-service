@@ -103,9 +103,6 @@ const mockRules = [
   }
 ]
 
-jest.mock('../../../config/rules', () => mockRules)
-
-const rules = require('../../../config/rules')
 const RulesEngine = require('../../../src/model/rules')
 
 describe('RulesEngine', () => {
@@ -250,8 +247,8 @@ describe('RulesEngine', () => {
           ]
         }
       }
-      const { events } = await RulesEngine.run(rules, testFacts)
-      expect(events).toEqual([rules[0].event])
+      const { events } = await RulesEngine.run(mockRules, testFacts)
+      expect(events).toEqual([mockRules[0].event])
     })
 
     it('returns an empty array of events when using example config for INTERCEPT_QUOTE negative case', async () => {
@@ -273,7 +270,7 @@ describe('RulesEngine', () => {
           ]
         }
       }
-      const { events } = await RulesEngine.run(rules, testFacts)
+      const { events } = await RulesEngine.run(mockRules, testFacts)
       expect(events).toEqual([])
     })
 
@@ -295,8 +292,8 @@ describe('RulesEngine', () => {
           ]
         }
       }
-      const { events } = await RulesEngine.run(rules, testFacts)
-      expect(events).toEqual([rules[1].event])
+      const { events } = await RulesEngine.run(mockRules, testFacts)
+      expect(events).toEqual([mockRules[1].event])
     })
 
     it('returns the expected events when using example config INVALID_QUOTE_REQUEST triggered by incorrect extension value', async () => {
@@ -318,8 +315,8 @@ describe('RulesEngine', () => {
           ]
         }
       }
-      const { events } = await RulesEngine.run(rules, testFacts)
-      expect(events).toEqual([rules[1].event])
+      const { events } = await RulesEngine.run(mockRules, testFacts)
+      expect(events).toEqual([mockRules[1].event])
     })
 
     it('returns the expected events when using example config INVALID_QUOTE_REQUEST event negative case', async () => {
@@ -341,7 +338,7 @@ describe('RulesEngine', () => {
           ]
         }
       }
-      const { events } = await RulesEngine.run(rules, testFacts)
+      const { events } = await RulesEngine.run(mockRules, testFacts)
       expect(events).toEqual([])
     })
   })
