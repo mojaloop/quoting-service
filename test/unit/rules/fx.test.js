@@ -32,250 +32,250 @@
 
 const fxRules = {
   EURtoXOFSendEUR: { // EUR to XOF, amountType=SEND, amount.currency=EUR
-    "conditions": {
-      "all": [
+    conditions: {
+      all: [
         {
-          "fact": "headers",
-          "path": "$.fspiop-source",
-          "operator": "notIn",
-          "value": [
-            "DFSPXOF",
-            "DFSPEUR",
-            "DFSPMAD"
+          fact: 'headers',
+          path: '$.fspiop-source',
+          operator: 'notIn',
+          value: [
+            'DFSPXOF',
+            'DFSPEUR',
+            'DFSPMAD'
           ]
         },
         {
-          "fact": "payload",
-          "path": "$.amount.currency",
-          "operator": "notIn",
-          "value": {
-            "fact": "payee",
-            "path": "$.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
+          fact: 'payload',
+          path: '$.amount.currency',
+          operator: 'notIn',
+          value: {
+            fact: 'payee',
+            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
           }
         },
         {
-          "fact": "payload",
-          "path": "$.amount.currency",
-          "operator": "equal",
-          "value": "EUR"
+          fact: 'payload',
+          path: '$.amount.currency',
+          operator: 'equal',
+          value: 'EUR'
         }
       ]
     },
-    "event": {
-      "type": "INTERCEPT_QUOTE",
-      "params": {
-        "rerouteToFsp": "DFSPEUR",
-        "sourceCurrency": "EUR",
-        "rerouteToFspCurrency": "XOF"
+    event: {
+      type: 'INTERCEPT_QUOTE',
+      params: {
+        rerouteToFsp: 'DFSPEUR',
+        sourceCurrency: 'EUR',
+        rerouteToFspCurrency: 'XOF'
       }
     }
   },
   EURtoXOFReceiveXOF: { // EUR to XOF, amountType=RECEIVE, amount.currency=XOF
-    "conditions": {
-      "all": [
+    conditions: {
+      all: [
         {
-          "fact": "headers",
-          "path": "$.fspiop-source",
-          "operator": "notIn",
-          "value": [
-            "DFSPXOF",
-            "DFSPEUR",
-            "DFSPMAD"
+          fact: 'headers',
+          path: '$.fspiop-source',
+          operator: 'notIn',
+          value: [
+            'DFSPXOF',
+            'DFSPEUR',
+            'DFSPMAD'
           ]
         },
         {
-          "fact": "payload",
-          "path": "$.amount.currency",
-          "operator": "notIn",
-          "value": {
-            "fact": "payer",
-            "path": "$.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
+          fact: 'payload',
+          path: '$.amount.currency',
+          operator: 'notIn',
+          value: {
+            fact: 'payer',
+            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
           }
         },
         {
-          "fact": "payload",
-          "path": "$.amount.currency",
-          "operator": "equal",
-          "value": "XOF"
+          fact: 'payload',
+          path: '$.amount.currency',
+          operator: 'equal',
+          value: 'XOF'
         }
       ]
     },
-    "event": {
-      "type": "INTERCEPT_QUOTE",
-      "params": {
-        "rerouteToFsp": "DFSPEUR",
-        "sourceCurrency": "EUR",
-        "rerouteToFspCurrency": "XOF"
+    event: {
+      type: 'INTERCEPT_QUOTE',
+      params: {
+        rerouteToFsp: 'DFSPEUR',
+        sourceCurrency: 'EUR',
+        rerouteToFspCurrency: 'XOF'
       }
     }
   },
   XOFtoEURSendXOF: { // XOF to EUR, amountType=SEND, amount.currency=XOF
-    "conditions": {
-      "all": [
+    conditions: {
+      all: [
         {
-          "fact": "headers",
-          "path": "$.fspiop-source",
-          "operator": "notIn",
-          "value": [
-            "DFSPXOF",
-            "DFSPEUR",
-            "DFSPMAD"
+          fact: 'headers',
+          path: '$.fspiop-source',
+          operator: 'notIn',
+          value: [
+            'DFSPXOF',
+            'DFSPEUR',
+            'DFSPMAD'
           ]
         },
         {
-          "fact": "payload",
-          "path": "$.amount.currency",
-          "operator": "notIn",
-          "value": {
-            "fact": "payee",
-            "path": "$.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
+          fact: 'payload',
+          path: '$.amount.currency',
+          operator: 'notIn',
+          value: {
+            fact: 'payee',
+            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
           }
         },
         {
-          "fact": "payload",
-          "path": "$.amount.currency",
-          "operator": "equal",
-          "value": "XOF"
+          fact: 'payload',
+          path: '$.amount.currency',
+          operator: 'equal',
+          value: 'XOF'
         }
       ]
     },
-    "event": {
-      "type": "INTERCEPT_QUOTE",
-      "params": {
-        "rerouteToFsp": "DFSPXOF",
-        "sourceCurrency": "XOF",
-        "rerouteToFspCurrency": "EUR"
+    event: {
+      type: 'INTERCEPT_QUOTE',
+      params: {
+        rerouteToFsp: 'DFSPXOF',
+        sourceCurrency: 'XOF',
+        rerouteToFspCurrency: 'EUR'
       }
     }
   },
   XOFtoEURReceiveEUR: { // XOF to EUR, amountType=RECEIVE, amount.currency=EUR
-    "conditions": {
-      "all": [
+    conditions: {
+      all: [
         {
-          "fact": "headers",
-          "path": "$.fspiop-source",
-          "operator": "notIn",
-          "value": [
-            "DFSPXOF",
-            "DFSPEUR",
-            "DFSPMAD"
+          fact: 'headers',
+          path: '$.fspiop-source',
+          operator: 'notIn',
+          value: [
+            'DFSPXOF',
+            'DFSPEUR',
+            'DFSPMAD'
           ]
         },
         {
-          "fact": "payload",
-          "path": "$.amount.currency",
-          "operator": "notIn",
-          "value": {
-            "fact": "payer",
-            "path": "$.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
+          fact: 'payload',
+          path: '$.amount.currency',
+          operator: 'notIn',
+          value: {
+            fact: 'payer',
+            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
           }
         },
         {
-          "fact": "payload",
-          "path": "$.amount.currency",
-          "operator": "equal",
-          "value": "EUR"
+          fact: 'payload',
+          path: '$.amount.currency',
+          operator: 'equal',
+          value: 'EUR'
         }
       ]
     },
-    "event": {
-      "type": "INTERCEPT_QUOTE",
-      "params": {
-        "rerouteToFsp": "DFSPXOF",
-        "sourceCurrency": "XOF",
-        "rerouteToFspCurrency": "EUR"
+    event: {
+      type: 'INTERCEPT_QUOTE',
+      params: {
+        rerouteToFsp: 'DFSPXOF',
+        sourceCurrency: 'XOF',
+        rerouteToFspCurrency: 'EUR'
       }
     }
   },
   payerUnsupportedCurrency: { // PAYER_UNSUPPORTED_CURRENCY
-    "conditions": {
-      "all": [
+    conditions: {
+      all: [
         {
-          "fact": "payload",
-          "path": "$.amountType",
-          "operator": "equal",
-          "value": "SEND"
+          fact: 'payload',
+          path: '$.amountType',
+          operator: 'equal',
+          value: 'SEND'
         },
         {
-          "fact": "payload",
-          "path": "$.amount.currency",
-          "operator": "notIn",
-          "value": {
-            "fact": "payer",
-            "path": "$.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
+          fact: 'payload',
+          path: '$.amount.currency',
+          operator: 'notIn',
+          value: {
+            fact: 'payer',
+            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
           }
         }
       ]
     },
-    "event": {
-      "type": "INVALID_QUOTE_REQUEST",
-      "params": {
-        "FSPIOPError": "PAYER_UNSUPPORTED_CURRENCY",
-        "message": "Requested currency not available for payer. Transfer not allowed."
+    event: {
+      type: 'INVALID_QUOTE_REQUEST',
+      params: {
+        FSPIOPError: 'PAYER_UNSUPPORTED_CURRENCY',
+        message: 'Requested currency not available for payer. Transfer not allowed.'
       }
     }
   },
   payeeUnsupportedCurrency: { // PAYEE_UNSUPPORTED_CURRENCY
-    "conditions": {
-      "all": [
+    conditions: {
+      all: [
         {
-          "fact": "payload",
-          "path": "$.amountType",
-          "operator": "equal",
-          "value": "RECEIVE"
+          fact: 'payload',
+          path: '$.amountType',
+          operator: 'equal',
+          value: 'RECEIVE'
         },
         {
-          "fact": "payload",
-          "path": "$.amount.currency",
-          "operator": "notIn",
-          "value": {
-            "fact": "payee",
-            "path": "$.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
+          fact: 'payload',
+          path: '$.amount.currency',
+          operator: 'notIn',
+          value: {
+            fact: 'payee',
+            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
           }
         }
       ]
     },
-    "event": {
-      "type": "INVALID_QUOTE_REQUEST",
-      "params": {
-        "FSPIOPError": "PAYEE_UNSUPPORTED_CURRENCY",
-        "message": "Requested currency not available for payee. Transfer not allowed."
+    event: {
+      type: 'INVALID_QUOTE_REQUEST',
+      params: {
+        FSPIOPError: 'PAYEE_UNSUPPORTED_CURRENCY',
+        message: 'Requested currency not available for payee. Transfer not allowed.'
       }
     }
   },
   FSPIOPSourceDoesNotMatchPayer: { // FSPIOP-Source not matching Payer
-    "conditions": {
-      "all": [
+    conditions: {
+      all: [
         {
-          "fact": "headers",
-          "path": "$.fspiop-source",
-          "operator": "notIn",
-          "value": [
-            "DFSPXOF",
-            "DFSPEUR",
-            "DFSPMAD"
+          fact: 'headers',
+          path: '$.fspiop-source',
+          operator: 'notIn',
+          value: [
+            'DFSPXOF',
+            'DFSPEUR',
+            'DFSPMAD'
           ]
         },
         {
-          "fact": "headers",
-          "path": "$.fspiop-source",
-          "operator": "notEqual",
-          "value": {
-            "fact": "payload",
-            "path": "$.partyIdInfo.fspId"
+          fact: 'headers',
+          path: '$.fspiop-source',
+          operator: 'notEqual',
+          value: {
+            fact: 'payload',
+            path: '$.payer.partyIdInfo.fspId'
           }
         }
       ]
     },
-    "event": {
-      "type": "INVALID_QUOTE_REQUEST",
-      "params": {
-        "FSPIOPError": "PAYER_FSPIO",
-        "message": "The payer FSP does not match the fspiop-source header"
+    event: {
+      type: 'INVALID_QUOTE_REQUEST',
+      params: {
+        FSPIOPError: 'PAYER_FSPIO',
+        message: 'The payer FSP does not match the fspiop-source header'
       }
     }
   }
-};
+}
 
 const RulesEngine = require('../../../src/model/rules')
 
@@ -301,12 +301,38 @@ describe('Forex rules', () => {
             { ledgerAccountType: 'SETTLEMENT', currency: 'XYZ' }
           ]
         }
-      };
-      const { events } = await RulesEngine.run([ fxRules.EURtoXOFSendEUR ], testFacts);
-      expect(events).toEqual([fxRules.EURtoXOFSendEUR.event]);
-    });
-  });
+      }
+      const { events } = await RulesEngine.run([fxRules.EURtoXOFSendEUR], testFacts)
+      expect(events).toEqual([fxRules.EURtoXOFSendEUR.event])
+    })
+  })
   describe('EURtoXOFReceiveXOF', () => {
+    it('raises INTERCEPT_QUOTE', async () => {
+      const testFacts = {
+        payload: {
+          payer: {
+            partyIdInfo: {
+              fspId: 'payerfsp'
+            }
+          },
+          amount: {
+            currency: 'XOF'
+          }
+        },
+        headers: {
+          'fspiop-source': 'blah'
+        },
+        payer: {
+          accounts: [
+            { ledgerAccountType: 'SETTLEMENT', currency: 'xyz' }
+          ]
+        }
+      }
+      const { events } = await RulesEngine.run([fxRules.EURtoXOFReceiveXOF], testFacts)
+      expect(events).toEqual([fxRules.EURtoXOFReceiveXOF.event])
+    })
+  })
+  describe('XOFtoEURSendXOF', () => {
     it('raises INTERCEPT_QUOTE', async () => {
       const testFacts = {
         payload: {
@@ -324,20 +350,122 @@ describe('Forex rules', () => {
         },
         payee: {
           accounts: [
-            { ledgerAccountType: 'SETTLEMENT', currency: 'XYZ' }
+            { ledgerAccountType: 'SETTLEMENT', currency: 'EUR' }
           ]
         }
-      };
-      const { events } = await RulesEngine.run([ fxRules.EURtoXOFSendEUR ], testFacts);
-      expect(events).toEqual([fxRules.EURtoXOFSendEUR.event]);
-    });
-  });
-  // describe('XOFtoEURSendXOF', () => {});
-  // describe('XOFtoEURReceiveEUR', () => {});
-  // describe('payerUnsupportedCurrency', () => {});
-  // describe('payeeUnsupportedCurrency', () => {});
-  // describe('FSPIOPSourceDoesNotMatchPayer', () => {});
-});
+      }
+      const { events } = await RulesEngine.run([fxRules.XOFtoEURSendXOF], testFacts)
+      expect(events).toEqual([fxRules.XOFtoEURSendXOF.event])
+    })
+  })
+  describe('XOFtoEURReceiveEUR', () => {
+    it('raises INTERCEPT_QUOTE', async () => {
+      const testFacts = {
+        payload: {
+          payer: {
+            partyIdInfo: {
+              fspId: 'payeefsp'
+            }
+          },
+          amount: {
+            currency: 'EUR'
+          }
+        },
+        headers: {
+          'fspiop-source': 'blah'
+        },
+        payer: {
+          accounts: [
+            { ledgerAccountType: 'SETTLEMENT', currency: 'xyz' }
+          ]
+        }
+      }
+      const { events } = await RulesEngine.run([fxRules.XOFtoEURReceiveEUR], testFacts)
+      expect(events).toEqual([fxRules.XOFtoEURReceiveEUR.event])
+    })
+  })
+  describe('payerUnsupportedCurrency', () => {
+    it('raises INTERCEPT_QUOTE', async () => {
+      const testFacts = {
+        payload: {
+          payer: {
+            partyIdInfo: {
+              fspId: 'payerfsp'
+            }
+          },
+          amountType: 'SEND',
+          amount: {
+            currency: 'EUR'
+          }
+        },
+        headers: {
+          'fspiop-source': 'payerfsp'
+        },
+        payer: {
+          accounts: [
+            { ledgerAccountType: 'SETTLEMENT', currency: 'xyz' }
+          ]
+        }
+      }
+      const { events } = await RulesEngine.run([fxRules.payerUnsupportedCurrency], testFacts)
+      expect(events).toEqual([fxRules.payerUnsupportedCurrency.event])
+    })
+  })
+  describe('payeeUnsupportedCurrency', () => {
+    it('raises INTERCEPT_QUOTE', async () => {
+      const testFacts = {
+        payload: {
+          payer: {
+            partyIdInfo: {
+              fspId: 'payerfsp'
+            }
+          },
+          amountType: 'RECEIVE',
+          amount: {
+            currency: 'XOF'
+          }
+        },
+        headers: {
+          'fspiop-source': 'payerfsp'
+        },
+        payee: {
+          accounts: [
+            { ledgerAccountType: 'SETTLEMENT', currency: 'xyz' }
+          ]
+        }
+      }
+      const { events } = await RulesEngine.run([fxRules.payeeUnsupportedCurrency], testFacts)
+      expect(events).toEqual([fxRules.payeeUnsupportedCurrency.event])
+    })
+  })
+  describe('FSPIOPSourceDoesNotMatchPayer', () => {
+    it('raises INTERCEPT_QUOTE', async () => {
+      const testFacts = {
+        payload: {
+          payer: {
+            partyIdInfo: {
+              fspId: 'payerfsp'
+            }
+          },
+          amountType: 'RECEIVE',
+          amount: {
+            currency: 'XOF'
+          }
+        },
+        headers: {
+          'fspiop-source': 'blah'
+        },
+        payee: {
+          accounts: [
+            { ledgerAccountType: 'SETTLEMENT', currency: 'xyz' }
+          ]
+        }
+      }
+      const { events } = await RulesEngine.run([fxRules.FSPIOPSourceDoesNotMatchPayer], testFacts)
+      expect(events).toEqual([fxRules.FSPIOPSourceDoesNotMatchPayer.event])
+    })
+  })
+})
 
 // describe('RulesEngine', () => {
 //   describe('run', () => {
