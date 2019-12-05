@@ -30,6 +30,8 @@
  --------------
  ******/
 
+const RulesEngine = require('../../../src/model/rules')
+
 const fxRules = {
   EURtoXOFSendEUR: { // EUR to XOF, amountType=SEND, amount.currency=EUR
     conditions: {
@@ -276,8 +278,6 @@ const fxRules = {
     }
   }
 }
-
-const RulesEngine = require('../../../src/model/rules')
 
 describe('Forex rules', () => {
   describe('EURtoXOFSendEUR', () => {
