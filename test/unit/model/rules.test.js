@@ -38,24 +38,18 @@ const mockRules = [
     conditions: {
       all: [
         {
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
-          },
-          operator: 'deepEqual',
-          value: ['1']
+          fact: 'payload',
+          path: '$.extensionList[?(@.key == "KYCPayerTier")].value',
+          operator: 'equal',
+          value: '1'
         },
         {
           fact: 'payload',
-          path: '.amount.currency',
+          path: '$.amount.currency',
           operator: 'notIn',
           value: {
-            fact: 'json-path',
-            params: {
-              fact: 'payee',
-              path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
-            }
+            fact: 'payee',
+            path: '$.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
           }
         }
       ]
@@ -71,24 +65,18 @@ const mockRules = [
     conditions: {
       all: [
         {
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
-          },
-          operator: 'notDeepEqual',
-          value: ['1']
+          fact: 'payload',
+          path: '$.extensionList[?(@.key == "KYCPayerTier")].value',
+          operator: 'notEqual',
+          value: '1'
         },
         {
           fact: 'payload',
-          path: '.amount.currency',
+          path: '$.amount.currency',
           operator: 'notIn',
           value: {
-            fact: 'json-path',
-            params: {
-              fact: 'payee',
-              path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
-            }
+            fact: 'payee',
+            path: '$.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
           }
         }
       ]
@@ -103,9 +91,6 @@ const mockRules = [
   }
 ]
 
-jest.mock('../../../config/rules', () => mockRules)
-
-const rules = require('../../../config/rules')
 const RulesEngine = require('../../../src/model/rules')
 
 describe('RulesEngine', () => {
@@ -113,11 +98,8 @@ describe('RulesEngine', () => {
     it('returns the expected events when using jsonpath and notDeepEqual operator', async () => {
       const conditions = {
         any: [{
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.payer.partyIdInfo.fspId'
-          },
+          fact: 'payload',
+          path: '$.payer.partyIdInfo.fspId',
           operator: 'notDeepEqual',
           value: ['payerfsp']
         }]
@@ -141,18 +123,12 @@ describe('RulesEngine', () => {
     it('returns the expected events when using jsonpath fact-fact comparison', async () => {
       const conditions = {
         any: [{
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.payer.partyIdInfo.fspId'
-          },
+          fact: 'payload',
+          path: '$.payer.partyIdInfo.fspId',
           operator: 'notDeepEqual',
           value: {
-            fact: 'json-path',
-            params: {
-              path: '$.headers[\'fspiop-source\']',
-              fact: 'headers'
-            }
+            path: '$.[\'fspiop-source\']',
+            fact: 'headers'
           }
         }]
       }
@@ -178,11 +154,8 @@ describe('RulesEngine', () => {
     it('returns the expected events when using jsonpath array filter', async () => {
       const conditions = {
         any: [{
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.extensionList[?(@.key === \'KYCPayerTier\')].value'
-          },
+          fact: 'payload',
+          path: '$.extensionList[?(@.key === \'KYCPayerTier\')].value',
           operator: 'notDeepEqual',
           value: ['1']
         }]
@@ -206,13 +179,10 @@ describe('RulesEngine', () => {
     it('returns the expected events when using deepEqual operator', async () => {
       const conditions = {
         any: [{
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.extensionList[?(@.key === \'KYCPayerTier\')].value'
-          },
-          operator: 'deepEqual',
-          value: ['1']
+          fact: 'payload',
+          path: '$.extensionList[?(@.key === \'KYCPayerTier\')].value',
+          operator: 'equal',
+          value: '1'
         }]
       }
       const event = {
@@ -250,8 +220,8 @@ describe('RulesEngine', () => {
           ]
         }
       }
-      const { events } = await RulesEngine.run(rules, testFacts)
-      expect(events).toEqual([rules[0].event])
+      const { events } = await RulesEngine.run(mockRules, testFacts)
+      expect(events).toEqual([mockRules[0].event])
     })
 
     it('returns an empty array of events when using example config for INTERCEPT_QUOTE negative case', async () => {
@@ -273,7 +243,7 @@ describe('RulesEngine', () => {
           ]
         }
       }
-      const { events } = await RulesEngine.run(rules, testFacts)
+      const { events } = await RulesEngine.run(mockRules, testFacts)
       expect(events).toEqual([])
     })
 
@@ -295,8 +265,8 @@ describe('RulesEngine', () => {
           ]
         }
       }
-      const { events } = await RulesEngine.run(rules, testFacts)
-      expect(events).toEqual([rules[1].event])
+      const { events } = await RulesEngine.run(mockRules, testFacts)
+      expect(events).toEqual([mockRules[1].event])
     })
 
     it('returns the expected events when using example config INVALID_QUOTE_REQUEST triggered by incorrect extension value', async () => {
@@ -318,8 +288,8 @@ describe('RulesEngine', () => {
           ]
         }
       }
-      const { events } = await RulesEngine.run(rules, testFacts)
-      expect(events).toEqual([rules[1].event])
+      const { events } = await RulesEngine.run(mockRules, testFacts)
+      expect(events).toEqual([mockRules[1].event])
     })
 
     it('returns the expected events when using example config INVALID_QUOTE_REQUEST event negative case', async () => {
@@ -341,7 +311,7 @@ describe('RulesEngine', () => {
           ]
         }
       }
-      const { events } = await RulesEngine.run(rules, testFacts)
+      const { events } = await RulesEngine.run(mockRules, testFacts)
       expect(events).toEqual([])
     })
   })
