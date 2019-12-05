@@ -38,24 +38,18 @@ const mockRules = [
     conditions: {
       all: [
         {
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
-          },
-          operator: 'deepEqual',
-          value: ['1']
+          fact: 'payload',
+          path: '$.extensionList[?(@.key == "KYCPayerTier")].value',
+          operator: 'equal',
+          value: '1'
         },
         {
           fact: 'payload',
-          path: '.amount.currency',
+          path: '$.amount.currency',
           operator: 'notIn',
           value: {
-            fact: 'json-path',
-            params: {
               fact: 'payee',
-              path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
-            }
+              path: '$.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
           }
         }
       ]
@@ -71,24 +65,18 @@ const mockRules = [
     conditions: {
       all: [
         {
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
-          },
-          operator: 'notDeepEqual',
-          value: ['1']
+          fact: 'payload',
+          path: '$.extensionList[?(@.key == "KYCPayerTier")].value',
+          operator: 'notEqual',
+          value: '1'
         },
         {
           fact: 'payload',
-          path: '.amount.currency',
+          path: '$.amount.currency',
           operator: 'notIn',
           value: {
-            fact: 'json-path',
-            params: {
-              fact: 'payee',
-              path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
-            }
+            fact: 'payee',
+            path: '$.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
           }
         }
       ]
@@ -110,11 +98,8 @@ describe('RulesEngine', () => {
     it('returns the expected events when using jsonpath and notDeepEqual operator', async () => {
       const conditions = {
         any: [{
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.payer.partyIdInfo.fspId'
-          },
+          fact: 'payload',
+          path: '$.payer.partyIdInfo.fspId',
           operator: 'notDeepEqual',
           value: ['payerfsp']
         }]
@@ -138,18 +123,12 @@ describe('RulesEngine', () => {
     it('returns the expected events when using jsonpath fact-fact comparison', async () => {
       const conditions = {
         any: [{
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.payer.partyIdInfo.fspId'
-          },
+          fact: 'payload',
+          path: '$.payer.partyIdInfo.fspId',
           operator: 'notDeepEqual',
           value: {
-            fact: 'json-path',
-            params: {
-              path: '$.headers[\'fspiop-source\']',
-              fact: 'headers'
-            }
+            path: '$.[\'fspiop-source\']',
+            fact: 'headers'
           }
         }]
       }
@@ -175,11 +154,8 @@ describe('RulesEngine', () => {
     it('returns the expected events when using jsonpath array filter', async () => {
       const conditions = {
         any: [{
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.extensionList[?(@.key === \'KYCPayerTier\')].value'
-          },
+          fact: 'payload',
+          path: '$.extensionList[?(@.key === \'KYCPayerTier\')].value',
           operator: 'notDeepEqual',
           value: ['1']
         }]
@@ -203,13 +179,10 @@ describe('RulesEngine', () => {
     it('returns the expected events when using deepEqual operator', async () => {
       const conditions = {
         any: [{
-          fact: 'json-path',
-          params: {
-            fact: 'payload',
-            path: '$.payload.extensionList[?(@.key === \'KYCPayerTier\')].value'
-          },
-          operator: 'deepEqual',
-          value: ['1']
+          fact: 'payload',
+          path: '$.extensionList[?(@.key === \'KYCPayerTier\')].value',
+          operator: 'equal',
+          value: '1'
         }]
       }
       const event = {
