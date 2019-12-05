@@ -50,7 +50,7 @@
     "@hapi/hapi": "18.4.0",
     "@mojaloop/central-services-error-handling": "8.6.2",
     "@mojaloop/central-services-logger": "8.6.0",
-    "@mojaloop/central-services-shared": "8.6.2",
+    "@mojaloop/central-services-shared": "8.6.3",
     "@mojaloop/event-sdk": "8.6.1",
     "@mojaloop/ml-number": "8.2.0",
     "axios": "0.19.0",
@@ -64,7 +64,7 @@
     "memory-cache": "0.2.0",
     "mysql": "2.17.1",
     "node-fetch": "2.6.0",
-    "parse-strings-in-object": "1.2.0",
+    "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8"
   },
   "devDependencies": {
