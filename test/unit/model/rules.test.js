@@ -48,8 +48,8 @@ const mockRules = [
           path: '$.amount.currency',
           operator: 'notIn',
           value: {
-              fact: 'payee',
-              path: '$.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
+            fact: 'payee',
+            path: '$.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
           }
         }
       ]

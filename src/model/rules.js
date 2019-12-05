@@ -37,7 +37,6 @@
  */
 
 const jre = require('json-rules-engine')
-const jsonpath = require('jsonpath')
 const assert = require('assert').strict
 
 module.exports.events = {
