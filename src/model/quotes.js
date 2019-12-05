@@ -124,8 +124,8 @@ class QuotesModel {
     this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
 
     const facts = {
-      payer,
-      payee,
+      payer: payer.data,
+      payee: payee.data,
       payload: quoteRequest,
       headers
     }
@@ -177,7 +177,9 @@ class QuotesModel {
         quoteRequest,
         headers: {
           ...headers,
-          'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp
+          'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp,
+          'fspiop-destinationcurrency': interceptQuoteEvents[0].params.rerouteToFspCurrency,
+          'fspiop-sourcecurrency': interceptQuoteEvents[0].params.sourceCurrency
         }
       }
     }
@@ -1099,7 +1101,9 @@ class QuotesModel {
       'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
       Date: headers.date,
       'FSPIOP-Source': headers['fspiop-source'],
+      'FSPIOP-SourceCurrency': headers['fspiop-sourcecurrency'],
       'FSPIOP-Destination': headers['fspiop-destination'],
+      'FSPIOP-DestinationCurrency': headers['fspiop-destinationcurrency'],
       'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
       'FSPIOP-Signature': headers['fspiop-signature'],
       'FSPIOP-URI': headers['fspiop-uri'],

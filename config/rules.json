@@ -1,1 +1,115 @@
-[]
+[
+    {
+        "conditions": {
+          "all": [
+            {
+              "fact": "json-path",
+              "params": {
+                "fact": "payload",
+                "path": "$.payload.extensionList[?(@.key == 'KYCPayerTier')].value"
+              },
+              "operator": "deepEqual",
+              "value": [ "1" ]
+            },
+            {
+              "fact": "payload",
+              "path": ".amount.currency",
+              "operator": "notIn",
+              "value": {
+                "fact": "json-path",
+                "params": {
+                  "fact": "payee",
+                  "path": "$.payee.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
+                }
+              }
+            },
+            {
+              "fact": "payload",
+              "path": ".amount.currency",
+              "operator": "equal",
+              "value": "EUR"
+            }
+          ]
+        },
+        "event": {
+          "type": "INTERCEPT_QUOTE",
+          "params": {
+            "rerouteToFsp": "DFSPEUR"
+          }
+        }
+      },
+      {
+        "conditions": {
+          "all": [
+            {
+              "fact": "json-path",
+              "params": {
+                "fact": "payload",
+                "path": "$.payload.extensionList[?(@.key == 'KYCPayerTier')].value"
+              },
+              "operator": "deepEqual",
+              "value": [ "1" ]
+            },
+            {
+              "fact": "payload",
+              "path": ".amount.currency",
+              "operator": "notIn",
+              "value": {
+                "fact": "json-path",
+                "params": {
+                  "fact": "payee",
+                  "path": "$.payee.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
+                }
+              }
+            },
+            {
+              "fact": "payload",
+              "path": ".amount.currency",
+              "operator": "equal",
+              "value": "XOF"
+            }
+          ]
+        },
+        "event": {
+          "type": "INTERCEPT_QUOTE",
+          "params": {
+            "rerouteToFsp": "DFSPXOF"
+          }
+        }
+      },
+        {
+      "conditions": {
+        "all": [
+          {
+            "fact": "json-path",
+            "params": {
+              "fact": "payload",
+              "path": "$.payload.extensionList[?(@.key == 'KYCPayerTier')].value"
+            },
+            "operator": "notDeepEqual",
+            "value": [ "1" ]
+          },
+          {
+            "fact": "payload",
+            "path": ".amount.currency",
+            "operator": "notIn",
+            "value": {
+              "fact": "json-path",
+              "params": {
+                "fact": "payee",
+                "path": "$.payee.accounts[?(@.ledgerAccountType == 'SETTLEMENT')].currency"
+              }
+            }
+          }
+        ]
+      },
+      "event": {
+        "type": "INVALID_QUOTE_REQUEST",
+        "params": {
+          "FSPIOPError": "PAYEE_UNSUPPORTED_CURRENCY",
+          "message": "The requested payee does not support the payment currency"
+        }
+      }
+    }
+  ]
+  

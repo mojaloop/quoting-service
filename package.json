@@ -59,13 +59,13 @@
     "good-console": "8.0.0",
     "good-squeeze": "5.1.0",
     "hapi-openapi": "1.2.6",
-    "json-rules-engine": "4.1.0",
+    "json-rules-engine": "5.0.0",
     "jsonpath": "1.0.2",
     "knex": "0.20.3",
     "memory-cache": "0.2.0",
     "mysql": "2.17.1",
     "node-fetch": "2.6.0",
-    "parse-strings-in-object": "1.2.0",
+    "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8"
   },
   "devDependencies": {
