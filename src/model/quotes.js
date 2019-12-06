@@ -114,20 +114,18 @@ class QuotesModel {
 
     // Collect facts to supply to the rule engine
     // Get quote participants from central ledger admin
-    // const { switchEndpoint } = new Config()
-    // const url = `${switchEndpoint}/participants`
-    // const [payer, payee] = await Promise.all([
-    //   axios.request({ url: `${url}/${headers['fspiop-source']}` }),
-    //   axios.request({ url: `${url}/${headers['fspiop-destination']}` })
-    // ])
+    const { switchEndpoint } = new Config()
+    const url = `${switchEndpoint}/participants`
+    const [payer, payee] = await Promise.all([
+      axios.request({ url: `${url}/${headers['fspiop-source']}` }),
+      axios.request({ url: `${url}/${headers['fspiop-destination']}` })
+    ])
 
-    // this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
+    this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
 
     const facts = {
-      // payer: payer.data,
-      // payee: payee.data,
-      payee: { accounts: [{ id: 1, isActive: 1, ledgerAccountType: 'POSITION', currency: 'EUR' }] },
-      payer: { accounts: [{ id: 1, isActive: 1, ledgerAccountType: 'POSITION', currency: 'XOF' }, { id: 2, isActive: 1, ledgerAccountType: 'POSITION', currency: 'EUR' }, { id: 3, isActive: 1, ledgerAccountType: 'XXX', currency: 'MXN' }, { id: 1, isActive: 1, ledgerAccountType: 'POSITION', currency: 'MAD' }] },
+      payer: payer.data,
+      payee: payee.data,
       payload: quoteRequest,
       headers
     }
