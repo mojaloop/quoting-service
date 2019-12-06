@@ -72,6 +72,18 @@ const createEngine = () => {
     return Array.isArray(factValue) === ruleValue
   })
 
+  engine.on('failure', function (event, almanac, ruleResult) {
+    console.log('failure')
+    console.log(ruleResult)
+    console.log(event)
+  })
+
+  engine.on('success', function (event, almanac, ruleResult) {
+    console.log('success')
+    console.log(ruleResult)
+    console.log(event)
+  })
+
   return engine
 }
 

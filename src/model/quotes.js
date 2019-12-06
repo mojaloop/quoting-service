@@ -125,7 +125,8 @@ class QuotesModel {
 
     const facts = {
       payer: payer.data,
-      payee: payee.data,
+      // payee: payee.data,
+      payee: { accounts: [{ id: 1, isActive: 1, ledgerAccountType: 'POSITION', currency: 'EUR' }, { id: 2, isActive: 1, ledgerAccountType: 'POSITION', currency: 'USD' }, { id: 3, isActive: 1, ledgerAccountType: 'XXX' }, { id: 1, isActive: 1, ledgerAccountType: 'POSITION', currency: 'MAD' }] },
       payload: quoteRequest,
       headers
     }
