@@ -196,7 +196,7 @@ describe('QuotesModel', () => {
                   fact: 'json-path',
                   params: {
                     fact: 'payee',
-                    path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
+                    path: '$.payee.accounts[?(@.ledgerAccountType == "POSITION" && @.isActive == 1)].currency'
                   }
                 }
               }
@@ -205,7 +205,9 @@ describe('QuotesModel', () => {
           event: {
             type: 'INTERCEPT_QUOTE',
             params: {
-              rerouteToFsp: 'DFSPEUR'
+              rerouteToFsp: 'DFSPEUR',
+              sourceCurrency: 'EUR',
+              rerouteToFspCurrency: 'XOF'
             }
           }
         },
@@ -229,7 +231,7 @@ describe('QuotesModel', () => {
                   fact: 'json-path',
                   params: {
                     fact: 'payee',
-                    path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
+                    path: '$.payee.accounts[?(@.ledgerAccountType == "POSITION" && @.isActive == 1)].currency'
                   }
                 }
               }
@@ -533,7 +535,9 @@ describe('QuotesModel', () => {
                 quoteRequest: mockData.quoteRequest,
                 headers: {
                   ...mockData.headers,
-                  'fspiop-destination': mockEvents[0].params.rerouteToFsp
+                  'fspiop-destination': mockEvents[0].params.rerouteToFsp,
+                  'fspiop-destinationcurrency': mockEvents[0].params.rerouteToFspCurrency,
+                  'fspiop-sourcecurrency': mockEvents[0].params.sourceCurrency
                 }
               })
           })
