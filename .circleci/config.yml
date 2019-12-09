@@ -162,8 +162,6 @@ jobs:
           name: Install general dependencies
           command: *defaults_Dependencies
       - run:
-          <<: *defaults_environment
-      - run:
           name: Access npm folder as root
           command: cd $(npm root -g)/npm
       - run:
@@ -184,8 +182,6 @@ jobs:
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
-      - run:
-          <<: *defaults_environment
       - restore_cache:
           keys:
             - dependency-cache-{{ checksum "package.json" }}
@@ -208,8 +204,6 @@ jobs:
       - run:
           name: Install general dependencies
           command: *defaults_Dependencies
-      - run:
-          <<: *defaults_environment
       - run:
           name: Install AWS CLI dependencies
           command: *defaults_awsCliDependencies
@@ -234,27 +228,6 @@ jobs:
             else
                 echo "Not a release (env CIRCLE_BRANCH != 'master'), skipping sending lcov.info to SonarQube."
             fi
-
-  # test-integration:
-  #   executor: default-machine 
-  #   steps:
-  #     - checkout
-  #     - run:
-  #         <<: *defaults_environment
-  #     - restore_cache:
-  #         key: dependency-cache-{{ checksum "package.json" }}
-  #     - run:
-  #         name: Create dir for test results
-  #         command: mkdir -p ./test/results
-  #     - run:
-  #         name: Execute integration tests
-  #         command: npm -s run test:integration
-  #         no_output_timeout: 25m
-  #     - store_artifacts:
-  #         path: ./test/results
-  #         prefix: test
-  #     - store_test_results:
-  #         path: ./test/results
 
   vulnerability-check:
     executor: default-docker
