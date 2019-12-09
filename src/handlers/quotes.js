@@ -80,7 +80,7 @@ module.exports = {
       request.server.log(['info'], `POST quote request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - POST /quotes: ${err.stack || util.inspect(err)}`)
+      request.server.log(['error'], `ERROR - POST /quotes: ${LibUtil.getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       await model.handleException(fspiopSource, quoteId, fspiopError, request.headers, span)
     } finally {

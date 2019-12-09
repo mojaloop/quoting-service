@@ -80,7 +80,7 @@ module.exports = {
       request.server.log(['info'], `GET quotes/{id} request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - GET /quotes/{id}: ${err.stack || util.inspect(err)}`)
+      request.server.log(['error'], `ERROR - GET /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       await model.handleException(fspiopSource, quoteId, err, request.headers, span)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
@@ -123,7 +123,7 @@ module.exports = {
       request.server.log(['info'], `PUT quote request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - PUT /quotes/{id}: ${err.stack || util.inspect(err)}`)
+      request.server.log(['error'], `ERROR - PUT /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       await model.handleException(fspiopSource, quoteId, err, request.headers, span)
     } finally {
       // eslint-disable-next-line no-unsafe-finally

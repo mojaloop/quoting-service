@@ -23,6 +23,35 @@
  ******/
 'use strict'
 
+
+/**
+ * @object baseMockRequest
+ * 
+ * @description A basic mock request object for passing into handlers
+ * 
+ */
+const baseMockRequest = {
+  headers: {
+    "fspiop-source": "payerfsp"
+  },
+  info: {
+    id: '12345'
+  },
+  params: {
+    id: 'quoteId12345'
+  },
+  server: {
+    app: {
+      database: jest.fn(),
+    },
+    log: jest.fn(),
+  },
+  span: {
+    setTags: jest.fn(),
+    audit: jest.fn()
+  }
+}
+
 /**
  * @function defaultHeaders
  *
@@ -49,5 +78,6 @@ function defaultHeaders () {
 }
 
 module.exports = {
+  baseMockRequest,
   defaultHeaders
 }
