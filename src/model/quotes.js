@@ -415,7 +415,7 @@ class QuotesModel {
         endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYEE')
       }
 
-      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
+      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}, destination: ${fspiopDest}`)
 
       if (!endpoint) {
         // internal-error
@@ -660,7 +660,7 @@ class QuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/master/API%20Definition%20v1.0.pdf
-      const newHeaders = this.generateRequestHeaders(headers)
+      const newHeaders = this.generateRequestHeaders(headers, true)
 
       this.writeLog(`Forwarding quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote response headers: ${JSON.stringify(newHeaders)}`)
@@ -911,7 +911,7 @@ class QuotesModel {
         'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
         'fspiop-http-method': ENUM.Http.RestMethods.PUT,
         'fspiop-uri': fspiopUri
-      })
+      }, true)
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
