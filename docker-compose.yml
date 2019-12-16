@@ -9,5 +9,7 @@ services:
       container_name: qs_quoting-service
       ports:
         - "3002:3002"
+      environment:
+        - CSL_LOG_TRANSPORT=file
       volumes:
        - ./docker/quoting-service/default.json:/opt/quoting-service/config/default.json

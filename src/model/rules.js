@@ -30,65 +30,43 @@
  --------------
  ******/
 
-const jre = require('json-rules-engine')
+/*
+ * This module presents a rules engine based on json-rules-engine with some Mojaloop-specific
+ * operators, events and dynamic facts for use by schemes. Note that the entire json-rules-engine
+ * API is still available to users of this module.
+ */
 
-const engine = new jre.Engine()
+const jre = require('json-rules-engine')
+const assert = require('assert').strict
+
+module.exports.events = {
+  INTERCEPT_QUOTE: 'INTERCEPT_QUOTE',
+  INVALID_QUOTE_REQUEST: 'INVALID_QUOTE_REQUEST'
+}
 
 /**
  * Build helper to handle application of business rules to quotes
  */
+const createEngine = () => {
+  const engine = new jre.Engine()
 
-// const FLATLAND_FSPS = [
-//     'MobileMoney'
-// ];
-//
-// const forbidInterdimensionalTransfers = new jre.Rule({
-//     conditions: {
-//         any: [{
-//             all: [{
-//                 fact: 'payee',
-//                 path: '.partyIdInfo.partyIdentifier',
-//                 operator: 'in',
-//                 value: FLATLAND_FSPS
-//             },{
-//                 fact: 'payer',
-//                 path: '.partyIdInfo.partyIdentifier',
-//                 operator: 'notIn',
-//                 value: FLATLAND_FSPS
-//             }]
-//         }, {
-//             all: [{
-//                 fact: 'payer',
-//                 path: '.partyIdInfo.partyIdentifier',
-//                 operator: 'in',
-//                 value: FLATLAND_FSPS
-//             },{
-//                 fact: 'payee',
-//                 path: '.partyIdInfo.partyIdentifier',
-//                 operator: 'notIn',
-//                 value: FLATLAND_FSPS
-//             }]
-//         }]
-//     },
-//     event: {
-//         type: 'fsps-exist-within-different-dimensional-spaces',
-//         params: {
-//             message: 'FSPS exist within different dimensional spaces. Transfer not allowed.'
-//         }
-//     }
-// });
-//
-// engine.addRule(forbidInterdimensionalTransfers);
+  const deepEqual = (factValue, ruleValue) => {
+    try {
+      assert.deepEqual(factValue, ruleValue)
+      return true
+    } catch (err) {
+      return false
+    }
+  }
 
-/**
- * Load rules from the database
- *
- * @returns {undefined}
- */
-module.exports.loadRulesFromDb = async function (db) {
-  db.queryBuilder.transaction(async txn => {
-    (await db.getTransferRules(txn)).forEach(r => engine.addRule(r))
+  engine.addOperator('notDeepEqual', (factValue, ruleValue) => {
+    return !deepEqual(factValue, ruleValue)
   })
+  engine.addOperator('deepEqual', (factValue, ruleValue) => {
+    return deepEqual(factValue, ruleValue)
+  })
+
+  return engine
 }
 
 /**
@@ -96,4 +74,9 @@ module.exports.loadRulesFromDb = async function (db) {
  *
  * @returns {promise} - array of failure cases, may be empty
  */
-module.exports.getFailures = engine.run.bind(engine)
+module.exports.run = (rules, runtimeFacts) => {
+  const engine = createEngine()
+  rules.map(r => new jre.Rule(r)).forEach(r => engine.addRule(r))
+
+  return engine.run(runtimeFacts)
+}
