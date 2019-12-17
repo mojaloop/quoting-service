@@ -40,15 +40,15 @@ const { baseMockRequest } = require('../../util/helper')
 describe('/quotes', () => {
   describe('POST', () => {
     beforeEach(() => {
-      QuotesModel.mockClear();
-    });
+      QuotesModel.mockClear()
+    })
 
     it('creates a quote', async () => {
       // Arrange
       const code = jest.fn()
       const handler = {
         response: jest.fn(() => ({
-          code,
+          code
         }))
       }
       const mockRequest = {
@@ -58,13 +58,13 @@ describe('/quotes', () => {
         },
         span: {
           audit: jest.fn(),
-          setTags: jest.fn(),
+          setTags: jest.fn()
         }
       }
-      
+
       // Act
       await QuotesHandler.post(mockRequest, handler)
-      
+
       // Assert
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
       const mockQuoteInstance = QuotesModel.mock.instances[0]
@@ -83,7 +83,7 @@ describe('/quotes', () => {
       const code = jest.fn()
       const handler = {
         response: jest.fn(() => ({
-          code,
+          code
         }))
       }
       const mockRequest = {
@@ -93,13 +93,13 @@ describe('/quotes', () => {
         },
         span: {
           audit: jest.fn(),
-          setTags: jest.fn(),
+          setTags: jest.fn()
         }
       }
-      
+
       // Act
       await QuotesHandler.post(mockRequest, handler)
-      
+
       // Assert
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
       expect(handleException).toHaveBeenCalledTimes(1)

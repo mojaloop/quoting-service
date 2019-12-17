@@ -58,17 +58,17 @@ describe('util', () => {
           id: 'ABCDE'
         },
         payload: {
-          transactionId: '12345',
+          transactionId: '12345'
         },
         headers: {
-          "fspiop-source": 'fsp1',
-          "fspiop-destination": 'switch',
+          'fspiop-source': 'fsp1',
+          'fspiop-destination': 'switch'
         }
       }
-      
+
       // Act
       const result = getSpanTags(mockRequest, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.PREPARE)
-      
+
       // Assert
       expect(result).toStrictEqual(expected)
     })
@@ -83,7 +83,7 @@ describe('util', () => {
         source: 'fsp1',
         destination: 'switch',
         payeeFsp: 'fsp1',
-        payerFsp: 'fsp2',
+        payerFsp: 'fsp2'
       }
       const mockRequest = {
         params: {
@@ -100,17 +100,17 @@ describe('util', () => {
             partyIdInfo: {
               fspId: 'fsp2'
             }
-          },
+          }
         },
         headers: {
-          "fspiop-source": 'fsp1',
-          "fspiop-destination": 'switch',
+          'fspiop-source': 'fsp1',
+          'fspiop-destination': 'switch'
         }
       }
-      
+
       // Act
       const result = getSpanTags(mockRequest, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.PREPARE)
-      
+
       // Assert
       expect(result).toStrictEqual(expected)
     })

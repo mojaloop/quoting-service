@@ -23,16 +23,15 @@
  ******/
 'use strict'
 
-
 /**
  * @object baseMockRequest
- * 
+ *
  * @description A basic mock request object for passing into handlers
- * 
+ *
  */
 const baseMockRequest = {
   headers: {
-    "fspiop-source": "payerfsp"
+    'fspiop-source': 'payerfsp'
   },
   info: {
     id: '12345'
@@ -42,9 +41,9 @@ const baseMockRequest = {
   },
   server: {
     app: {
-      database: jest.fn(),
+      database: jest.fn()
     },
-    log: jest.fn(),
+    log: jest.fn()
   },
   span: {
     setTags: jest.fn(),

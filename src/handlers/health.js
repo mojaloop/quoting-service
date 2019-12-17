@@ -80,7 +80,7 @@ module.exports = {
     if (!envConfig.simpleRoutingMode) {
       // assign the db object
       /* istanbul ignore next */
-      // ignoring coverage, since we can't test this anonymous function and its tests are covered 
+      // ignoring coverage, since we can't test this anonymous function and its tests are covered
       // elsewhere
       serviceHealthList = [
         async () => getSubServiceHealthDatastore(request.server.app.database)

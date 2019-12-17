@@ -40,8 +40,8 @@ const { baseMockRequest } = require('../../../../util/helper')
 
 describe('/quotes/{id}', () => {
   beforeEach(() => {
-    QuotesModel.mockClear();
-  });
+    QuotesModel.mockClear()
+  })
 
   describe('PUT', () => {
     it('handles an error', async () => {
@@ -58,10 +58,10 @@ describe('/quotes/{id}', () => {
       const code = jest.fn()
       const handler = {
         response: jest.fn(() => ({
-          code,
+          code
         }))
       }
-      
+
       // Act
       await QuotesErrorHandler.put(request, handler)
 
@@ -89,13 +89,13 @@ describe('/quotes/{id}', () => {
           handleQuoteError: () => {
             throw new Error('Test error')
           },
-          handleException,
+          handleException
         }
       })
       const code = jest.fn()
       const handler = {
         response: jest.fn(() => ({
-          code,
+          code
         }))
       }
 
@@ -104,7 +104,6 @@ describe('/quotes/{id}', () => {
 
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
-      const mockQuoteInstance = QuotesModel.mock.instances[0]
       expect(handleException).toHaveBeenCalledTimes(1)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
     })

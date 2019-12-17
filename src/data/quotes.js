@@ -30,7 +30,7 @@
  --------------
  ******/
 
-//Ignore coverage for this file as it is only a mock implementation for now
+// Ignore coverage for this file as it is only a mock implementation for now
 /* istanbul ignore file */
 
 'use strict'

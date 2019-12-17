@@ -63,7 +63,7 @@ describe('Server', () => {
       start: mockStart,
       plugins: {
         openapi: {
-          setHost: mockSetHost,
+          setHost: mockSetHost
         }
       },
       log: mockLog,
@@ -73,11 +73,11 @@ describe('Server', () => {
         uri: 'http://localhost:3333'
       }
     }))
-    
+
     // Act
     const server = require('../../src/server')
     await server()
-    
+
     // Assert
     expect(mockRegister).toHaveBeenCalledTimes(1)
     expect(mockStart).toHaveBeenCalledTimes(1)
@@ -90,7 +90,7 @@ describe('Server', () => {
     Database.mockImplementationOnce(() => ({
       connect: jest.fn().mockResolvedValueOnce()
     }))
-    const mockRegister = jest.fn().mockImplementationOnce(() => {throw new Error('Test Error')})
+    const mockRegister = jest.fn().mockImplementationOnce(() => { throw new Error('Test Error') })
     const mockStart = jest.fn()
     const mockSetHost = jest.fn()
     const mockLog = jest.fn()
@@ -102,7 +102,7 @@ describe('Server', () => {
       start: mockStart,
       plugins: {
         openapi: {
-          setHost: mockSetHost,
+          setHost: mockSetHost
         }
       },
       log: mockLog,
@@ -112,11 +112,11 @@ describe('Server', () => {
         uri: 'http://localhost:3333'
       }
     }))
-    
+
     // Act
     const server = require('../../src/server')
     await server()
-    
+
     // Assert
     expect(mockRegister).toHaveBeenCalledTimes(1)
     expect(mockStart).not.toHaveBeenCalled()

@@ -55,11 +55,11 @@ describe('/health', () => {
       // Assert
       expect(result.status).toEqual(statusEnum.DOWN)
     })
-    
+
     it('is down when the database is locked', async () => {
       // Arrange
       const mockDb = {
-        getIsMigrationLocked: jest.fn(() => true )
+        getIsMigrationLocked: jest.fn(() => true)
       }
 
       // Act
@@ -72,7 +72,7 @@ describe('/health', () => {
     it('is up when the database is not locked', async () => {
       // Arrange
       const mockDb = {
-        getIsMigrationLocked: jest.fn(() => false )
+        getIsMigrationLocked: jest.fn(() => false)
       }
 
       // Act
@@ -88,15 +88,15 @@ describe('/health', () => {
     let handler
 
     beforeEach(() => {
-      //We need to reimport the modules here, since `new Config()` is called at import time
-      jest.resetModules();
+      // We need to reimport the modules here, since `new Config()` is called at import time
+      jest.resetModules()
       jest.mock('@mojaloop/central-services-shared/src/healthCheck')
       Config = require('../../../src/lib/config')
       HealthCheck = require('@mojaloop/central-services-shared/src/healthCheck').HealthCheck
 
       handler = {
         response: jest.fn(() => ({
-          code,
+          code
         }))
       }
       HealthCheck.mockImplementationOnce(() => ({
@@ -104,7 +104,7 @@ describe('/health', () => {
           status: statusEnum.OK
         })
       }))
-    });
+    })
 
     it('returns an UP response when simpleRoutingMode is on', async () => {
       // Arrange
@@ -114,9 +114,9 @@ describe('/health', () => {
       }))
       const HealthHandlerProxy = require('../../../src/handlers/health')
       const expectedServiceHealthList = []
-      
+
       // Act
-      await HealthHandlerProxy.get({...baseMockRequest}, handler)
+      await HealthHandlerProxy.get({ ...baseMockRequest }, handler)
 
       // Assert
       expect(code).toHaveBeenCalledWith(responseCode.success)
@@ -130,13 +130,13 @@ describe('/health', () => {
         simpleRoutingMode: false
       }))
       const HealthHandlerProxy = require('../../../src/handlers/health')
-      
+
       // Act
       await HealthHandlerProxy.get({ ...baseMockRequest }, handler)
 
       // Assert
       expect(code).toHaveBeenCalledWith(responseCode.success)
-      //Ensure there was one item in the `serviceHealthList`
+      // Ensure there was one item in the `serviceHealthList`
       expect(HealthCheck.mock.calls.pop()[1].length).toEqual(1)
     })
   })
@@ -147,8 +147,8 @@ describe('/health', () => {
     let HealthHandlerProxy
 
     beforeEach(() => {
-      //We need to reimport the modules here, since `new Config()` is called at import time
-      jest.resetModules();
+      // We need to reimport the modules here, since `new Config()` is called at import time
+      jest.resetModules()
       Config = require('../../../src/lib/config')
       Config.mockImplementation(() => ({
         simpleRoutingMode: false
@@ -156,10 +156,10 @@ describe('/health', () => {
 
       handler = {
         response: jest.fn(() => ({
-          code,
+          code
         }))
       }
-    });
+    })
 
     it('returns an down response when getHealth returns DOWN', async () => {
       // Arrange
@@ -173,7 +173,7 @@ describe('/health', () => {
       mockRequest.server.app.database.getIsMigrationLocked = jest.fn().mockImplementation(() => {
         throw new Error('Test Error')
       })
-      
+
       // Act
       await HealthHandlerProxy.get(mockRequest, handler)
 
@@ -191,9 +191,9 @@ describe('/health', () => {
       HealthCheck.mockImplementationOnce(() => ({
         getHealth: () => undefined
       }))
-      
+
       // Act
-      await HealthHandlerProxy.get({...baseMockRequest}, handler)
+      await HealthHandlerProxy.get({ ...baseMockRequest }, handler)
 
       // Assert
       expect(code).toHaveBeenCalledWith(responseCode.gatewayTimeout)

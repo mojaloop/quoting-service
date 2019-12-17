@@ -44,7 +44,6 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const CentralServices = require('@mojaloop/central-services-shared')
 const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
 const Logger = require('@mojaloop/central-services-logger')
-const util = require('util')
 const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 
 const Config = require('./lib/config.js')
@@ -89,7 +88,7 @@ const initServer = async function (db, config) {
         api: Path.resolve('./src/interface/swagger.json'),
         handlers: Path.resolve('./src/handlers')
       }
-    }, 
+    },
     {
       plugin: Good,
       options: {
@@ -125,34 +124,33 @@ const initServer = async function (db, config) {
 // load config
 const config = new Config()
 
-/** 
+/**
  * @function start
  * @description Starts the web server
  */
-async function start() {
+async function start () {
   // initialise database connection pool and start the api server
   return initDb(config)
-  .then(db => initServer(db, config))
-  .then(server => {
-    //Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
+    .then(db => initServer(db, config))
+    .then(server => {
+    // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
     /* istanbul ignore next */
-    process.on('SIGTERM', () => {
-      console.log("sigterm???")
-      server.log(['info'], 'Received SIGTERM, closing server...')
-      server.stop({ timeout: 10000 })
-      .then(err => {
-        Logger.warn(`server stopped. ${err ? (getStackOrInspect(err)) : ''}`)
-        process.exit((err) ? 1 : 0)
+      process.on('SIGTERM', () => {
+        console.log('sigterm???')
+        server.log(['info'], 'Received SIGTERM, closing server...')
+        server.stop({ timeout: 10000 })
+          .then(err => {
+            Logger.warn(`server stopped. ${err ? (getStackOrInspect(err)) : ''}`)
+            process.exit((err) ? 1 : 0)
+          })
       })
-    })
-    
-    server.plugins.openapi.setHost(server.info.host + ':' + server.info.port)
-    server.log(['info'], `Server running on ${server.info.uri}`)
-    // eslint-disable-next-line no-unused-vars
-  }).catch(err => {
-    Logger.error(`Error initializing server: ${getStackOrInspect(err)}`)
-  })
-}
 
+      server.plugins.openapi.setHost(server.info.host + ':' + server.info.port)
+      server.log(['info'], `Server running on ${server.info.uri}`)
+    // eslint-disable-next-line no-unused-vars
+    }).catch(err => {
+      Logger.error(`Error initializing server: ${getStackOrInspect(err)}`)
+    })
+}
 
 module.exports = start

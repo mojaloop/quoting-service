@@ -81,7 +81,6 @@ const run = (rules, runtimeFacts) => {
   return engine.run(runtimeFacts)
 }
 
-
 module.exports = {
   events,
   run

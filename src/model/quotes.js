@@ -43,7 +43,6 @@ const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('@mojaloop/central-services-shared').Util
 const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
- 
 
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')

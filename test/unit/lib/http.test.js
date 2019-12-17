@@ -29,7 +29,6 @@ jest.mock('axios')
 const axios = require('axios')
 const { httpRequest } = require('../../../src/lib/http')
 
-
 describe('httpRequest', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -42,22 +41,22 @@ describe('httpRequest', () => {
       data: Promise.resolve({})
     })
     const options = {}
-    
+
     // Act
     await httpRequest(options, 'payeefsp')
-    
+
     // Assert
     expect(axios.request).toHaveBeenCalledTimes(1)
   })
 
   it('handles a http exception', async () => {
     // Arrange
-    axios.request.mockImplementationOnce(() => {throw new Error('Network error')})
+    axios.request.mockImplementationOnce(() => { throw new Error('Network error') })
     const options = {}
-    
+
     // Act
-    const action = async () => await httpRequest(options, 'payeefsp')
-    
+    const action = async () => httpRequest(options, 'payeefsp')
+
     // Assert
     await expect(action()).rejects.toThrow('Network error')
     expect(axios.request).toHaveBeenCalledTimes(1)
@@ -72,7 +71,7 @@ describe('httpRequest', () => {
     const options = {}
 
     // Act
-    const action = async () => await httpRequest(options, 'payeefsp')
+    const action = async () => httpRequest(options, 'payeefsp')
 
     // Assert
     await expect(action()).rejects.toThrow('Non-success response in HTTP request')

@@ -1,5 +1,4 @@
 
-
 /*****
  License
  --------------
@@ -27,36 +26,36 @@
 'use strict'
 
 const mockDefaultFile = {
-  "HOSTNAME": "http://quoting-service",
-  "LISTEN_ADDRESS": "0.0.0.0",
-  "PORT": 3002,
-  "AMOUNT": {
-    "PRECISION": 18,
-    "SCALE": 4
+  HOSTNAME: 'http://quoting-service',
+  LISTEN_ADDRESS: '0.0.0.0',
+  PORT: 3002,
+  AMOUNT: {
+    PRECISION: 18,
+    SCALE: 4
   },
-  "DATABASE": {
-    "DIALECT": "mysql",
-    "HOST": "localhost",
-    "PORT": 3306,
-    "USER": "central_ledger",
-    "PASSWORD": "password",
-    "SCHEMA": "central_ledger",
-    "POOL_MIN_SIZE": 10,
-    "POOL_MAX_SIZE": 10,
-    "ACQUIRE_TIMEOUT_MILLIS": 30000,
-    "CREATE_TIMEOUT_MILLIS": 30000,
-    "DESTROY_TIMEOUT_MILLIS": 5000,
-    "IDLE_TIMEOUT_MILLIS": 30000,
-    "REAP_INTERVAL_MILLIS": 1000,
-    "CREATE_RETRY_INTERVAL_MILLIS": 200,
-    "DEBUG": true
+  DATABASE: {
+    DIALECT: 'mysql',
+    HOST: 'localhost',
+    PORT: 3306,
+    USER: 'central_ledger',
+    PASSWORD: 'password',
+    SCHEMA: 'central_ledger',
+    POOL_MIN_SIZE: 10,
+    POOL_MAX_SIZE: 10,
+    ACQUIRE_TIMEOUT_MILLIS: 30000,
+    CREATE_TIMEOUT_MILLIS: 30000,
+    DESTROY_TIMEOUT_MILLIS: 5000,
+    IDLE_TIMEOUT_MILLIS: 30000,
+    REAP_INTERVAL_MILLIS: 1000,
+    CREATE_RETRY_INTERVAL_MILLIS: 200,
+    DEBUG: true
   },
-  "SWITCH_ENDPOINT": "http://localhost:3001",
-  "ERROR_HANDLING": {
-    "includeCauseExtension": false,
-    "truncateExtensions": true
+  SWITCH_ENDPOINT: 'http://localhost:3001',
+  ERROR_HANDLING: {
+    includeCauseExtension: false,
+    truncateExtensions: true
   },
-  "SIMPLE_ROUTING_MODE": true
+  SIMPLE_ROUTING_MODE: true
 }
 
 describe('Config', () => {
@@ -65,13 +64,12 @@ describe('Config', () => {
   })
 
   it('sets the default amounts', () => {
-    //Arrange
-    const defaultJson = require('../../../config/default.json')
+    // Arrange
     jest.mock('../../../config/default.json', () => ({
       ...mockDefaultFile,
-      "AMOUNT": {},
+      AMOUNT: {}
     }), { virtual: true })
-  
+
     const Config = require('../../../src/lib/config')
 
     // Act

@@ -36,25 +36,24 @@ const QuotesHandler = require('../../../../src/handlers/quotes/{id}')
 const QuotesModel = require('../../../../src/model/quotes')
 const { baseMockRequest } = require('../../../util/helper')
 
-
 describe('/quotes/{id}', () => {
   beforeEach(() => {
-    QuotesModel.mockClear();
-  });
-  
+    QuotesModel.mockClear()
+  })
+
   describe('GET', () => {
     it('gets a quote by id', async () => {
       // Arrange
       const code = jest.fn()
       const handler = {
         response: jest.fn(() => ({
-          code,
+          code
         }))
       }
-      
+
       // Act
       await QuotesHandler.get({ ...baseMockRequest }, handler)
-      
+
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
       const mockQuoteInstance = QuotesModel.mock.instances[0]
@@ -70,35 +69,35 @@ describe('/quotes/{id}', () => {
           handleQuoteGet: () => {
             throw new Error('Test error')
           },
-          handleException,
+          handleException
         }
       })
       const code = jest.fn()
       const handler = {
         response: jest.fn(() => ({
-          code,
+          code
         }))
       }
-      
+
       // Act
       await QuotesHandler.get({ ...baseMockRequest }, handler)
-      
+
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
       expect(handleException).toHaveBeenCalledTimes(1)
       expect(code).toHaveBeenCalledWith(202)
     })
   })
-  
+
   describe('PUT', () => {
     it('puts a quote by id', async () => {
-      QuotesModel.mockClear();
+      QuotesModel.mockClear()
 
       // Arrange
       const code = jest.fn()
       const handler = {
         response: jest.fn(() => ({
-          code,
+          code
         }))
       }
 
@@ -120,13 +119,13 @@ describe('/quotes/{id}', () => {
           handleQuoteUpdate: () => {
             throw new Error('Test error')
           },
-          handleException,
+          handleException
         }
       })
       const code = jest.fn()
       const handler = {
         response: jest.fn(() => ({
-          code,
+          code
         }))
       }
 
@@ -135,7 +134,6 @@ describe('/quotes/{id}', () => {
 
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
-      const mockQuoteInstance = QuotesModel.mock.instances[0]
       expect(handleException).toHaveBeenCalledTimes(1)
       expect(code).toHaveBeenCalledWith(202)
     })

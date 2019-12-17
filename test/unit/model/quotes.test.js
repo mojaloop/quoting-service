@@ -1630,7 +1630,7 @@ describe('QuotesModel', () => {
 
       // Act
       const result = await quotesModel.handleQuoteError(mockData.headers, mockData.quoteId, error, mockSpan)
-      
+
       // Assert
       // For `handleQuoteError` response is undefined
       expect(result).toBe(undefined)
@@ -1648,7 +1648,7 @@ describe('QuotesModel', () => {
 
       // Act
       const result = await quotesModel.handleQuoteError(mockData.headers, mockData.quoteId, error, mockSpan)
-      
+
       // Assert
       expect(result).toBe(mockData.quoteId)
       expect(quotesModel.sendErrorCallback).toHaveBeenCalledTimes(1)
@@ -1665,7 +1665,7 @@ describe('QuotesModel', () => {
       }
 
       // Act
-      const action = async () =>  await quotesModel.handleQuoteError(mockData.headers, mockData.quoteId, error, mockSpan)
+      const action = async () => quotesModel.handleQuoteError(mockData.headers, mockData.quoteId, error, mockSpan)
 
       // Assert
       await expect(action()).rejects.toThrowError('Validation failed due to error code being invalid - undefined.')
@@ -1681,10 +1681,10 @@ describe('QuotesModel', () => {
     it('handles the quote get with a child span', async () => {
       // Arrange
       expect.assertions(3)
-      
+
       // Act
       await quotesModel.handleQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
-      
+
       // Assert
       expect(mockChildSpan.audit.mock.calls.length).toBe(1)
       expect(mockChildSpan.finish.mock.calls.length).toBe(1)
@@ -1695,10 +1695,10 @@ describe('QuotesModel', () => {
       // Arrange
       expect.assertions(1)
       mockSpan.getChild = jest.fn(() => { throw new Error('Test Error') })
-      
+
       // Act
-      const action = async () => await quotesModel.handleQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
-      
+      const action = async () => quotesModel.handleQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
+
       // Assert
       await expect(action()).rejects.toThrowError('Test Error')
     })
@@ -1707,10 +1707,10 @@ describe('QuotesModel', () => {
       // Arrange
       expect.assertions(2)
       mockChildSpan.audit = jest.fn(() => { throw new Error('Test Error') })
-      
+
       // Act
       await quotesModel.handleQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
-      
+
       // Assert
       expect(mockChildSpan.finish.mock.calls.length).toBe(1)
       expect(quotesModel.handleException.mock.calls.length).toBe(1)
@@ -1729,8 +1729,8 @@ describe('QuotesModel', () => {
       quotesModel.db.getParticipantEndpoint.mockImplementation(() => null)
 
       // Act
-      const action = async () => await quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
-      
+      const action = async () => quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
+
       // Assert
       await expect(action()).rejects.toThrowError('No FSPIOP_CALLBACK_URL_QUOTES found for quote GET test123')
     })
@@ -1759,8 +1759,8 @@ describe('QuotesModel', () => {
       quotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
-          spanHeaders: '12345',
-        },
+          spanHeaders: '12345'
+        }
       }))
       mockSpan.audit = jest.fn()
       const expectedOptions = {
@@ -1783,10 +1783,10 @@ describe('QuotesModel', () => {
       // Arrange
       expect.assertions(1)
       quotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
-      Http.httpRequest.mockImplementationOnce(() => {throw new Error('Test HTTP Error')})
-      
+      Http.httpRequest.mockImplementationOnce(() => { throw new Error('Test HTTP Error') })
+
       // Act
-      const action = async () =>  await quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId)
+      const action = async () => quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId)
 
       // Assert
       await expect(action()).rejects.toThrowError('Test HTTP Error')
@@ -1805,10 +1805,10 @@ describe('QuotesModel', () => {
       const error = new Error('Test Error')
       const expectedError = ErrorHandler.ReformatFSPIOPError(error)
       quotesModel.sendErrorCallback.mockImplementationOnce(() => true)
-      
+
       // Act
       const result = await quotesModel.handleException('payeefsp', mockData.quoteId, error, mockData.headers, mockSpan)
-      
+
       // Assert
       expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan)
       expect(result).toBe(true)
@@ -1820,11 +1820,11 @@ describe('QuotesModel', () => {
       expect.assertions(3)
       const error = new Error('Test Error')
       const expectedError = ErrorHandler.ReformatFSPIOPError(error)
-      quotesModel.sendErrorCallback.mockImplementationOnce(() => {throw new Error('Error sending callback.')})
-      
+      quotesModel.sendErrorCallback.mockImplementationOnce(() => { throw new Error('Error sending callback.') })
+
       // Act
       await quotesModel.handleException('payeefsp', mockData.quoteId, error, mockData.headers, mockSpan)
-      
+
       // Assert
       expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan)
       expect(quotesModel.writeLog).toHaveBeenCalledTimes(1)
@@ -1847,14 +1847,14 @@ describe('QuotesModel', () => {
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       const expectedOptions = {
         method: Enum.Http.RestMethods.PUT,
-        url: "http://localhost:8444/payeefsp/quotes/test123/error",
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
         data: JSON.stringify(fspiopError.toApiErrorObject(mockConfig.errorHandling), LibUtil.getCircularReplacer()),
-        headers: {},
+        headers: {}
       }
-      
+
       // Act
       await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
-      
+
       // Assert
       expect(axios.request).toBeCalledWith(expectedOptions)
     })
@@ -1868,22 +1868,22 @@ describe('QuotesModel', () => {
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
-          spanHeaders: '12345',
+          spanHeaders: '12345'
         },
         method: Enum.Http.RestMethods.PUT,
-        url: "http://localhost:8444/payeefsp/quotes/test123/error",
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
         data: {}
       }))
       mockSpan.audit = jest.fn()
       const expectedOptions = {
         method: Enum.Http.RestMethods.PUT,
-        url: "http://localhost:8444/payeefsp/quotes/test123/error",
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
         data: {},
         headers: {
-          spanHeaders: '12345',
-        },
+          spanHeaders: '12345'
+        }
       }
-      
+
       // Act
       await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan)
 
@@ -1902,7 +1902,7 @@ describe('QuotesModel', () => {
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
 
       // Act
-      const action = async () => await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan)
+      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan)
 
       // Assert
       await expect(action()).rejects.toThrow('No FSPIOP_CALLBACK_URL_QUOTES found for payeefsp unable to make error callback')
@@ -1916,10 +1916,10 @@ describe('QuotesModel', () => {
       quotesModel.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      axios.request.mockImplementationOnce(() => {throw new Error('HTTP test error')})
+      axios.request.mockImplementationOnce(() => { throw new Error('HTTP test error') })
 
       // Act
-      const action = async () => await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
+      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
 
       // Assert
       await expect(action()).rejects.toThrow('network error in sendErrorCallback: HTTP test error')
@@ -1934,11 +1934,11 @@ describe('QuotesModel', () => {
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       axios.request.mockReturnValueOnce({
-        status: Enum.Http.ReturnCodes.BADREQUEST.CODE,
+        status: Enum.Http.ReturnCodes.BADREQUEST.CODE
       })
 
       // Act
-      const action = async () => await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
+      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
 
       // Assert
       await expect(action()).rejects.toThrow('Got non-success response sending error callback')
@@ -1959,9 +1959,9 @@ describe('QuotesModel', () => {
       quotesModel.db.getQuoteDuplicateCheck.mockReturnValueOnce(undefined)
       const expected = {
         isResend: false,
-        isDuplicateId: false,
+        isDuplicateId: false
       }
-      
+
       // Act
       const result = await quotesModel.checkDuplicateQuoteRequest(mockData.quoteRequest)
 
@@ -1978,9 +1978,9 @@ describe('QuotesModel', () => {
       })
       const expected = {
         isResend: false,
-        isDuplicateId: true,
+        isDuplicateId: true
       }
-      
+
       // Act
       const result = await quotesModel.checkDuplicateQuoteRequest(mockData.quoteRequest)
 
@@ -1997,9 +1997,9 @@ describe('QuotesModel', () => {
       })
       const expected = {
         isResend: true,
-        isDuplicateId: true,
+        isDuplicateId: true
       }
-      
+
       // Act
       const result = await quotesModel.checkDuplicateQuoteRequest(mockData.quoteRequest)
 
@@ -2011,10 +2011,10 @@ describe('QuotesModel', () => {
     it('handles an exception when checking the duplicate', async () => {
       // Arrange
       expect.assertions(2)
-      quotesModel.db.getQuoteDuplicateCheck.mockImplementationOnce(() => {throw new Error('Duplicate check error')})
-      
+      quotesModel.db.getQuoteDuplicateCheck.mockImplementationOnce(() => { throw new Error('Duplicate check error') })
+
       // Act
-      const action = async () => await quotesModel.checkDuplicateQuoteRequest(mockData.quoteRequest)
+      const action = async () => quotesModel.checkDuplicateQuoteRequest(mockData.quoteRequest)
 
       // Assert
       await expect(action()).rejects.toThrow('Duplicate check error')
@@ -2035,7 +2035,7 @@ describe('QuotesModel', () => {
       quotesModel.db.getQuoteResponseDuplicateCheck.mockReturnValueOnce(undefined)
       const expected = {
         isResend: false,
-        isDuplicateId: false,
+        isDuplicateId: false
       }
 
       // Act
@@ -2054,7 +2054,7 @@ describe('QuotesModel', () => {
       })
       const expected = {
         isResend: false,
-        isDuplicateId: true,
+        isDuplicateId: true
       }
 
       // Act
@@ -2073,7 +2073,7 @@ describe('QuotesModel', () => {
       })
       const expected = {
         isResend: true,
-        isDuplicateId: true,
+        isDuplicateId: true
       }
 
       // Act
@@ -2090,7 +2090,7 @@ describe('QuotesModel', () => {
       quotesModel.db.getQuoteResponseDuplicateCheck.mockImplementationOnce(() => { throw new Error('Duplicate check error') })
 
       // Act
-      const action = async () => await quotesModel.checkDuplicateQuoteResponse(mockData.quoteId, mockData.quoteResponse)
+      const action = async () => quotesModel.checkDuplicateQuoteResponse(mockData.quoteId, mockData.quoteResponse)
 
       // Assert
       await expect(action()).rejects.toThrow('Duplicate check error')
@@ -2116,7 +2116,7 @@ describe('QuotesModel', () => {
         b: 2,
         c: 3
       }
-      
+
       // Act
       const result = quotesModel.removeEmptyKeys(input)
 
@@ -2133,7 +2133,7 @@ describe('QuotesModel', () => {
       }
       const expected = {
         a: 1,
-        b: 2,
+        b: 2
       }
 
       // Act
@@ -2154,7 +2154,7 @@ describe('QuotesModel', () => {
       }
       const expected = {
         a: 1,
-        b: 2,
+        b: 2
       }
 
       // Act
@@ -2201,9 +2201,9 @@ describe('QuotesModel', () => {
       const expected = {
         'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
         'FSPIOP-Destination': 'dfsp2',
-        'FSPIOP-Source': 'dfsp1',
+        'FSPIOP-Source': 'dfsp1'
       }
-      
+
       // Act
       const result = quotesModel.generateRequestHeaders(mockData.headers, true)
 
@@ -2214,12 +2214,12 @@ describe('QuotesModel', () => {
     it('generates default request headers, including the Accept', () => {
       // Arrange
       const expected = {
-        'Accept': 'application/vnd.interoperability.quotes+json;version=1', 
+        Accept: 'application/vnd.interoperability.quotes+json;version=1',
         'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
         'FSPIOP-Destination': 'dfsp2',
-        'FSPIOP-Source': 'dfsp1',
+        'FSPIOP-Source': 'dfsp1'
       }
-      
+
       // Act
       const result = quotesModel.generateRequestHeaders(mockData.headers, false)
 
@@ -2238,7 +2238,7 @@ describe('QuotesModel', () => {
       // Arrange
       // Act
       quotesModel.writeLog('test message')
-      
+
       // Assert
       expect(Logger.info).toBeCalledTimes(1)
     })

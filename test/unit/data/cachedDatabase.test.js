@@ -47,7 +47,7 @@ describe('cachedDatabase', () => {
 
       // Act
       const result = await cachedDb.getInitiatorType('paramA')
-      
+
       // Assert
       expect(result).toBe('testInitiatorTypeValue')
     })
@@ -152,9 +152,9 @@ describe('cachedDatabase', () => {
       const config = new Config()
       Database = require('../../../src/data/database')
       MockCachedDatabase = require('../../../src/data/cachedDatabase')
-      
+
       cachedDb = new MockCachedDatabase(config)
-      //Override the config since mocking out the superclass causes this to break
+      // Override the config since mocking out the superclass causes this to break
       cachedDb.config = config
     })
 
@@ -163,12 +163,12 @@ describe('cachedDatabase', () => {
       // Mocking superclasses is a little tricky -- so we directly override the prototype here
       Database.prototype.getLedgerEntryType = jest.fn().mockReturnValueOnce({ ledgerEntryType: true })
       const expected = { ledgerEntryType: true }
-      
+
       // Act
       const result = await cachedDb.getCacheValue('getLedgerEntryType', ['paramA'])
-      //Result should now be cached
+      // Result should now be cached
       const result2 = await cachedDb.getCacheValue('getLedgerEntryType', ['paramA'])
-      
+
       // Assert
       // Check that we only called the super method once, the 2nd time should be cached
       expect(Database.prototype.getLedgerEntryType).toBeCalledTimes(1)
@@ -179,13 +179,11 @@ describe('cachedDatabase', () => {
     it('handles an exception', async () => {
       // Arrange
       // Mocking superclasses is a little tricky -- so we directly override the prototype here
-      Database.prototype.getLedgerEntryType = jest.fn().mockImplementationOnce(() => { throw new Error('Test Error')})
-      const expected = { ledgerEntryType: true }
-      
-      // Act
-      const action = async () => await cachedDb.getCacheValue('getLedgerEntryType', ['paramA'])
+      Database.prototype.getLedgerEntryType = jest.fn().mockImplementationOnce(() => { throw new Error('Test Error') })
 
-      
+      // Act
+      const action = async () => cachedDb.getCacheValue('getLedgerEntryType', ['paramA'])
+
       // Assert
       await expect(action()).rejects.toThrowError('Test Error')
     })

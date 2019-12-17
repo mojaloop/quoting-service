@@ -31,7 +31,6 @@
 
 const BulkQuotesHandler = require('../../../src/handlers/bulkQuotes')
 
-
 describe('/bulkQuotes', () => {
   describe('POST', () => {
     it('throws NOT IMPLEMENTED error', async () => {

@@ -38,7 +38,6 @@ const Database = require('../../../src/data/database')
 const Config = require('../../../src/lib/config')
 const LibEnum = require('../../../src/lib/enum')
 
-
 let database
 
 /**
@@ -62,27 +61,15 @@ const mockKnexBuilder = (rootMock, returnValue, methodList) => {
     return jest.fn().mockReturnValueOnce(thisReturnValue)
   }, jest.fn().mockReturnValueOnce(returnValue))
 
-  //Make sure we catch the last one
+  // Make sure we catch the last one
   jestMocks.push(firstMock)
 
-  //Ensure the mock order matches the called order
+  // Ensure the mock order matches the called order
   return jestMocks.reverse()
 }
 
-const verifyKnexMocks = (mockList, argsList) => {
-  mockList.forEach((mock, idx) => {
-    const arg = argsList[idx]
-    if (arg === null) {
-      return
-    }
-
-    expect(mock).toHaveBeenCalledWith(arg)
-  })
-}
-
 describe('/database', () => {
-
-  //Mock knex object for raw queries
+  // Mock knex object for raw queries
   const mockKnex = {
     transaction: jest.fn(),
     raw: jest.fn()
@@ -94,8 +81,8 @@ describe('/database', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
 
-      //Return the mockKnex we defined above.
-      //For individual tests, simply call mockKnex.<method>.mockImplementation
+      // Return the mockKnex we defined above.
+      // For individual tests, simply call mockKnex.<method>.mockImplementation
       Knex.mockImplementation(() => mockKnex)
       database = new Database(config)
       await database.connect()
@@ -113,20 +100,20 @@ describe('/database', () => {
 
     //     // Act
     //     const result = await database.newTransaction()
-        
+
     //     // Assert
     //     expect(result).toBe('testTx')
     //   })
     // })
-    
+
     describe('isConnected', () => {
       it('returns true when connected', async () => {
         // Arrange
         mockKnex.raw.mockReturnValueOnce(true)
-        
+
         // Act
         const result = await database.isConnected()
-        
+
         // Assert
         expect(result).toBe(true)
         expect(mockKnex.raw).toHaveBeenCalledWith('SELECT 1 + 1 AS result')
@@ -145,7 +132,7 @@ describe('/database', () => {
 
       it('returns false when queryBuilder throws an error', async () => {
         // Arrange
-        mockKnex.raw.mockImplementationOnce(() => {throw new Error('Test Error')})
+        mockKnex.raw.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
         const result = await database.isConnected()
@@ -157,15 +144,15 @@ describe('/database', () => {
   })
 
   describe('queryBuilder queries', () => {
-    //Mock knex object for queryBuilder queries
+    // Mock knex object for queryBuilder queries
     const mockKnex = jest.fn()
 
     beforeEach(async () => {
       jest.clearAllMocks()
       const defaultConfig = new Config()
 
-      //Return the mockKnex we defined above.
-      //For individual tests, simply call mockKnex.<methodName>.mockImplementation
+      // Return the mockKnex we defined above.
+      // For individual tests, simply call mockKnex.<methodName>.mockImplementation
       Knex.mockImplementation(() => mockKnex)
 
       database = new Database(defaultConfig)
@@ -179,7 +166,7 @@ describe('/database', () => {
           mockKnex,
           [
             { rule: '{"testRule1": true}' },
-            { rule: '{"testRule2": true}' },
+            { rule: '{"testRule2": true}' }
           ],
           ['where', 'select']
         )
@@ -200,16 +187,16 @@ describe('/database', () => {
 
       it('handles a JSON.parse error', async () => {
         // Arrange
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [
-            { rule: '{"invalidJSON: true}' },
+            { rule: '{"invalidJSON: true}' }
           ],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getTransferRules()
+        const action = async () => database.getTransferRules()
 
         // Assert
         await expect(action()).rejects.toThrowError('Unexpected end of JSON input')
@@ -239,14 +226,14 @@ describe('/database', () => {
       it('handles the case where rows is undefined', async () => {
         // Arrange
         const initiatorType = 'testInitiatorType'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getInitiatorType(initiatorType)
+        const action = async () => database.getInitiatorType(initiatorType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported initiatorType \'testInitiatorType\'')
@@ -255,26 +242,26 @@ describe('/database', () => {
       it('handles the case where rows is empty', async () => {
         // Arrange
         const initiatorType = 'testInitiatorType'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getInitiatorType(initiatorType)
+        const action = async () => database.getInitiatorType(initiatorType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported initiatorType \'testInitiatorType\'')
       })
 
       it('handles an exception', async () => {
-        // Arrange  
+        // Arrange
         const initiatorType = 'testInitiatorType'
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getInitiatorType(initiatorType)
+        const action = async () => database.getInitiatorType(initiatorType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -304,14 +291,14 @@ describe('/database', () => {
       it('handles the case where rows is undefined', async () => {
         // Arrange
         const initiator = 'testInitiator'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getInitiator(initiator)
+        const action = async () => database.getInitiator(initiator)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported initiator \'testInitiator\'')
@@ -320,26 +307,26 @@ describe('/database', () => {
       it('handles the case where rows is empty', async () => {
         // Arrange
         const initiator = 'testInitiator'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getInitiator(initiator)
+        const action = async () => database.getInitiator(initiator)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported initiator \'testInitiator\'')
       })
 
       it('handles an exception', async () => {
-        // Arrange  
+        // Arrange
         const initiator = 'testInitiator'
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getInitiator(initiator)
+        const action = async () => database.getInitiator(initiator)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -369,14 +356,14 @@ describe('/database', () => {
       it('handles the case where rows is undefined', async () => {
         // Arrange
         const scenario = 'testScenario'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getScenario(scenario)
+        const action = async () => database.getScenario(scenario)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported transaction scenario \'testScenario\'')
@@ -385,26 +372,26 @@ describe('/database', () => {
       it('handles the case where rows is empty', async () => {
         // Arrange
         const scenario = 'testScenario'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getScenario(scenario)
+        const action = async () => database.getScenario(scenario)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported transaction scenario \'testScenario\'')
       })
 
       it('handles an exception', async () => {
-        // Arrange  
+        // Arrange
         const scenario = 'testScenario'
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getScenario(scenario)
+        const action = async () => database.getScenario(scenario)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -434,14 +421,14 @@ describe('/database', () => {
       it('handles the case where rows is undefined', async () => {
         // Arrange
         const subScenario = 'testSubScenario'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getSubScenario(subScenario)
+        const action = async () => database.getSubScenario(subScenario)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported transaction sub-scenario \'testSubScenario\'')
@@ -450,14 +437,14 @@ describe('/database', () => {
       it('handles the case where rows is empty', async () => {
         // Arrange
         const subScenario = 'testSubScenario'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getSubScenario(subScenario)
+        const action = async () => database.getSubScenario(subScenario)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported transaction sub-scenario \'testSubScenario\'')
@@ -469,7 +456,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getSubScenario(subScenario)
+        const action = async () => database.getSubScenario(subScenario)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -499,14 +486,14 @@ describe('/database', () => {
       it('handles the case where rows is undefined', async () => {
         // Arrange
         const amountType = 'testAmountType'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getAmountType(amountType)
+        const action = async () => database.getAmountType(amountType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported amount type \'testAmountType\'')
@@ -515,14 +502,14 @@ describe('/database', () => {
       it('handles the case where rows is empty', async () => {
         // Arrange
         const amountType = 'testAmountType'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getAmountType(amountType)
+        const action = async () => database.getAmountType(amountType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported amount type \'testAmountType\'')
@@ -534,7 +521,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getAmountType(amountType)
+        const action = async () => database.getAmountType(amountType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -555,7 +542,7 @@ describe('/database', () => {
 
         // Act
         const result = await database.createTransactionReference(txn, quoteId, transactionReferenceId)
-        
+
         // Assert
         expect(result).toBe(transactionReferenceId)
         expect(mockList[0]).toHaveBeenCalledWith('transactionReference')
@@ -574,8 +561,8 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.createTransactionReference(txn, quoteId, transactionReferenceId)
-        
+        const action = async () => database.createTransactionReference(txn, quoteId, transactionReferenceId)
+
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
@@ -595,7 +582,7 @@ describe('/database', () => {
 
         // Act
         const result = await database.createQuoteDuplicateCheck(txn, quoteId, hash)
-        
+
         // Assert
         expect(result).toBe(quoteId)
         expect(mockList[0]).toHaveBeenCalledWith('quoteDuplicateCheck')
@@ -614,8 +601,8 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.createQuoteDuplicateCheck(txn, quoteId, hash)
-        
+        const action = async () => database.createQuoteDuplicateCheck(txn, quoteId, hash)
+
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
@@ -636,7 +623,7 @@ describe('/database', () => {
 
         // Act
         const result = await database.createQuoteUpdateDuplicateCheck(txn, quoteId, quoteResponseId, hash)
-        
+
         // Assert
         expect(result).toBe(quoteId)
         expect(mockList[0]).toHaveBeenCalledWith('quoteResponseDuplicateCheck')
@@ -657,8 +644,8 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.createQuoteUpdateDuplicateCheck(txn, quoteId, quoteResponseId, hash)
-        
+        const action = async () => database.createQuoteUpdateDuplicateCheck(txn, quoteId, quoteResponseId, hash)
+
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
@@ -687,14 +674,14 @@ describe('/database', () => {
       it('handles the case where rows is undefined', async () => {
         // Arrange
         const partyType = 'testPartyType'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getPartyType(partyType)
+        const action = async () => database.getPartyType(partyType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported party type \'testPartyType\'')
@@ -703,14 +690,14 @@ describe('/database', () => {
       it('handles the case where rows is empty', async () => {
         // Arrange
         const partyType = 'testPartyType'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getPartyType(partyType)
+        const action = async () => database.getPartyType(partyType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported party type \'testPartyType\'')
@@ -722,7 +709,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getPartyType(partyType)
+        const action = async () => database.getPartyType(partyType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -752,14 +739,14 @@ describe('/database', () => {
       it('handles the case where rows is undefined', async () => {
         // Arrange
         const partyIdentifierType = 'testPartyIdentifierType'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getPartyIdentifierType(partyIdentifierType)
+        const action = async () => database.getPartyIdentifierType(partyIdentifierType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported party identifier type \'testPartyIdentifierType\'')
@@ -768,14 +755,14 @@ describe('/database', () => {
       it('handles the case where rows is empty', async () => {
         // Arrange
         const partyIdentifierType = 'testPartyIdentifierType'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getPartyIdentifierType(partyIdentifierType)
+        const action = async () => database.getPartyIdentifierType(partyIdentifierType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported party identifier type \'testPartyIdentifierType\'')
@@ -787,13 +774,13 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getPartyIdentifierType(partyIdentifierType)
+        const action = async () => database.getPartyIdentifierType(partyIdentifierType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
     })
-    
+
     describe('getParticipant', () => {
       it('gets the participant for PAYEE_DFSP', async () => {
         // Arrange
@@ -804,14 +791,14 @@ describe('/database', () => {
           [{ participantId: 123 }],
           ['where', 'select']
         )
-        
+
         // Act
         const result = await database.getParticipant(participantName, participantType)
-        
+
         // Assert
         expect(result).toBe(123)
         expect(mockList[0]).toHaveBeenCalledWith('participant')
-        expect(mockList[1]).toHaveBeenCalledWith({name: participantName, isActive: 1})
+        expect(mockList[1]).toHaveBeenCalledWith({ name: participantName, isActive: 1 })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -819,14 +806,14 @@ describe('/database', () => {
         // Arrange
         const participantName = 'dfsp1'
         const participantType = LibEnum.PAYEE_DFSP
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () =>  await database.getParticipant(participantName, participantType)
+        const action = async () => database.getParticipant(participantName, participantType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported participant')
@@ -836,14 +823,14 @@ describe('/database', () => {
         // Arrange
         const participantName = 'dfsp1'
         const participantType = LibEnum.PAYER_DFSP
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () =>  await database.getParticipant(participantName, participantType)
+        const action = async () => database.getParticipant(participantName, participantType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported participant')
@@ -852,14 +839,14 @@ describe('/database', () => {
       it('handles an empty response with no participantType', async () => {
         // Arrange
         const participantName = 'dfsp1'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['where', 'select']
         )
 
         // Act
-        const action = async () =>  await database.getParticipant(participantName)
+        const action = async () => database.getParticipant(participantName)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported participant')
@@ -872,7 +859,7 @@ describe('/database', () => {
         const name = 'testName'
         const mockList = mockKnexBuilder(
           mockKnex,
-          [{ transferParticipantRoleTypeId: 123}],
+          [{ transferParticipantRoleTypeId: 123 }],
           ['where', 'select']
         )
 
@@ -889,14 +876,14 @@ describe('/database', () => {
       it('handles the case where rows is undefined', async () => {
         // Arrange
         const name = 'testName'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getTransferParticipantRoleType(name)
+        const action = async () => database.getTransferParticipantRoleType(name)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported transfer participant role type \'testName\'')
@@ -905,14 +892,14 @@ describe('/database', () => {
       it('handles the case where rows is empty', async () => {
         // Arrange
         const name = 'testName'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getTransferParticipantRoleType(name)
+        const action = async () => database.getTransferParticipantRoleType(name)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported transfer participant role type \'testName\'')
@@ -924,7 +911,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getTransferParticipantRoleType(name)
+        const action = async () => database.getTransferParticipantRoleType(name)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -937,7 +924,7 @@ describe('/database', () => {
         const name = 'ledgerName'
         const mockList = mockKnexBuilder(
           mockKnex,
-          [{ ledgerEntryTypeId: 123}],
+          [{ ledgerEntryTypeId: 123 }],
           ['where', 'select']
         )
 
@@ -954,14 +941,14 @@ describe('/database', () => {
       it('handles the case where rows is undefined', async () => {
         // Arrange
         const name = 'ledgerName'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getLedgerEntryType(name)
+        const action = async () => database.getLedgerEntryType(name)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported ledger entry type \'ledgerName\'')
@@ -970,14 +957,14 @@ describe('/database', () => {
       it('handles the case where rows is empty', async () => {
         // Arrange
         const name = 'ledgerName'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getLedgerEntryType(name)
+        const action = async () => database.getLedgerEntryType(name)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported ledger entry type \'ledgerName\'')
@@ -989,7 +976,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getLedgerEntryType(name)
+        const action = async () => database.getLedgerEntryType(name)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -1005,13 +992,13 @@ describe('/database', () => {
         const amount = 100
         const currency = 'AUD'
         database.createQuoteParty = jest.fn()
-        
+
         // Act
         database.createPayerQuoteParty(txn, quoteId, party, amount, currency)
-        
+
         // Assert
         expect(database.createQuoteParty).toHaveBeenCalledWith(
-          txn, 
+          txn,
           quoteId,
           LibEnum.PAYER,
           LibEnum.PAYER_DFSP,
@@ -1032,13 +1019,13 @@ describe('/database', () => {
         const amount = 100
         const currency = 'AUD'
         database.createQuoteParty = jest.fn()
-        
+
         // Act
         database.createPayeeQuoteParty(txn, quoteId, party, amount, currency)
-        
+
         // Assert
         expect(database.createQuoteParty).toHaveBeenCalledWith(
-          txn, 
+          txn,
           quoteId,
           LibEnum.PAYEE,
           LibEnum.PAYEE_DFSP,
@@ -1074,7 +1061,7 @@ describe('/database', () => {
           partyIdInfo: {
             partyIdentifier: 'testPartyIdentifier',
             partyIdType: 'MSISDN',
-            fspId: 'payeeFsp',
+            fspId: 'payeeFsp'
           },
           merchantClassificationCode: '0'
         }
@@ -1098,7 +1085,7 @@ describe('/database', () => {
           amount: '100.0000',
           currencyId: 'AUD'
         }
-        
+
         // Act
         const result = await database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
 
@@ -1118,7 +1105,7 @@ describe('/database', () => {
             partySubIdOrType: 'testSubId',
             partyIdentifier: 'testPartyIdentifier',
             partyIdType: 'MSISDN',
-            fspId: 'payeeFsp',
+            fspId: 'payeeFsp'
           },
           merchantClassificationCode: '0'
         }
@@ -1145,7 +1132,7 @@ describe('/database', () => {
           amount: '100.0000',
           currencyId: 'AUD'
         }
-        
+
         // Act
         const result = await database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
 
@@ -1164,14 +1151,14 @@ describe('/database', () => {
           partyIdInfo: {
             partyIdentifier: 'testPartyIdentifier',
             partyIdType: 'MSISDN',
-            fspId: 'payeeFsp',
+            fspId: 'payeeFsp'
           },
           merchantClassificationCode: '0',
           personalInfo: {
             complexName: {
               firstName: 'Mats',
               middleName: 'Middle',
-              lastName: 'Hagman',
+              lastName: 'Hagman'
             },
             dateOfBirth: '1983-10-25'
           }
@@ -1223,14 +1210,14 @@ describe('/database', () => {
           partyIdInfo: {
             partyIdentifier: 'testPartyIdentifier',
             partyIdType: 'MSISDN',
-            fspId: 'payeeFsp',
+            fspId: 'payeeFsp'
           },
-          merchantClassificationCode: '0',
+          merchantClassificationCode: '0'
         }
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
+        const action = async () => database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -1263,7 +1250,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getQuotePartyView(quoteId)
+        const action = async () => database.getQuotePartyView(quoteId)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -1331,14 +1318,14 @@ describe('/database', () => {
       it('handles the case where there is more than 1 row', async () => {
         // Arrange
         const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           ['12345', '67890'],
           ['where', 'select']
         )
 
         // Act
-        const action = async () => await database.getQuoteView(quoteId)
+        const action = async () => database.getQuoteView(quoteId)
 
         // Assert
         await expect(action()).rejects.toThrowError(new RegExp('Expected 1 row for quoteId .*'))
@@ -1354,14 +1341,14 @@ describe('/database', () => {
           ['12345'],
           ['where', 'select']
         )
-        
+
         // Act
         const result = await database.getQuoteResponseView(quoteId)
-        
+
         // Assert
         expect(result).toStrictEqual('12345')
         expect(mockList[0]).toHaveBeenCalledWith('quoteResponseView')
-        expect(mockList[1]).toHaveBeenCalledWith({quoteId})
+        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -1406,20 +1393,20 @@ describe('/database', () => {
       it('handles the case where there is more than 1 row', async () => {
         // Arrange
         const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           ['12345', '67890'],
           ['where', 'select']
         )
 
         // Act
-        const action = async () =>  await database.getQuoteResponseView(quoteId)
+        const action = async () => database.getQuoteResponseView(quoteId)
 
         // Assert
         await expect(action()).rejects.toThrowError(new RegExp('Expected 1 row for quoteId .*'))
       })
     })
-    
+
     describe('createParty', () => {
       const quotePartyId = '12345'
       const party = {
@@ -1440,9 +1427,9 @@ describe('/database', () => {
         const expected = {
           partyId: '12345',
           ...party,
-          quotePartyId,
+          quotePartyId
         }
-        
+
         // Act
         const result = await database.createParty(txn, quotePartyId, party)
 
@@ -1459,7 +1446,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.createParty(txn, quotePartyId, party)
+        const action = async () => database.createParty(txn, quotePartyId, party)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -1480,7 +1467,7 @@ describe('/database', () => {
         transactionSubScenarioId: 'testSubScenario',
         amountTypeId: 'SEND',
         amount: 100,
-        currencyId: 'USD',
+        currencyId: 'USD'
       }
 
       it('creates a quote', async () => {
@@ -1489,16 +1476,16 @@ describe('/database', () => {
         const mockList = mockKnexBuilder(
           mockKnex,
           null,
-          ['transacting', 'insert' ]
+          ['transacting', 'insert']
         )
         const expectedInsert = {
           ...mockQuote,
           amount: '100.0000'
         }
-        
+
         // Act
         const result = await database.createQuote(txn, mockQuote)
-        
+
         // Assert
         expect(result).toEqual(mockQuote.quoteId)
         expect(mockList[0]).toHaveBeenCalledWith('quote')
@@ -1512,7 +1499,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.createQuote(txn, mockQuote)
+        const action = async () => database.createQuote(txn, mockQuote)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -1526,7 +1513,7 @@ describe('/database', () => {
         const partyType = 'PAYEE'
         const mockList = mockKnexBuilder(
           mockKnex,
-          [{ value: 'mockQuoteParty'}],
+          [{ value: 'mockQuoteParty' }],
           ['innerJoin', 'where', 'andWhere', 'select']
         )
 
@@ -1546,7 +1533,7 @@ describe('/database', () => {
         // Arrange
         const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
         const partyType = 'PAYEE'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['innerJoin', 'where', 'andWhere', 'select']
@@ -1563,7 +1550,7 @@ describe('/database', () => {
         // Arrange
         const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
         const partyType = 'PAYEE'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['innerJoin', 'where', 'andWhere', 'select']
@@ -1583,7 +1570,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getQuoteParty(quoteId, partyType)
+        const action = async () => database.getQuoteParty(quoteId, partyType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -1593,30 +1580,29 @@ describe('/database', () => {
         // Arrange
         const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
         const partyType = 'PAYEE'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [{ value: 'mockQuoteParty' }, { value: 'mockQuoteParty2' }],
           ['innerJoin', 'where', 'andWhere', 'select']
         )
 
         // Act
-        const action = async () => await database.getQuoteParty(quoteId, partyType)
+        const action = async () => database.getQuoteParty(quoteId, partyType)
 
         // Assert
         await expect(action()).rejects.toThrowError(new RegExp('Expected 1 quoteParty .*'))
       })
     })
-    
+
     describe('getQuotePartyEndpoint', () => {
       it('gets the quote party endpoint', async () => {
         // Arrange
         const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
         const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
         const partyType = 'PAYEE'
-
         const mockList = mockKnexBuilder(
           mockKnex,
-          [{ value: 'http://localhost:3000/testEndpoint', }],
+          [{ value: 'http://localhost:3000/testEndpoint' }],
           ['innerJoin', 'innerJoin', 'innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'select']
         )
 
@@ -1641,7 +1627,7 @@ describe('/database', () => {
         // Arrange
         const participantName = 'fsp1'
         const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['innerJoin', 'innerJoin', 'innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'select']
@@ -1658,7 +1644,7 @@ describe('/database', () => {
         // Arrange
         const participantName = 'fsp1'
         const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['innerJoin', 'innerJoin', 'innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'select']
@@ -1678,7 +1664,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getQuotePartyEndpoint(participantName, endpointType)
+        const action = async () => database.getQuotePartyEndpoint(participantName, endpointType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -1691,11 +1677,11 @@ describe('/database', () => {
         const participantName = 'fsp1'
         const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
         const mockList = mockKnexBuilder(
-          mockKnex, 
-          [{value: 'http://localhost:3000/testEndpoint', }],
+          mockKnex,
+          [{ value: 'http://localhost:3000/testEndpoint' }],
           ['innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'select']
         )
-        
+
         // Act
         const result = await database.getParticipantEndpoint(participantName, endpointType)
 
@@ -1714,7 +1700,7 @@ describe('/database', () => {
         // Arrange
         const participantName = 'fsp1'
         const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           undefined,
           ['innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'select']
@@ -1731,7 +1717,7 @@ describe('/database', () => {
         // Arrange
         const participantName = 'fsp1'
         const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
-        const mockList = mockKnexBuilder(
+        mockKnexBuilder(
           mockKnex,
           [],
           ['innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'select']
@@ -1749,9 +1735,9 @@ describe('/database', () => {
         const participantName = 'fsp1'
         const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
-  
+
         // Act
-        const action = async () => await database.getParticipantEndpoint(participantName, endpointType)
+        const action = async () => database.getParticipantEndpoint(participantName, endpointType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -1766,11 +1752,11 @@ describe('/database', () => {
 
         // Act
         const result = await database.getQuoteDuplicateCheck(quoteId)
-        
+
         // Assert
         expect(result).toBe('1')
         expect(mockList[0]).toHaveBeenCalledWith('quoteDuplicateCheck')
-        expect(mockList[1]).toHaveBeenCalledWith({quoteId})
+        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -1781,11 +1767,11 @@ describe('/database', () => {
 
         // Act
         const result = await database.getQuoteDuplicateCheck(quoteId)
-        
+
         // Assert
         expect(result).toBe(null)
         expect(mockList[0]).toHaveBeenCalledWith('quoteDuplicateCheck')
-        expect(mockList[1]).toHaveBeenCalledWith({quoteId})
+        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -1796,11 +1782,11 @@ describe('/database', () => {
 
         // Act
         const result = await database.getQuoteDuplicateCheck(quoteId)
-        
+
         // Assert
         expect(result).toBe(null)
         expect(mockList[0]).toHaveBeenCalledWith('quoteDuplicateCheck')
-        expect(mockList[1]).toHaveBeenCalledWith({quoteId})
+        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -1810,8 +1796,8 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getQuoteDuplicateCheck(quoteId)
-        
+        const action = async () => database.getQuoteDuplicateCheck(quoteId)
+
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
@@ -1825,11 +1811,11 @@ describe('/database', () => {
 
         // Act
         const result = await database.getQuoteResponseDuplicateCheck(quoteId)
-        
+
         // Assert
         expect(result).toBe('1')
         expect(mockList[0]).toHaveBeenCalledWith('quoteResponseDuplicateCheck')
-        expect(mockList[1]).toHaveBeenCalledWith({quoteId})
+        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -1840,11 +1826,11 @@ describe('/database', () => {
 
         // Act
         const result = await database.getQuoteResponseDuplicateCheck(quoteId)
-        
+
         // Assert
         expect(result).toBe(null)
         expect(mockList[0]).toHaveBeenCalledWith('quoteResponseDuplicateCheck')
-        expect(mockList[1]).toHaveBeenCalledWith({quoteId})
+        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -1855,11 +1841,11 @@ describe('/database', () => {
 
         // Act
         const result = await database.getQuoteResponseDuplicateCheck(quoteId)
-        
+
         // Assert
         expect(result).toBe(null)
         expect(mockList[0]).toHaveBeenCalledWith('quoteResponseDuplicateCheck')
-        expect(mockList[1]).toHaveBeenCalledWith({quoteId})
+        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -1869,8 +1855,8 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getQuoteResponseDuplicateCheck(quoteId)
-        
+        const action = async () => database.getQuoteResponseDuplicateCheck(quoteId)
+
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
@@ -1884,11 +1870,11 @@ describe('/database', () => {
 
         // Act
         const result = await database.getTransactionReference(quoteId)
-        
+
         // Assert
         expect(result).toBe('1')
         expect(mockList[0]).toHaveBeenCalledWith('transactionReference')
-        expect(mockList[1]).toHaveBeenCalledWith({quoteId})
+        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -1899,11 +1885,11 @@ describe('/database', () => {
 
         // Act
         const result = await database.getTransactionReference(quoteId)
-        
+
         // Assert
         expect(result).toBe(null)
         expect(mockList[0]).toHaveBeenCalledWith('transactionReference')
-        expect(mockList[1]).toHaveBeenCalledWith({quoteId})
+        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -1914,11 +1900,11 @@ describe('/database', () => {
 
         // Act
         const result = await database.getTransactionReference(quoteId)
-        
+
         // Assert
         expect(result).toBe(null)
         expect(mockList[0]).toHaveBeenCalledWith('transactionReference')
-        expect(mockList[1]).toHaveBeenCalledWith({quoteId})
+        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -1928,8 +1914,8 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.getTransactionReference(quoteId)
-        
+        const action = async () => database.getTransactionReference(quoteId)
+
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
@@ -1942,8 +1928,8 @@ describe('/database', () => {
           currency: 'USD'
         },
         payeeReceiveAmount: {
-          'amount': '99',
-          'currency': 'USD'
+          amount: '99',
+          currency: 'USD'
         },
         payeeFspFee: {
           amount: '1',
@@ -1968,17 +1954,17 @@ describe('/database', () => {
           quoteResponseId: '1',
           ilpCondition: completeQuoteResponse.condition,
           isValid: completeQuoteResponse.isValid,
-          payeeFspCommissionAmount: "1.0000",
-          payeeFspCommissionCurrencyId: "USD",
-          payeeFspFeeAmount: "1.0000",
-          payeeFspFeeCurrencyId: "USD",
-          payeeReceiveAmount: "99.0000",
-          payeeReceiveAmountCurrencyId: "USD",
-          responseExpirationDate: "2019-05-27T15:44:53.292Z",
-          transferAmount: "100.0000",
-          transferAmountCurrencyId: "USD",
+          payeeFspCommissionAmount: '1.0000',
+          payeeFspCommissionCurrencyId: 'USD',
+          payeeFspFeeAmount: '1.0000',
+          payeeFspFeeCurrencyId: 'USD',
+          payeeReceiveAmount: '99.0000',
+          payeeReceiveAmountCurrencyId: 'USD',
+          responseExpirationDate: '2019-05-27T15:44:53.292Z',
+          transferAmount: '100.0000',
+          transferAmountCurrencyId: 'USD'
         }
-        
+
         // Act
         const result = await database.createQuoteResponse(txn, quoteId, completeQuoteResponse)
 
@@ -1994,10 +1980,10 @@ describe('/database', () => {
         const txn = jest.fn()
         const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
-        
+
         // Act
-        const action = async () => await database.createQuoteResponse(txn, quoteId, completeQuoteResponse)
-        
+        const action = async () => database.createQuoteResponse(txn, quoteId, completeQuoteResponse)
+
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
@@ -2033,7 +2019,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.createQuoteResponseIlpPacket(txn, quoteResponseId, ilpPacket)
+        const action = async () => database.createQuoteResponseIlpPacket(txn, quoteResponseId, ilpPacket)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -2072,7 +2058,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.createGeoCode(txn, geoCode)
+        const action = async () => database.createGeoCode(txn, geoCode)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
@@ -2089,7 +2075,7 @@ describe('/database', () => {
           errorDescription: 'Test Error'
         }
         const mockList = mockKnexBuilder(mockKnex, ['12345'], ['transacting', 'insert'])
-        
+
         // Act
         const result = await database.createQuoteError(txn, error)
 
@@ -2111,8 +2097,8 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => await database.createQuoteError(txn, error)
-        
+        const action = async () => database.createQuoteError(txn, error)
+
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
@@ -2121,11 +2107,11 @@ describe('/database', () => {
     describe('getIsMigrationLocked', () => {
       it('gets the migration lock status when the database is locked', async () => {
         // Arrange
-        const mockList = mockKnexBuilder(mockKnex, {isLocked: true}, ['orderBy', 'first', 'select'])
-        
+        const mockList = mockKnexBuilder(mockKnex, { isLocked: true }, ['orderBy', 'first', 'select'])
+
         // Act
         const result = await database.getIsMigrationLocked()
-        
+
         // Assert
         expect(result).toBe(true)
         expect(mockList[0]).toHaveBeenCalledWith('migration_lock')
@@ -2134,25 +2120,5 @@ describe('/database', () => {
         expect(mockList[3]).toHaveBeenCalledWith('is_locked AS isLocked')
       })
     })
-
-    // describe('getTransferRules', () => {
-    //   it('gets the transfer rules', async () => {
-    //     // Arrange
-    //     console.log('mockKnex is', mockKnex)
-    //     mockKnex.mock.mockImplementationOnce(() => ({
-    //       where: jest.fn.mockReturnValueOnce({
-    //         select: jest.fn.mockReturnValueOnce(['row1'])
-    //       })
-    //     }))
-        
-    //     // Act
-    //     const result = await database.getTransferRules()
-        
-        
-    //     // Assert
-    //     console.log('result is', result)
-            
-    //     })
-    //   })  
-    })
+  })
 })

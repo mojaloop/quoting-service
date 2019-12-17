@@ -48,9 +48,9 @@ const getSpanTags = ({ payload, headers, params }, transactionType, transactionA
     transactionId: (payload && payload.transactionId) || (params && params.id),
     quoteId: (payload && payload.quoteId) || (params && params.id),
     source: headers[Enum.Http.Headers.FSPIOP.SOURCE],
-    destination: headers[Enum.Http.Headers.FSPIOP.DESTINATION],
+    destination: headers[Enum.Http.Headers.FSPIOP.DESTINATION]
   }
-  
+
   const payeeFsp = getSafe(['payee', 'partyIdInfo', 'fspId'], payload)
   const payerFsp = getSafe(['payer', 'partyIdInfo', 'fspId'], payload)
 
@@ -69,7 +69,7 @@ const getSpanTags = ({ payload, headers, params }, transactionType, transactionA
  * @description Gets the error stack, or uses util.inspect to inspect the error
  * @param {*} err - An error object
  */
-function getStackOrInspect(err) {
+function getStackOrInspect (err) {
   return err.stack || util.inspect(err)
 }
 
@@ -78,18 +78,18 @@ function getStackOrInspect(err) {
  * @description Saftely get a nested value
  * @param {Array<string,number>} path - the path to the required variable
  * @param {*} obj - The object with which to get the value from
- * @returns {any | undefined} - The object at the path, or undefined 
- * 
+ * @returns {any | undefined} - The object at the path, or undefined
+ *
  * @example
  *   Instead of the following:
  *   const fspId = payload && payload.payee && payload.payee.partyIdInfo && payload.payee.partyIdInfo.fspId
- *  
+ *
  *   You can use `getSafe()`:
  *   const fspId = getSafe(['payee', 'partyIdInfo', 'fspId'], payload)
- * 
+ *
  */
-function getSafe(path, obj) {
-    return path.reduce((xs, x) => (xs && xs[x]) ? xs[x] : undefined, obj)
+function getSafe (path, obj) {
+  return path.reduce((xs, x) => (xs && xs[x]) ? xs[x] : undefined, obj)
 }
 
 module.exports = {

@@ -39,7 +39,6 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const { getStackOrInspect } = require('../lib/util')
 
-
 // TODO: where httpRequest is called, there's a pretty common pattern of obtaining an endpoint from
 // the database, specialising a template string with that endpoint, then calling httpRequest. Is
 // there common functionality in these places than can reasonably be factored out?
@@ -51,7 +50,7 @@ const { getStackOrInspect } = require('../lib/util')
  * @param {String} fspiopSource
  * @returns {Promise<void>}
  */
-async function httpRequest(opts, fspiopSource) {
+async function httpRequest (opts, fspiopSource) {
   // Network errors lob an exception. Bear in mind 3xx 4xx and 5xx are not network errors so we
   // need to wrap the request below in a `try catch` to handle network errors
   let res
@@ -86,4 +85,3 @@ async function httpRequest(opts, fspiopSource) {
 module.exports = {
   httpRequest
 }
-

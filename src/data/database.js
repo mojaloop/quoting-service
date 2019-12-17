@@ -108,7 +108,7 @@ class Database {
         .select()
       return rows.map(r => JSON.parse(r.rule))
     } catch (err) {
-      this.writeLog(`Error in getTransferRules: ${ getStackOrInspect(err) }`)
+      this.writeLog(`Error in getTransferRules: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }

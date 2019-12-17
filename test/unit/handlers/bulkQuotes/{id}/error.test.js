@@ -36,10 +36,9 @@ describe('/bulkQuotes/error/{id}', () => {
     it('throws NOT IMPLEMENTED error', async () => {
       // Arrange
 
-      
       // Act
       const action = () => BulkQuotesErrorHandler.put()
-      
+
       // Assert
       expect(action).toThrowError('Bulk quotes not implemented')
     })
