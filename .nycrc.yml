@@ -1,0 +1,10 @@
+temp-directory: "./.nyc_output"
+reporter: [
+  "lcov",
+  "text-summary"
+]
+exclude: [
+  "**/node_modules/**",
+  '**/migrations/**',
+  '**/docs/**'
+]

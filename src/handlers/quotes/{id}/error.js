@@ -78,7 +78,7 @@ module.exports = {
       request.server.log(['info'], `PUT quote error request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - PUT /quotes/{id}/error: ${err.stack || util.inspect(err)}`)
+      request.server.log(['error'], `ERROR - PUT /quotes/{id}/error: ${LibUtil.getStackOrInspect(err)}`)
       await model.handleException(fspiopSource, quoteId, err, request.headers)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
