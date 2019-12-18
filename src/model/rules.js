@@ -71,6 +71,9 @@ const createEngine = () => {
   engine.addOperator('isArray', (factValue, ruleValue) => {
     return Array.isArray(factValue) === ruleValue
   })
+  engine.addOperator('isObject', (factValue, ruleValue) => {
+    return (typeof factValue === 'object' && !Array.isArray(factValue)) === ruleValue
+  })
 
   return engine
 }
