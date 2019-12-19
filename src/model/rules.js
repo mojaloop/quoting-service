@@ -39,7 +39,7 @@
 const jre = require('json-rules-engine')
 const assert = require('assert').strict
 
-module.exports.events = {
+const events = {
   INTERCEPT_QUOTE: 'INTERCEPT_QUOTE',
   INVALID_QUOTE_REQUEST: 'INVALID_QUOTE_REQUEST'
 }
@@ -83,9 +83,14 @@ const createEngine = () => {
  *
  * @returns {promise} - array of failure cases, may be empty
  */
-module.exports.run = (rules, runtimeFacts) => {
+const run = (rules, runtimeFacts) => {
   const engine = createEngine()
   rules.map(r => new jre.Rule(r)).forEach(r => engine.addRule(r))
 
   return engine.run(runtimeFacts)
+}
+
+module.exports = {
+  events,
+  run
 }

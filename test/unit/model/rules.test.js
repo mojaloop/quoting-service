@@ -120,6 +120,31 @@ describe('RulesEngine', () => {
       expect(events).toEqual([event])
     })
 
+    it('returns the expected events when using jsonpath and deepEqual operator', async () => {
+      const conditions = {
+        any: [{
+          fact: 'payload',
+          path: '$.payer.partyIdInfo.fspId',
+          operator: 'deepEqual',
+          value: 'payerfsp'
+        }]
+      }
+      const event = {
+        type: RulesEngine.events.INVALID_QUOTE_REQUEST
+      }
+      const testFacts = {
+        payload: {
+          payer: {
+            partyIdInfo: {
+              fspId: 'payerfsp'
+            }
+          }
+        }
+      }
+      const { events } = await RulesEngine.run([{ conditions, event }], testFacts)
+      expect(events).toEqual([event])
+    })
+
     it('returns the expected events when using jsonpath fact-fact comparison', async () => {
       const conditions = {
         any: [{

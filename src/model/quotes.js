@@ -45,55 +45,14 @@ const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
 
 const Config = require('../lib/config')
+const { httpRequest } = require('../lib/http')
+const { getStackOrInspect } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 const rules = require('../../config/rules.json')
 const RulesEngine = require('./rules.js')
 
 delete axios.defaults.headers.common.Accept
 delete axios.defaults.headers.common['Content-Type']
-
-// TODO: where httpRequest is called, there's a pretty common pattern of obtaining an endpoint from
-// the database, specialising a template string with that endpoint, then calling httpRequest. Is
-// there common functionality in these places than can reasonably be factored out?
-/**
- * Encapsulates making an HTTP request and translating any error response into a domain-specific
- * error type.
- *
- * @param {Object} opts
- * @param {String} fspiopSource
- * @returns {Promise<void>}
- */
-const httpRequest = async (opts, fspiopSource) => {
-  // Network errors lob an exception. Bear in mind 3xx 4xx and 5xx are not network errors so we
-  // need to wrap the request below in a `try catch` to handle network errors
-  let res
-  let body
-
-  try {
-    res = await axios.request(opts)
-    body = await res.data
-  } catch (e) {
-    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
-      'Network error',
-      `${e.stack || util.inspect(e)}. Opts: ${util.inspect(opts)}`,
-      fspiopSource)
-  }
-
-  // handle non network related errors below
-  if (res.status < 200 || res.status >= 300) {
-    const errObj = util.inspect({
-      opts,
-      status: res.status,
-      statusText: res.statusText,
-      body
-    })
-
-    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
-      'Non-success response in HTTP request',
-      `${errObj}`,
-      fspiopSource)
-  }
-}
 
 /**
  * Encapsulates operations on the quotes domain model
@@ -346,7 +305,7 @@ class QuotesModel {
       childSpan = span.getChild('qs_quote_forwardQuoteRequest')
     } catch (err) {
       // internal-error
-      this.writeLog(`Error in handleQuoteRequest for quoteId ${quoteRequest.quoteId}: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in handleQuoteRequest for quoteId ${quoteRequest.quoteId}: ${getStackOrInspect(err)}`)
       if (txn) {
         txn.rollback(err)
       }
@@ -373,7 +332,7 @@ class QuotesModel {
       // any-error
       // as we are on our own in this context, dont just rethrow the error, instead...
       // get the model to handle it
-      this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+      this.writeLog(`Error forwarding quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
       if (envConfig.simpleRoutingMode) {
         await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers, childSpan)
       } else {
@@ -447,7 +406,7 @@ class QuotesModel {
       await httpRequest(opts, fspiopSource)
     } catch (err) {
       // any-error
-      this.writeLog(`Error forwarding quote request to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error forwarding quote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -474,7 +433,7 @@ class QuotesModel {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
         // get the model to handle it
-        this.writeLog(`Error forwarding quote request: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        this.writeLog(`Error forwarding quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
         const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
         await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers, childSpan)
       } finally {
@@ -484,7 +443,7 @@ class QuotesModel {
       }
     } catch (err) {
       // internal-error
-      this.writeLog(`Error in handleQuoteRequestResend: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in handleQuoteRequestResend: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -595,7 +554,7 @@ class QuotesModel {
         // as we are on our own in this context, dont just rethrow the error, instead...
         // get the model to handle it
         const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-        this.writeLog(`Error forwarding quote update: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        this.writeLog(`Error forwarding quote update: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
         await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
       } finally {
         if (!childSpan.isFinished) {
@@ -607,7 +566,7 @@ class QuotesModel {
       return refs
     } catch (err) {
       // internal-error
-      this.writeLog(`Error in handleQuoteUpdate: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in handleQuoteUpdate: ${getStackOrInspect(err)}`)
       if (txn) {
         txn.rollback(err)
       }
@@ -681,7 +640,7 @@ class QuotesModel {
       await httpRequest(opts, fspiopSource)
     } catch (err) {
       // any-error
-      this.writeLog(`Error forwarding quote response to endpoint ${endpoint}: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error forwarding quote response to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -709,7 +668,7 @@ class QuotesModel {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
         // get the model to handle it
-        this.writeLog(`Error forwarding quote response: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        this.writeLog(`Error forwarding quote response: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
         await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
       } finally {
         if (!childSpan.isFinished) {
@@ -718,7 +677,7 @@ class QuotesModel {
       }
     } catch (err) {
       // internal-error
-      this.writeLog(`Error in handleQuoteUpdateResend: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in handleQuoteUpdateResend: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -755,8 +714,10 @@ class QuotesModel {
       return newError
     } catch (err) {
       // internal-error
-      this.writeLog(`Error in handleQuoteError: ${err.stack || util.inspect(err)}`)
-      txn.rollback(err)
+      this.writeLog(`Error in handleQuoteError: ${getStackOrInspect(err)}`)
+      if (txn) {
+        txn.rollback(err)
+      }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
@@ -783,7 +744,7 @@ class QuotesModel {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
         // get the model to handle it
-        this.writeLog(`Error forwarding quote get: ${err.stack || util.inspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        this.writeLog(`Error forwarding quote get: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
         await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
       } finally {
         if (!childSpan.isFinished) {
@@ -792,7 +753,7 @@ class QuotesModel {
       }
     } catch (err) {
       // internal-error
-      this.writeLog(`Error in handleQuoteGet: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in handleQuoteGet: ${getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
@@ -849,7 +810,7 @@ class QuotesModel {
       await httpRequest(opts, fspiopSource)
     } catch (err) {
       // any-error
-      this.writeLog(`Error forwarding quote get request: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -869,7 +830,7 @@ class QuotesModel {
     } catch (err) {
       // any-error
       // not much we can do other than log the error
-      this.writeLog(`Error occurred while handling error. Check service logs as this error may not have been propagated successfully to any other party: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error occurred while handling error. Check service logs as this error may not have been propagated successfully to any other party: ${getStackOrInspect(err)}`)
     } finally {
       if (!childSpan.isFinished) {
         await childSpan.finish()
@@ -955,7 +916,7 @@ class QuotesModel {
       }
     } catch (err) {
       // any-error
-      this.writeLog(`Error in sendErrorCallback: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in sendErrorCallback: ${getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
@@ -1005,7 +966,7 @@ class QuotesModel {
       }
     } catch (err) {
       // internal-error
-      this.writeLog(`Error in checkDuplicateQuoteRequest: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in checkDuplicateQuoteRequest: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -1049,7 +1010,7 @@ class QuotesModel {
       }
     } catch (err) {
       // internal-error
-      this.writeLog(`Error in checkDuplicateQuoteResponse: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in checkDuplicateQuoteResponse: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
