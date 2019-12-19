@@ -911,7 +911,7 @@ class QuotesModel {
         'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
         'fspiop-http-method': ENUM.Http.RestMethods.PUT,
         'fspiop-uri': fspiopUri
-      }, true)
+      })
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
