@@ -46,18 +46,23 @@ jest.mock('../../../src/model/rules')
 jest.mock('../../../src/lib/config', () => {
   return jest.fn().mockImplementation(() => mockConfig)
 })
+jest.mock('../../../src/lib/http')
 
 const axios = require('axios')
 
 const clone = require('@mojaloop/central-services-shared').Util.clone
+const Enum = require('@mojaloop/central-services-shared').Enum
+const LibUtil = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
+const Logger = require('@mojaloop/central-services-logger')
 
 const Db = require('../../../src/data/database')
 const Config = jest.requireActual('../../../src/lib/config')
 const QuotesModel = require('../../../src/model/quotes')
 const rules = require('../../../config/rules')
 const RulesEngine = require('../../../src/model/rules')
+const Http = require('../../../src/lib/http')
 
 describe('QuotesModel', () => {
   let mockData
@@ -175,6 +180,9 @@ describe('QuotesModel', () => {
           }]
         }
       },
+      quoteResponse: {
+        quoteId: 'test123'
+      },
       rules: [
         {
           conditions: {
@@ -262,6 +270,7 @@ describe('QuotesModel', () => {
     quotesModel.db.getSubScenario.mockImplementation(() => mockData.subScenario)
     quotesModel.db.getAmountType.mockImplementation(() => mockData.amountTypeId)
     quotesModel.db.createQuote.mockImplementation(() => mockData.quoteRequest.quoteId)
+    quotesModel.db.createQuoteError.mockImplementation(() => mockData.quoteRequest.quoteId)
     quotesModel.db.createPayerQuoteParty.mockImplementation(() => mockData.quoteRequest.payer.partyIdInfo.fspId)
     quotesModel.db.createPayeeQuoteParty.mockImplementation(() => mockData.quoteRequest.payee.partyIdInfo.fspId)
     quotesModel.db.createGeoCode.mockImplementation(() => mockData.geoCode)
@@ -1104,6 +1113,7 @@ describe('QuotesModel', () => {
       expect.assertions(3)
       mockConfig.simpleRoutingMode = false
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
+      Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
         .rejects
@@ -1116,6 +1126,7 @@ describe('QuotesModel', () => {
       expect.assertions(3)
       mockConfig.simpleRoutingMode = false
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
+      Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
         .rejects
@@ -1485,6 +1496,7 @@ describe('QuotesModel', () => {
 
       mockConfig.simpleRoutingMode = false
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
+      Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
         .rejects
@@ -1498,6 +1510,7 @@ describe('QuotesModel', () => {
 
       mockConfig.simpleRoutingMode = false
       quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
+      Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
         .rejects
@@ -1597,6 +1610,637 @@ describe('QuotesModel', () => {
       await expect(quotesModel.handleQuoteUpdateResend(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan))
         .rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+    })
+  })
+
+  describe('handleQuoteError', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.handleQuoteError.mockRestore()
+    })
+
+    it('handles the quote error', async () => {
+      // Arrange
+      expect.assertions(2)
+      mockConfig.simpleRoutingMode = true
+      const error = {
+        errorCode: 2001,
+        errorDescription: 'Test Error'
+      }
+
+      // Act
+      const result = await quotesModel.handleQuoteError(mockData.headers, mockData.quoteId, error, mockSpan)
+
+      // Assert
+      // For `handleQuoteError` response is undefined
+      expect(result).toBe(undefined)
+      expect(quotesModel.sendErrorCallback).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles the quote error with simpleRoutingMode: false', async () => {
+      // Arrange
+      expect.assertions(4)
+      mockConfig.simpleRoutingMode = false
+      const error = {
+        errorCode: 2001,
+        errorDescription: 'Test Error'
+      }
+
+      // Act
+      const result = await quotesModel.handleQuoteError(mockData.headers, mockData.quoteId, error, mockSpan)
+
+      // Assert
+      expect(result).toBe(mockData.quoteId)
+      expect(quotesModel.sendErrorCallback).toHaveBeenCalledTimes(1)
+      expect(quotesModel.db.newTransaction.mock.calls.length).toBe(1)
+      expect(quotesModel.db.createQuoteError.mock.calls.length).toBe(1)
+    })
+
+    it('handles bad error input', async () => {
+      // Arrange
+      expect.assertions(1)
+      mockConfig.simpleRoutingMode = false
+      const error = {
+        errorDescription: 'Test Error'
+      }
+
+      // Act
+      const action = async () => quotesModel.handleQuoteError(mockData.headers, mockData.quoteId, error, mockSpan)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('Validation failed due to error code being invalid - undefined.')
+    })
+  })
+
+  describe('handleQuoteGet', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.handleQuoteGet.mockRestore()
+    })
+
+    it('handles the quote get with a child span', async () => {
+      // Arrange
+      expect.assertions(3)
+
+      // Act
+      await quotesModel.handleQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
+
+      // Assert
+      expect(mockChildSpan.audit.mock.calls.length).toBe(1)
+      expect(mockChildSpan.finish.mock.calls.length).toBe(1)
+      expect(quotesModel.forwardQuoteGet.mock.calls.length).toBe(1)
+    })
+
+    it('handles an exception on `span.getChild`', async () => {
+      // Arrange
+      expect.assertions(1)
+      mockSpan.getChild = jest.fn(() => { throw new Error('Test Error') })
+
+      // Act
+      const action = async () => quotesModel.handleQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('Test Error')
+    })
+
+    it('handles an exception on `childSpan.audit`', async () => {
+      // Arrange
+      expect.assertions(2)
+      mockChildSpan.audit = jest.fn(() => { throw new Error('Test Error') })
+
+      // Act
+      await quotesModel.handleQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
+
+      // Assert
+      expect(mockChildSpan.finish.mock.calls.length).toBe(1)
+      expect(quotesModel.handleException.mock.calls.length).toBe(1)
+    })
+  })
+
+  describe('forwardQuoteGet', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.forwardQuoteGet.mockRestore()
+    })
+
+    it('fails to forward if the database has no endpoint for the dfsp', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel.db.getParticipantEndpoint.mockImplementation(() => null)
+
+      // Act
+      const action = async () => quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('No FSPIOP_CALLBACK_URL_QUOTES found for quote GET test123')
+    })
+
+    it('forwards the request to the payee dfsp without a span', async () => {
+      // Arrange
+      // expect.assertions(2)
+      quotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      const expectedOptions = {
+        headers: {},
+        method: 'GET',
+        url: 'http://localhost:3333/quotes/test123'
+      }
+
+      // Act
+      await quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId)
+
+      // Assert
+      expect(Http.httpRequest).toBeCalledTimes(1)
+      expect(Http.httpRequest).toBeCalledWith(expectedOptions, mockData.headers[Enum.Http.Headers.FSPIOP.SOURCE])
+    })
+
+    it('forwards the request to the payee dfsp', async () => {
+      // Arrange
+      expect.assertions(4)
+      quotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: {
+          spanHeaders: '12345'
+        }
+      }))
+      mockSpan.audit = jest.fn()
+      const expectedOptions = {
+        headers: {
+          spanHeaders: '12345'
+        }
+      }
+
+      // Act
+      await quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
+
+      // Assert
+      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
+      expect(mockSpan.audit).toBeCalledTimes(1)
+      expect(Http.httpRequest).toBeCalledTimes(1)
+      expect(Http.httpRequest).toBeCalledWith(expectedOptions, mockData.headers[Enum.Http.Headers.FSPIOP.SOURCE])
+    })
+
+    it('handles a http error', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      Http.httpRequest.mockImplementationOnce(() => { throw new Error('Test HTTP Error') })
+
+      // Act
+      const action = async () => quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('Test HTTP Error')
+    })
+  })
+
+  describe('handleException', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.handleException.mockRestore()
+    })
+
+    it('handles the error and finishes the child span', async () => {
+      // Arrange
+      expect.assertions(3)
+      const error = new Error('Test Error')
+      const expectedError = ErrorHandler.ReformatFSPIOPError(error)
+      quotesModel.sendErrorCallback.mockImplementationOnce(() => true)
+
+      // Act
+      const result = await quotesModel.handleException('payeefsp', mockData.quoteId, error, mockData.headers, mockSpan)
+
+      // Assert
+      expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan)
+      expect(result).toBe(true)
+      expect(mockChildSpan.finish).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles an error in sendErrorCallback', async () => {
+      // Arrange
+      expect.assertions(3)
+      const error = new Error('Test Error')
+      const expectedError = ErrorHandler.ReformatFSPIOPError(error)
+      quotesModel.sendErrorCallback.mockImplementationOnce(() => { throw new Error('Error sending callback.') })
+
+      // Act
+      await quotesModel.handleException('payeefsp', mockData.quoteId, error, mockData.headers, mockSpan)
+
+      // Assert
+      expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan)
+      expect(quotesModel.writeLog).toHaveBeenCalledTimes(1)
+      expect(mockChildSpan.finish).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('sendErrorCallback', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.sendErrorCallback.mockRestore()
+    })
+
+    it('sends the error callback without a span', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      const expectedOptions = {
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: JSON.stringify(fspiopError.toApiErrorObject(mockConfig.errorHandling), LibUtil.getCircularReplacer()),
+        headers: {}
+      }
+
+      // Act
+      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
+
+      // Assert
+      expect(axios.request).toBeCalledWith(expectedOptions)
+    })
+
+    it('sends the error callback and handles the span', async () => {
+      // Arrange
+      expect.assertions(3)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: {
+          spanHeaders: '12345'
+        },
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {}
+      }))
+      mockSpan.audit = jest.fn()
+      const expectedOptions = {
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {},
+        headers: {
+          spanHeaders: '12345'
+        }
+      }
+
+      // Act
+      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan)
+
+      // Assert
+      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
+      expect(mockSpan.audit).toBeCalledTimes(1)
+      expect(axios.request).toBeCalledWith(expectedOptions)
+    })
+
+    it('handles when the endpoint could not be found', async () => {
+      // Arrange
+      expect.assertions(2)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(undefined)
+      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+
+      // Act
+      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan)
+
+      // Assert
+      await expect(action()).rejects.toThrow('No FSPIOP_CALLBACK_URL_QUOTES found for payeefsp unable to make error callback')
+      expect(axios.request).not.toHaveBeenCalled()
+    })
+
+    it('handles a http exception', async () => {
+      // Arrange
+      expect.assertions(2)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      axios.request.mockImplementationOnce(() => { throw new Error('HTTP test error') })
+
+      // Act
+      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
+
+      // Assert
+      await expect(action()).rejects.toThrow('network error in sendErrorCallback: HTTP test error')
+      expect(axios.request).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles a http bad status code', async () => {
+      // Arrange
+      expect.assertions(2)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      axios.request.mockReturnValueOnce({
+        status: Enum.Http.ReturnCodes.BADREQUEST.CODE
+      })
+
+      // Act
+      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
+
+      // Assert
+      await expect(action()).rejects.toThrow('Got non-success response sending error callback')
+      expect(axios.request).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('checkDuplicateQuoteRequest', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.checkDuplicateQuoteRequest.mockRestore()
+      quotesModel.calculateRequestHash.mockRestore()
+    })
+
+    it('handles a non-duplicate request', async () => {
+      // Arrange
+      expect.assertions(2)
+      quotesModel.db.getQuoteDuplicateCheck.mockReturnValueOnce(undefined)
+      const expected = {
+        isResend: false,
+        isDuplicateId: false
+      }
+
+      // Act
+      const result = await quotesModel.checkDuplicateQuoteRequest(mockData.quoteRequest)
+
+      // Assert
+      expect(result).toEqual(expected)
+      expect(quotesModel.db.getQuoteDuplicateCheck).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles a duplicate id', async () => {
+      // Arrange
+      expect.assertions(2)
+      quotesModel.db.getQuoteDuplicateCheck.mockReturnValueOnce({
+        hash: 'this_hash_will_not_match'
+      })
+      const expected = {
+        isResend: false,
+        isDuplicateId: true
+      }
+
+      // Act
+      const result = await quotesModel.checkDuplicateQuoteRequest(mockData.quoteRequest)
+
+      // Assert
+      expect(result).toEqual(expected)
+      expect(quotesModel.db.getQuoteDuplicateCheck).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles a matching hash', async () => {
+      // Arrange
+      expect.assertions(2)
+      quotesModel.db.getQuoteDuplicateCheck.mockReturnValueOnce({
+        hash: quotesModel.calculateRequestHash(mockData.quoteRequest)
+      })
+      const expected = {
+        isResend: true,
+        isDuplicateId: true
+      }
+
+      // Act
+      const result = await quotesModel.checkDuplicateQuoteRequest(mockData.quoteRequest)
+
+      // Assert
+      expect(result).toEqual(expected)
+      expect(quotesModel.db.getQuoteDuplicateCheck).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles an exception when checking the duplicate', async () => {
+      // Arrange
+      expect.assertions(2)
+      quotesModel.db.getQuoteDuplicateCheck.mockImplementationOnce(() => { throw new Error('Duplicate check error') })
+
+      // Act
+      const action = async () => quotesModel.checkDuplicateQuoteRequest(mockData.quoteRequest)
+
+      // Assert
+      await expect(action()).rejects.toThrow('Duplicate check error')
+      expect(quotesModel.db.getQuoteDuplicateCheck).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('checkDuplicateQuoteResponse', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.checkDuplicateQuoteResponse.mockRestore()
+      quotesModel.calculateRequestHash.mockRestore()
+    })
+
+    it('handles a non-duplicate request', async () => {
+      // Arrange
+      // expect.assertions(2)
+      quotesModel.db.getQuoteResponseDuplicateCheck.mockReturnValueOnce(undefined)
+      const expected = {
+        isResend: false,
+        isDuplicateId: false
+      }
+
+      // Act
+      const result = await quotesModel.checkDuplicateQuoteResponse(mockData.quoteId, mockData.quoteResponse)
+
+      // Assert
+      expect(result).toEqual(expected)
+      expect(quotesModel.db.getQuoteResponseDuplicateCheck).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles a duplicate id', async () => {
+      // Arrange
+      expect.assertions(2)
+      quotesModel.db.getQuoteResponseDuplicateCheck.mockReturnValueOnce({
+        hash: 'this_hash_will_not_match'
+      })
+      const expected = {
+        isResend: false,
+        isDuplicateId: true
+      }
+
+      // Act
+      const result = await quotesModel.checkDuplicateQuoteResponse(mockData.quoteId, mockData.quoteResponse)
+
+      // Assert
+      expect(result).toEqual(expected)
+      expect(quotesModel.db.getQuoteResponseDuplicateCheck).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles a matching hash', async () => {
+      // Arrange
+      expect.assertions(2)
+      quotesModel.db.getQuoteResponseDuplicateCheck.mockReturnValueOnce({
+        hash: quotesModel.calculateRequestHash(mockData.quoteResponse)
+      })
+      const expected = {
+        isResend: true,
+        isDuplicateId: true
+      }
+
+      // Act
+      const result = await quotesModel.checkDuplicateQuoteResponse(mockData.quoteId, mockData.quoteResponse)
+
+      // Assert
+      expect(result).toEqual(expected)
+      expect(quotesModel.db.getQuoteResponseDuplicateCheck).toHaveBeenCalledTimes(1)
+    })
+
+    it('handles an exception when checking the duplicate', async () => {
+      // Arrange
+      // expect.assertions(2)
+      quotesModel.db.getQuoteResponseDuplicateCheck.mockImplementationOnce(() => { throw new Error('Duplicate check error') })
+
+      // Act
+      const action = async () => quotesModel.checkDuplicateQuoteResponse(mockData.quoteId, mockData.quoteResponse)
+
+      // Assert
+      await expect(action()).rejects.toThrow('Duplicate check error')
+      expect(quotesModel.db.getQuoteResponseDuplicateCheck).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('removeEmptyKeys', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.removeEmptyKeys.mockRestore()
+    })
+
+    it('removes nothing if there are no empty keys', () => {
+      // Arrange
+      const input = {
+        a: 1,
+        b: 2,
+        c: 3
+      }
+      const expected = {
+        a: 1,
+        b: 2,
+        c: 3
+      }
+
+      // Act
+      const result = quotesModel.removeEmptyKeys(input)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('removes a key and if it is undefined', () => {
+      // Arrange
+      const input = {
+        a: 1,
+        b: 2,
+        c: undefined
+      }
+      const expected = {
+        a: 1,
+        b: 2
+      }
+
+      // Act
+      const result = quotesModel.removeEmptyKeys(input)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('removes an empty key', () => {
+      // Arrange
+      const input = {
+        a: 1,
+        b: 2,
+        c: {
+
+        }
+      }
+      const expected = {
+        a: 1,
+        b: 2
+      }
+
+      // Act
+      const result = quotesModel.removeEmptyKeys(input)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('removes a nested empty key', () => {
+      // Arrange
+      const input = {
+        a: 1,
+        b: 2,
+        c: {
+          d: {
+
+          }
+        }
+      }
+      const expected = {
+        a: 1,
+        b: 2,
+        c: {}
+      }
+
+      // Act
+      const result = quotesModel.removeEmptyKeys(input)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+  })
+
+  describe('generateRequestHeaders', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.generateRequestHeaders.mockRestore()
+      quotesModel.removeEmptyKeys.mockRestore()
+    })
+
+    it('generates the default request headers', () => {
+      // Arrange
+      const expected = {
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'FSPIOP-Destination': 'dfsp2',
+        'FSPIOP-Source': 'dfsp1'
+      }
+
+      // Act
+      const result = quotesModel.generateRequestHeaders(mockData.headers, true)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('generates default request headers, including the Accept', () => {
+      // Arrange
+      const expected = {
+        Accept: 'application/vnd.interoperability.quotes+json;version=1',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'FSPIOP-Destination': 'dfsp2',
+        'FSPIOP-Source': 'dfsp1'
+      }
+
+      // Act
+      const result = quotesModel.generateRequestHeaders(mockData.headers, false)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+  })
+
+  describe('writeLog', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.writeLog.mockRestore()
+    })
+
+    it('writes to the log', () => {
+      // Arrange
+      // Act
+      quotesModel.writeLog('test message')
+
+      // Assert
+      expect(Logger.info).toBeCalledTimes(1)
     })
   })
 })

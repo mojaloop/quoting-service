@@ -25,63 +25,15 @@
  * Gates Foundation
  - Name Surname <name.surname@gatesfoundation.com>
 
- * Henk Kodde <henk.kodde@modusbox.com>
- * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ * ModusBox
+ - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Henk Kodde <henk.kodde@modusbox.com>
+ - Matt Kingston <matt.kingston@modusbox.com>
+ - Vassilis Barzokas <vassilis.barzokas@modusbox.com>
  --------------
  ******/
+/* istanbul ignore file */
 
-/*
- * This module presents a rules engine based on json-rules-engine with some Mojaloop-specific
- * operators, events and dynamic facts for use by schemes. Note that the entire json-rules-engine
- * API is still available to users of this module.
- */
+const server = require('./server')
 
-const jre = require('json-rules-engine')
-const assert = require('assert').strict
-
-const events = {
-  INTERCEPT_QUOTE: 'INTERCEPT_QUOTE',
-  INVALID_QUOTE_REQUEST: 'INVALID_QUOTE_REQUEST'
-}
-
-/**
- * Build helper to handle application of business rules to quotes
- */
-const createEngine = () => {
-  const engine = new jre.Engine()
-
-  const deepEqual = (factValue, ruleValue) => {
-    try {
-      assert.deepEqual(factValue, ruleValue)
-      return true
-    } catch (err) {
-      return false
-    }
-  }
-
-  engine.addOperator('notDeepEqual', (factValue, ruleValue) => {
-    return !deepEqual(factValue, ruleValue)
-  })
-  engine.addOperator('deepEqual', (factValue, ruleValue) => {
-    return deepEqual(factValue, ruleValue)
-  })
-
-  return engine
-}
-
-/**
- * Evaluate the input data against the business rules
- *
- * @returns {promise} - array of failure cases, may be empty
- */
-const run = (rules, runtimeFacts) => {
-  const engine = createEngine()
-  rules.map(r => new jre.Rule(r)).forEach(r => engine.addRule(r))
-
-  return engine.run(runtimeFacts)
-}
-
-module.exports = {
-  events,
-  run
-}
+module.exports = server()

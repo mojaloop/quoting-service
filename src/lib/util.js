@@ -32,7 +32,14 @@
 
 'use strict'
 
+const util = require('util')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const Logger = require('@mojaloop/central-services-logger')
+
+const failActionHandler = async (request, h, err) => {
+  Logger.error(`validation failure: ${getStackOrInspect}`)
+  throw err
+}
 
 const getSpanTags = ({ payload, headers, params }, transactionType, transactionAction) => {
   const tags = {
@@ -43,15 +50,51 @@ const getSpanTags = ({ payload, headers, params }, transactionType, transactionA
     source: headers[Enum.Http.Headers.FSPIOP.SOURCE],
     destination: headers[Enum.Http.Headers.FSPIOP.DESTINATION]
   }
-  if (payload && payload.payee && payload.payee.partyIdInfo && payload.payee.partyIdInfo.fspId) {
-    tags.payeeFsp = payload.payee.partyIdInfo.fspId
+
+  const payeeFsp = getSafe(['payee', 'partyIdInfo', 'fspId'], payload)
+  const payerFsp = getSafe(['payer', 'partyIdInfo', 'fspId'], payload)
+
+  if (payeeFsp) {
+    tags.payeeFsp = payeeFsp
   }
-  if (payload && payload.payer && payload.payer.partyIdInfo && payload.payer.partyIdInfo.fspId) {
-    tags.payerFsp = payload.payer.partyIdInfo.fspId
+  if (payerFsp) {
+    tags.payerFsp = payerFsp
   }
+
   return tags
 }
 
+/**
+ * @function getStackOrInspect
+ * @description Gets the error stack, or uses util.inspect to inspect the error
+ * @param {*} err - An error object
+ */
+function getStackOrInspect (err) {
+  return err.stack || util.inspect(err)
+}
+
+/**
+ * @function getSafe
+ * @description Saftely get a nested value
+ * @param {Array<string,number>} path - the path to the required variable
+ * @param {*} obj - The object with which to get the value from
+ * @returns {any | undefined} - The object at the path, or undefined
+ *
+ * @example
+ *   Instead of the following:
+ *   const fspId = payload && payload.payee && payload.payee.partyIdInfo && payload.payee.partyIdInfo.fspId
+ *
+ *   You can use `getSafe()`:
+ *   const fspId = getSafe(['payee', 'partyIdInfo', 'fspId'], payload)
+ *
+ */
+function getSafe (path, obj) {
+  return path.reduce((xs, x) => (xs && xs[x]) ? xs[x] : undefined, obj)
+}
+
 module.exports = {
-  getSpanTags
+  failActionHandler,
+  getSafe,
+  getSpanTags,
+  getStackOrInspect
 }
