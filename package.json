@@ -68,7 +68,7 @@
     "good-squeeze": "5.1.0",
     "hapi-openapi": "1.2.6",
     "json-rules-engine": "5.0.0",
-    "knex": "0.20.4",
+    "knex": "0.20.6",
     "memory-cache": "0.2.0",
     "mysql": "2.17.1",
     "node-fetch": "2.6.0",
