@@ -146,7 +146,7 @@ executors:
   helm-kube:
     working_directory: /home/circleci/project
     docker: 
-      - image: hypnoglow/kubernetes-helm
+      - image: hypnoglow/kubernetes-helm:2.14
 
 ##
 # Jobs
