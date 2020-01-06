@@ -232,21 +232,21 @@ jobs:
   vulnerability-check:
     executor: default-docker
     steps:
-      - checkout
-      - run:
-          name: Install general dependencies
-          command: *defaults_Dependencies
-      - restore_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
-      - run:
-          name: Create dir for test results
-          command: mkdir -p ./audit/results
-      - run:
-          name: Check for new npm vulnerabilities
-          command: npm audit # --silent -- --json > ./audit/results/auditResults.json
-      - store_artifacts:
-          path: ./audit/results
-          prefix: audit
+#      - checkout
+#      - run:
+#          name: Install general dependencies
+#          command: *defaults_Dependencies
+#      - restore_cache:
+#          key: dependency-cache-{{ checksum "package.json" }}
+#      - run:
+#          name: Create dir for test results
+#          command: mkdir -p ./audit/results
+#      - run:
+#          name: Check for new npm vulnerabilities
+#          command: npm run audit:check --silent -- --json > ./audit/results/auditResults.json
+#      - store_artifacts:
+#          path: ./audit/results
+#          prefix: audit
 
   audit-licenses:
     executor: default-docker
