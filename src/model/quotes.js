@@ -304,6 +304,9 @@ class QuotesModel {
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       childSpan = span.getChild('qs_quote_forwardQuoteRequest')
     } catch (err) {
+      console.log('----------------ERROR--------------------------')
+      console.log(err)
+      console.log('------------------------------------------')
       // internal-error
       this.writeLog(`Error in handleQuoteRequest for quoteId ${quoteRequest.quoteId}: ${getStackOrInspect(err)}`)
       if (txn) {
