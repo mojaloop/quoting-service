@@ -73,8 +73,8 @@ class QuotesModel {
 
     // Collect facts to supply to the rule engine
     // Get quote participants from central ledger admin
-    const { switchEndpoint } = new Config()
-    const url = `${switchEndpoint}/participants`
+    const { centralLedgerAdminServiceEndpoint } = new Config()
+    const url = `${centralLedgerAdminServiceEndpoint}/participants`
     const [payer, payee] = await Promise.all([
       axios.request({ url: `${url}/${headers['fspiop-source']}` }),
       axios.request({ url: `${url}/${headers['fspiop-destination']}` })
@@ -304,9 +304,6 @@ class QuotesModel {
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       childSpan = span.getChild('qs_quote_forwardQuoteRequest')
     } catch (err) {
-      console.log('----------------ERROR--------------------------')
-      console.log(err)
-      console.log('------------------------------------------')
       // internal-error
       this.writeLog(`Error in handleQuoteRequest for quoteId ${quoteRequest.quoteId}: ${getStackOrInspect(err)}`)
       if (txn) {
