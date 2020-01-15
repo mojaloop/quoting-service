@@ -1668,7 +1668,7 @@ describe('QuotesModel', () => {
       const action = async () => quotesModel.handleQuoteError(mockData.headers, mockData.quoteId, error, mockSpan)
 
       // Assert
-      await expect(action()).rejects.toThrowError('Validation failed due to error code being invalid - undefined.')
+      await expect(action()).rejects.toThrowError('Factory function createFSPIOPError failed due to apiErrorCode being invalid - {"message":"Test Error"}.')
     })
   })
 
