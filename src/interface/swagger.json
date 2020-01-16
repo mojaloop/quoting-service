@@ -2182,15 +2182,21 @@
       "properties": {
         "firstName": {
           "type": "string",
-          "description": "Party’s first name."
+          "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+          "description": "Party’s first name.",
+          "minLength": 1
         },
         "middleName": {
           "type": "string",
-          "description": "Party’s middle name."
+          "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+          "description": "Party’s middle name.",
+          "minLength": 1
         },
         "lastName": {
           "type": "string",
-          "description": "Party’s last name."
+          "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+          "description": "Party’s last name.",
+          "minLength": 1
         }
       }
     },
@@ -2245,7 +2251,7 @@
           "description": "First, middle and last name for the Party."
         },
         "dateOfBirth": {
-          "type": "string",
+          "$ref": "#/definitions/DateOfBirth",
           "description": "Date of birth for the Party."
         }
       }
@@ -2898,7 +2904,8 @@
       "name": "id",
       "in": "path",
       "required": true,
-      "type": "string"
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
     },
     "Type": {
       "name": "Type",
