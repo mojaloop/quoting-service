@@ -83,7 +83,8 @@ module.exports = {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - POST /quotes: ${LibUtil.getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      return await model.handleException(fspiopSource, quoteId, fspiopError, request.headers, span)
+      const { body, code } = await model.handleException(fspiopSource, quoteId, fspiopError, request.headers, span)
+      return h.response(body).code(code)
     }
   }
 }

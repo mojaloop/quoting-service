@@ -837,12 +837,17 @@ class QuotesModel {
       if (error.name === 'FSPIOPError' && syncErrorCodes.includes(error.apiErrorCode.code)) {
         // We should respond synchronously
         const envConfig = new Config()
-        return h.response(error.toApiErrorObject(envConfig.errorHandling)).code(ENUM.Http.ReturnCodes.BADREQUEST)
+        return {
+          body: error.toApiErrorObject(envConfig.errorHandling),
+          code: ENUM.Http.ReturnCodes.BADREQUEST
+        }
       }
       else {
         // We should respond asynchronously
         await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan)
-        return h.response().code(ENUM.Http.ReturnCodes.ACCEPTED.CODE)
+        return {
+          code: ENUM.Http.ReturnCodes.ACCEPTED.CODE
+        }
       }
     } catch (err) {
       // any-error
