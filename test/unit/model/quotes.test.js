@@ -1815,7 +1815,7 @@ describe('QuotesModel', () => {
 
       // Assert
       expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan)
-      expect(result).toBe(true)
+      expect(result).toStrictEqual({ code: 202 })
       expect(mockChildSpan.finish).toHaveBeenCalledTimes(1)
     })
 
