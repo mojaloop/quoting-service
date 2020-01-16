@@ -73,7 +73,7 @@ describe('/quotes', () => {
 
     it('fails to create a quote', async () => {
       // Arrange
-      const handleException = jest.fn()
+      const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
       QuotesModel.mockImplementationOnce(() => ({
         handleQuoteRequest: () => {
           throw new Error('Create Quote Test Error')

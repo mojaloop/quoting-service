@@ -37,6 +37,7 @@ const axios = require('axios')
 const crypto = require('crypto')
 const util = require('util')
 
+const { MojaloopApiErrorCodes } = require('@mojaloop/sdk-standard-components').Errors
 const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
@@ -826,7 +827,28 @@ class QuotesModel {
     const childSpan = span.getChild('qs_quote_sendErrorCallback')
     try {
       await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
-      return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan)
+      const syncErrorCodes = [
+        MojaloopApiErrorCodes.MISSING_ELEMENT.code,
+        MojaloopApiErrorCodes.PAYEE_ERROR.code,
+        MojaloopApiErrorCodes.PAYEE_UNSUPPORTED_CURRENCY.code,
+        MojaloopApiErrorCodes.PAYER_ERROR.code,
+        MojaloopApiErrorCodes.PAYER_UNSUPPORTED_CURRENCY.code
+      ];
+      if (error.name === 'FSPIOPError' && syncErrorCodes.includes(error.apiErrorCode.code)) {
+        // We should respond synchronously
+        const envConfig = new Config()
+        return {
+          body: error.toApiErrorObject(envConfig.errorHandling),
+          code: ENUM.Http.ReturnCodes.BADREQUEST
+        }
+      }
+      else {
+        // We should respond asynchronously
+        await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan)
+        return {
+          code: ENUM.Http.ReturnCodes.ACCEPTED.CODE
+        }
+      }
     } catch (err) {
       // any-error
       // not much we can do other than log the error
