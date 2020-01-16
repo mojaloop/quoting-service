@@ -834,10 +834,10 @@ class QuotesModel {
         MojaloopApiErrorCodes.PAYER_ERROR.code,
         MojaloopApiErrorCodes.PAYER_UNSUPPORTED_CURRENCY.code
       ];
-      if (err.name === 'FSPIOPError' && syncErrorCodes.includes(err.apiErrorCode.code)) {
+      if (error.name === 'FSPIOPError' && syncErrorCodes.includes(error.apiErrorCode.code)) {
         // We should respond synchronously
         const envConfig = new Config()
-        return h.response(err.toApiErrorObject(envConfig.errorHandling)).code(ENUM.Http.ReturnCodes.BADREQUEST)
+        return h.response(error.toApiErrorObject(envConfig.errorHandling)).code(ENUM.Http.ReturnCodes.BADREQUEST)
       }
       else {
         // We should respond asynchronously
