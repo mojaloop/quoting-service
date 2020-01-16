@@ -37,7 +37,7 @@ const axios = require('axios')
 const crypto = require('crypto')
 const util = require('util')
 
-const MojaloopFSPIOPError = require('@mojaloop/sdk-standard-components').Errors.MojaloopApiErrorCodes
+const { MojaloopApiErrorCodes } = require('@mojaloop/sdk-standard-components').Errors
 const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
