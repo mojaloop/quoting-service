@@ -1,4 +1,6 @@
 {
   "reject": [
+    "@hapi/hapi",
+    "@hapi/good"
   ]
 }
