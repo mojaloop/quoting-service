@@ -304,6 +304,9 @@ jobs:
     steps:
       - setup_remote_docker
       - checkout
+      - run:
+          name: Install AWS CLI dependencies
+          command: *defaults_awsCliDependencies
       - attach_workspace:
           at: /tmp
       - run:
