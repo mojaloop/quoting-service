@@ -36,6 +36,7 @@
   ],
   "scripts": {
     "start": "node src/index.js",
+    "test": "npm run test:unit",
     "test:unit": "jest --testMatch '**/test/unit/**/*.test.js'",
     "test:coverage": "jest --coverage --coverageThreshold='{}' --testMatch '**/test/unit/**/*.test.js'",
     "test:coverage-check": "jest --coverage --testMatch '**/test/unit/**/*.test.js'",
