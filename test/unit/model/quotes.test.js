@@ -369,6 +369,9 @@ describe('QuotesModel', () => {
         })
 
         it('throws an unhandled exception if `RulesEngine.run` throws an exception', async () => {
+          axios.request
+            .mockImplementationOnce(() => { return { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] } } })
+            .mockImplementationOnce(() => { return { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] } } })
           RulesEngine.run.mockImplementation(() => { throw new Error('foo') })
 
           await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
@@ -403,7 +406,9 @@ describe('QuotesModel', () => {
       describe('In case a non empty set of rules is loaded', () => {
         it('returns the result of `RulesEngine.run`', async () => {
           const expectedEvents = []
-
+          axios.request
+            .mockImplementationOnce(() => { return { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] } } })
+            .mockImplementationOnce(() => { return { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] } } })
           expect(rules.length).not.toBe(0)
 
           rules.forEach((rule) => {
