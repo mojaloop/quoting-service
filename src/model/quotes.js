@@ -82,6 +82,20 @@ class QuotesModel {
     ])
 
     this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
+    const payerAccounts = Array.isArray(payer.data.accounts) ? payer.data.accounts : []
+    const payeeAccounts = Array.isArray(payee.data.accounts) ? payee.data.accounts : []
+
+    const activePayerAccounts = payerAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
+    const activePayeeAccounts = payeeAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
+
+    if(activePayerAccounts.length === 0){
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_ERROR,
+        `Payer does not have any active account`, null, headers['fspiop-source'])
+    }
+    if(activePayeeAccounts.length === 0){
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_ERROR,
+        `Payee does not have any active account`, null, headers['fspiop-source'])
+    }
 
     const facts = {
       payer: payer.data,
