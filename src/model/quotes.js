@@ -88,13 +88,13 @@ class QuotesModel {
     const activePayerAccounts = payerAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
     const activePayeeAccounts = payeeAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
 
-    if(activePayerAccounts.length === 0){
+    if (activePayerAccounts.length === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_ERROR,
-        `Payer does not have any active account`, null, headers['fspiop-source'])
+        'Payer does not have any active account', null, headers['fspiop-source'])
     }
-    if(activePayeeAccounts.length === 0){
+    if (activePayeeAccounts.length === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_ERROR,
-        `Payee does not have any active account`, null, headers['fspiop-source'])
+        'Payee does not have any active account', null, headers['fspiop-source'])
     }
 
     const facts = {
