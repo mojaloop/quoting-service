@@ -1673,10 +1673,7 @@ describe('QuotesModel', () => {
 
       // const es = 'Factory function createFSPIOPError failed due to apiErrorCode being invalid'
       // Assert
-      // await expect(action()).toEqual(es)
-      // await expect(action()).rejects.toThrowError('Validation failed due to error code being invalid - undefined.')
-      // await expect(action()).rejects.toThrowError("Factory function createFSPIOPError failed due to apiErrorCode being invalid - {\\" + "\"message\\" + "\":" + "\\" + "\"Test Error\\" + "\"}.")
-      await expect(action()).rejects.toThrowError('Factory function createFSPIOPError failed due to apiErrorCode being invalid - ' + errorMessage.valueOf() + '.')
+      await expect(action()).rejects.toThrowError(`Factory function createFSPIOPError failed due to apiErrorCode being invalid - ${JSON.stringify(errorMessage)}.`)
     })
   })
 
