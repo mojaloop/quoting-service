@@ -30,6 +30,7 @@
  - Henk Kodde <henk.kodde@modusbox.com>
  - Matt Kingston <matt.kingston@modusbox.com>
  - Vassilis Barzokas <vassilis.barzokas@modusbox.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -256,8 +257,10 @@ class QuotesModel {
         await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
 
         // create a txn reference
+        console.log(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
         refs.transactionReferenceId = await this.db.createTransactionReference(txn,
           quoteRequest.quoteId, quoteRequest.transactionId)
+        console.log(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
 
         // get the initiator type
         refs.transactionInitiatorTypeId = await this.db.getInitiatorType(quoteRequest.transactionType.initiatorType)
@@ -843,10 +846,7 @@ class QuotesModel {
       await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
       const syncErrorCodes = [
         MojaloopApiErrorCodes.MISSING_ELEMENT.code,
-        MojaloopApiErrorCodes.PAYEE_ERROR.code,
-        MojaloopApiErrorCodes.PAYEE_UNSUPPORTED_CURRENCY.code,
-        MojaloopApiErrorCodes.PAYER_ERROR.code,
-        MojaloopApiErrorCodes.PAYER_UNSUPPORTED_CURRENCY.code
+        MojaloopApiErrorCodes.VALIDATION_ERROR.code
       ]
       if (error.name === 'FSPIOPError' && syncErrorCodes.includes(error.apiErrorCode.code)) {
         // We should respond synchronously

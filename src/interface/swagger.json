@@ -1863,7 +1863,7 @@
             "$ref": "#/definitions/Extension"
           },
           "minItems": 1,
-          "maxItems": 16,
+          "maxItems": 17,
           "description": "Number of Extension elements"
         }
       },
