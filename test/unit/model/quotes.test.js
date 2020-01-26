@@ -1080,25 +1080,25 @@ describe('QuotesModel', () => {
     })
 
     it('should get http status code 202 Accepted in simple routing mode', async () => {
-      expect.assertions(2)
+      expect.assertions(1)
       mockConfig.simpleRoutingMode = true
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan)
 
       expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
-      expect(quotesModel.db.getQuotePartyEndpoint).not.toBeCalled()
+      // expect(quotesModel.db.getQuotePartyEndpoint).not.toBeCalled()
     })
     it('should get http status code 202 Accepted in switch mode', async () => {
-      expect.assertions(2)
+      expect.assertions(1)
 
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan)
 
-      expect(quotesModel.db.getParticipantEndpoint).not.toBeCalled()
-      expect(quotesModel.db.getQuotePartyEndpoint).toBeCalled()
+      expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
+      // expect(quotesModel.db.getQuotePartyEndpoint).toBeCalled()
     })
     it('should throw when quoteRequest is undefined', async () => {
       expect.assertions(1)
@@ -1121,7 +1121,7 @@ describe('QuotesModel', () => {
     it('should not use spans when undefined and should throw when participant endpoint is invalid', async () => {
       expect.assertions(3)
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
       Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
@@ -1134,7 +1134,7 @@ describe('QuotesModel', () => {
     it('should throw when participant endpoint returns invalid response', async () => {
       expect.assertions(3)
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
       Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
@@ -1150,7 +1150,7 @@ describe('QuotesModel', () => {
       mockConfig.simpleRoutingMode = false
       const customErrorNoStack = new Error('Custom error')
       delete customErrorNoStack.stack
-      quotesModel.db.getQuotePartyEndpoint.mockRejectedValueOnce(customErrorNoStack)
+      quotesModel.db.getParticipantEndpoint.mockRejectedValueOnce(customErrorNoStack)
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
         .rejects
@@ -1472,14 +1472,14 @@ describe('QuotesModel', () => {
       expect.assertions(3)
 
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan))
         .resolves
         .toBe(undefined)
 
-      expect(quotesModel.db.getParticipantEndpoint).not.toBeCalled()
-      expect(quotesModel.db.getQuotePartyEndpoint).toBeCalled()
+      expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
+      expect(quotesModel.db.getQuotePartyEndpoint).not.toBeCalled()
     })
     it('should throw when quoteUpdate is undefined', async () => {
       expect.assertions(1)
@@ -1504,7 +1504,7 @@ describe('QuotesModel', () => {
       expect.assertions(3)
 
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
       Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
@@ -1518,7 +1518,7 @@ describe('QuotesModel', () => {
       expect.assertions(3)
 
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
       Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
@@ -1534,7 +1534,7 @@ describe('QuotesModel', () => {
       mockConfig.simpleRoutingMode = false
       const customErrorNoStack = new Error('Custom error')
       delete customErrorNoStack.stack
-      quotesModel.db.getQuotePartyEndpoint.mockRejectedValueOnce(customErrorNoStack)
+      quotesModel.db.getParticipantEndpoint.mockRejectedValueOnce(customErrorNoStack)
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
         .rejects
