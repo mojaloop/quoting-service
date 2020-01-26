@@ -82,7 +82,7 @@ class QuotesModel {
       axios.request({ url: `${url}/${headers['fspiop-destination']}` })
     ])
 
-    this.writeLog(`Got rules engine facts payer ${JSON.stringify(payer)} and payee ${JSON.stringify(payee)}`)
+    this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
     const payerAccounts = Array.isArray(payer.data.accounts) ? payer.data.accounts : []
     const payeeAccounts = Array.isArray(payee.data.accounts) ? payee.data.accounts : []
 
