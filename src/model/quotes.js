@@ -82,7 +82,7 @@ class QuotesModel {
       axios.request({ url: `${url}/${headers['fspiop-destination']}` })
     ])
 
-    this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
+    this.writeLog(`Got rules engine facts payer ${JSON.stringify(payer)} and payee ${JSON.stringify(payee)}`)
     const payerAccounts = Array.isArray(payer.data.accounts) ? payer.data.accounts : []
     const payeeAccounts = Array.isArray(payee.data.accounts) ? payee.data.accounts : []
 
@@ -107,7 +107,7 @@ class QuotesModel {
 
     const { events } = await RulesEngine.run(rules, facts)
 
-    this.writeLog(`Rules engine returned events ${events}`)
+    this.writeLog(`Rules engine returned events ${JSON.stringify(events)}`)
 
     return events
   }
@@ -257,10 +257,10 @@ class QuotesModel {
         await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
 
         // create a txn reference
-        console.log(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
+        this.writeLog(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
         refs.transactionReferenceId = await this.db.createTransactionReference(txn,
           quoteRequest.quoteId, quoteRequest.transactionId)
-        console.log(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
+        this.writeLog(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
 
         // get the initiator type
         refs.transactionInitiatorTypeId = await this.db.getInitiatorType(quoteRequest.transactionType.initiatorType)
@@ -316,7 +316,7 @@ class QuotesModel {
         }
 
         await txn.commit()
-        this.writeLog(`create quote transaction committed to db: ${util.inspect(refs)}`)
+        this.writeLog(`create quote transaction committed to db: ${JSON.stringify(refs)}`)
       }
 
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
@@ -386,13 +386,14 @@ class QuotesModel {
       // lookup payee dfsp callback endpoint
       // TODO: for MVP we assume initiator is always payer dfsp! this may not always be the
       // case if a xfer is requested by payee
-      if (envConfig.simpleRoutingMode) {
-        endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
-      } else {
-        endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYEE')
-      }
+      // if (envConfig.simpleRoutingMode) {
+      //   endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
+      // } else {
+      //   endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYEE')
+      // }
+      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
 
-      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}, destination: ${fspiopDest}`)
+      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${endpoint}, destination: ${fspiopDest}`)
 
       if (!endpoint) {
         // internal-error
@@ -617,12 +618,13 @@ class QuotesModel {
       }
 
       // lookup payer dfsp callback endpoint
-      if (envConfig.simpleRoutingMode) {
-        endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
-      } else {
-        // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-        endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
-      }
+      // if (envConfig.simpleRoutingMode) {
+      //   endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
+      // } else {
+      //   // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
+      //   endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
+      // }
+      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
 
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
 
