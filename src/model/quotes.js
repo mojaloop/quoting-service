@@ -848,7 +848,8 @@ class QuotesModel {
       await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
       const syncErrorCodes = [
         MojaloopApiErrorCodes.MISSING_ELEMENT.code,
-        MojaloopApiErrorCodes.VALIDATION_ERROR.code
+        MojaloopApiErrorCodes.VALIDATION_ERROR.code,
+        MojaloopApiErrorCodes.MALFORMED_SYNTAX.code
       ]
       if (error.name === 'FSPIOPError' && syncErrorCodes.includes(error.apiErrorCode.code)) {
         // We should respond synchronously
