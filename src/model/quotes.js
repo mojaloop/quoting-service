@@ -907,8 +907,7 @@ class QuotesModel {
       const fromSwitchHeaders = Object.assign({}, headers, {
         'fspiop-destination': fspiopSource,
         'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
-        'fspiop-http-method': ENUM.Http.RestMethods.PUT,
-        'fspiop-uri': fspiopUri
+        'fspiop-http-method': ENUM.Http.RestMethods.PUT
       })
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
