@@ -83,6 +83,16 @@ class QuotesModel {
     ])
 
     this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
+
+    if (payer.data.isActive === 0) {
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND,
+        `Payer FSP ID not found - Unsupported participant '${headers['fspiop-source']}'`, null, headers['fspiop-source'])
+    }
+    if (payee.data.isActive === 0) {
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
+        `Destination FSP Error - '${headers['fspiop-destination']}' is inactive`, null, headers['fspiop-source'])
+    }
+
     const payerAccounts = Array.isArray(payer.data.accounts) ? payer.data.accounts : []
     const payeeAccounts = Array.isArray(payee.data.accounts) ? payee.data.accounts : []
 
