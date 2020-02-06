@@ -108,7 +108,7 @@ describe('/quotes/{id}', () => {
       expect(QuotesModel).toHaveBeenCalledTimes(1)
       const mockQuoteInstance = QuotesModel.mock.instances[0]
       expect(mockQuoteInstance.handleQuoteUpdate).toHaveBeenCalledTimes(1)
-      expect(code).toHaveBeenCalledWith(202)
+      expect(code).toHaveBeenCalledWith(200)
     })
 
     it('handles an error with the model', async () => {
@@ -135,7 +135,7 @@ describe('/quotes/{id}', () => {
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
       expect(handleException).toHaveBeenCalledTimes(1)
-      expect(code).toHaveBeenCalledWith(202)
+      expect(code).toHaveBeenCalledWith(200)
     })
   })
 })
