@@ -1,6 +1,7 @@
 {
   "reject": [
     "@hapi/hapi",
-    "@hapi/good"
+    "@hapi/good",
+    "json-rules-engine"
   ]
 }
