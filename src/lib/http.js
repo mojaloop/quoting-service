@@ -60,8 +60,10 @@ async function httpRequest (opts, fspiopSource) {
     res = await axios.request(opts)
     body = await res.data
   } catch (e) {
-    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
-      'Network error',
+    const [fspiopErrorType, fspiopErrorDescr] = e.response && e.response.status === 404
+      ? [ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Not found']
+      : [ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error']
+    throw ErrorHandler.CreateFSPIOPError(fspiopErrorType, fspiopErrorDescr,
       `${getStackOrInspect(e)}. Opts: ${util.inspect(opts)}`,
       fspiopSource)
   }
