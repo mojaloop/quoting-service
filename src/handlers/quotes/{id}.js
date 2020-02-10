@@ -84,7 +84,7 @@ module.exports = {
       await model.handleException(fspiopSource, quoteId, err, request.headers, span)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
-      return h.response().code(202)
+      return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     }
   },
 
@@ -127,7 +127,7 @@ module.exports = {
       await model.handleException(fspiopSource, quoteId, err, request.headers, span)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
-      return h.response().code(202)
+      return h.response().code(Enum.Http.ReturnCodes.OK.CODE)
     }
   }
 }
