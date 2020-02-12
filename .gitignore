@@ -78,3 +78,4 @@ typings/
 
 # MacOs
 .[Dd][Ss]_[Ss]tore
+.notes.md
