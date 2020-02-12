@@ -21,6 +21,11 @@ orbs:
           - image: hypnoglow/kubernetes-helm:<<parameters.version>>
     commands:
       setup_and_run:
+        parameters:
+          helm_image_path:
+            description: The place in the helm config that specifies the image for a given service
+            type: string
+            default: .central.centralhub.centralledger.containers
         description: Set up kubectl and helm, and deploy the updated container
         steps:
           - run: 
@@ -34,7 +39,6 @@ orbs:
                           mailcap
                   pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
                   apk -v --purge del py-pip
-
           - run:
               name: Set env variables
               command: |
@@ -75,13 +79,16 @@ orbs:
                   echo 'export K8_USER_TOKEN=$K8_USER_TOKEN_PROD' >> $BASH_ENV
                   echo 'export K8_HELM_CHART_NAME=$K8_HELM_CHART_NAME_PROD' >> $BASH_ENV
                   echo 'export K8_HELM_CHART_VERSION=$K8_HELM_CHART_VERSION_PROD' >> $BASH_ENV
-                  echo 'export HELM_VALUE_SET_VALUES="--set central.centralhub.centralledger.containers.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.api.image.tag=$CIRCLE_TAG --set central.centralhub.centralledger.containers.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set central.centralhub.centralledger.containers.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
+
+                  # TODO: confirm that org variables work!
+                  echo 'export HELM_VALUE_SET_VALUES="--set <<parameters.helm_image_path>>.api.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set <<parameters.helm_image_path>>.api.image.tag=$CIRCLE_TAG --set <<parameters.helm_image_path>>.admin.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set <<parameters.helm_image_path>>.admin.image.tag=$CIRCLE_TAG"' >> $BASH_ENV
+                  # TODO: remove once we've tested
+                  cat $BASH_ENV | grep HELM_VALUE_SET_VALUES
                   exit 0
                 fi
 
                 echo "No valid match found for CIRCLE_TAG: ${CIRCLE_TAG}"
                 exit 1
-
           - run:
               name: Set up kubectl and helm
               command: |
@@ -123,17 +130,18 @@ orbs:
 
                 # defaults_deploy_configure_helm
                 helm init --client-only
-
-
-    # jobs:
-    #   deploy-update:
-    #     # params should be snapshot or not, docker image stuff...
-    #     executor: helm-kube
-    #     steps:
-    #       - setup
-
-
-
+          - run:
+              name: Deploy updated service
+              command: |
+                echo "Install or Upgrade Chart ${K8_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
+                if [ -z "$(helm list -q | grep -E "^${K8_RELEASE_NAME}$")"  ] && [ "$(helm list -q | grep -E "^${K8_RELEASE_NAME}$")" != "Error: Unauthorized" ];
+                then
+                    echo "Installing ${K8_RELEASE_NAME} new release"
+                    helm install --namespace=$K8_NAMESPACE --name=$K8_RELEASE_NAME --repo=$K8_HELM_REPO --version $K8_HELM_CHART_VERSION $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
+                else
+                    echo "Upgrading ${K8_RELEASE_NAME} release"
+                    helm upgrade $K8_RELEASE_NAME --repo=$K8_HELM_REPO --version $K8_HELM_CHART_VERSION --reuse-values $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
+                fi
 
 ##
 # defaults
@@ -509,7 +517,8 @@ jobs:
     executor: helm-kube
     steps:
       - checkout
-      - deploy-kube/setup_and_run
+      - deploy-kube/setup_and_run:
+          helm_image_path: .central.centralhub.centralledger.containers
           
       # - run:
       #     name: Install AWS CLI dependencies
@@ -550,6 +559,7 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
+      # TODO: reenable
       # - test-unit:
       #     context: org-global
       #     requires:
@@ -572,6 +582,7 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
+      # TODO: reenable
       # - vulnerability-check:
       #     context: org-global
       #     requires:
@@ -598,6 +609,7 @@ workflows:
           context: org-global
           requires:
             - setup
+            # TODO: reenable
             # - test-unit
             # - test-coverage
             # - vulnerability-check
@@ -608,6 +620,7 @@ workflows:
             branches:
               ignore:
                 - /.*/
+      # TODO: reenable
       # - license-scan:
       #     context: org-global
       #     requires:
@@ -631,6 +644,7 @@ workflows:
       - publish:
           context: org-global
           requires:
+            # TODO: reenable
             # - license-scan
             # - image-scan
             - build
