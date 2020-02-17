@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "@hapi/good": "8.2.4",
-    "@hapi/hapi": "18.4.0",
+    "@hapi/hapi": "19.1.1",
     "@mojaloop/central-services-error-handling": "8.7.0",
     "@mojaloop/central-services-logger": "8.6.0",
     "@mojaloop/central-services-shared": "9.1.1",
