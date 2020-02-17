@@ -58,7 +58,7 @@
     "@hapi/good": "8.2.4",
     "@hapi/hapi": "18.4.0",
     "@mojaloop/central-services-error-handling": "8.7.0",
-    "@mojaloop/central-services-logger": "8.6.0",
+    "@mojaloop/central-services-logger": "9.1.0",
     "@mojaloop/central-services-shared": "9.1.1",
     "@mojaloop/event-sdk": "8.7.0",
     "@mojaloop/ml-number": "8.2.0",
