@@ -89,31 +89,20 @@ orbs:
           - run:
               name: Set up kubectl and helm
               command: |
-                echo "Copying Helm value file into $AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM folder for $K8_RELEASE_NAME release"
                 mkdir -p $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM
-                
+                aws s3 cp $AWS_S3_URI_DEVOPS_DEPLOYMENT_CONFIG/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/
+
                 kubectl config set-cluster $K8_CLUSTER_NAME --server=$K8_CLUSTER_SERVER --insecure-skip-tls-verify=true
                 kubectl config set-credentials $K8_USER_NAME --token=$K8_USER_TOKEN
                 kubectl config set-context $K8_CLUSTER_NAME --cluster=$K8_CLUSTER_NAME --user=$K8_USER_NAME --namespace=$K8_NAMESPACE
                 kubectl config use-context $K8_CLUSTER_NAME
 
+                helm repo add mojaloop $HELM_MOJALOOP_REPO_PATH
                 helm init --client-only
-                kubectl get po -n $K8_NAMESPACE
           - run:
               name: Deploy updated service
               command: |
                 helm upgrade $K8_RELEASE_NAME --repo=$HELM_MOJALOOP_REPO_PATH --version $K8_HELM_CHART_VERSION --reuse-values $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME --install
-
-                # # todo: use upgrade with --install
-                # echo "Install or Upgrade Chart ${K8_RELEASE_NAME} for Docker Image ${DOCKER_ORG}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
-                # if [ -z "$(helm list -q | grep -E "^${K8_RELEASE_NAME}$")"  ] && [ "$(helm list -q | grep -E "^${K8_RELEASE_NAME}$")" != "Error: Unauthorized" ];
-                # then
-                #     echo "Installing ${K8_RELEASE_NAME} new release"
-                #     helm install --namespace=$K8_NAMESPACE --name=$K8_RELEASE_NAME --repo=$K8_HELM_REPO --version $K8_HELM_CHART_VERSION $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
-                # else
-                #     echo "Upgrading ${K8_RELEASE_NAME} release"
-                #     helm upgrade $K8_RELEASE_NAME --repo=$K8_HELM_REPO --version $K8_HELM_CHART_VERSION --reuse-values $HELM_VALUE_SET_VALUES -f $CIRCLE_WORKING_DIRECTORY/$AWS_S3_DIR_DEVOPS_DEPLOYMENT_CONFIG_HELM/$HELM_VALUE_FILENAME $K8_HELM_CHART_NAME
-                # fi
 
 ##
 # defaults
