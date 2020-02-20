@@ -9,6 +9,11 @@
       "decision": "ignore",
       "madeAt": 1571739084837,
       "expiresAt": 1574331074508
+    },
+    "1482|@hapi/hapi": {
+      "decision": "ignore",
+      "madeAt": 1582204968695,
+      "expiresAt": 1582809756398
     }
   },
   "rules": {},
