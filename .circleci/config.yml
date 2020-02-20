@@ -8,7 +8,7 @@ version: 2.1
 ###
 orbs:
   anchore: anchore/anchore-engine@1.6.0
-  deploy-kube: mojaloop/deployment@0.1.1
+  deploy-kube: mojaloop/deployment@0.1.2
 
 ##
 # defaults
@@ -35,40 +35,11 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
   pip install --upgrade awscli==1.14.5 s3cmd==2.0.1 python-magic
   apk -v --purge del py-pip
 
-# TODO: should we remove these 'defaults' since they're only referenced once?
-defaults_build_docker_build: &defaults_build_docker_build
-  name: Build Docker $CIRCLE_TAG image
-  command: |
-    echo "Building Docker image: $CIRCLE_TAG"
-    docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG .
-
-defaults_build_docker_login: &defaults_build_docker_login
-  name: Login to Docker Hub
-  command: |
-    docker login -u $DOCKER_USER -p $DOCKER_PASS
-
-defaults_build_docker_publish: &defaults_build_docker_publish
-  name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
-  command: |
-    echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
-    docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
-    echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
-    docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
-
 defaults_license_scanner: &defaults_license_scanner
   name: Install and set up license-scanner
   command: |
     git clone https://github.com/mojaloop/license-scanner /tmp/license-scanner
     cd /tmp/license-scanner && make build default-files set-up
-
-defaults_slack_announcement: &defaults_slack_announcement
-  name: Slack announcement for tag releases
-  command: |
-    curl -X POST \
-      $SLACK_WEBHOOK_ANNOUNCEMENT \
-      -H 'Content-type: application/json' \
-      -H 'cache-control: no-cache' \
-      -d "{\"text\": \"*${CIRCLE_PROJECT_REPONAME}* - Release \`${CIRCLE_TAG}\`: https://github.com/mojaloop/${CIRCLE_PROJECT_REPONAME}/releases/tag/${CIRCLE_TAG}\"}"
 
 ##
 # Executors
@@ -216,7 +187,10 @@ jobs:
     steps:
       - checkout
       - run:
-          <<: *defaults_build_docker_build
+          name: Build Docker $CIRCLE_TAG image
+          command: |
+            echo "Building Docker image: $CIRCLE_TAG"
+            docker build -t $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG .
       - run:
           name: Save docker image to workspace
           command: docker save -o /tmp/docker-image.tar $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
@@ -303,7 +277,8 @@ jobs:
           name: Load the pre-built docker image from workspace
           command: docker load -i /tmp/docker-image.tar
       - run:
-          <<: *defaults_build_docker_login
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run:
           name: setup environment vars for release/snapshot
           command: ./.circleci/_set_up_deploy_envs.sh
@@ -312,37 +287,28 @@ jobs:
           command: |
             docker tag $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
       - run:
-          <<: *defaults_build_docker_publish
+          name: Publish Docker image $CIRCLE_TAG & Latest tag to Docker Hub
+          command: |
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG
+            echo "Publishing $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG"
+            docker push $DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$RELEASE_TAG
       - run:
-          <<: *defaults_slack_announcement
+          name: Slack announcement for tag releases
+          command: |
+            curl -X POST \
+              $SLACK_WEBHOOK_ANNOUNCEMENT \
+              -H 'Content-type: application/json' \
+              -H 'cache-control: no-cache' \
+              -d "{\"text\": \"*${CIRCLE_PROJECT_REPONAME}* - Release \`${CIRCLE_TAG}\`: https://github.com/mojaloop/${CIRCLE_PROJECT_REPONAME}/releases/tag/${CIRCLE_TAG}\"}"
+
         
   deploy:
     executor: helm-kube
     steps:
       - checkout
       - deploy-kube/setup_and_run:
-          helm_image_path: .central.centralhub.centralledger.containers
-          
-      # - run:
-      #     name: Install AWS CLI dependencies
-      #     command: *defaults_awsCliDependencies
-      # - run:
-      #     name: setup environment vars for release/snapshot
-      #     command: ./.circleci/_set_up_deploy_envs.sh
-      # - run:
-      #     <<: *defaults_deploy_prequisites
-      # - run:
-      #     <<: *defaults_deploy_config_kubernetes_cluster
-      # - run:
-      #     <<: *defaults_deploy_config_kubernetes_credentials
-      # - run:
-      #     <<: *defaults_deploy_config_kubernetes_context
-      # - run:
-      #     <<: *defaults_deploy_set_kubernetes_context
-      # - run:
-      #     <<: *defaults_deploy_configure_helm
-      # - run:
-      #     <<: *defaults_deploy_install_or_upgrade_helm_chart
+          helm_image_path: .quoting-service
 
 ##
 # Workflows
