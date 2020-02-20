@@ -8,7 +8,7 @@ version: 2.1
 ###
 orbs:
   anchore: anchore/anchore-engine@1.6.0
-  deploy-kube: mojaloop/deployment@0.1.0
+  deploy-kube: mojaloop/deployment@0.1.1
 
 ##
 # defaults
@@ -36,7 +36,6 @@ defaults_awsCliDependencies: &defaults_awsCliDependencies |
   apk -v --purge del py-pip
 
 # TODO: should we remove these 'defaults' since they're only referenced once?
-
 defaults_build_docker_build: &defaults_build_docker_build
   name: Build Docker $CIRCLE_TAG image
   command: |
