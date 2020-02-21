@@ -8,7 +8,7 @@ version: 2.1
 ###
 orbs:
   anchore: anchore/anchore-engine@1.6.0
-  deploy-kube: mojaloop/deployment@0.1.2
+  deploy-kube: mojaloop/deployment@0.1.3
 
 ##
 # defaults
@@ -308,7 +308,7 @@ jobs:
     steps:
       - checkout
       - deploy-kube/setup_and_run:
-          helm_image_path: .quoting-service
+          helm_set_values: --set .quoting-service.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set .quoting-service.image.tag=$CIRCLE_TAG
 
 ##
 # Workflows
