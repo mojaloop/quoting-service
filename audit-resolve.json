@@ -1,19 +1,9 @@
 {
   "decisions": {
-    "1184|npm-check-updates>pacote>make-fetch-happen>https-proxy-agent": {
-      "decision": "ignore",
-      "madeAt": 1571739084837,
-      "expiresAt": 1574331074508
-    },
-    "1184|npm-check-updates>pacote>npm-registry-fetch>make-fetch-happen>https-proxy-agent": {
-      "decision": "ignore",
-      "madeAt": 1571739084837,
-      "expiresAt": 1574331074508
-    },
     "1482|@hapi/hapi": {
       "decision": "ignore",
-      "madeAt": 1582204968695,
-      "expiresAt": 1582809756398
+      "madeAt": 1582635042880,
+      "expiresAt": 1583239828928
     }
   },
   "rules": {},
