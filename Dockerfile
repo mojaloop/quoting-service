@@ -1,4 +1,4 @@
-FROM node:10.15.3-alpine as builder
+FROM node:12.16.0-alpine as builder
 
 WORKDIR /opt/quoting-service
 
@@ -16,7 +16,7 @@ RUN apk del build-dependencies
 COPY config /opt/quoting-service/config
 COPY src /opt/quoting-service/src
 
-FROM node:10.15.3-alpine
+FROM node:12.16.0-alpine
 
 WORKDIR /opt/quoting-service
 
