@@ -1,0 +1,11 @@
+{
+  "decisions": {
+    "1482|@hapi/hapi": {
+      "decision": "ignore",
+      "madeAt": 1582635042880,
+      "expiresAt": 1583239828928
+    }
+  },
+  "rules": {},
+  "version": 1
+}
