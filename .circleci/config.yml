@@ -56,11 +56,6 @@ executors:
     machine:
       image: ubuntu-1604:201903-01
 
-  # helm-kube:
-  #   working_directory: /home/circleci/project
-  #   docker: 
-  #     - image: hypnoglow/kubernetes-helm:2.14
-
 ##
 # Jobs
 #
@@ -301,12 +296,13 @@ jobs:
 
         
   deploy:
-    # executor: mojaloop/deployment
     executor: deploy-kube/helm-kube
     steps:
       - checkout
       - deploy-kube/setup_and_run:
-          helm_set_values: --set .quoting-service.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME --set .quoting-service.image.tag=$CIRCLE_TAG
+          helm_set_values: |
+            --set .quoting-service.image.repository=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME \
+            --set .quoting-service.image.tag=$CIRCLE_TAG
 
 ##
 # Workflows
