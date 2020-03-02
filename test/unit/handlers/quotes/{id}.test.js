@@ -32,6 +32,7 @@
 jest.mock('@mojaloop/central-services-logger')
 jest.mock('../../../../src/model/quotes')
 
+const Enum = require('@mojaloop/central-services-shared').Enum
 const QuotesHandler = require('../../../../src/handlers/quotes/{id}')
 const QuotesModel = require('../../../../src/model/quotes')
 const { baseMockRequest } = require('../../../util/helper')
@@ -58,7 +59,7 @@ describe('/quotes/{id}', () => {
       expect(QuotesModel).toHaveBeenCalledTimes(1)
       const mockQuoteInstance = QuotesModel.mock.instances[0]
       expect(mockQuoteInstance.handleQuoteGet).toHaveBeenCalledTimes(1)
-      expect(code).toHaveBeenCalledWith(202)
+      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     })
 
     it('handles an error with the model', async () => {
@@ -85,7 +86,7 @@ describe('/quotes/{id}', () => {
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
       expect(handleException).toHaveBeenCalledTimes(1)
-      expect(code).toHaveBeenCalledWith(202)
+      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     })
   })
 
@@ -108,7 +109,7 @@ describe('/quotes/{id}', () => {
       expect(QuotesModel).toHaveBeenCalledTimes(1)
       const mockQuoteInstance = QuotesModel.mock.instances[0]
       expect(mockQuoteInstance.handleQuoteUpdate).toHaveBeenCalledTimes(1)
-      expect(code).toHaveBeenCalledWith(202)
+      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
     })
 
     it('handles an error with the model', async () => {
@@ -135,7 +136,7 @@ describe('/quotes/{id}', () => {
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
       expect(handleException).toHaveBeenCalledTimes(1)
-      expect(code).toHaveBeenCalledWith(202)
+      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
     })
   })
 })

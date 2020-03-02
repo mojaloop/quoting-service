@@ -1646,6 +1646,27 @@ describe('QuotesModel', () => {
       expect(quotesModel.sendErrorCallback).toHaveBeenCalledTimes(1)
     })
 
+    it('sends the error callback to the correct destination', async () => {
+      // Arrange
+      expect.assertions(3)
+      mockConfig.simpleRoutingMode = true
+      const error = {
+        errorCode: 2001,
+        errorDescription: 'Test Error'
+      }
+      quotesModel.sendErrorCallback = jest.fn()
+
+      // Act
+      const result = await quotesModel.handleQuoteError(mockData.headers, mockData.quoteId, error, mockSpan)
+
+      // Assert
+      // For `handleQuoteError` response is undefined
+      expect(result).toBe(undefined)
+      expect(quotesModel.sendErrorCallback).toHaveBeenCalledTimes(1)
+      expect(quotesModel.sendErrorCallback.mock.calls[0][0])
+        .toEqual(mockData.headers[Enum.Http.Headers.FSPIOP.DESTINATION])
+    })
+
     it('handles the quote error with simpleRoutingMode: false', async () => {
       // Arrange
       expect.assertions(4)

@@ -78,12 +78,13 @@ module.exports = {
       // will send the callback to the correct party regardless.
       const result = await model.handleQuoteGet(request.headers, quoteId, span)
       request.server.log(['info'], `GET quotes/{id} request succeeded and returned: ${util.inspect(result)}`)
-      return h.response().code(202)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - GET /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
-      const { body, code } = await model.handleException(fspiopSource, quoteId, err, request.headers, span)
-      return h.response(body).code(code)
+      await model.handleException(fspiopSource, quoteId, err, request.headers, span)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     }
   },
 
@@ -120,12 +121,13 @@ module.exports = {
       // call the quote update handler in the model
       const result = await model.handleQuoteUpdate(request.headers, quoteId, request.payload, span)
       request.server.log(['info'], `PUT quote request succeeded and returned: ${util.inspect(result)}`)
-      return h.response().code(202)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
-      const { body, code } = await model.handleException(fspiopSource, quoteId, err, request.headers, span)
-      return h.response(body).code(code)
+      await model.handleException(fspiopSource, quoteId, err, request.headers, span)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return h.response().code(Enum.Http.ReturnCodes.OK.CODE)
     }
   }
 }
