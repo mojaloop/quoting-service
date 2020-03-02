@@ -136,7 +136,6 @@ async function start () {
     // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
     /* istanbul ignore next */
       process.on('SIGTERM', () => {
-        console.log('sigterm???')
         server.log(['info'], 'Received SIGTERM, closing server...')
         server.stop({ timeout: 10000 })
           .then(err => {
