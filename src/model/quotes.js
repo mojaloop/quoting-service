@@ -190,6 +190,16 @@ class QuotesModel {
       // internal-error
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
+
+    // We need to validate that the FSP Ids in the headers and payload match
+    if (fspiopSource !== quoteRequest.payer.partyIdInfo.fspId) {
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, '"fspiop-source" header does not match the payer FSP ID', null, fspiopSource)
+    }
+
+    if (fspiopDestination !== quoteRequest.payee.partyIdInfo.fspId) {
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, '"fspiop-destination" header does not match the payee FSP ID', null, fspiopSource)
+    }
+
     await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP)
     await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP)
   }
