@@ -162,6 +162,7 @@ class QuotesModel {
       // internal-error
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
+
     await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP)
     await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP)
   }
