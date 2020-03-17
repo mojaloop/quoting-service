@@ -611,7 +611,7 @@ class QuotesModel {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
         const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYER party`, null, fspiopSource)
-        return this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, false)
+        return this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, true)
       }
 
       const fullCallbackUrl = `${endpoint}/quotes/${quoteId}`
@@ -709,7 +709,7 @@ class QuotesModel {
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
 
       // Needed to add await here to prevent 'span already finished' bug
-      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, quoteId, headers, span, true)
+      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, quoteId, headers, span, false)
 
       return newError
     } catch (err) {
