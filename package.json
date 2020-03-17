@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "9.3.3-snapshot",
+  "version": "9.3.4-snapshot",
   "author": "Modusbox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
@@ -10,7 +10,8 @@
     "Henk Kodde <henk.kodde@modusbox.com>",
     "Miguel de Barros <miguel.debarros@modusbox.com>",
     "Rajiv Mothilal <rajiv.mothilal@modusbox.com>",
-    "Steven Oderayi <steven.oderayi@modusbox.com>"
+    "Steven Oderayi <steven.oderayi@modusbox.com>",
+    "Vassilis Barzokas <vassilis.barzokas@modusbox.com>"
   ],
   "repository": {
     "type": "git",
