@@ -1845,7 +1845,7 @@ describe('QuotesModel', () => {
       const result = await quotesModel.handleException('payeefsp', mockData.quoteId, error, mockData.headers, mockSpan)
 
       // Assert
-      expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan)
+      expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan, true)
       expect(result).toStrictEqual({ code: 202 })
       expect(mockChildSpan.finish).toHaveBeenCalledTimes(1)
     })
@@ -1861,7 +1861,7 @@ describe('QuotesModel', () => {
       await quotesModel.handleException('payeefsp', mockData.quoteId, error, mockData.headers, mockSpan)
 
       // Assert
-      expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan)
+      expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan, true)
       expect(quotesModel.writeLog).toHaveBeenCalledTimes(1)
       expect(mockChildSpan.finish).toHaveBeenCalledTimes(1)
     })
