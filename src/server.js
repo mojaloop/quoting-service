@@ -39,12 +39,13 @@ const Hapi = require('@hapi/hapi')
 const Good = require('@hapi/good')
 const Inert = require('@hapi/inert')
 const Vision = require('@hapi/vision')
+const Boom = require('@hapi/boom')
 const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const CentralServices = require('@mojaloop/central-services-shared')
 const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
 const Logger = require('@mojaloop/central-services-logger')
-const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
+const { getStackOrInspect } = require('../src/lib/util')
 const Routes = require('./routes')
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase')
@@ -73,7 +74,10 @@ const initServer = async function (db, config) {
     port: config.listenPort,
     routes: {
       validate: {
-        failAction: failActionHandler
+        options: ErrorHandler.validateRoutes(),
+        failAction: async (request, h, err) => {
+          throw Boom.boomify(err)
+        }
       }
     }
   })

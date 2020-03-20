@@ -53,7 +53,6 @@ describe('Server', () => {
     }))
     const mockRegister = jest.fn()
     const mockStart = jest.fn()
-    const mockSetHost = jest.fn()
     const mockLog = jest.fn()
     Hapi.Server.mockImplementationOnce(() => ({
       app: {
@@ -61,11 +60,6 @@ describe('Server', () => {
       },
       register: mockRegister,
       start: mockStart,
-      plugins: {
-        openapi: {
-          setHost: mockSetHost
-        }
-      },
       log: mockLog,
       info: {
         host: 'localhost',
@@ -79,9 +73,8 @@ describe('Server', () => {
     await server()
 
     // Assert
-    expect(mockRegister).toHaveBeenCalledTimes(1)
+    expect(mockRegister).toHaveBeenCalledTimes(2)
     expect(mockStart).toHaveBeenCalledTimes(1)
-    expect(mockSetHost).toHaveBeenCalledTimes(1)
     expect(mockLog).toHaveBeenCalledTimes(1)
   })
 
