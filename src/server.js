@@ -36,8 +36,6 @@
 'use strict'
 
 const Hapi = require('@hapi/hapi')
-const HapiOpenAPI = require('hapi-openapi')
-const Path = require('path')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -45,7 +43,7 @@ const CentralServices = require('@mojaloop/central-services-shared')
 const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
 const Logger = require('@mojaloop/central-services-logger')
 const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
-
+const Routes = require('./routes')
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase')
 
@@ -83,13 +81,6 @@ const initServer = async function (db, config) {
   // add plugins to the server
   await server.register([
     {
-      plugin: HapiOpenAPI,
-      options: {
-        api: Path.resolve('./src/interface/swagger.json'),
-        handlers: Path.resolve('./src/handlers')
-      }
-    },
-    {
       plugin: Good,
       options: {
         ops: {
@@ -114,6 +105,7 @@ const initServer = async function (db, config) {
     ErrorHandler,
     CentralServices.Util.Hapi.HapiEventPlugin
   ])
+  await server.register([Routes])
 
   // start the server
   await server.start()
@@ -144,7 +136,6 @@ async function start () {
           })
       })
 
-      server.plugins.openapi.setHost(server.info.host + ':' + server.info.port)
       server.log(['info'], `Server running on ${server.info.uri}`)
     // eslint-disable-next-line no-unused-vars
     }).catch(err => {
