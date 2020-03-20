@@ -37,6 +37,8 @@
 
 const Hapi = require('@hapi/hapi')
 const Good = require('@hapi/good')
+const Inert = require('@hapi/inert')
+const Vision = require('@hapi/vision')
 const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const CentralServices = require('@mojaloop/central-services-shared')
@@ -46,6 +48,7 @@ const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 const Routes = require('./routes')
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase')
+const Package = require('../package')
 
 /**
  * Initializes a database connection pool
@@ -81,6 +84,15 @@ const initServer = async function (db, config) {
   // add plugins to the server
   await server.register([
     {
+      plugin: require('hapi-swagger'),
+      options: {
+        info: {
+          title: 'Quoting Service API Documentation',
+          version: Package.version
+        }
+      }
+    },
+    {
       plugin: Good,
       options: {
         ops: {
@@ -101,6 +113,8 @@ const initServer = async function (db, config) {
     {
       plugin: HeaderValidation
     },
+    Inert,
+    Vision,
     Blipp,
     ErrorHandler,
     CentralServices.Util.Hapi.HapiEventPlugin
