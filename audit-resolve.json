@@ -1,1 +1,41 @@
-{}
+{
+  "decisions": {
+    "1179|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>node-pre-gyp>mkdirp>minimist": {
+      "decision": "ignore",
+      "madeAt": 1584974001709,
+      "expiresAt": 1587565935158
+    },
+    "1179|@mojaloop/event-sdk>grpc>node-pre-gyp>mkdirp>minimist": {
+      "decision": "ignore",
+      "madeAt": 1584974001709,
+      "expiresAt": 1587565935158
+    },
+    "1179|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>node-pre-gyp>tar>mkdirp>minimist": {
+      "decision": "ignore",
+      "madeAt": 1584974001709,
+      "expiresAt": 1587565935158
+    },
+    "1179|@mojaloop/event-sdk>grpc>node-pre-gyp>tar>mkdirp>minimist": {
+      "decision": "ignore",
+      "madeAt": 1584974001709,
+      "expiresAt": 1587565935158
+    },
+    "1179|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>node-pre-gyp>rc>minimist": {
+      "decision": "ignore",
+      "madeAt": 1584974001709,
+      "expiresAt": 1587565935158
+    },
+    "1179|@mojaloop/event-sdk>grpc>node-pre-gyp>rc>minimist": {
+      "decision": "ignore",
+      "madeAt": 1584974001709,
+      "expiresAt": 1587565935158
+    },
+    "1179|hapi-swagger>handlebars>optimist>minimist": {
+      "decision": "ignore",
+      "madeAt": 1584974001709,
+      "expiresAt": 1587565935158
+    }
+  },
+  "rules": {},
+  "version": 1
+}
