@@ -46,7 +46,7 @@ module.exports = [
         headers: Validator.HeadersValidator.postHeadersSchema.append({
           traceparent: Joi.string().optional(),
           tracestate: Joi.string().optional()
-        }).unknown(true),
+        }).unknown(false).options({ stripUnknown: true }),
         payload: Validator.QuoteValidator.postBulkQuoteSchema
       }
     }
@@ -63,7 +63,7 @@ module.exports = [
         headers: Validator.HeadersValidator.getHeadersSchema.append({
           traceparent: Joi.string().optional(),
           tracestate: Joi.string().optional()
-        }).unknown(true),
+        }).unknown(false).options({ stripUnknown: true }),
         params: Joi.object({
           id: Joi.string().guid().required().description('path').label('Supply a valid bulk quote Id to continue.')
         })
@@ -82,7 +82,7 @@ module.exports = [
         headers: Validator.HeadersValidator.putHeadersSchema.append({
           traceparent: Joi.string().optional(),
           tracestate: Joi.string().optional()
-        }).unknown(true),
+        }).unknown(false).options({ stripUnknown: true }),
         params: Joi.object({
           id: Joi.string().guid().required().description('path').label('Supply a valid bulk quote Id to continue.')
         }),
@@ -102,7 +102,7 @@ module.exports = [
         headers: Validator.HeadersValidator.putHeadersSchema.append({
           traceparent: Joi.string().optional(),
           tracestate: Joi.string().optional()
-        }).unknown(true),
+        }).unknown(false).options({ stripUnknown: true }),
         params: Joi.object({
           id: Joi.string().guid().required().description('path').label('Supply a valid quote Id to continue.')
         }),

@@ -76,7 +76,7 @@
     "good-squeeze": "5.1.0",
     "hapi-swagger": "12.1.3",
     "json-rules-engine": "5.0.2",
-    "knex": "0.20.12",
+    "knex": "0.20.13",
     "memory-cache": "0.2.0",
     "mysql": "2.18.1",
     "node-fetch": "2.6.0",
