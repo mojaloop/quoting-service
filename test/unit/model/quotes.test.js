@@ -2291,6 +2291,46 @@ describe('QuotesModel', () => {
       expect(result).toStrictEqual(expected)
     })
 
+    it('generates the default request headers with string date', () => {
+      // Arrange
+      const expected = {
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        Date: 'Wed, 01 Apr 2020 14:41:16 GMT',
+        'FSPIOP-Destination': 'dfsp2',
+        'FSPIOP-Source': 'dfsp1'
+      }
+      const headers = {
+        date: 'Wed, 01 Apr 2020 14:41:16 GMT',
+        'fspiop-source': 'dfsp1',
+        'fspiop-destination': 'dfsp2'
+      }
+      // Act
+      const result = quotesModel.generateRequestHeaders(headers, true)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('generates the default request headers with date object', () => {
+      // Arrange
+      const expected = {
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        Date: 'Wed, 01 Apr 2020 14:41:16 GMT',
+        'FSPIOP-Destination': 'dfsp2',
+        'FSPIOP-Source': 'dfsp1'
+      }
+      const headers = {
+        date: new Date('Wed, 01 Apr 2020 14:41:16 GMT'),
+        'fspiop-source': 'dfsp1',
+        'fspiop-destination': 'dfsp2'
+      }
+      // Act
+      const result = quotesModel.generateRequestHeaders(headers, true)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
     it('generates default request headers, including the Accept', () => {
       // Arrange
       const expected = {
