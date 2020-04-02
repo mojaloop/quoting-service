@@ -34,12 +34,6 @@
 
 const util = require('util')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const Logger = require('@mojaloop/central-services-logger')
-
-const failActionHandler = async (request, h, err) => {
-  Logger.error(`validation failure: ${getStackOrInspect}`)
-  throw err
-}
 
 const getSpanTags = ({ payload, headers, params }, transactionType, transactionAction) => {
   const tags = {
@@ -93,7 +87,6 @@ function getSafe (path, obj) {
 }
 
 module.exports = {
-  failActionHandler,
   getSafe,
   getSpanTags,
   getStackOrInspect

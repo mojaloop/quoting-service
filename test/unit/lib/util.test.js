@@ -26,22 +26,9 @@
 
 const Enum = require('@mojaloop/central-services-shared').Enum
 
-const { failActionHandler, getStackOrInspect, getSpanTags } = require('../../../src/lib/util')
+const { getStackOrInspect, getSpanTags } = require('../../../src/lib/util')
 
 describe('util', () => {
-  describe('failActionHandler', () => {
-    it('throws the reformatted error', async () => {
-      // Arrange
-      const input = new Error('Generic error')
-
-      // Act
-      const action = async () => failActionHandler(null, null, input)
-
-      // Assert
-      await expect(action()).rejects.toThrowError('Generic error')
-    })
-  })
-
   describe('getSpanTags', () => {
     it('does not get the span tags for payeeFsp and payerFsp if they do not exist', () => {
       // Arrange
