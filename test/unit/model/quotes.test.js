@@ -688,13 +688,25 @@ describe('QuotesModel', () => {
             quotesModel.checkDuplicateQuoteRequest = jest.fn(() => {
               return {
                 isDuplicateId: true,
-                resend: false
+                isResend: false
               }
             })
 
             await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
               .rejects
               .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code)
+          })
+          it('passes after sending out exception message of duplication', async () => {
+            expect.assertions(1)
+
+            quotesModel.checkDuplicateQuoteRequest = jest.fn(() => {
+              return {
+                isDuplicateId: true,
+                isResend: true
+              }
+            })
+            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            await expect(result).toStrictEqual({})
           })
           it('throws an exception if `calculateRequestHash` fails', async () => {
             expect.assertions(1)
@@ -1912,6 +1924,48 @@ describe('QuotesModel', () => {
 
       // Act
       await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan)
+
+      // Assert
+      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
+      expect(mockSpan.audit).toBeCalledTimes(1)
+      expect(axios.request).toBeCalledWith(expectedOptions)
+    })
+
+    it('sends the error callback and handles the span without modifying headers', async () => {
+      // Arrange
+      expect.assertions(3)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: {
+          'fspiop-destination': 'payeefsp',
+          'fspiop-source': 'switch',
+          'fspiop-http-method': 'PUT',
+          'fspiop-uri': `/quotes/${mockData.quoteId}/error`,
+          spanHeaders: '12345'
+        },
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {}
+      }))
+      mockSpan.audit = jest.fn()
+      const expectedOptions = {
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {},
+        headers: {
+          'fspiop-destination': 'payeefsp',
+          'fspiop-source': 'switch',
+          'fspiop-http-method': 'PUT',
+          'fspiop-uri': `/quotes/${mockData.quoteId}/error`,
+          spanHeaders: '12345'
+        }
+      }
+
+      // Act
+      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, false)
 
       // Assert
       expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)

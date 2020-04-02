@@ -156,7 +156,8 @@ async function start () {
       })
 
       server.log(['info'], `Server running on ${server.info.uri}`)
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
+      return server
     }).catch(err => {
       Logger.error(`Error initializing server: ${getStackOrInspect(err)}`)
     })

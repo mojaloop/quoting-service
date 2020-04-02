@@ -49,6 +49,22 @@ describe('httpRequest', () => {
     expect(axios.request).toHaveBeenCalledTimes(1)
   })
 
+  it('performs a unsuccessful http request Not found', async () => {
+    // Arrange
+    const error = new Error('Not Found')
+    error.response = {
+      status: 404
+    }
+    axios.request.mockImplementationOnce(() => { throw error })
+    const options = {}
+
+    // Act
+    const action = async () => httpRequest(options, 'payeefsp')
+    await expect(action()).rejects.toThrow('Not found')
+    // Assert
+    expect(axios.request).toHaveBeenCalledTimes(1)
+  })
+
   it('handles a http exception', async () => {
     // Arrange
     axios.request.mockImplementationOnce(() => { throw new Error('Network error') })
