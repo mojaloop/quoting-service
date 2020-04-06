@@ -926,7 +926,7 @@ class Database {
      * Creates quoteExtensions rows
      *
      * @returns {object}
-     * @param   {Array[{object}} extensions - array of extension objects with quoteId, key and value properties
+     * @param   {Array[{object}]} extensions - array of extension objects with quoteId, key and value properties
      */
   async createQuoteExtensions (txn, extensions) {
     try {
@@ -936,21 +936,20 @@ class Database {
           quoteResponseId: e.quoteResponseId,
           key: e.key,
           value: e.value
-        };
+        }
       })
 
       const res = await this.queryBuilder('quoteExtension')
         .transacting(txn)
         .insert(newExtensions)
 
-      this.writeLog(`inserted new quoteExtensions in db: ${util.inspect(newError)}`)
+      this.writeLog(`inserted new quoteExtensions in db: ${util.inspect(newExtensions)}`)
       return res
     } catch (err) {
       this.writeLog(`Error in createQuoteExtensions: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
-
 
   /**
    * @function getIsMigrationLocked
