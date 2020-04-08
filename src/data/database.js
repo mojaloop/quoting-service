@@ -511,6 +511,19 @@ class Database {
         const createdParty = await this.createParty(txn, quotePartyId, newParty)
         this.writeLog(`inserted new party in db: ${util.inspect(createdParty)}`)
       }
+      if (party.partyIdInfo.extensionList) {
+        const extensions = party.partyIdInfo.extensionList.extension
+        // we need to store personal info also
+        const quoteParty = await this.getQuoteParty(txn, quoteId, partyType)
+        for (const extension of extensions) {
+          const newExtensions = {
+            key: extension.key,
+            value: extension.value
+          }
+          const createQuotePartyIdInfoExtension = await this.createQuotePartyIdInfoExtension(txn, newExtensions, quoteParty)
+          this.writeLog(`inserted new QuotePartyIdInfoExtension in db: ${util.inspect(createQuotePartyIdInfoExtension)}`)
+        }
+      }
 
       return quotePartyId
     } catch (err) {
@@ -653,14 +666,31 @@ class Database {
     }
   }
 
+  async createQuotePartyIdInfoExtension (txn, extensionList, quoteParty) {
+    try {
+      await this.queryBuilder('quotePartyIdInfoExtension')
+        .transacting(txn)
+        .insert({
+          quotePartyId: quoteParty.quotePartyId,
+          key: extensionList.key,
+          value: extensionList.value
+        })
+      return true
+    } catch (err) {
+      this.writeLog(`Error in createQuotePartyIdInfoExtension: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
   /**
      * Gets the specified party for the specified quote
      *
      * @returns {object}
      */
-  async getQuoteParty (quoteId, partyType) {
+  async getQuoteParty (txn, quoteId, partyType) {
     try {
       const rows = await this.queryBuilder('quoteParty')
+        .transacting(txn)
         .innerJoin('partyType', 'partyType.partyTypeId', 'quoteParty.partyTypeId')
         .where('quoteParty.quoteId', quoteId)
         .andWhere('partyType.name', partyType)
