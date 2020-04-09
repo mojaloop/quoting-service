@@ -514,7 +514,7 @@ class Database {
       if (party.partyIdInfo.extensionList) {
         const extensions = party.partyIdInfo.extensionList.extension
         // we need to store personal info also
-        const quoteParty = await this.getQuoteParty(txn, quoteId, partyType)
+        const quoteParty = await this.getTxnQuoteParty(txn, quoteId, partyType)
         for (const extension of extensions) {
           const newExtensions = {
             key: extension.key,
@@ -687,7 +687,30 @@ class Database {
      *
      * @returns {object}
      */
-  async getQuoteParty (txn, quoteId, partyType) {
+  async getQuoteParty (quoteId, partyType) {
+    try {
+      const rows = await this.queryBuilder('quoteParty')
+        .innerJoin('partyType', 'partyType.partyTypeId', 'quoteParty.partyTypeId')
+        .where('quoteParty.quoteId', quoteId)
+        .andWhere('partyType.name', partyType)
+        .select('quoteParty.*')
+
+      if ((!rows) || rows.length < 1) {
+        return null
+      }
+
+      if (rows.length > 1) {
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
+      }
+
+      return rows[0]
+    } catch (err) {
+      this.writeLog(`Error in getQuoteParty: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async getTxnQuoteParty (txn, quoteId, partyType) {
     try {
       const rows = await this.queryBuilder('quoteParty')
         .transacting(txn)
@@ -710,12 +733,12 @@ class Database {
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
-
   /**
      * Gets the specified endpoint for the specified quote party
      *
      * @returns {promise} - resolves to the endpoint base url
      */
+
   async getQuotePartyEndpoint (quoteId, endpointType, partyType) {
     try {
       const rows = await this.queryBuilder('participantEndpoint')
