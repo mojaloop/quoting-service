@@ -2219,6 +2219,59 @@ describe('/database', () => {
       })
     })
 
+    describe('createQuoteExtensions', () => {
+      it('creates new quoteExtensions', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const extensions = [{
+          key: 'key1',
+          value: 'value1'
+        }, {
+          key: 'key2',
+          value: 'value2'
+        }]
+        const quoteId = '123'
+        const quoteResponseId = 456
+
+        const mockList = mockKnexBuilder(mockKnex, ['12345'], ['transacting', 'insert'])
+
+        // Act
+        const result = await database.createQuoteExtensions(txn, extensions, quoteId, quoteResponseId)
+
+        // Assert
+        expect(result).toStrictEqual(['12345'])
+        expect(mockList[0]).toHaveBeenCalledWith('quoteExtension')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledWith(extensions.map(({ key, value }) => ({
+          key, value, quoteId, quoteResponseId
+        })))
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in creating the quoteExtensions', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const extensions = [{
+          quoteId: '123',
+          quoteResponseId: 456,
+          key: 'key1',
+          value: 'value1'
+        }, {
+          quoteId: '789',
+          quoteResponseId: 101112,
+          key: 'key2',
+          value: 'value2'
+        }]
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createQuoteExtensions(txn, extensions)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
     describe('createQuoteError', () => {
       it('creates a default quote error', async () => {
         // Arrange

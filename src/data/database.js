@@ -976,6 +976,33 @@ class Database {
   }
 
   /**
+     * Creates quoteExtensions rows
+     *
+     * @returns {object}
+     * @param   {Array[{object}]} extensions - array of extension objects with quoteId, key and value properties
+     */
+  async createQuoteExtensions (txn, extensions, quoteId, quoteResponseId = undefined) {
+    try {
+      const newExtensions = extensions.map(({ key, value }) => ({
+        quoteId,
+        quoteResponseId,
+        key,
+        value
+      }))
+
+      const res = await this.queryBuilder('quoteExtension')
+        .transacting(txn)
+        .insert(newExtensions)
+
+      this.writeLog(`inserted new quoteExtensions in db: ${util.inspect(newExtensions)}`)
+      return res
+    } catch (err) {
+      this.writeLog(`Error in createQuoteExtensions: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  /**
    * @function getIsMigrationLocked
    *
    * @description Gets whether or not the database is locked based on the migration_lock

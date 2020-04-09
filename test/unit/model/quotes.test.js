@@ -28,6 +28,7 @@
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Matt Kingston <matt.kingston@modusbox.com>
  - Vassilis Barzokas <vassilis.barzokas@modusbox.com>
+ - James Bush <james.bush@modusbox.com>
  --------------
  ******/
 'use strict'
@@ -147,6 +148,16 @@ describe('QuotesModel', () => {
           scenario: 'TRANSFER',
           initiator: 'PAYER',
           initiatorType: 'CONSUMER'
+        },
+        geoCode: {
+          latitude: '43.69751',
+          longitude: '24.32415'
+        },
+        extensionList: {
+          extension: [{
+            key: 'key1',
+            value: 'value1'
+          }]
         }
       },
       quoteUpdate: {
@@ -274,6 +285,7 @@ describe('QuotesModel', () => {
     quotesModel.db.createPayerQuoteParty.mockImplementation(() => mockData.quoteRequest.payer.partyIdInfo.fspId)
     quotesModel.db.createPayeeQuoteParty.mockImplementation(() => mockData.quoteRequest.payee.partyIdInfo.fspId)
     quotesModel.db.createGeoCode.mockImplementation(() => mockData.geoCode)
+    quotesModel.db.createQuoteExtensions.mockImplementation(() => mockData.quoteRequest.extensionList.extension)
 
     // make all methods of the quotesModel instance be a mock. This helps us re-mock in every
     // method's test suite.
@@ -850,6 +862,27 @@ describe('QuotesModel', () => {
                 .toEqual(fspiopError)
             })
           })
+          describe('In case a `extensionList` exists in the incoming quote request:', () => {
+            it('throws an exception if `db.createQuoteExtensions` fails', async () => {
+              expect.assertions(1)
+
+              const dbError = new Error('foo')
+              const fspiopError = ErrorHandler.ReformatFSPIOPError(dbError)
+
+              quotesModel.db.createQuoteExtensions = jest.fn(() => { throw dbError })
+
+              mockData.quoteRequest.extensionList = {
+                extension: [{
+                  key: 'someKey',
+                  value: 'someValue'
+                }]
+              }
+
+              await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+                .rejects
+                .toEqual(fspiopError)
+            })
+          })
           it('throws an exception if `db.commit` of the returned DB transaction fails', async () => {
             expect.assertions(2)
 
@@ -936,7 +969,9 @@ describe('QuotesModel', () => {
               transactionInitiatorId: mockData.initiator,
               transactionReferenceId: mockData.transactionReference,
               transactionScenarioId: mockData.scenario,
-              transactionSubScenarioId: mockData.quoteRequest.transactionType.subScenario
+              transactionSubScenarioId: mockData.quoteRequest.transactionType.subScenario,
+              geoCodeId: mockData.geoCode,
+              extensions: mockData.quoteRequest.extensionList.extension
             }
           })
 
@@ -998,6 +1033,7 @@ describe('QuotesModel', () => {
           expect(result).toBe(undefined)
         })
       })
+
       describe('While forwarding the request:', () => {
         describe('In case environment is configured for simple routing mode', () => {
           beforeEach(() => {
@@ -1038,8 +1074,62 @@ describe('QuotesModel', () => {
               transactionInitiatorId: mockData.initiator,
               transactionReferenceId: mockData.transactionReference,
               transactionScenarioId: mockData.scenario,
-              transactionSubScenarioId: mockData.quoteRequest.transactionType.subScenario
+              transactionSubScenarioId: mockData.quoteRequest.transactionType.subScenario,
+              geoCodeId: mockData.geoCode,
+              extensions: mockData.quoteRequest.extensionList.extension
             }
+          })
+
+          it('calls all database create entity methods with correct arguments', async () => {
+            expect.assertions(8)
+
+            const expectedHash = quotesModel.calculateRequestHash(mockData.quoteRequest)
+            const mockCreateQuoteDuplicateCheckArgs = [mockTransaction, mockData.quoteRequest.quoteId,
+              expectedHash]
+            const mockCreateTransactionReferenceArgs = [mockTransaction, mockData.quoteRequest.quoteId,
+              mockData.quoteRequest.transactionId]
+            const mockCreateQuoteArgs = [mockTransaction, {
+              amount: '100.0000',
+              amountTypeId: 'fakeAmountTypeId',
+              balanceOfPaymentsId: null,
+              currencyId: 'USD',
+              expirationDate: null,
+              note: undefined,
+              quoteId: 'test123',
+              transactionInitiatorId: 'fakeInitiator',
+              transactionInitiatorTypeId: 'fakeInitiatorType',
+              transactionReferenceId: 'fakeTxRef',
+              transactionRequestId: null,
+              transactionScenarioId: 'fakeScenario',
+              transactionSubScenarioId: undefined
+            }]
+            const mockCreatePayerQuotePartyArgs = [mockTransaction, mockData.quoteRequest.quoteId,
+              mockData.quoteRequest.payer, mockData.quoteRequest.amount.amount,
+              mockData.quoteRequest.amount.currency]
+            const mockCreatePayeeQuotePartyArgs = [mockTransaction, mockData.quoteRequest.quoteId,
+              mockData.quoteRequest.payee, mockData.quoteRequest.amount.amount,
+              mockData.quoteRequest.amount.currency]
+            const mockCreateQuoteExtensionsArgs = [mockTransaction,
+              mockData.quoteRequest.extensionList.extension,
+              mockData.quoteRequest.quoteId
+            ]
+            const mockCreateGeoCodeArgs = [mockTransaction, {
+              quotePartyId: mockData.quoteRequest.payer.partyIdInfo.fspId,
+              latitude: mockData.quoteRequest.geoCode.latitude,
+              longitude: mockData.quoteRequest.geoCode.longitude
+            }]
+
+            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+
+            expect(quotesModel.db.createQuoteDuplicateCheck).toBeCalledWith(...mockCreateQuoteDuplicateCheckArgs)
+            expect(quotesModel.db.createTransactionReference).toBeCalledWith(...mockCreateTransactionReferenceArgs)
+            expect(quotesModel.db.createQuote).toBeCalledWith(...mockCreateQuoteArgs)
+            expect(quotesModel.db.createPayerQuoteParty).toBeCalledWith(...mockCreatePayerQuotePartyArgs)
+            expect(quotesModel.db.createPayeeQuoteParty).toBeCalledWith(...mockCreatePayeeQuotePartyArgs)
+            expect(quotesModel.db.createQuoteExtensions).toBeCalledWith(...mockCreateQuoteExtensionsArgs)
+            expect(quotesModel.db.createGeoCode).toBeCalledWith(...mockCreateGeoCodeArgs)
+
+            expect(result).toEqual(expectedResult)
           })
 
           it('forwards the quote request properly', async () => {
@@ -1302,16 +1392,22 @@ describe('QuotesModel', () => {
       expect(refs).toBe('handleQuoteUpdateResendResult')
     })
     it('should store to db and forward quote update when switch mode', async () => {
-      expect.assertions(9)
+      expect.assertions(10)
 
       mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
       quotesModel.calculateRequestHash = jest.fn(() => 'hash')
+
+      const mockQuoteResponseId = 'resp123'
+
       const expected = {
-        quoteResponseId: 'resp123'
+        quoteResponseId: mockQuoteResponseId,
+        extensions: mockData.quoteUpdate.extensionList.extension
       }
+
       quotesModel.db.createQuoteResponse.mockReturnValueOnce({ quoteResponseId: expected.quoteResponseId })
       mockChildSpan.isFinished = true
+
       const localQuoteUpdate = clone(mockData.quoteUpdate)
       delete localQuoteUpdate.geoCode
 
@@ -1322,8 +1418,17 @@ describe('QuotesModel', () => {
       expect(mockTransaction.rollback.mock.calls.length).toBe(0)
       expect(mockTransaction.commit.mock.calls.length).toBe(1)
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
+
+      expect(quotesModel.db.createQuoteExtensions).toBeCalledWith(
+        mockTransaction,
+        mockData.quoteUpdate.extensionList.extension,
+        mockData.quoteId,
+        mockQuoteResponseId
+      )
+
       let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: localQuoteUpdate }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)
+
       args = [mockData.headers, mockData.quoteId, localQuoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
@@ -1337,7 +1442,8 @@ describe('QuotesModel', () => {
       quotesModel.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
         quoteResponseId: 'resp123',
-        geoCodeId: 'geoCodeId'
+        geoCodeId: 'geoCodeId',
+        extensions: mockData.quoteUpdate.extensionList.extension
       }
       quotesModel.db.createQuoteResponse.mockReturnValueOnce({ quoteResponseId: expected.quoteResponseId })
       quotesModel.db.createGeoCode.mockReturnValueOnce(expected.geoCodeId)
@@ -1366,7 +1472,8 @@ describe('QuotesModel', () => {
       quotesModel.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
         quoteResponseId: 'resp123',
-        geoCodeId: 'geoCodeId'
+        geoCodeId: 'geoCodeId',
+        extensions: mockData.quoteUpdate.extensionList.extension
       }
       quotesModel.db.createQuoteResponse.mockReturnValueOnce({ quoteResponseId: expected.quoteResponseId })
       quotesModel.db.createGeoCode.mockReturnValueOnce(expected.geoCodeId)

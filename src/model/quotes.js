@@ -286,6 +286,13 @@ class QuotesModel {
         refs.payeeId = await this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
           quoteRequest.amount.amount, quoteRequest.amount.currency)
 
+        // store any extension list items
+        if (quoteRequest.extensionList &&
+            Array.isArray(quoteRequest.extensionList.extension)) {
+          refs.extensions = await this.db.createQuoteExtensions(
+            txn, quoteRequest.extensionList.extension, quoteRequest.quoteId)
+        }
+
         // did we get a geoCode for the initiator?
         if (quoteRequest.geoCode) {
           // eslint-disable-next-line require-atomic-updates
@@ -524,6 +531,13 @@ class QuotesModel {
             latitude: quoteUpdateRequest.geoCode.latitude,
             longitude: quoteUpdateRequest.geoCode.longitude
           })
+        }
+
+        // store any extension list items
+        if (quoteUpdateRequest.extensionList &&
+            Array.isArray(quoteUpdateRequest.extensionList.extension)) {
+          refs.extensions = await this.db.createQuoteExtensions(
+            txn, quoteUpdateRequest.extensionList.extension, quoteId, refs.quoteResponseId)
         }
 
         // todo: create any additional quoteParties e.g. for fees, comission etc...

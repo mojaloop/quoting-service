@@ -4,7 +4,8 @@
 [![Docker pulls](https://img.shields.io/docker/pulls/mojaloop/quoting-service.svg?style=flat)](https://hub.docker.com/r/mojaloop/quoting-service)
 [![CircleCI](https://circleci.com/gh/mojaloop/quoting-service.svg?style=svg)](https://circleci.com/gh/mojaloop/quoting-service)
 
-The Quoting Service was donated by the Mowali project working in collaboration with Orange and MTN. 
+The Quoting Service was donated by the Mowali project working in collaboration with Orange and MTN. The original author of this service is James Bush (james.bush@modusbox.com).
+
 The Quoting service is now part of the Mojaloop project and deployment.
 
 The service provided by the API resource /quotes is calculation of possible fees and FSP commission involved in performing an interoperable financial transaction. 
@@ -40,4 +41,3 @@ npm run audit:check
 ```
 
 And commit the changed `audit-resolv.json` to ensure that CircleCI will build correctly.
-test
