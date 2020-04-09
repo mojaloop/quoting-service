@@ -2070,27 +2070,27 @@ describe('/database', () => {
         // Arrange
         const txn = jest.fn()
         const extensions = [{
-          quoteId: '123',
-          quoteResponseId: 456,
           key: 'key1',
           value: 'value1'
         }, {
-          quoteId: '789',
-          quoteResponseId: 101112,
           key: 'key2',
           value: 'value2'
         }]
+        const quoteId = '123'
+        const quoteResponseId = 456
 
         const mockList = mockKnexBuilder(mockKnex, ['12345'], ['transacting', 'insert'])
 
         // Act
-        const result = await database.createQuoteExtensions(txn, extensions)
+        const result = await database.createQuoteExtensions(txn, extensions, quoteId, quoteResponseId)
 
         // Assert
         expect(result).toStrictEqual(['12345'])
         expect(mockList[0]).toHaveBeenCalledWith('quoteExtension')
         expect(mockList[1]).toHaveBeenCalledWith(txn)
-        expect(mockList[2]).toHaveBeenCalledWith(extensions)
+        expect(mockList[2]).toHaveBeenCalledWith(extensions.map(({ key, value }) => ({
+          key, value, quoteId, quoteResponseId
+        })))
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 

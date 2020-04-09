@@ -1110,13 +1110,9 @@ describe('QuotesModel', () => {
               mockData.quoteRequest.payee, mockData.quoteRequest.amount.amount,
               mockData.quoteRequest.amount.currency]
             const mockCreateQuoteExtensionsArgs = [mockTransaction,
-              mockData.quoteRequest.extensionList.extension.map(e => {
-                return {
-                  quoteId: mockData.quoteRequest.quoteId,
-                  key: e.key,
-                  value: e.value
-                }
-              })]
+              mockData.quoteRequest.extensionList.extension,
+              mockData.quoteRequest.quoteId
+            ]
             const mockCreateGeoCodeArgs = [mockTransaction, {
               quotePartyId: mockData.quoteRequest.payer.partyIdInfo.fspId,
               latitude: mockData.quoteRequest.geoCode.latitude,
@@ -1423,15 +1419,12 @@ describe('QuotesModel', () => {
       expect(mockTransaction.commit.mock.calls.length).toBe(1)
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
 
-      expect(quotesModel.db.createQuoteExtensions).toBeCalledWith(mockTransaction,
-        mockData.quoteUpdate.extensionList.extension.map(e => {
-          return {
-            quoteId: mockData.quoteId,
-            quoteResponseId: mockQuoteResponseId,
-            key: e.key,
-            value: e.value
-          }
-        }))
+      expect(quotesModel.db.createQuoteExtensions).toBeCalledWith(
+        mockTransaction,
+        mockData.quoteUpdate.extensionList.extension,
+        mockData.quoteId,
+        mockQuoteResponseId
+      )
 
       let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: localQuoteUpdate }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)
