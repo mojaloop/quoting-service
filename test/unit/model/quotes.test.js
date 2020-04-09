@@ -1424,7 +1424,7 @@ describe('QuotesModel', () => {
         mockData.quoteUpdate.extensionList.extension,
         mockData.quoteId,
         mockQuoteResponseId
-      );
+      )
 
       let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: localQuoteUpdate }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)

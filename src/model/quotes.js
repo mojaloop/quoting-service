@@ -289,7 +289,6 @@ class QuotesModel {
         // store any extension list items
         if (quoteRequest.extensionList &&
             Array.isArray(quoteRequest.extensionList.extension)) {
-
           refs.extensions = await this.db.createQuoteExtensions(
             txn, quoteRequest.extensionList.extension, quoteRequest.quoteId)
         }
@@ -537,7 +536,6 @@ class QuotesModel {
         // store any extension list items
         if (quoteUpdateRequest.extensionList &&
             Array.isArray(quoteUpdateRequest.extensionList.extension)) {
-
           refs.extensions = await this.db.createQuoteExtensions(
             txn, quoteUpdateRequest.extensionList.extension, quoteId, refs.quoteResponseId)
         }
