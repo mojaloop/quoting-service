@@ -41,4 +41,3 @@ npm run audit:check
 ```
 
 And commit the changed `audit-resolv.json` to ensure that CircleCI will build correctly.
-test

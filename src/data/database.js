@@ -928,16 +928,14 @@ class Database {
      * @returns {object}
      * @param   {Array[{object}]} extensions - array of extension objects with quoteId, key and value properties
      */
-  async createQuoteExtensions (txn, extensions) {
+  async createQuoteExtensions (txn, extensions, quoteId, quoteResponseId = undefined) {
     try {
-      const newExtensions = extensions.map(e => {
-        return {
-          quoteId: e.quoteId,
-          quoteResponseId: e.quoteResponseId,
-          key: e.key,
-          value: e.value
-        }
-      })
+      const newExtensions = extensions.map(({ key, value }) => ({
+        quoteId,
+        quoteResponseId,
+        key,
+        value
+      }))
 
       const res = await this.queryBuilder('quoteExtension')
         .transacting(txn)

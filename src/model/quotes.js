@@ -289,15 +289,9 @@ class QuotesModel {
         // store any extension list items
         if (quoteRequest.extensionList &&
             Array.isArray(quoteRequest.extensionList.extension)) {
-          const extensions = quoteRequest.extensionList.extension.map(e => {
-            return {
-              quoteId: quoteRequest.quoteId,
-              key: e.key,
-              value: e.value
-            }
-          })
 
-          refs.extensions = await this.db.createQuoteExtensions(txn, extensions)
+          refs.extensions = await this.db.createQuoteExtensions(
+            txn, quoteRequest.extensionList.extension, quoteRequest.quoteId)
         }
 
         // did we get a geoCode for the initiator?
@@ -543,16 +537,9 @@ class QuotesModel {
         // store any extension list items
         if (quoteUpdateRequest.extensionList &&
             Array.isArray(quoteUpdateRequest.extensionList.extension)) {
-          const extensions = quoteUpdateRequest.extensionList.extension.map(e => {
-            return {
-              quoteId: quoteId,
-              quoteResponseId: refs.quoteResponseId,
-              key: e.key,
-              value: e.value
-            }
-          })
 
-          refs.extensions = await this.db.createQuoteExtensions(txn, extensions)
+          refs.extensions = await this.db.createQuoteExtensions(
+            txn, quoteUpdateRequest.extensionList.extension, quoteId, refs.quoteResponseId)
         }
 
         // todo: create any additional quoteParties e.g. for fees, comission etc...
