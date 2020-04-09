@@ -66,7 +66,7 @@
     "@mojaloop/ml-number": "8.2.0",
     "axios": "0.19.2",
     "blipp": "4.0.1",
-    "eslint-config-standard": "14.1.0",
+    "eslint-config-standard": "14.1.1",
     "good-console": "8.0.0",
     "good-squeeze": "5.1.0",
     "hapi-openapi": "1.2.6",
