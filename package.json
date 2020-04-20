@@ -69,7 +69,7 @@
     "eslint-config-standard": "14.1.1",
     "good-console": "8.0.0",
     "good-squeeze": "5.1.0",
-    "hapi-openapi": "1.2.6",
+    "hapi-openapi": "2.0.0",
     "json-rules-engine": "5.0.2",
     "knex": "0.20.13",
     "memory-cache": "0.2.0",
