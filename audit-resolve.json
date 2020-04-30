@@ -1,0 +1,36 @@
+{
+  "decisions": {
+    "1179|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>node-pre-gyp>mkdirp>minimist": {
+      "decision": "ignore",
+      "madeAt": 1588247839506,
+      "expiresAt": 1588852630163
+    },
+    "1179|@mojaloop/event-sdk>grpc>node-pre-gyp>mkdirp>minimist": {
+      "decision": "ignore",
+      "madeAt": 1588247839507,
+      "expiresAt": 1588852630163
+    },
+    "1179|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>node-pre-gyp>tar>mkdirp>minimist": {
+      "decision": "ignore",
+      "madeAt": 1588247839507,
+      "expiresAt": 1588852630163
+    },
+    "1179|@mojaloop/event-sdk>grpc>node-pre-gyp>tar>mkdirp>minimist": {
+      "decision": "ignore",
+      "madeAt": 1588247839507,
+      "expiresAt": 1588852630163
+    },
+    "1179|@mojaloop/central-services-shared>@mojaloop/event-sdk>grpc>node-pre-gyp>rc>minimist": {
+      "decision": "ignore",
+      "madeAt": 1588247839507,
+      "expiresAt": 1588852630163
+    },
+    "1179|@mojaloop/event-sdk>grpc>node-pre-gyp>rc>minimist": {
+      "decision": "ignore",
+      "madeAt": 1588247839507,
+      "expiresAt": 1588852630163
+    }
+  },
+  "rules": {},
+  "version": 1
+}
