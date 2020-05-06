@@ -20,6 +20,11 @@ FROM node:12.16.1-alpine
 
 WORKDIR /opt/quoting-service
 
+# Create empty log file & link stdout to the application log file
+RUN mkdir ./logs && touch ./logs/combined.log
+# Links combined to stdout
+RUN ln -sf /dev/stdout ./logs/combined.log
+
 # Create a non-root user: ml-user
 RUN adduser -D ml-user 
 USER ml-user
