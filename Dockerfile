@@ -32,6 +32,5 @@ USER ml-user
 COPY --chown=ml-user --from=builder /opt/quoting-service .
 RUN npm prune --production
 
-USER ml-user
 EXPOSE 3002
 CMD ["npm", "run", "start"]
