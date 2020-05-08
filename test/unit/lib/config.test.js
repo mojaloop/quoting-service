@@ -55,7 +55,14 @@ const mockDefaultFile = {
     includeCauseExtension: false,
     truncateExtensions: true
   },
-  SIMPLE_ROUTING_MODE: true
+  SIMPLE_ROUTING_MODE: true,
+  ENDPOINT_SECURITY: {
+    JWS: {
+      JWS_SIGN: true,
+      FSPIOP_SOURCE_TO_SIGN: 'switch',
+      JWS_SIGNING_KEY_PATH: 'secrets/jwsSigningKey.key'
+    }
+  }
 }
 
 describe('Config', () => {
