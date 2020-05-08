@@ -2129,6 +2129,47 @@ describe('QuotesModel', () => {
       jwsSignSpy.mockRestore()
     })
 
+    it('sends the error callback NOT JWS signed', async () => {
+      // Arrange
+      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'sign')
+      expect.assertions(5)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: {
+          spanHeaders: '12345',
+          'fspiop-source': 'switch',
+          'fspiop-destination': 'dfsp2'
+        },
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {}
+      }))
+      mockSpan.audit = jest.fn()
+      const expectedOptions = {
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {},
+        headers: {
+          spanHeaders: '12345',
+          'fspiop-source': 'switch',
+          'fspiop-destination': 'dfsp2'
+        }
+      }
+      mockConfig.jws.jwsSign = false
+      // Act
+      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, false)
+      // Assert
+      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
+      expect(mockSpan.audit).toBeCalledTimes(1)
+      expect(jwsSignSpy).not.toHaveBeenCalled()
+      expect(axios.request.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
+      expect(axios.request).toBeCalledWith(expectedOptions)
+      jwsSignSpy.mockRestore()
+    })
+
     it('handles when the endpoint could not be found', async () => {
       // Arrange
       expect.assertions(2)
@@ -2458,6 +2499,45 @@ describe('QuotesModel', () => {
 
       // Act
       const result = quotesModel.generateRequestHeaders(mockData.headers, false)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+  })
+
+  describe('generateRequestHeadersForJWS', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.generateRequestHeadersForJWS.mockRestore()
+      quotesModel.removeEmptyKeys.mockRestore()
+    })
+
+    it('generates the default request headers', () => {
+      // Arrange
+      const expected = {
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'fspiop-destination': 'dfsp2',
+        'fspiop-source': 'dfsp1'
+      }
+
+      // Act
+      const result = quotesModel.generateRequestHeadersForJWS(mockData.headers, true)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('generates default request headers, including the Accept', () => {
+      // Arrange
+      const expected = {
+        Accept: 'application/vnd.interoperability.quotes+json;version=1',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'fspiop-destination': 'dfsp2',
+        'fspiop-source': 'dfsp1'
+      }
+
+      // Act
+      const result = quotesModel.generateRequestHeadersForJWS(mockData.headers, false)
 
       // Assert
       expect(result).toStrictEqual(expected)
