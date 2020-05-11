@@ -1115,7 +1115,6 @@ class QuotesModel {
       'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
       'FSPIOP-Signature': headers['fspiop-signature'],
       'FSPIOP-URI': headers['fspiop-uri'],
-      'User-Agent': null, // yuck! node-fetch INSISTS on sending a user-agent header!? infuriating!
       Accept: null
     }
 
@@ -1140,7 +1139,6 @@ class QuotesModel {
       'fspiop-http-method': headers['fspiop-http-method'],
       'fspiop-signature': headers['fspiop-signature'],
       'fspiop-uri': headers['fspiop-uri'],
-      'User-Agent': null, // yuck! node-fetch INSISTS on sending a user-agent header!? infuriating!
       Accept: null
     }
 
