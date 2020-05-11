@@ -59,7 +59,7 @@
   "dependencies": {
     "@hapi/good": "9.0.0",
     "@hapi/hapi": "18.4.1",
-    "@mojaloop/central-services-error-handling": "9.1.0",
+    "@mojaloop/central-services-error-handling": "10.1.0",
     "@mojaloop/central-services-logger": "9.5.1",
     "@mojaloop/central-services-shared": "9.5.5",
     "@mojaloop/event-sdk": "9.5.2",
