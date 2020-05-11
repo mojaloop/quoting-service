@@ -147,7 +147,7 @@ class QuotesModel {
       const { FSPIOPError: code, message } = invalidQuoteRequestEvents[0].params
       // Will throw an internal server error if property doesn't exist
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes[code],
-        message, null, headers['fspiop-source'])
+        `Quote request ${quoteRequest.quoteId} failed: ${message}`, null, headers['fspiop-source'])
     }
 
     const interceptQuoteEvents = events.filter(ev => ev.type === INTERCEPT_QUOTE)
@@ -315,6 +315,13 @@ class QuotesModel {
         refs.payeeId = await this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
           quoteRequest.amount.amount, quoteRequest.amount.currency)
 
+        // store any extension list items
+        if (quoteRequest.extensionList &&
+            Array.isArray(quoteRequest.extensionList.extension)) {
+          refs.extensions = await this.db.createQuoteExtensions(
+            txn, quoteRequest.extensionList.extension, quoteRequest.quoteId)
+        }
+
         // did we get a geoCode for the initiator?
         if (quoteRequest.geoCode) {
           // eslint-disable-next-line require-atomic-updates
@@ -326,7 +333,7 @@ class QuotesModel {
         }
 
         await txn.commit()
-        this.writeLog(`create quote transaction committed to db: ${JSON.stringify(refs)}`)
+        this.writeLog(`create quote transaction committed to db: ${util.inspect(refs)}`)
       }
 
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
@@ -554,6 +561,13 @@ class QuotesModel {
             latitude: quoteUpdateRequest.geoCode.latitude,
             longitude: quoteUpdateRequest.geoCode.longitude
           })
+        }
+
+        // store any extension list items
+        if (quoteUpdateRequest.extensionList &&
+            Array.isArray(quoteUpdateRequest.extensionList.extension)) {
+          refs.extensions = await this.db.createQuoteExtensions(
+            txn, quoteUpdateRequest.extensionList.extension, quoteId, refs.quoteResponseId)
         }
 
         // todo: create any additional quoteParties e.g. for fees, comission etc...

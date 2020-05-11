@@ -511,6 +511,19 @@ class Database {
         const createdParty = await this.createParty(txn, quotePartyId, newParty)
         this.writeLog(`inserted new party in db: ${util.inspect(createdParty)}`)
       }
+      if (party.partyIdInfo.extensionList) {
+        const extensions = party.partyIdInfo.extensionList.extension
+        // we need to store personal info also
+        const quoteParty = await this.getTxnQuoteParty(txn, quoteId, partyType)
+        for (const extension of extensions) {
+          const newExtensions = {
+            key: extension.key,
+            value: extension.value
+          }
+          const createQuotePartyIdInfoExtension = await this.createQuotePartyIdInfoExtension(txn, newExtensions, quoteParty)
+          this.writeLog(`inserted new QuotePartyIdInfoExtension in db: ${util.inspect(createQuotePartyIdInfoExtension)}`)
+        }
+      }
 
       return quotePartyId
     } catch (err) {
@@ -653,6 +666,22 @@ class Database {
     }
   }
 
+  async createQuotePartyIdInfoExtension (txn, extensionList, quoteParty) {
+    try {
+      await this.queryBuilder('quotePartyIdInfoExtension')
+        .transacting(txn)
+        .insert({
+          quotePartyId: quoteParty.quotePartyId,
+          key: extensionList.key,
+          value: extensionList.value
+        })
+      return true
+    } catch (err) {
+      this.writeLog(`Error in createQuotePartyIdInfoExtension: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
   /**
      * Gets the specified party for the specified quote
      *
@@ -681,11 +710,35 @@ class Database {
     }
   }
 
+  async getTxnQuoteParty (txn, quoteId, partyType) {
+    try {
+      const rows = await this.queryBuilder('quoteParty')
+        .transacting(txn)
+        .innerJoin('partyType', 'partyType.partyTypeId', 'quoteParty.partyTypeId')
+        .where('quoteParty.quoteId', quoteId)
+        .andWhere('partyType.name', partyType)
+        .select('quoteParty.*')
+
+      if ((!rows) || rows.length < 1) {
+        return null
+      }
+
+      if (rows.length > 1) {
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
+      }
+
+      return rows[0]
+    } catch (err) {
+      this.writeLog(`Error in getQuoteParty: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
   /**
      * Gets the specified endpoint for the specified quote party
      *
      * @returns {promise} - resolves to the endpoint base url
      */
+
   async getQuotePartyEndpoint (quoteId, endpointType, partyType) {
     try {
       const rows = await this.queryBuilder('participantEndpoint')
@@ -918,6 +971,33 @@ class Database {
       return res
     } catch (err) {
       this.writeLog(`Error in createQuoteError: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  /**
+     * Creates quoteExtensions rows
+     *
+     * @returns {object}
+     * @param   {Array[{object}]} extensions - array of extension objects with quoteId, key and value properties
+     */
+  async createQuoteExtensions (txn, extensions, quoteId, quoteResponseId = undefined) {
+    try {
+      const newExtensions = extensions.map(({ key, value }) => ({
+        quoteId,
+        quoteResponseId,
+        key,
+        value
+      }))
+
+      const res = await this.queryBuilder('quoteExtension')
+        .transacting(txn)
+        .insert(newExtensions)
+
+      this.writeLog(`inserted new quoteExtensions in db: ${util.inspect(newExtensions)}`)
+      return res
+    } catch (err) {
+      this.writeLog(`Error in createQuoteExtensions: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
