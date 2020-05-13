@@ -935,7 +935,7 @@ class QuotesModel {
             logger,
             signingKey: envConfig.jws.jwsSigningKey
           })
-          jwsSigner.sign(opts)
+          opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
         }
 
         res = await axios.request(opts)

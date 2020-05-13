@@ -2057,7 +2057,7 @@ describe('QuotesModel', () => {
 
     it('sends the error callback JWS signed', async () => {
       // Arrange
-      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'sign')
+      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       // expect.assertions(6)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       quotesModel.generateRequestHeaders.mockReturnValueOnce({})
@@ -2090,7 +2090,7 @@ describe('QuotesModel', () => {
 
     it('sends the error callback NOT JWS signed', async () => {
       // Arrange
-      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'sign')
+      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       expect.assertions(5)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       quotesModel.generateRequestHeaders.mockReturnValueOnce({})
@@ -2131,7 +2131,7 @@ describe('QuotesModel', () => {
 
     it('sends the error callback NOT JWS signed', async () => {
       // Arrange
-      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'sign')
+      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       expect.assertions(5)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       quotesModel.generateRequestHeaders.mockReturnValueOnce({})
