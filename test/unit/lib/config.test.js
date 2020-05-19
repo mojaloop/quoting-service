@@ -55,7 +55,14 @@ const mockDefaultFile = {
     includeCauseExtension: false,
     truncateExtensions: true
   },
-  SIMPLE_ROUTING_MODE: true
+  SIMPLE_ROUTING_MODE: true,
+  ENDPOINT_SECURITY: {
+    JWS: {
+      JWS_SIGN: true,
+      FSPIOP_SOURCE_TO_SIGN: 'switch',
+      JWS_SIGNING_KEY_PATH: 'secrets/jwsSigningKey.key'
+    }
+  }
 }
 
 describe('Config', () => {
@@ -79,5 +86,30 @@ describe('Config', () => {
     expect(result.amount.precision).toBe(18)
     expect(result.amount.scale).toBe(4)
     expect(result.database.debug).toBe(true)
+  })
+
+  it('throws when JWS Signing key file is not provided', () => {
+    // Arrange
+    jest.mock('../../../config/default.json', () => ({
+      ...mockDefaultFile,
+      ENDPOINT_SECURITY: {
+        JWS: {
+          JWS_SIGN: true,
+          FSPIOP_SOURCE_TO_SIGN: 'switch',
+          JWS_SIGNING_KEY_PATH: '/fake/path'
+        }
+      }
+    }), { virtual: true })
+
+    const Config = require('../../../src/lib/config')
+
+    // Act
+    try {
+      const result = new Config()
+      expect(result).toBeUndefined()
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error)
+      expect(error).toHaveProperty('message', 'File doesn\'t exist')
+    }
   })
 })

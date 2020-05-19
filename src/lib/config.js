@@ -31,11 +31,20 @@
  ******/
 
 const RC = require('parse-strings-in-object')(require('rc')('QUOTE', require('../../config/default.json')))
+const fs = require('fs')
 
 /**
  * Loads config from environment
  */
 class Config {
+  getFileContent (path) {
+    if (!fs.existsSync(path)) {
+      console.log(`File ${path} doesn't exist, can't enable JWS signing`)
+      throw new Error('File doesn\'t exist')
+    }
+    return fs.readFileSync(path)
+  }
+
   constructor () {
     // load config from environment (or use sensible defaults)
     this.listenAddress = RC.LISTEN_ADDRESS
@@ -80,6 +89,12 @@ class Config {
       debug: RC.DATABASE.DEBUG ? RC.DATABASE.DEBUG : false
     }
     this.errorHandling = RC.ERROR_HANDLING
+    this.jws = {
+      jwsSign: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN,
+      fspiopSourceToSign: RC.ENDPOINT_SECURITY.JWS.FSPIOP_SOURCE_TO_SIGN,
+      jwsSigningKeyPath: RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH,
+      jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined
+    }
   }
 }
 
