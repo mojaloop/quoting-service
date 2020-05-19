@@ -43,6 +43,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('@mojaloop/central-services-shared').Util
 const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
+const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
@@ -882,12 +883,15 @@ class QuotesModel {
 
       // make an error callback
       let fromSwitchHeaders
+      let formattedHeaders
 
       // modify/set the headers only in case it is explicitly requested to do so
       // as this part needs to cover two different cases:
       // 1. (do not modify them) when the Switch needs to relay an error, e.g. from a DFSP to another
       // 2. (modify/set them) when the Switch needs send errors that are originating in the Switch, e.g. to send an error back to the caller
       if (modifyHeaders === true) {
+        // Should not forward 'fspiop-signature' header for switch generated messages
+        delete headers['fspiop-signature']
         fromSwitchHeaders = Object.assign({}, headers, {
           'fspiop-destination': fspiopSource,
           'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
@@ -898,13 +902,20 @@ class QuotesModel {
         fromSwitchHeaders = Object.assign({}, headers)
       }
 
+      // JWS Signer expects headers in lowercase
+      if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
+        formattedHeaders = this.generateRequestHeadersForJWS(fromSwitchHeaders, true)
+      } else {
+        formattedHeaders = this.generateRequestHeaders(fromSwitchHeaders, true)
+      }
+
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
         data: JSON.stringify(fspiopError.toApiErrorObject(envConfig.errorHandling), LibUtil.getCircularReplacer()),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
-        headers: this.generateRequestHeaders(fromSwitchHeaders, true)
+        headers: formattedHeaders
       }
 
       if (span) {
@@ -914,6 +925,19 @@ class QuotesModel {
 
       let res
       try {
+        // If JWS is enabled and the 'fspiop-source' matches the configured jws header value('switch')
+        // that means it's a switch generated message and we need to sign it
+        if (envConfig.jws && envConfig.jws.jwsSign && opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
+          const logger = Logger
+          logger.log = logger.info
+          this.writeLog('Getting the JWS Signer to sign the switch generated message')
+          const jwsSigner = new JwsSigner({
+            logger,
+            signingKey: envConfig.jws.jwsSigningKey
+          })
+          opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
+        }
+
         res = await axios.request(opts)
       } catch (err) {
         // external-error
@@ -1091,7 +1115,30 @@ class QuotesModel {
       'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
       'FSPIOP-Signature': headers['fspiop-signature'],
       'FSPIOP-URI': headers['fspiop-uri'],
-      'User-Agent': null, // yuck! node-fetch INSISTS on sending a user-agent header!? infuriating!
+      Accept: null
+    }
+
+    if (!noAccept) {
+      ret.Accept = 'application/vnd.interoperability.quotes+json;version=1'
+    }
+
+    return this.removeEmptyKeys(ret)
+  }
+
+  /**
+   * Generates and returns an object containing API spec compliant lowercase HTTP request headers for JWS Signing
+   *
+   * @returns {object}
+   */
+  generateRequestHeadersForJWS (headers, noAccept) {
+    const ret = {
+      'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+      date: headers.date,
+      'fspiop-source': headers['fspiop-source'],
+      'fspiop-destination': headers['fspiop-destination'],
+      'fspiop-http-method': headers['fspiop-http-method'],
+      'fspiop-signature': headers['fspiop-signature'],
+      'fspiop-uri': headers['fspiop-uri'],
       Accept: null
     }
 
