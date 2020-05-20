@@ -1149,7 +1149,8 @@ describe('QuotesModel', () => {
               mockData.quoteRequest.amount.currency]
             const mockCreateQuoteExtensionsArgs = [mockTransaction,
               mockData.quoteRequest.extensionList.extension,
-              mockData.quoteRequest.quoteId
+              mockData.quoteRequest.quoteId,
+              mockData.quoteRequest.transactionId
             ]
             const mockCreateGeoCodeArgs = [mockTransaction, {
               quotePartyId: mockData.quoteRequest.payer.partyIdInfo.fspId,
@@ -1461,6 +1462,7 @@ describe('QuotesModel', () => {
         mockTransaction,
         mockData.quoteUpdate.extensionList.extension,
         mockData.quoteId,
+        mockData.transactionId,
         mockQuoteResponseId
       )
 

@@ -321,7 +321,7 @@ class QuotesModel {
         if (quoteRequest.extensionList &&
             Array.isArray(quoteRequest.extensionList.extension)) {
           refs.extensions = await this.db.createQuoteExtensions(
-            txn, quoteRequest.extensionList.extension, quoteRequest.quoteId)
+            txn, quoteRequest.extensionList.extension, quoteRequest.quoteId, quoteRequest.transactionId)
         }
 
         // did we get a geoCode for the initiator?
@@ -569,7 +569,7 @@ class QuotesModel {
         if (quoteUpdateRequest.extensionList &&
             Array.isArray(quoteUpdateRequest.extensionList.extension)) {
           refs.extensions = await this.db.createQuoteExtensions(
-            txn, quoteUpdateRequest.extensionList.extension, quoteId, refs.quoteResponseId)
+            txn, quoteUpdateRequest.extensionList.extension, quoteId, quoteUpdateRequest.transactionId, refs.quoteResponseId)
         }
 
         // todo: create any additional quoteParties e.g. for fees, comission etc...
