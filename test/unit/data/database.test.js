@@ -2231,19 +2231,20 @@ describe('/database', () => {
           value: 'value2'
         }]
         const quoteId = '123'
+        const transactionId = '789'
         const quoteResponseId = 456
 
         const mockList = mockKnexBuilder(mockKnex, ['12345'], ['transacting', 'insert'])
 
         // Act
-        const result = await database.createQuoteExtensions(txn, extensions, quoteId, quoteResponseId)
+        const result = await database.createQuoteExtensions(txn, extensions, quoteId, transactionId, quoteResponseId)
 
         // Assert
         expect(result).toStrictEqual(['12345'])
         expect(mockList[0]).toHaveBeenCalledWith('quoteExtension')
         expect(mockList[1]).toHaveBeenCalledWith(txn)
         expect(mockList[2]).toHaveBeenCalledWith(extensions.map(({ key, value }) => ({
-          key, value, quoteId, quoteResponseId
+          key, value, quoteId, transactionId, quoteResponseId
         })))
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
