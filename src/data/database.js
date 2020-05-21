@@ -981,11 +981,12 @@ class Database {
      * @returns {object}
      * @param   {Array[{object}]} extensions - array of extension objects with quoteId, key and value properties
      */
-  async createQuoteExtensions (txn, extensions, quoteId, quoteResponseId = undefined) {
+  async createQuoteExtensions (txn, extensions, quoteId, transactionId, quoteResponseId = undefined) {
     try {
       const newExtensions = extensions.map(({ key, value }) => ({
         quoteId,
         quoteResponseId,
+        transactionId,
         key,
         value
       }))

@@ -109,7 +109,7 @@ describe('Config', () => {
       expect(result).toBeUndefined()
     } catch (error) {
       expect(error).toBeInstanceOf(Error)
-      expect(error).toHaveProperty('message', 'File doesn\'t exist')
+      expect(error).toHaveProperty('message', 'File /fake/path doesn\'t exist, can\'t enable JWS signing')
     }
   })
 })

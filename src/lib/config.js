@@ -39,8 +39,7 @@ const fs = require('fs')
 class Config {
   getFileContent (path) {
     if (!fs.existsSync(path)) {
-      console.log(`File ${path} doesn't exist, can't enable JWS signing`)
-      throw new Error('File doesn\'t exist')
+      throw new Error(`File ${path} doesn't exist, can't enable JWS signing`)
     }
     return fs.readFileSync(path)
   }
