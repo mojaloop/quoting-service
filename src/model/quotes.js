@@ -569,7 +569,7 @@ class QuotesModel {
         if (quoteUpdateRequest.extensionList &&
             Array.isArray(quoteUpdateRequest.extensionList.extension)) {
           refs.extensions = await this.db.createQuoteExtensions(
-            txn, quoteUpdateRequest.extensionList.extension, quoteId, quoteUpdateRequest.transactionId, refs.quoteResponseId)
+            txn, quoteUpdateRequest.extensionList.extension, quoteId, null, refs.quoteResponseId)
         }
 
         // todo: create any additional quoteParties e.g. for fees, comission etc...
