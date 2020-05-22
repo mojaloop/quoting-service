@@ -1453,7 +1453,7 @@ describe('QuotesModel', () => {
         mockTransaction,
         mockData.quoteUpdate.extensionList.extension,
         mockData.quoteId,
-        mockData.transactionId,
+        null,
         mockQuoteResponseId
       )
 
