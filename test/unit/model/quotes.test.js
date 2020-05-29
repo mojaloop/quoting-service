@@ -28,6 +28,7 @@
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
  - Matt Kingston <matt.kingston@modusbox.com>
  - Vassilis Barzokas <vassilis.barzokas@modusbox.com>
+ - James Bush <james.bush@modusbox.com>
  --------------
  ******/
 'use strict'
@@ -56,6 +57,7 @@ const LibUtil = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const Logger = require('@mojaloop/central-services-logger')
+const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 
 const Db = require('../../../src/data/database')
 const Config = jest.requireActual('../../../src/lib/config')
@@ -63,6 +65,34 @@ const QuotesModel = require('../../../src/model/quotes')
 const rules = require('../../../config/rules')
 const RulesEngine = require('../../../src/model/rules')
 const Http = require('../../../src/lib/http')
+
+const jwsSigningKey = `-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEA0eJEh3Op5p6x137lRkAsvmEBbd32dbRChrCUItZbtxjf/qfB
+yD5k8Hn4n4vbqzP8XSGS0f6KmNC+iRaP74HVgzAqc4Uid4J8dtSBq3VmucYQYzLc
+101QjuvD+SKmZwlw/q0PtulmqlASI2SbMfwcAraMi6ab7v5W4EGNeIPLEIo3BXsQ
+DTCWqiZb7aXkHkcY7sOjAzK/2bNGYFmAthdYrHzvCkqnJ7LAHX3Oj7rJea5MqtuN
+B9POZYaD10n9JuYWdwPqLrw6/hVgPSFEy+ulrVbXf54ZH0dfMThAYRvFrT81yulk
+H95JhXWGdi6cTp6t8LVOKFhnNfxjWw0Jayj9xwIDAQABAoIBADB2u/Y/CgNbr5sg
+DRccqHhJdAgHkep59kadrYch0knEL6zg1clERxCUSYmlxNKSjXp/zyQ4T46b3PNQ
+x2m5pDDHxXWpT10jP1Q9G7gYwuCw0IXnb8EzdB+cZ0M28g+myXW1RoSo/nDjTlzn
+1UJEgb9Kocd5cFZOWocr+9vRKumlZULMsA8yiNwlAfJHcMBM7acsa3myCqVhLyWt
+4BQylVuLFa+A6QzpMXEwFCq8EOXf07gl1XVzC6LJ1fTa9gVM3N+YE+oEXKrsHCxG
+/ACgKsjepL27QjJ7qvecWPP0F2LxEZYOm5tbXaKJTobzQUJHgUokanZMhjYprDsZ
+zumLw9kCgYEA/DUWcnLeImlfq/EYdhejkl3J+WX3vhS23OqVgY1amu7CZzaai6vt
+H0TRc8Zsbi4jgmFDU8PFzytP6qz6Tgom4R736z6oBi7bjnGyN17/NSbf+DaRVcM6
+vnZr7jNC2FJlECmIN+dkwUA/YCr2SA7hxZXM9mIYSc+6+glDiIO5Cf0CgYEA1Qo/
+uQbVHhW+Cp8H0kdMuhwUbkBquRrxRZlXS1Vrf3f9me9JLUy9UPWb3y3sKVurG5+O
+SIlr4hDcZyXdE198MtDMhBIGqU9ORSjppJDNDVvtt+n2FD4XmWIU70vKBJBivX0+
+Bow6yduis+p12fuvpvpnKCz8UjOgOQJhLZ4GQBMCgYBP6gpozVjxkm4ML2LO2IKt
++CXtbo/nnOysZ3BkEoQpH4pd5gFmTF3gUJAFnVPyPZBm2abZvejJ0jGKbLELVVAo
+eQWZdssK2oIbSo9r2CAJmX3SSogWorvUafWdDoUZwlHfoylUfW+BhHgQYsyS3JRR
+ZTwCveZwTPA0FgdeFE7niQKBgQCHaD8+ZFhbCejDqXb4MXdUJ3rY5Lqwsq491YwF
+huKPn32iNNQnJcqCxclv3iln1Cr6oLx34Fig1KSyLv/IS32OcuY635Y6UPznumxe
+u+aJIjADIILXNOwdAplZy6s4oWkRFaSx1rmbCa3tew2zImTv1eJxR76MpOGmupt3
+uiQw3wKBgFjBT/aVKdBeHeP1rIHHldQV5QQxZNkc6D3qn/oAFcwpj9vcGfRjQWjO
+ARzXM2vUWEet4OVn3DXyOdaWFR1ppehz7rAWBiPgsMg4fjAusYb9Mft1GMxMzuwT
+Oyqsp6pzAWFrCD3JAoTLxClV+j5m+SXZ/ItD6ziGpl/h7DyayrFZ
+-----END RSA PRIVATE KEY-----`
 
 describe('QuotesModel', () => {
   let mockData
@@ -147,6 +177,16 @@ describe('QuotesModel', () => {
           scenario: 'TRANSFER',
           initiator: 'PAYER',
           initiatorType: 'CONSUMER'
+        },
+        geoCode: {
+          latitude: '43.69751',
+          longitude: '24.32415'
+        },
+        extensionList: {
+          extension: [{
+            key: 'key1',
+            value: 'value1'
+          }]
         }
       },
       quoteUpdate: {
@@ -274,6 +314,7 @@ describe('QuotesModel', () => {
     quotesModel.db.createPayerQuoteParty.mockImplementation(() => mockData.quoteRequest.payer.partyIdInfo.fspId)
     quotesModel.db.createPayeeQuoteParty.mockImplementation(() => mockData.quoteRequest.payee.partyIdInfo.fspId)
     quotesModel.db.createGeoCode.mockImplementation(() => mockData.geoCode)
+    quotesModel.db.createQuoteExtensions.mockImplementation(() => mockData.quoteRequest.extensionList.extension)
 
     // make all methods of the quotesModel instance be a mock. This helps us re-mock in every
     // method's test suite.
@@ -850,6 +891,27 @@ describe('QuotesModel', () => {
                 .toEqual(fspiopError)
             })
           })
+          describe('In case a `extensionList` exists in the incoming quote request:', () => {
+            it('throws an exception if `db.createQuoteExtensions` fails', async () => {
+              expect.assertions(1)
+
+              const dbError = new Error('foo')
+              const fspiopError = ErrorHandler.ReformatFSPIOPError(dbError)
+
+              quotesModel.db.createQuoteExtensions = jest.fn(() => { throw dbError })
+
+              mockData.quoteRequest.extensionList = {
+                extension: [{
+                  key: 'someKey',
+                  value: 'someValue'
+                }]
+              }
+
+              await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+                .rejects
+                .toEqual(fspiopError)
+            })
+          })
           it('throws an exception if `db.commit` of the returned DB transaction fails', async () => {
             expect.assertions(2)
 
@@ -936,7 +998,9 @@ describe('QuotesModel', () => {
               transactionInitiatorId: mockData.initiator,
               transactionReferenceId: mockData.transactionReference,
               transactionScenarioId: mockData.scenario,
-              transactionSubScenarioId: mockData.quoteRequest.transactionType.subScenario
+              transactionSubScenarioId: mockData.quoteRequest.transactionType.subScenario,
+              geoCodeId: mockData.geoCode,
+              extensions: mockData.quoteRequest.extensionList.extension
             }
           })
 
@@ -998,6 +1062,7 @@ describe('QuotesModel', () => {
           expect(result).toBe(undefined)
         })
       })
+
       describe('While forwarding the request:', () => {
         describe('In case environment is configured for simple routing mode', () => {
           beforeEach(() => {
@@ -1038,8 +1103,63 @@ describe('QuotesModel', () => {
               transactionInitiatorId: mockData.initiator,
               transactionReferenceId: mockData.transactionReference,
               transactionScenarioId: mockData.scenario,
-              transactionSubScenarioId: mockData.quoteRequest.transactionType.subScenario
+              transactionSubScenarioId: mockData.quoteRequest.transactionType.subScenario,
+              geoCodeId: mockData.geoCode,
+              extensions: mockData.quoteRequest.extensionList.extension
             }
+          })
+
+          it('calls all database create entity methods with correct arguments', async () => {
+            expect.assertions(8)
+
+            const expectedHash = quotesModel.calculateRequestHash(mockData.quoteRequest)
+            const mockCreateQuoteDuplicateCheckArgs = [mockTransaction, mockData.quoteRequest.quoteId,
+              expectedHash]
+            const mockCreateTransactionReferenceArgs = [mockTransaction, mockData.quoteRequest.quoteId,
+              mockData.quoteRequest.transactionId]
+            const mockCreateQuoteArgs = [mockTransaction, {
+              amount: '100.0000',
+              amountTypeId: 'fakeAmountTypeId',
+              balanceOfPaymentsId: null,
+              currencyId: 'USD',
+              expirationDate: null,
+              note: undefined,
+              quoteId: 'test123',
+              transactionInitiatorId: 'fakeInitiator',
+              transactionInitiatorTypeId: 'fakeInitiatorType',
+              transactionReferenceId: 'fakeTxRef',
+              transactionRequestId: null,
+              transactionScenarioId: 'fakeScenario',
+              transactionSubScenarioId: undefined
+            }]
+            const mockCreatePayerQuotePartyArgs = [mockTransaction, mockData.quoteRequest.quoteId,
+              mockData.quoteRequest.payer, mockData.quoteRequest.amount.amount,
+              mockData.quoteRequest.amount.currency]
+            const mockCreatePayeeQuotePartyArgs = [mockTransaction, mockData.quoteRequest.quoteId,
+              mockData.quoteRequest.payee, mockData.quoteRequest.amount.amount,
+              mockData.quoteRequest.amount.currency]
+            const mockCreateQuoteExtensionsArgs = [mockTransaction,
+              mockData.quoteRequest.extensionList.extension,
+              mockData.quoteRequest.quoteId,
+              mockData.quoteRequest.transactionId
+            ]
+            const mockCreateGeoCodeArgs = [mockTransaction, {
+              quotePartyId: mockData.quoteRequest.payer.partyIdInfo.fspId,
+              latitude: mockData.quoteRequest.geoCode.latitude,
+              longitude: mockData.quoteRequest.geoCode.longitude
+            }]
+
+            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+
+            expect(quotesModel.db.createQuoteDuplicateCheck).toBeCalledWith(...mockCreateQuoteDuplicateCheckArgs)
+            expect(quotesModel.db.createTransactionReference).toBeCalledWith(...mockCreateTransactionReferenceArgs)
+            expect(quotesModel.db.createQuote).toBeCalledWith(...mockCreateQuoteArgs)
+            expect(quotesModel.db.createPayerQuoteParty).toBeCalledWith(...mockCreatePayerQuotePartyArgs)
+            expect(quotesModel.db.createPayeeQuoteParty).toBeCalledWith(...mockCreatePayeeQuotePartyArgs)
+            expect(quotesModel.db.createQuoteExtensions).toBeCalledWith(...mockCreateQuoteExtensionsArgs)
+            expect(quotesModel.db.createGeoCode).toBeCalledWith(...mockCreateGeoCodeArgs)
+
+            expect(result).toEqual(expectedResult)
           })
 
           it('forwards the quote request properly', async () => {
@@ -1302,16 +1422,22 @@ describe('QuotesModel', () => {
       expect(refs).toBe('handleQuoteUpdateResendResult')
     })
     it('should store to db and forward quote update when switch mode', async () => {
-      expect.assertions(9)
+      expect.assertions(10)
 
       mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
       quotesModel.calculateRequestHash = jest.fn(() => 'hash')
+
+      const mockQuoteResponseId = 'resp123'
+
       const expected = {
-        quoteResponseId: 'resp123'
+        quoteResponseId: mockQuoteResponseId,
+        extensions: mockData.quoteUpdate.extensionList.extension
       }
+
       quotesModel.db.createQuoteResponse.mockReturnValueOnce({ quoteResponseId: expected.quoteResponseId })
       mockChildSpan.isFinished = true
+
       const localQuoteUpdate = clone(mockData.quoteUpdate)
       delete localQuoteUpdate.geoCode
 
@@ -1322,8 +1448,18 @@ describe('QuotesModel', () => {
       expect(mockTransaction.rollback.mock.calls.length).toBe(0)
       expect(mockTransaction.commit.mock.calls.length).toBe(1)
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
+
+      expect(quotesModel.db.createQuoteExtensions).toBeCalledWith(
+        mockTransaction,
+        mockData.quoteUpdate.extensionList.extension,
+        mockData.quoteId,
+        null,
+        mockQuoteResponseId
+      )
+
       let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: localQuoteUpdate }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)
+
       args = [mockData.headers, mockData.quoteId, localQuoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
@@ -1337,7 +1473,8 @@ describe('QuotesModel', () => {
       quotesModel.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
         quoteResponseId: 'resp123',
-        geoCodeId: 'geoCodeId'
+        geoCodeId: 'geoCodeId',
+        extensions: mockData.quoteUpdate.extensionList.extension
       }
       quotesModel.db.createQuoteResponse.mockReturnValueOnce({ quoteResponseId: expected.quoteResponseId })
       quotesModel.db.createGeoCode.mockReturnValueOnce(expected.geoCodeId)
@@ -1366,7 +1503,8 @@ describe('QuotesModel', () => {
       quotesModel.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
         quoteResponseId: 'resp123',
-        geoCodeId: 'geoCodeId'
+        geoCodeId: 'geoCodeId',
+        extensions: mockData.quoteUpdate.extensionList.extension
       }
       quotesModel.db.createQuoteResponse.mockReturnValueOnce({ quoteResponseId: expected.quoteResponseId })
       quotesModel.db.createGeoCode.mockReturnValueOnce(expected.geoCodeId)
@@ -1919,6 +2057,121 @@ describe('QuotesModel', () => {
       expect(axios.request).toBeCalledWith(expectedOptions)
     })
 
+    it('sends the error callback JWS signed', async () => {
+      // Arrange
+      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
+      // expect.assertions(6)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: {
+          spanHeaders: '12345',
+          'fspiop-source': 'switch',
+          'fspiop-destination': 'dfsp2'
+        },
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {}
+      }))
+      mockSpan.audit = jest.fn()
+      mockConfig.jws.jwsSign = true
+      mockConfig.jws.jwsSigningKey = jwsSigningKey
+      // Act
+      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, true)
+      // Assert
+      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
+      expect(mockSpan.audit).toBeCalledTimes(1)
+      expect(jwsSignSpy).toBeCalledTimes(1)
+      expect(axios.request.mock.calls[0][0].headers).toHaveProperty('fspiop-signature')
+      expect(axios.request.mock.calls[0][0].headers['fspiop-signature']).toEqual(expect.stringContaining('signature'))
+      expect(axios.request.mock.calls[0][0].headers['fspiop-signature']).toEqual(expect.stringContaining('protectedHeader'))
+      jwsSignSpy.mockRestore()
+    })
+
+    it('sends the error callback NOT JWS signed', async () => {
+      // Arrange
+      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
+      expect.assertions(5)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: {
+          spanHeaders: '12345',
+          'fspiop-source': 'switch',
+          'fspiop-destination': 'dfsp2'
+        },
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {}
+      }))
+      mockSpan.audit = jest.fn()
+      const expectedOptions = {
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {},
+        headers: {
+          spanHeaders: '12345',
+          'fspiop-source': 'switch',
+          'fspiop-destination': 'dfsp2'
+        }
+      }
+      mockConfig.jws.jwsSign = false
+      // Act
+      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, true)
+      // Assert
+      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
+      expect(mockSpan.audit).toBeCalledTimes(1)
+      expect(jwsSignSpy).not.toHaveBeenCalled()
+      expect(axios.request.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
+      expect(axios.request).toBeCalledWith(expectedOptions)
+      jwsSignSpy.mockRestore()
+    })
+
+    it('sends the error callback NOT JWS signed', async () => {
+      // Arrange
+      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
+      expect.assertions(5)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: {
+          spanHeaders: '12345',
+          'fspiop-source': 'switch',
+          'fspiop-destination': 'dfsp2'
+        },
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {}
+      }))
+      mockSpan.audit = jest.fn()
+      const expectedOptions = {
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {},
+        headers: {
+          spanHeaders: '12345',
+          'fspiop-source': 'switch',
+          'fspiop-destination': 'dfsp2'
+        }
+      }
+      mockConfig.jws.jwsSign = false
+      // Act
+      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, false)
+      // Assert
+      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
+      expect(mockSpan.audit).toBeCalledTimes(1)
+      expect(jwsSignSpy).not.toHaveBeenCalled()
+      expect(axios.request.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
+      expect(axios.request).toBeCalledWith(expectedOptions)
+      jwsSignSpy.mockRestore()
+    })
+
     it('handles when the endpoint could not be found', async () => {
       // Arrange
       expect.assertions(2)
@@ -2248,6 +2501,45 @@ describe('QuotesModel', () => {
 
       // Act
       const result = quotesModel.generateRequestHeaders(mockData.headers, false)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+  })
+
+  describe('generateRequestHeadersForJWS', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.generateRequestHeadersForJWS.mockRestore()
+      quotesModel.removeEmptyKeys.mockRestore()
+    })
+
+    it('generates the default request headers', () => {
+      // Arrange
+      const expected = {
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'fspiop-destination': 'dfsp2',
+        'fspiop-source': 'dfsp1'
+      }
+
+      // Act
+      const result = quotesModel.generateRequestHeadersForJWS(mockData.headers, true)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('generates default request headers, including the Accept', () => {
+      // Arrange
+      const expected = {
+        Accept: 'application/vnd.interoperability.quotes+json;version=1',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'fspiop-destination': 'dfsp2',
+        'fspiop-source': 'dfsp1'
+      }
+
+      // Act
+      const result = quotesModel.generateRequestHeadersForJWS(mockData.headers, false)
 
       // Assert
       expect(result).toStrictEqual(expected)
