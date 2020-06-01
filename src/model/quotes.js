@@ -211,9 +211,6 @@ class QuotesModel {
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
       if (!envConfig.simpleRoutingMode) {
-        // do everything in a db txn so we can rollback multiple operations if something goes wrong
-        txn = await this.db.newTransaction()
-
         // check if this is a resend or an erroneous duplicate
         const dupe = await this.checkDuplicateQuoteRequest(quoteRequest)
 
@@ -233,6 +230,9 @@ class QuotesModel {
           return this.handleQuoteRequestResend(handledRuleEvents.headers,
             handledRuleEvents.quoteRequest, span)
         }
+
+        // do everything in a db txn so we can rollback multiple operations if something goes wrong
+        txn = await this.db.newTransaction()
 
         // todo: validation
 
@@ -475,9 +475,6 @@ class QuotesModel {
       // accumulate enum ids
       const refs = {}
       if (!envConfig.simpleRoutingMode) {
-        // do everything in a transaction so we can rollback multiple operations if something goes wrong
-        txn = await this.db.newTransaction()
-
         // check if this is a resend or an erroneous duplicate
         const dupe = await this.checkDuplicateQuoteResponse(quoteId, quoteUpdateRequest)
         this.writeLog(`Check duplicate for quoteId ${quoteId} update returned: ${util.inspect(dupe)}`)
@@ -494,6 +491,9 @@ class QuotesModel {
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
           return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest, span)
         }
+
+        // do everything in a transaction so we can rollback multiple operations if something goes wrong
+        txn = await this.db.newTransaction()
 
         // todo: validation
 
