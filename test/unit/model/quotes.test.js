@@ -1397,9 +1397,9 @@ describe('QuotesModel', () => {
       try {
         await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
       } catch (err) {
-        expect(quotesModel.db.newTransaction.mock.calls.length).toBe(1)
+        expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
         expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, mockData.quoteUpdate)
-        expect(mockTransaction.rollback.mock.calls.length).toBe(1)
+        expect(mockTransaction.rollback.mock.calls.length).toBe(0)
         expect(mockSpan.error.mock.calls[0][0]).toEqual(err)
         expect(mockSpan.finish.mock.calls[0][0]).toEqual(err.message)
         expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
@@ -1415,7 +1415,7 @@ describe('QuotesModel', () => {
 
       const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
 
-      expect(quotesModel.db.newTransaction.mock.calls.length).toBe(1)
+      expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
       expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, mockData.quoteUpdate)
       const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan]
       expect(quotesModel.handleQuoteUpdateResend).toBeCalledWith(...args)
@@ -1575,8 +1575,8 @@ describe('QuotesModel', () => {
         .rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
 
-      expect(quotesModel.db.newTransaction.mock.calls.length).toBe(1)
-      expect(mockTransaction.rollback.mock.calls.length).toBe(1)
+      expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
+      expect(mockTransaction.rollback.mock.calls.length).toBe(0)
     })
   })
   describe('forwardQuoteUpdate', () => {
