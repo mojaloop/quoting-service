@@ -52,8 +52,8 @@
     "package-lock": "docker run --rm -it quoting-service:local cat package-lock.json > package-lock.json",
     "docker:up": "docker-compose -f docker-compose.yml -f docker-compose.base.yml up",
     "docker:stop": "docker-compose -f docker-compose.yml -f docker-compose.base.yml stop",
-    "audit:resolve": "SHELL=sh resolve-audit",
-    "audit:check": "SHELL=sh check-audit",
+    "audit:resolve": "SHELL=sh resolve-audit --production",
+    "audit:check": "SHELL=sh check-audit --production",
     "dep:check": "npx ncu -e 2",
     "dep:update": "npx ncu -u"
   },
