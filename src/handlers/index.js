@@ -27,12 +27,12 @@
 
 const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
 const quotes = require('./quotes')
-const quotesById = require('./quotes/{ID}')
-const quotesErrorByID = require('./quotes/{ID}/error')
+const quotesById = require('./quotes/{id}')
+const quotesErrorByID = require('./quotes/{id}/error')
 const health = require('./health')
 const bulkQuotes = require('./bulkQuotes')
-const bulkQuotesById = require('./bulkQuotes/{ID}')
-const bulkQuotesErrorById = require('./bulkQuotes/{ID}/error')
+const bulkQuotesById = require('./bulkQuotes/{id}')
+const bulkQuotesErrorById = require('./bulkQuotes/{id}/error')
 
 module.exports = {
   HealthGet: health.get,
