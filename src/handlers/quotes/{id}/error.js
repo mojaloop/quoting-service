@@ -50,7 +50,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  put: async function QuotesByIdAndError (request, h) {
+  put: async function QuotesByIdAndError (context, request, h) {
     // log request
     request.server.log(['info'], `got a PUT /quotes/{id}/error request: ${util.inspect(request.payload)}`)
 

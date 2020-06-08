@@ -36,18 +36,20 @@
 'use strict'
 
 const Hapi = require('@hapi/hapi')
-const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const CentralServices = require('@mojaloop/central-services-shared')
 const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
+const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
+const OpenapiBackendValidator = require('@mojaloop/central-services-shared').Util.Hapi.OpenapiBackendValidator
 const Logger = require('@mojaloop/central-services-logger')
-const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 
+const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase')
+const Handlers = require('./handlers')
 
 /**
  * Initializes a database connection pool
@@ -79,16 +81,23 @@ const initServer = async function (db, config) {
 
   // put the database pool somewhere handlers can use it
   server.app.database = db
-
-  // add plugins to the server
-  await server.register([
-    {
-      plugin: HapiOpenAPI,
-      options: {
-        api: Path.resolve('./src/interface/swagger.json'),
-        handlers: Path.resolve('./src/handlers')
+  const api = await OpenapiBackend.initialise(Path.resolve(__dirname, './interface/QuotingService-swagger.yaml'), Handlers)
+  await server.register(OpenapiBackendValidator)
+  await server.register({
+    plugin: {
+      name: 'openapi',
+      version: '1.0.0',
+      multiple: true,
+      register: function (server, options) {
+        server.expose('openapi', options.openapi)
       }
     },
+    options: {
+      openapi: api
+    }
+  })
+  // add plugins to the server
+  await server.register([
     {
       plugin: Good,
       options: {
@@ -114,6 +123,26 @@ const initServer = async function (db, config) {
     ErrorHandler,
     CentralServices.Util.Hapi.HapiEventPlugin
   ])
+
+  // use as a catch-all handler
+  server.route({
+    method: ['GET', 'POST', 'PUT', 'DELETE'],
+    path: '/{path*}',
+    handler: (req, h) => {
+      return api.handleRequest(
+        {
+          method: req.method,
+          path: req.path,
+          body: req.payload,
+          query: req.query,
+          headers: req.headers
+        },
+        req,
+        h
+      )
+      // TODO: follow instructions https://github.com/anttiviljami/openapi-backend/blob/master/DOCS.md#postresponsehandler-handler
+    }
+  })
 
   // start the server
   await server.start()
@@ -143,8 +172,6 @@ async function start () {
             process.exit((err) ? 1 : 0)
           })
       })
-
-      server.plugins.openapi.setHost(server.info.host + ':' + server.info.port)
       server.log(['info'], `Server running on ${server.info.uri}`)
     // eslint-disable-next-line no-unused-vars
     }).catch(err => {

@@ -73,7 +73,7 @@ module.exports = {
    * produces: application/json
    * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
    */
-  get: async (request, h) => {
+  get: async (context, request, h) => {
     // Check to see if we are NOT in simpleRoutingMode
     let serviceHealthList = []
     // console.log('envConfig', envConfig)
