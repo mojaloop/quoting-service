@@ -23,6 +23,11 @@
  ******/
 'use strict'
 
+const SwagMock = require('swagmock')
+const Path = require('path')
+const apiPath = Path.resolve(__dirname, '../../src/interface/swagger.json')
+let mockGen
+
 /**
  * @object baseMockRequest
  *
@@ -76,7 +81,33 @@ function defaultHeaders () {
   }
 }
 
+/**
+ * Global MockGenerator Singleron
+ */
+const mockRequest = () => {
+  if (mockGen) {
+    return mockGen
+  }
+
+  mockGen = SwagMock(apiPath)
+
+  /**
+   * Add an async version of requests
+   */
+  mockGen.requestsAsync = async (path, operation) => {
+    return new Promise((resolve, reject) => {
+      mockGen.requests(
+        { path, operation },
+        (error, mock) => error ? reject(error) : resolve(mock)
+      )
+    })
+  }
+
+  return mockGen
+}
+
 module.exports = {
   baseMockRequest,
-  defaultHeaders
+  defaultHeaders,
+  mockRequest
 }

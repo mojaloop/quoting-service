@@ -37,6 +37,8 @@ const QuotesHandler = require('../../../../src/handlers/quotes/{id}')
 const QuotesModel = require('../../../../src/model/quotes')
 const { baseMockRequest } = require('../../../util/helper')
 
+const mockContext = jest.fn()
+
 describe('/quotes/{id}', () => {
   beforeEach(() => {
     QuotesModel.mockClear()
@@ -53,7 +55,7 @@ describe('/quotes/{id}', () => {
       }
 
       // Act
-      await QuotesHandler.get({ ...baseMockRequest }, handler)
+      await QuotesHandler.get(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
@@ -81,7 +83,7 @@ describe('/quotes/{id}', () => {
       }
 
       // Act
-      await QuotesHandler.get({ ...baseMockRequest }, handler)
+      await QuotesHandler.get(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
@@ -103,7 +105,7 @@ describe('/quotes/{id}', () => {
       }
 
       // Act
-      await QuotesHandler.put({ ...baseMockRequest }, handler)
+      await QuotesHandler.put(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
@@ -131,7 +133,7 @@ describe('/quotes/{id}', () => {
       }
 
       // Act
-      await QuotesHandler.put({ ...baseMockRequest }, handler)
+      await QuotesHandler.put(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)

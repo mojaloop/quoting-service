@@ -51,7 +51,7 @@ module.exports = {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  post: async function Quotes (request, h) {
+  post: async function Quotes (context, request, h) {
     // log request
     request.server.log(['info'], `got a POST /quotes request: ${util.inspect(request.payload)}`)
 

@@ -1,7 +1,5 @@
 {
   "reject": [
-    "@hapi/hapi",
-    "json-rules-engine",
-    "hapi-openapi"
+    "json-rules-engine"
   ]
 }

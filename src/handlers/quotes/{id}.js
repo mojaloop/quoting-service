@@ -50,7 +50,7 @@ module.exports = {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  get: async function getQuotesById (request, h) {
+  get: async function getQuotesById (context, request, h) {
     // log request
     request.server.log(['info'], `got a GET /quotes/{id} request for quoteId ${request.params.id}`)
 
@@ -95,7 +95,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  put: async function putQuotesById (request, h) {
+  put: async function putQuotesById (context, request, h) {
     // log request
     request.server.log(['info'], `got a PUT /quotes/{id} request: ${util.inspect(request.payload)}`)
 
