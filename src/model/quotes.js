@@ -122,7 +122,7 @@ class QuotesModel {
       const { FSPIOPError: code, message } = invalidQuoteRequestEvents[0].params
       // Will throw an internal server error if property doesn't exist
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes[code],
-        `Quote request failed: ${message}`, null, headers['fspiop-source'])
+        message, null, headers['fspiop-source'])
     }
 
     const interceptQuoteEvents = events.filter(ev => ev.type === INTERCEPT_QUOTE)
