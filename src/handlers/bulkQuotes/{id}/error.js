@@ -45,7 +45,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  put: function BulkQuotesErrorById () {
+  put: function BulkQuotesErrorById (context, request, h) {
     throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Bulk quotes not implemented')
   }
 }
