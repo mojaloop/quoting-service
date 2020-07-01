@@ -122,7 +122,7 @@ class QuotesModel {
       const { FSPIOPError: code, message } = invalidQuoteRequestEvents[0].params
       // Will throw an internal server error if property doesn't exist
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes[code],
-        `Quote request failed: ${message}`, null, headers['fspiop-source'])
+        message, null, headers['fspiop-source'])
     }
 
     const interceptQuoteEvents = events.filter(ev => ev.type === INTERCEPT_QUOTE)
@@ -633,7 +633,7 @@ class QuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/master/API%20Definition%20v1.0.pdf
-      const newHeaders = this.generateRequestHeaders(headers)
+      const newHeaders = this.generateRequestHeaders(headers, true)
 
       this.writeLog(`Forwarding quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote response headers: ${JSON.stringify(newHeaders)}`)
