@@ -341,15 +341,20 @@ class Database {
      *
      * @returns {promise} - id of the participant
      */
-  async getParticipant (participantName, participantType) {
+  async getParticipant (participantName, participantType, currencyId, ledgerAccountTypeId) {
     try {
       const rows = await this.queryBuilder('participant')
-        .where({
-          name: participantName,
-          isActive: 1
-        })
-        .select()
-
+        .where({ 'participant.name': participantName })
+        .andWhere({ 'pc.currencyId': currencyId })
+        .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
+        .andWhere({ 'pc.isActive': true })
+        .andWhere({ 'participant.isActive': true })
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        .select(
+          'participant.*',
+          'pc.participantCurrencyId',
+          'pc.currencyId'
+        )
       if ((!rows) || rows.length < 1) {
         // active participant does not exist, this is an error
         if (participantType && participantType === LOCAL_ENUM.PAYEE_DFSP) {
