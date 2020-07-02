@@ -792,7 +792,7 @@ describe('/database', () => {
         const mockList = mockKnexBuilder(
           mockKnex,
           [{ participantId: 123 }],
-          ['where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'innerJoin', 'select']
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
         )
 
         // Act
@@ -801,7 +801,7 @@ describe('/database', () => {
         // Assert
         expect(result).toBe(123)
         expect(mockList[0]).toHaveBeenCalledWith('participant')
-        expect(mockList[1]).toHaveBeenCalledWith({ 'participant.name': participantName })
+        expect(mockList[1]).toHaveBeenCalledWith('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -814,7 +814,7 @@ describe('/database', () => {
         mockKnexBuilder(
           mockKnex,
           undefined,
-          ['where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'innerJoin', 'select']
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
         )
 
         // Act
@@ -833,7 +833,7 @@ describe('/database', () => {
         mockKnexBuilder(
           mockKnex,
           undefined,
-          ['where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'innerJoin', 'select']
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
         )
 
         // Act
@@ -851,7 +851,7 @@ describe('/database', () => {
         mockKnexBuilder(
           mockKnex,
           [],
-          ['where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'innerJoin', 'select']
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
         )
 
         // Act

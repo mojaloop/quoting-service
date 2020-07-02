@@ -344,12 +344,12 @@ class Database {
   async getParticipant (participantName, participantType, currencyId, ledgerAccountTypeId) {
     try {
       const rows = await this.queryBuilder('participant')
+        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .where({ 'participant.name': participantName })
         .andWhere({ 'pc.currencyId': currencyId })
         .andWhere({ 'pc.ledgerAccountTypeId': ledgerAccountTypeId })
         .andWhere({ 'pc.isActive': true })
         .andWhere({ 'participant.isActive': true })
-        .innerJoin('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
         .select(
           'participant.*',
           'pc.participantCurrencyId',
