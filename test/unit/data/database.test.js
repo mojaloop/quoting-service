@@ -801,7 +801,7 @@ describe('/database', () => {
         // Assert
         expect(result).toBe(123)
         expect(mockList[0]).toHaveBeenCalledWith('participant')
-        expect(mockList[1]).toHaveBeenCalledWith('participantCurrency AS pc', 'pc.participantId', 'participant.participantId')
+        expect(mockList[1]).toHaveBeenCalledWith('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
