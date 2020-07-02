@@ -1108,7 +1108,7 @@ class QuotesModel {
    */
   generateRequestHeaders (headers, noAccept) {
     const ret = {
-      'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+      'Content-Type': headers['content-type'] || headers['Content-Type'],
       Date: headers.date,
       'FSPIOP-Source': headers['fspiop-source'],
       'FSPIOP-Destination': headers['fspiop-destination'],
@@ -1119,7 +1119,7 @@ class QuotesModel {
     }
 
     if (!noAccept) {
-      ret.Accept = 'application/vnd.interoperability.quotes+json;version=1'
+      ret.Accept = headers.accept || headers.Accept
     }
 
     return this.removeEmptyKeys(ret)
@@ -1132,7 +1132,7 @@ class QuotesModel {
    */
   generateRequestHeadersForJWS (headers, noAccept) {
     const ret = {
-      'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+      'Content-Type': headers['content-type'] || headers['Content-Type'],
       date: headers.date,
       'fspiop-source': headers['fspiop-source'],
       'fspiop-destination': headers['fspiop-destination'],
@@ -1143,7 +1143,7 @@ class QuotesModel {
     }
 
     if (!noAccept) {
-      ret.Accept = 'application/vnd.interoperability.quotes+json;version=1'
+      ret.Accept = headers.accept || headers.Accept
     }
 
     return this.removeEmptyKeys(ret)

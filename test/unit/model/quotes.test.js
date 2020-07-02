@@ -145,6 +145,8 @@ describe('QuotesModel', () => {
         longitude: '23.32415'
       },
       headers: {
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
         'fspiop-source': 'dfsp1',
         'fspiop-destination': 'dfsp2'
       },
@@ -2493,7 +2495,7 @@ describe('QuotesModel', () => {
     it('generates default request headers, including the Accept', () => {
       // Arrange
       const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1',
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
         'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
         'FSPIOP-Destination': 'dfsp2',
         'FSPIOP-Source': 'dfsp1'
@@ -2532,7 +2534,7 @@ describe('QuotesModel', () => {
     it('generates default request headers, including the Accept', () => {
       // Arrange
       const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1',
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
         'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
         'fspiop-destination': 'dfsp2',
         'fspiop-source': 'dfsp1'
