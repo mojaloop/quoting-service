@@ -3,7 +3,7 @@
   "HOSTNAME": "http://central-ledger",
   "DATABASE": {
     "DIALECT": "mysql",
-    "HOST": "central_ledger",
+    "HOST": "qs_mysql",
     "PORT": 3306,
     "USER": "central_ledger",
     "PASSWORD": "password",
@@ -18,7 +18,10 @@
     "CREATE_RETRY_INTERVAL_MILLIS": 200,
     "DEBUG": false
   },
-  "RUN_MIGRATIONS": true,
+  "MIGRATIONS": {
+    "DISABLED": false,
+    "RUN_DATA_MIGRATIONS": true
+  },
   "AMOUNT": {
     "PRECISION": 18,
     "SCALE": 4
@@ -30,9 +33,13 @@
     "CONNECT_TIMEOUT": 45000,
     "RECONNECT_INTERVAL": 5000
   },
-  "DB_CONNECTION": {
-    "POOL_MIN": 10,
-    "POOL_MAX": 30
+  "MONGODB": {
+    "DISABLED": true,
+    "URI": "mongodb://localhost:27017/mlos"
+  },
+  "ERROR_HANDLING": {
+    "includeCauseExtension": true,
+    "truncateExtensions": false
   },
   "HANDLERS": {
     "DISABLED": false,
@@ -76,6 +83,12 @@
     ]
   },
   "INTERNAL_TRANSFER_VALIDITY_SECONDS": "432000",
+  "ENABLE_ON_US_TRANSFERS": false,
+  "CACHE": {
+    "CACHE_ENABLED": false,
+    "MAX_BYTE_SIZE": 10000000,
+    "EXPIRES_IN_MS": 1000
+  },
   "KAFKA": {
     "TOPIC_TEMPLATES": {
       "PARTICIPANT_TOPIC_TEMPLATE": {
@@ -88,6 +101,77 @@
       }
     },
     "CONSUMER": {
+      "BULK": {
+        "PREPARE": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-bulk-prepare",
+              "group.id": "cl-group-bulk-prepare",
+              "metadata.broker.list": "kafka:9092",
+              "socket.keepalive.enable": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        },
+        "PROCESSING": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-bulk-processing",
+              "group.id": "cl-group-bulk-processing",
+              "metadata.broker.list": "kafka:9092",
+              "socket.keepalive.enable": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        },
+        "FULFIL": {
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "cl-con-bulk-fulfil",
+              "group.id": "cl-group-bulk-fulfil",
+              "metadata.broker.list": "kafka:9092",
+              "socket.keepalive.enable": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        }
+      },
       "TRANSFER": {
         "PREPARE": {
           "config": {
@@ -209,6 +293,27 @@
       }
     },
     "PRODUCER": {
+      "BULK": {
+        "PROCESSING": {
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "kafka:9092",
+              "client.id": "cl-prod-bulk-processing",
+              "event_cb": true,
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
+            }
+          }
+        }
+      },
       "TRANSFER": {
         "PREPARE": {
           "config": {
@@ -224,7 +329,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         },
@@ -242,7 +348,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         },
@@ -260,7 +367,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         }
@@ -280,7 +388,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         }
@@ -300,7 +409,8 @@
               "queue.buffering.max.messages": 10000000
             },
             "topicConf": {
-              "request.required.acks": "all"
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
             }
           }
         }
