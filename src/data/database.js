@@ -39,6 +39,7 @@ const util = require('util')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const MLNumber = require('@mojaloop/ml-number')
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 const LOCAL_ENUM = require('../lib/enum')
 const { getStackOrInspect } = require('../lib/util')
@@ -341,15 +342,20 @@ class Database {
      *
      * @returns {promise} - id of the participant
      */
-  async getParticipant (participantName, participantType) {
+  async getParticipant (participantName, participantType, currencyId, ledgerAccountTypeId = Enum.Accounts.LedgerAccountType.POSITION) {
     try {
       const rows = await this.queryBuilder('participant')
-        .where({
-          name: participantName,
-          isActive: 1
-        })
-        .select()
-
+        .innerJoin('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
+        .where({ 'participant.name': participantName })
+        .andWhere({ 'participantCurrency.currencyId': currencyId })
+        .andWhere({ 'participantCurrency.ledgerAccountTypeId': ledgerAccountTypeId })
+        .andWhere({ 'participantCurrency.isActive': true })
+        .andWhere({ 'participant.isActive': true })
+        .select(
+          'participant.*',
+          'participantCurrency.participantCurrencyId',
+          'participantCurrency.currencyId'
+        )
       if ((!rows) || rows.length < 1) {
         // active participant does not exist, this is an error
         if (participantType && participantType === LOCAL_ENUM.PAYEE_DFSP) {
@@ -453,7 +459,7 @@ class Database {
       const enumVals = await Promise.all([
         this.getPartyType(partyType),
         this.getPartyIdentifierType(party.partyIdInfo.partyIdType),
-        this.getParticipant(party.partyIdInfo.fspId),
+        this.getParticipant(party.partyIdInfo.fspId, participantType, currency),
         this.getTransferParticipantRoleType(participantType),
         this.getLedgerEntryType(ledgerEntryType)
       ])
