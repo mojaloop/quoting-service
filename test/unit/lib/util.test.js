@@ -26,9 +26,175 @@
 
 const Enum = require('@mojaloop/central-services-shared').Enum
 
-const { failActionHandler, getStackOrInspect, getSpanTags } = require('../../../src/lib/util')
+const { failActionHandler, getStackOrInspect, getSpanTags, generateRequestHeaders, generateRequestHeadersForJWS, removeEmptyKeys } = require('../../../src/lib/util')
 
 describe('util', () => {
+  const mockData = {
+    amountTypeId: 'fakeAmountTypeId',
+    endpoints: {
+      payerfsp: 'http://localhost:8444/payerfsp',
+      payeefsp: 'http://localhost:8444/payeefsp',
+      invalid: 'http://invalid.com/',
+      invalidResponse: 'http://invalid-response.com/'
+    },
+    geoCode: {
+      latitude: '42.69751',
+      longitude: '23.32415'
+    },
+    headers: {
+      Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
+      'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+      'fspiop-source': 'dfsp1',
+      'fspiop-destination': 'dfsp2'
+    },
+    initiatorType: 'fakeInitiatorType',
+    initiator: 'fakeInitiator',
+    quoteId: 'test123',
+    quoteRequest: {
+      quoteId: 'test123',
+      transactionId: 'abc123',
+      payee: {
+        partyIdInfo: {
+          partyIdType: 'MSISDN',
+          partyIdentifier: '27824592509',
+          fspId: 'dfsp2'
+        }
+      },
+      payer: {
+        partyIdInfo: {
+          partyIdType: 'MSISDN',
+          partyIdentifier: '27713803905',
+          fspId: 'dfsp1'
+        }
+      },
+      amountType: 'SEND',
+      amount: {
+        amount: 100,
+        currency: 'USD'
+      },
+      transactionType: {
+        scenario: 'TRANSFER',
+        initiator: 'PAYER',
+        initiatorType: 'CONSUMER'
+      },
+      geoCode: {
+        latitude: '43.69751',
+        longitude: '24.32415'
+      },
+      extensionList: {
+        extension: [{
+          key: 'key1',
+          value: 'value1'
+        }]
+      }
+    },
+    quoteUpdate: {
+      transferAmount: {
+        amount: '100',
+        currency: 'USD'
+      },
+      payeeReceiveAmount: {
+        amount: '95',
+        currency: 'USD'
+      },
+      payeeFspFee: {
+        amount: '3',
+        currency: 'USD'
+      },
+      payeeFspCommission: {
+        amount: '2',
+        currency: 'USD'
+      },
+      expiration: '2019-10-30T10:30:19.899Z',
+      geoCode: {
+        latitude: '42.69751',
+        longitude: '23.32415'
+      },
+      ilpPacket: '<ilpPacket>',
+      condition: 'HOr22-H3AfTDHrSkPjJtVPRdKouuMkDXTR4ejlQa8Ks',
+      extensionList: {
+        extension: [{
+          key: 'key1',
+          value: 'value1'
+        }]
+      }
+    },
+    quoteResponse: {
+      quoteId: 'test123'
+    },
+    rules: [
+      {
+        conditions: {
+          all: [
+            {
+              fact: 'json-path',
+              params: {
+                fact: 'payload',
+                path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
+              },
+              operator: 'deepEqual',
+              value: ['1']
+            },
+            {
+              fact: 'payload',
+              path: '.amount.currency',
+              operator: 'notIn',
+              value: {
+                fact: 'json-path',
+                params: {
+                  fact: 'payee',
+                  path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
+                }
+              }
+            }
+          ]
+        },
+        event: {
+          type: 'INTERCEPT_QUOTE',
+          params: {
+            rerouteToFsp: 'DFSPEUR'
+          }
+        }
+      },
+      {
+        conditions: {
+          all: [
+            {
+              fact: 'json-path',
+              params: {
+                fact: 'payload',
+                path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
+              },
+              operator: 'notDeepEqual',
+              value: ['1']
+            },
+            {
+              fact: 'payload',
+              path: '.amount.currency',
+              operator: 'notIn',
+              value: {
+                fact: 'json-path',
+                params: {
+                  fact: 'payee',
+                  path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
+                }
+              }
+            }
+          ]
+        },
+        event: {
+          type: 'INVALID_QUOTE_REQUEST',
+          params: {
+            FSPIOPError: 'PAYEE_UNSUPPORTED_CURRENCY',
+            message: 'The requested payee does not support the payment currency'
+          }
+        }
+      }
+    ],
+    scenario: 'fakeScenario',
+    subScenario: 'fakeSubScenario',
+    transactionReference: 'fakeTxRef'
+  }
   describe('failActionHandler', () => {
     it('throws the reformatted error', async () => {
       // Arrange
@@ -128,6 +294,158 @@ describe('util', () => {
 
       // Assert
       expect(output).toBe(expected)
+    })
+  })
+
+  describe('removeEmptyKeys', () => {
+    it('removes nothing if there are no empty keys', () => {
+      // Arrange
+      const input = {
+        a: 1,
+        b: 2,
+        c: 3
+      }
+      const expected = {
+        a: 1,
+        b: 2,
+        c: 3
+      }
+
+      // Act
+      const result = removeEmptyKeys(input)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('removes a key and if it is undefined', () => {
+      // Arrange
+      const input = {
+        a: 1,
+        b: 2,
+        c: undefined
+      }
+      const expected = {
+        a: 1,
+        b: 2
+      }
+
+      // Act
+      const result = removeEmptyKeys(input)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('removes an empty key', () => {
+      // Arrange
+      const input = {
+        a: 1,
+        b: 2,
+        c: {
+
+        }
+      }
+      const expected = {
+        a: 1,
+        b: 2
+      }
+
+      // Act
+      const result = removeEmptyKeys(input)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('removes a nested empty key', () => {
+      // Arrange
+      const input = {
+        a: 1,
+        b: 2,
+        c: {
+          d: {
+
+          }
+        }
+      }
+      const expected = {
+        a: 1,
+        b: 2,
+        c: {}
+      }
+
+      // Act
+      const result = removeEmptyKeys(input)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+  })
+
+  describe('generateRequestHeaders', () => {
+    it('generates the default request headers', () => {
+      // Arrange
+      const expected = {
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'FSPIOP-Destination': 'dfsp2',
+        'FSPIOP-Source': 'dfsp1'
+      }
+
+      // Act
+      const result = generateRequestHeaders(mockData.headers, true)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('generates default request headers, including the Accept', () => {
+      // Arrange
+      const expected = {
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'FSPIOP-Destination': 'dfsp2',
+        'FSPIOP-Source': 'dfsp1'
+      }
+
+      // Act
+      const result = generateRequestHeaders(mockData.headers, false)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+  })
+
+  describe('generateRequestHeadersForJWS', () => {
+    it('generates the default request headers', () => {
+      // Arrange
+      const expected = {
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'fspiop-destination': 'dfsp2',
+        'fspiop-source': 'dfsp1'
+      }
+
+      // Act
+      const result = generateRequestHeadersForJWS(mockData.headers, true)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('generates default request headers, including the Accept', () => {
+      // Arrange
+      const expected = {
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'fspiop-destination': 'dfsp2',
+        'fspiop-source': 'dfsp1'
+      }
+
+      // Act
+      const result = generateRequestHeadersForJWS(mockData.headers, false)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
     })
   })
 })

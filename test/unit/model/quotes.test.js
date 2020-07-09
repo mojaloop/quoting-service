@@ -47,6 +47,7 @@ jest.mock('../../../src/model/rules')
 jest.mock('../../../src/lib/config', () => {
   return jest.fn().mockImplementation(() => mockConfig)
 })
+jest.mock('../../../src/lib/util')
 jest.mock('../../../src/lib/http')
 
 const axios = require('axios')
@@ -65,6 +66,7 @@ const QuotesModel = require('../../../src/model/quotes')
 const rules = require('../../../config/rules')
 const RulesEngine = require('../../../src/model/rules')
 const Http = require('../../../src/lib/http')
+const Util = require('../../../src/lib/util')
 
 const jwsSigningKey = `-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEA0eJEh3Op5p6x137lRkAsvmEBbd32dbRChrCUItZbtxjf/qfB
@@ -116,7 +118,6 @@ describe('QuotesModel', () => {
         return Promise.resolve({ status: 200 })
       }
     })
-
     mockTransaction = {
       commit: jest.fn(),
       rollback: jest.fn()
@@ -744,7 +745,7 @@ describe('QuotesModel', () => {
 
             const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
 
-            quotesModel.calculateRequestHash = jest.fn(() => { throw fspiopError })
+            Util.calculateRequestHash.mockImplementationOnce(() => { throw fspiopError })
 
             await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
               .rejects
@@ -1114,7 +1115,7 @@ describe('QuotesModel', () => {
           it('calls all database create entity methods with correct arguments', async () => {
             expect.assertions(8)
 
-            const expectedHash = quotesModel.calculateRequestHash(mockData.quoteRequest)
+            const expectedHash = Util.calculateRequestHash(mockData.quoteRequest)
             const mockCreateQuoteDuplicateCheckArgs = [mockTransaction, mockData.quoteRequest.quoteId,
               expectedHash]
             const mockCreateTransactionReferenceArgs = [mockTransaction, mockData.quoteRequest.quoteId,
@@ -1428,7 +1429,7 @@ describe('QuotesModel', () => {
 
       mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
-      quotesModel.calculateRequestHash = jest.fn(() => 'hash')
+      Util.calculateRequestHash = jest.fn(() => 'hash')
 
       const mockQuoteResponseId = 'resp123'
 
@@ -1472,7 +1473,7 @@ describe('QuotesModel', () => {
 
       mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
-      quotesModel.calculateRequestHash = jest.fn(() => 'hash')
+      Util.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
         quoteResponseId: 'resp123',
         geoCodeId: 'geoCodeId',
@@ -1502,7 +1503,7 @@ describe('QuotesModel', () => {
 
       mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
-      quotesModel.calculateRequestHash = jest.fn(() => 'hash')
+      Util.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
         quoteResponseId: 'resp123',
         geoCodeId: 'geoCodeId',
@@ -1533,7 +1534,7 @@ describe('QuotesModel', () => {
 
       mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
-      quotesModel.calculateRequestHash = jest.fn(() => 'hash')
+      Util.calculateRequestHash = jest.fn(() => 'hash')
       const expected = {
         quoteResponseId: 'resp123',
         geoCodeId: 'geoCodeId'
@@ -1910,7 +1911,9 @@ describe('QuotesModel', () => {
         method: 'GET',
         url: 'http://localhost:3333/quotes/test123'
       }
-
+      Util.generateRequestHeaders.mockImplementationOnce(() => {
+        return {}
+      })
       // Act
       await quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId)
 
@@ -2008,7 +2011,7 @@ describe('QuotesModel', () => {
       // Arrange
       expect.assertions(1)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       const expectedOptions = {
@@ -2029,7 +2032,7 @@ describe('QuotesModel', () => {
       // Arrange
       expect.assertions(3)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -2064,7 +2067,7 @@ describe('QuotesModel', () => {
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       // expect.assertions(6)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -2097,7 +2100,7 @@ describe('QuotesModel', () => {
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       expect.assertions(5)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -2138,7 +2141,7 @@ describe('QuotesModel', () => {
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       expect.assertions(5)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -2178,7 +2181,7 @@ describe('QuotesModel', () => {
       // Arrange
       expect.assertions(2)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(undefined)
-      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
 
@@ -2194,7 +2197,7 @@ describe('QuotesModel', () => {
       // Arrange
       expect.assertions(2)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       axios.request.mockImplementationOnce(() => { throw new Error('HTTP test error') })
@@ -2211,7 +2214,7 @@ describe('QuotesModel', () => {
       // Arrange
       expect.assertions(2)
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      quotesModel.generateRequestHeaders.mockReturnValueOnce({})
+      Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       axios.request.mockReturnValueOnce({
@@ -2231,7 +2234,7 @@ describe('QuotesModel', () => {
     beforeEach(() => {
       // restore the current method in test to its original implementation
       quotesModel.checkDuplicateQuoteRequest.mockRestore()
-      quotesModel.calculateRequestHash.mockRestore()
+      Util.calculateRequestHash.mockRestore()
     })
 
     it('handles a non-duplicate request', async () => {
@@ -2274,7 +2277,7 @@ describe('QuotesModel', () => {
       // Arrange
       expect.assertions(2)
       quotesModel.db.getQuoteDuplicateCheck.mockReturnValueOnce({
-        hash: quotesModel.calculateRequestHash(mockData.quoteRequest)
+        hash: Util.calculateRequestHash(mockData.quoteRequest)
       })
       const expected = {
         isResend: true,
@@ -2307,7 +2310,7 @@ describe('QuotesModel', () => {
     beforeEach(() => {
       // restore the current method in test to its original implementation
       quotesModel.checkDuplicateQuoteResponse.mockRestore()
-      quotesModel.calculateRequestHash.mockRestore()
+      Util.calculateRequestHash.mockRestore()
     })
 
     it('handles a non-duplicate request', async () => {
@@ -2350,7 +2353,7 @@ describe('QuotesModel', () => {
       // Arrange
       expect.assertions(2)
       quotesModel.db.getQuoteResponseDuplicateCheck.mockReturnValueOnce({
-        hash: quotesModel.calculateRequestHash(mockData.quoteResponse)
+        hash: Util.calculateRequestHash(mockData.quoteResponse)
       })
       const expected = {
         isResend: true,
@@ -2376,175 +2379,6 @@ describe('QuotesModel', () => {
       // Assert
       await expect(action()).rejects.toThrow('Duplicate check error')
       expect(quotesModel.db.getQuoteResponseDuplicateCheck).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  describe('removeEmptyKeys', () => {
-    beforeEach(() => {
-      // restore the current method in test to its original implementation
-      quotesModel.removeEmptyKeys.mockRestore()
-    })
-
-    it('removes nothing if there are no empty keys', () => {
-      // Arrange
-      const input = {
-        a: 1,
-        b: 2,
-        c: 3
-      }
-      const expected = {
-        a: 1,
-        b: 2,
-        c: 3
-      }
-
-      // Act
-      const result = quotesModel.removeEmptyKeys(input)
-
-      // Assert
-      expect(result).toStrictEqual(expected)
-    })
-
-    it('removes a key and if it is undefined', () => {
-      // Arrange
-      const input = {
-        a: 1,
-        b: 2,
-        c: undefined
-      }
-      const expected = {
-        a: 1,
-        b: 2
-      }
-
-      // Act
-      const result = quotesModel.removeEmptyKeys(input)
-
-      // Assert
-      expect(result).toStrictEqual(expected)
-    })
-
-    it('removes an empty key', () => {
-      // Arrange
-      const input = {
-        a: 1,
-        b: 2,
-        c: {
-
-        }
-      }
-      const expected = {
-        a: 1,
-        b: 2
-      }
-
-      // Act
-      const result = quotesModel.removeEmptyKeys(input)
-
-      // Assert
-      expect(result).toStrictEqual(expected)
-    })
-
-    it('removes a nested empty key', () => {
-      // Arrange
-      const input = {
-        a: 1,
-        b: 2,
-        c: {
-          d: {
-
-          }
-        }
-      }
-      const expected = {
-        a: 1,
-        b: 2,
-        c: {}
-      }
-
-      // Act
-      const result = quotesModel.removeEmptyKeys(input)
-
-      // Assert
-      expect(result).toStrictEqual(expected)
-    })
-  })
-
-  describe('generateRequestHeaders', () => {
-    beforeEach(() => {
-      // restore the current method in test to its original implementation
-      quotesModel.generateRequestHeaders.mockRestore()
-      quotesModel.removeEmptyKeys.mockRestore()
-    })
-
-    it('generates the default request headers', () => {
-      // Arrange
-      const expected = {
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
-        'FSPIOP-Destination': 'dfsp2',
-        'FSPIOP-Source': 'dfsp1'
-      }
-
-      // Act
-      const result = quotesModel.generateRequestHeaders(mockData.headers, true)
-
-      // Assert
-      expect(result).toStrictEqual(expected)
-    })
-
-    it('generates default request headers, including the Accept', () => {
-      // Arrange
-      const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
-        'FSPIOP-Destination': 'dfsp2',
-        'FSPIOP-Source': 'dfsp1'
-      }
-
-      // Act
-      const result = quotesModel.generateRequestHeaders(mockData.headers, false)
-
-      // Assert
-      expect(result).toStrictEqual(expected)
-    })
-  })
-
-  describe('generateRequestHeadersForJWS', () => {
-    beforeEach(() => {
-      // restore the current method in test to its original implementation
-      quotesModel.generateRequestHeadersForJWS.mockRestore()
-      quotesModel.removeEmptyKeys.mockRestore()
-    })
-
-    it('generates the default request headers', () => {
-      // Arrange
-      const expected = {
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
-        'fspiop-destination': 'dfsp2',
-        'fspiop-source': 'dfsp1'
-      }
-
-      // Act
-      const result = quotesModel.generateRequestHeadersForJWS(mockData.headers, true)
-
-      // Assert
-      expect(result).toStrictEqual(expected)
-    })
-
-    it('generates default request headers, including the Accept', () => {
-      // Arrange
-      const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
-        'fspiop-destination': 'dfsp2',
-        'fspiop-source': 'dfsp1'
-      }
-
-      // Act
-      const result = quotesModel.generateRequestHeadersForJWS(mockData.headers, false)
-
-      // Assert
-      expect(result).toStrictEqual(expected)
     })
   })
 
