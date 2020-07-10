@@ -33,10 +33,8 @@
 // jest has a buggy system for mocking dependencies that can be overcome by mocking
 // the target module before requiring it.
 // more info on https://github.com/facebook/jest/issues/2582#issuecomment-321607875
-const mockRules = [{}]
 let mockConfig
 
-jest.mock('../../../config/rules.json', () => mockRules)
 jest.mock('axios')
 jest.mock('@mojaloop/central-services-logger')
 jest.mock('../../../src/data/database')
@@ -58,6 +56,7 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Db = require('../../../src/data/database')
 const Config = jest.requireActual('../../../src/lib/config')
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')
+const Http = require('../../../src/lib/http')
 const Util = require('../../../src/lib/util')
 
 const jwsSigningKey = `-----BEGIN RSA PRIVATE KEY-----
@@ -196,30 +195,43 @@ describe('BulkQuotesModel', () => {
           }]
         }
       },
-      quoteUpdate: {
-        transferAmount: {
-          amount: '100',
-          currency: 'USD'
-        },
-        payeeReceiveAmount: {
-          amount: '95',
-          currency: 'USD'
-        },
-        payeeFspFee: {
-          amount: '3',
-          currency: 'USD'
-        },
-        payeeFspCommission: {
-          amount: '2',
-          currency: 'USD'
-        },
+      bulkQuoteUpdate: {
+        individualQuotesResults: [{
+          bulkQuoteId: 'test123',
+          payee: {
+            partyIdInfo: {
+              partyIdType: 'MSISDN',
+              partyIdentifier: '27713803905',
+              fspId: 'dfsp2'
+            }
+          },
+          transferAmount: {
+            amount: '100',
+            currency: 'USD'
+          },
+          payeeReceiveAmount: {
+            amount: '95',
+            currency: 'USD'
+          },
+          payeeFspFee: {
+            amount: '3',
+            currency: 'USD'
+          },
+          payeeFspCommission: {
+            amount: '2',
+            currency: 'USD'
+          },
+          expiration: '2019-10-30T10:30:19.899Z',
+          ilpPacket: '<ilpPacket>',
+          condition: 'HOr22-H3AfTDHrSkPjJtVPRdKouuMkDXTR4ejlQa8Ks',
+          extensionList: {
+            extension: [{
+              key: 'key1',
+              value: 'value1'
+            }]
+          }
+        }],
         expiration: '2019-10-30T10:30:19.899Z',
-        geoCode: {
-          latitude: '42.69751',
-          longitude: '23.32415'
-        },
-        ilpPacket: '<ilpPacket>',
-        condition: 'HOr22-H3AfTDHrSkPjJtVPRdKouuMkDXTR4ejlQa8Ks',
         extensionList: {
           extension: [{
             key: 'key1',
@@ -227,78 +239,9 @@ describe('BulkQuotesModel', () => {
           }]
         }
       },
-      quoteResponse: {
-        quoteId: 'test123'
+      bulkQuoteResponse: {
+        bulkQuoteId: 'test123'
       },
-      rules: [
-        {
-          conditions: {
-            all: [
-              {
-                fact: 'json-path',
-                params: {
-                  fact: 'payload',
-                  path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
-                },
-                operator: 'deepEqual',
-                value: ['1']
-              },
-              {
-                fact: 'payload',
-                path: '.amount.currency',
-                operator: 'notIn',
-                value: {
-                  fact: 'json-path',
-                  params: {
-                    fact: 'payee',
-                    path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
-                  }
-                }
-              }
-            ]
-          },
-          event: {
-            type: 'INTERCEPT_QUOTE',
-            params: {
-              rerouteToFsp: 'DFSPEUR'
-            }
-          }
-        },
-        {
-          conditions: {
-            all: [
-              {
-                fact: 'json-path',
-                params: {
-                  fact: 'payload',
-                  path: '$.payload.extensionList[?(@.key == "KYCPayerTier")].value'
-                },
-                operator: 'notDeepEqual',
-                value: ['1']
-              },
-              {
-                fact: 'payload',
-                path: '.amount.currency',
-                operator: 'notIn',
-                value: {
-                  fact: 'json-path',
-                  params: {
-                    fact: 'payee',
-                    path: '$.payee.accounts[?(@.ledgerAccountType == "SETTLEMENT")].currency'
-                  }
-                }
-              }
-            ]
-          },
-          event: {
-            type: 'INVALID_QUOTE_REQUEST',
-            params: {
-              FSPIOPError: 'PAYEE_UNSUPPORTED_CURRENCY',
-              message: 'The requested payee does not support the payment currency'
-            }
-          }
-        }
-      ],
       scenario: 'fakeScenario',
       subScenario: 'fakeSubScenario',
       transactionReference: 'fakeTxRef'
@@ -495,6 +438,253 @@ describe('BulkQuotesModel', () => {
       await expect(bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest))
         .rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
+    })
+  })
+
+  describe('handleBulkQuoteUpdate', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      bulkQuotesModel.handleBulkQuoteUpdate.mockRestore()
+    })
+
+    it('should forward quote update in simple routing mode', async () => {
+      expect.assertions(4)
+
+      mockChildSpan.isFinished = false
+
+      const refs = await bulkQuotesModel.handleBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockSpan)
+
+      expect(mockSpan.getChild.mock.calls.length).toBe(1)
+      let args = [{ headers: mockData.headers, params: { bulkQuoteId: mockData.bulkQuotePostRequest.bulkQuoteId }, payload: mockData.bulkQuoteUpdate }, EventSdk.AuditEventAction.start]
+      expect(mockChildSpan.audit).toBeCalledWith(...args)
+      args = [mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockChildSpan]
+      expect(bulkQuotesModel.forwardBulkQuoteUpdate).toBeCalledWith(...args)
+      expect(refs).toEqual({})
+    })
+    it('should handle exception in simple routing mode', async () => {
+      expect.assertions(6)
+
+      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR)
+      bulkQuotesModel.forwardBulkQuoteUpdate = jest.fn(() => { throw fspiopError })
+      mockChildSpan.isFinished = false
+
+      const refs = await bulkQuotesModel.handleBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockSpan)
+
+      expect(mockSpan.getChild.mock.calls.length).toBe(1)
+      let args = [{ headers: mockData.headers, params: { bulkQuoteId: mockData.bulkQuotePostRequest.bulkQuoteId }, payload: mockData.bulkQuoteUpdate }, EventSdk.AuditEventAction.start]
+      expect(mockChildSpan.audit).toBeCalledWith(...args)
+      args = [mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockChildSpan]
+      expect(bulkQuotesModel.forwardBulkQuoteUpdate).toBeCalledWith(...args)
+      args = [mockData.headers['fspiop-source'], mockData.bulkQuoteId, fspiopError, mockData.headers, mockChildSpan]
+      expect(bulkQuotesModel.handleException).toBeCalledWith(...args)
+      expect(bulkQuotesModel.handleException.mock.calls.length).toBe(1)
+
+      expect(refs).toEqual({})
+    })
+    it('should throw validationError when headers contains accept', async () => {
+      expect.assertions(3)
+
+      const localHeaders = LibUtil.clone(mockData.headers)
+      localHeaders.accept = 'application/vnd.interoperability.quotes+json;version=1.0'
+
+      await expect(bulkQuotesModel.handleBulkQuoteUpdate(localHeaders, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code)
+
+      expect(bulkQuotesModel.db.newTransaction.mock.calls.length).toBe(0)
+      expect(mockTransaction.rollback.mock.calls.length).toBe(0)
+    })
+  })
+
+  describe('forwardQuoteUpdate', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      bulkQuotesModel.forwardBulkQuoteUpdate.mockRestore()
+    })
+
+    it('should get http status code 200 OK in simple routing mode', async () => {
+      expect.assertions(2)
+      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+
+      await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockChildSpan))
+        .resolves
+        .toBe(undefined)
+
+      expect(bulkQuotesModel.db.getParticipantEndpoint).toBeCalled()
+    })
+    it('should throw when participant endpoint is not found', async () => {
+      expect.assertions(1)
+
+      const endpoint = undefined
+      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(endpoint)
+      bulkQuotesModel.sendErrorCallback = jest.fn((_, fspiopError) => { throw fspiopError })
+
+      await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockChildSpan))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
+    })
+    it('should not use spans when undefined and should throw when participant endpoint is invalid', async () => {
+      expect.assertions(3)
+
+      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
+      Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
+
+      await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code)
+
+      expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
+      expect(mockChildSpan.audit).not.toHaveBeenCalled()
+    })
+    it('should throw when participant endpoint returns invalid response', async () => {
+      expect.assertions(3)
+
+      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
+      Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
+
+      await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code)
+
+      expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
+      expect(mockChildSpan.audit).not.toHaveBeenCalled()
+    })
+    it('should inspect and throw custom error as FSPIOPerror', async () => {
+      expect.assertions(3)
+
+      const customErrorNoStack = new Error('Custom error')
+      delete customErrorNoStack.stack
+      bulkQuotesModel.db.getParticipantEndpoint.mockRejectedValueOnce(customErrorNoStack)
+
+      await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+
+      expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
+      expect(mockChildSpan.audit).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('handleBulkQuoteGet', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      bulkQuotesModel.handleBulkQuoteGet.mockRestore()
+    })
+
+    it('handles the bulk quote get with a child span', async () => {
+      // Arrange
+      expect.assertions(3)
+
+      // Act
+      await bulkQuotesModel.handleBulkQuoteGet(mockData.headers, mockData.bulkQuoteId, mockSpan)
+
+      // Assert
+      expect(mockChildSpan.audit.mock.calls.length).toBe(1)
+      expect(mockChildSpan.finish.mock.calls.length).toBe(1)
+      expect(bulkQuotesModel.forwardBulkQuoteGet.mock.calls.length).toBe(1)
+    })
+
+    it('handles an exception on `span.getChild`', async () => {
+      // Arrange
+      expect.assertions(1)
+      mockSpan.getChild = jest.fn(() => { throw new Error('Test Error') })
+
+      // Act
+      const action = async () => bulkQuotesModel.handleBulkQuoteGet(mockData.headers, mockData.bulkQuoteId, mockSpan)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('Test Error')
+    })
+
+    it('handles an exception on `childSpan.audit`', async () => {
+      // Arrange
+      expect.assertions(2)
+      mockChildSpan.audit = jest.fn(() => { throw new Error('Test Error') })
+
+      // Act
+      await bulkQuotesModel.handleBulkQuoteGet(mockData.headers, mockData.bulkQuoteId, mockSpan)
+
+      // Assert
+      expect(mockChildSpan.finish.mock.calls.length).toBe(1)
+      expect(bulkQuotesModel.handleException.mock.calls.length).toBe(1)
+    })
+  })
+
+  describe('forwardQuoteGet', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      bulkQuotesModel.forwardBulkQuoteGet.mockRestore()
+    })
+
+    it('fails to forward if the database has no endpoint for the dfsp', async () => {
+      // Arrange
+      expect.assertions(1)
+      bulkQuotesModel.db.getParticipantEndpoint.mockImplementation(() => null)
+
+      // Act
+      const action = async () => bulkQuotesModel.forwardBulkQuoteGet(mockData.headers, mockData.bulkQuoteId, mockSpan)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('No FSPIOP_CALLBACK_URL_BULK_QUOTES found for bulk quote GET test123')
+    })
+
+    it('forwards the request to the payee dfsp without a span', async () => {
+      // Arrange
+      // expect.assertions(2)
+      bulkQuotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      const expectedOptions = {
+        headers: {},
+        method: 'GET',
+        url: 'http://localhost:3333/bulkQuotes/test123'
+      }
+      Util.generateRequestHeaders.mockImplementationOnce(() => {
+        return {}
+      })
+      // Act
+      await bulkQuotesModel.forwardBulkQuoteGet(mockData.headers, mockData.bulkQuoteId)
+
+      // Assert
+      expect(Http.httpRequest).toBeCalledTimes(1)
+      expect(Http.httpRequest).toBeCalledWith(expectedOptions, mockData.headers[Enum.Http.Headers.FSPIOP.SOURCE])
+    })
+
+    it('forwards the request to the payee dfsp', async () => {
+      // Arrange
+      expect.assertions(4)
+      bulkQuotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: {
+          spanHeaders: '12345'
+        }
+      }))
+      mockSpan.audit = jest.fn()
+      const expectedOptions = {
+        headers: {
+          spanHeaders: '12345'
+        }
+      }
+
+      // Act
+      await bulkQuotesModel.forwardBulkQuoteGet(mockData.headers, mockData.bulkQuoteId, mockSpan)
+
+      // Assert
+      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
+      expect(mockSpan.audit).toBeCalledTimes(1)
+      expect(Http.httpRequest).toBeCalledTimes(1)
+      expect(Http.httpRequest).toBeCalledWith(expectedOptions, mockData.headers[Enum.Http.Headers.FSPIOP.SOURCE])
+    })
+
+    it('handles a http error', async () => {
+      // Arrange
+      expect.assertions(1)
+      bulkQuotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      Http.httpRequest.mockImplementationOnce(() => { throw new Error('Test HTTP Error') })
+
+      // Act
+      const action = async () => bulkQuotesModel.forwardBulkQuoteGet(mockData.headers, mockData.bulkQuoteId)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('Test HTTP Error')
     })
   })
 

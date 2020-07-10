@@ -181,6 +181,194 @@ class BulkQuotesModel {
   }
 
   /**
+   * Logic for handling quote update requests e.g. PUT /bulkQuotes/{id} requests
+   *
+   * @returns {object} - object containing updated entities
+   */
+  async handleBulkQuoteUpdate (headers, bulkQuoteId, bulkQuoteUpdateRequest, span) {
+    const txn = null
+
+    try {
+      // ensure no 'accept' header is present in the request headers.
+      if ('accept' in headers) {
+        // internal-error
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          `Update for bulk quote ${bulkQuoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
+      }
+      // accumulate enum ids
+      const refs = {}
+      // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+      const childSpan = span.getChild('qs_quote_forwardBulkQuoteUpdate')
+      try {
+        await childSpan.audit({ headers, params: { bulkQuoteId }, payload: bulkQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
+        await this.forwardBulkQuoteUpdate(headers, bulkQuoteId, bulkQuoteUpdateRequest, childSpan)
+      } catch (err) {
+        // any-error
+        // as we are on our own in this context, dont just rethrow the error, instead...
+        // get the model to handle it
+        const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+        this.writeLog(`Error forwarding bulk quote update: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        await this.handleException(fspiopSource, bulkQuoteId, err, headers, childSpan)
+      } finally {
+        if (!childSpan.isFinished) {
+          await childSpan.finish()
+        }
+      }
+
+      // all ok, return refs
+      return refs
+    } catch (err) {
+      // internal-error
+      this.writeLog(`Error in handleBulkQuoteUpdate: ${getStackOrInspect(err)}`)
+      if (txn) {
+        txn.rollback(err)
+      }
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+      const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
+      if (span) {
+        await span.error(fspiopError, state)
+        await span.finish(fspiopError.message, state)
+      }
+      throw fspiopError
+    }
+  }
+
+  /**
+   * Forwards a bulk quote response to a payer DFSP for processing
+   *
+   * @returns {undefined}
+   */
+  async forwardBulkQuoteUpdate (headers, bulkQuoteId, originalBulkQuoteResponse, span) {
+    let endpoint = null
+    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+
+    try {
+      // lookup payer dfsp callback endpoint
+      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_BULK_QUOTES')
+      this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulk quote ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
+
+      if (!endpoint) {
+        // we didnt get an endpoint for the payee dfsp!
+        // make an error callback to the initiator
+        const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for quote ${bulkQuoteId} PAYER party`, null, fspiopSource)
+        return this.sendErrorCallback(fspiopSource, fspiopError, bulkQuoteId, headers, true)
+      }
+
+      const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
+      // we need to strip off the 'accept' header
+      // for all PUT requests as per the API Specification Document
+      // https://github.com/mojaloop/mojaloop-specification/blob/master/API%20Definition%20v1.0.pdf
+      const newHeaders = generateRequestHeaders(headers, true)
+
+      this.writeLog(`Forwarding bulk quote response to endpoint: ${fullCallbackUrl}`)
+      this.writeLog(`Forwarding bulk quote response headers: ${JSON.stringify(newHeaders)}`)
+      this.writeLog(`Forwarding bulk quote response body: ${JSON.stringify(originalBulkQuoteResponse)}`)
+
+      let opts = {
+        method: ENUM.Http.RestMethods.PUT,
+        url: fullCallbackUrl,
+        data: JSON.stringify(originalBulkQuoteResponse),
+        headers: newHeaders
+      }
+
+      if (span) {
+        opts = span.injectContextToHttpRequest(opts)
+        span.audit(opts, EventSdk.AuditEventAction.egress)
+      }
+
+      await httpRequest(opts, fspiopSource)
+    } catch (err) {
+      // any-error
+      this.writeLog(`Error forwarding bulk quote response to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.ReformatFSPIOPError(err)
+    }
+  }
+
+  /**
+   * Attempts to handle a bulk quote GET request by forwarding it to the destination DFSP
+   *
+   * @returns {undefined}
+   */
+  async handleBulkQuoteGet (headers, bulkQuoteId, span) {
+    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    try {
+      const childSpan = span.getChild('qs_quote_forwardBulkQuoteGet')
+      try {
+        await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
+        await this.forwardBulkQuoteGet(headers, bulkQuoteId, childSpan)
+      } catch (err) {
+        // any-error
+        // as we are on our own in this context, dont just rethrow the error, instead...
+        // get the model to handle it
+        this.writeLog(`Error forwarding bulk quote get: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        await this.handleException(fspiopSource, bulkQuoteId, err, headers, childSpan)
+      } finally {
+        if (!childSpan.isFinished) {
+          await childSpan.finish()
+        }
+      }
+    } catch (err) {
+      // internal-error
+      this.writeLog(`Error in handleQuoteGet: ${getStackOrInspect(err)}`)
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+      const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
+      if (span) {
+        await span.error(fspiopError, state)
+        await span.finish(fspiopError.message, state)
+      }
+      throw fspiopError
+    }
+  }
+
+  /**
+   * Attempts to forward a bulk quote GET request
+   *
+   * @returns {undefined}
+   */
+  async forwardBulkQuoteGet (headers, bulkQuoteId, span) {
+    let endpoint
+    try {
+      // lookup payee dfsp callback endpoint
+      // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
+      const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+      const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_BULK_QUOTES')
+
+      this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulk quote GET ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
+
+      if (!endpoint) {
+        // we didnt get an endpoint for the payee dfsp!
+        // make an error callback to the initiator
+        // internal-error
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for bulk quote GET ${bulkQuoteId}`, null, fspiopSource)
+      }
+
+      const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
+      const newHeaders = generateRequestHeaders(headers)
+
+      this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
+
+      let opts = {
+        method: ENUM.Http.RestMethods.GET,
+        url: fullCallbackUrl,
+        headers: newHeaders
+      }
+
+      if (span) {
+        opts = span.injectContextToHttpRequest(opts)
+        span.audit(opts, EventSdk.AuditEventAction.egress)
+      }
+
+      await httpRequest(opts, fspiopSource)
+    } catch (err) {
+      // any-error
+      this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.ReformatFSPIOPError(err)
+    }
+  }
+
+  /**
    * Attempts to handle an exception in a sensible manner by forwarding it on to the
    * source of the request that caused the error.
    */
