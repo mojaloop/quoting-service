@@ -143,7 +143,7 @@ class BulkQuotesModel {
       // case if a xfer is requested by payee
       endpoint = await this.db.getParticipantEndpoint(fspiopDest, ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES)
 
-      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for bulkQuote ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
+      this.writeLog(`Resolved FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulkQuote ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
         // internal-error
