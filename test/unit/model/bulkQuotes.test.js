@@ -688,6 +688,69 @@ describe('BulkQuotesModel', () => {
     })
   })
 
+  describe('handleBulkQuoteError', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      bulkQuotesModel.handleBulkQuoteError.mockRestore()
+    })
+
+    it('handles the quote error', async () => {
+      // Arrange
+      expect.assertions(2)
+      const error = {
+        errorCode: 2001,
+        errorDescription: 'Test Error'
+      }
+
+      // Act
+      const result = await bulkQuotesModel.handleBulkQuoteError(mockData.headers, mockData.bulkQuoteId, error, mockSpan)
+
+      // Assert
+      // For `handleQuoteError` response is undefined
+      expect(result).toBe(undefined)
+      expect(bulkQuotesModel.sendErrorCallback).toHaveBeenCalledTimes(1)
+    })
+
+    it('sends the error callback to the correct destination', async () => {
+      // Arrange
+      expect.assertions(3)
+      const error = {
+        errorCode: 2001,
+        errorDescription: 'Test Error'
+      }
+      bulkQuotesModel.sendErrorCallback = jest.fn()
+
+      // Act
+      const result = await bulkQuotesModel.handleBulkQuoteError(mockData.headers, mockData.bulkQuoteId, error, mockSpan)
+
+      // Assert
+      // For `handleQuoteError` response is undefined
+      expect(result).toBe(undefined)
+      expect(bulkQuotesModel.sendErrorCallback).toHaveBeenCalledTimes(1)
+      expect(bulkQuotesModel.sendErrorCallback.mock.calls[0][0])
+        .toEqual(mockData.headers[Enum.Http.Headers.FSPIOP.DESTINATION])
+    })
+
+    it('handles bad error input', async () => {
+      // Arrange
+      expect.assertions(1)
+      const error = {
+        errorDescription: 'Test Error'
+      }
+
+      const errorMessage = {
+        message: 'Test Error'
+      }
+
+      // Act
+      const action = async () => bulkQuotesModel.handleBulkQuoteError(mockData.headers, mockData.bulkQuoteId, error, mockSpan)
+
+      // const es = 'Factory function createFSPIOPError failed due to apiErrorCode being invalid'
+      // Assert
+      await expect(action()).rejects.toThrowError(`Factory function createFSPIOPError failed due to apiErrorCode being invalid - ${JSON.stringify(errorMessage)}.`)
+    })
+  })
+
   describe('handleException', () => {
     beforeEach(() => {
       // restore the current method in test to its original implementation

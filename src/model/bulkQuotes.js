@@ -369,6 +369,34 @@ class BulkQuotesModel {
   }
 
   /**
+   * Handles error reports from clients e.g. POST bulkQuotes/{id}/error
+   *
+   * @returns {undefined}
+   */
+  async handleBulkQuoteError (headers, bulkQuoteId, error, span) {
+    let newError
+    try {
+      // create a new object to represent the error
+      const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
+
+      // Needed to add await here to prevent 'span already finished' bug
+      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, bulkQuoteId, headers, span, false)
+
+      return newError
+    } catch (err) {
+      // internal-error
+      this.writeLog(`Error in handleBulkQuoteError: ${getStackOrInspect(err)}`)
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+      const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
+      if (span) {
+        await span.error(fspiopError, state)
+        await span.finish(fspiopError.message, state)
+      }
+      throw fspiopError
+    }
+  }
+
+  /**
    * Attempts to handle an exception in a sensible manner by forwarding it on to the
    * source of the request that caused the error.
    */
