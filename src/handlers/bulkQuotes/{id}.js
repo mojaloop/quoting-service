@@ -74,7 +74,7 @@ module.exports = {
       // call the model to re-forward the quote update to the correct party
       // note that we do not check if our caller is the correct party, but we
       // will send the callback to the correct party regardless.
-      const result = await model.handleBulkQuoteGet(request.headers, bulkQuoteId, span)
+      const result = model.handleBulkQuoteGet(request.headers, bulkQuoteId, span)
       request.server.log(['info'], `GET bulkQuotes/{id} request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
@@ -116,12 +116,12 @@ module.exports = {
         payload: request.payload
       }, EventSdk.AuditEventAction.start)
       // call the quote update handler in the model
-      const result = await model.handleBulkQuoteUpdate(request.headers, bulkQuoteId, request.payload, span)
+      const result = model.handleBulkQuoteUpdate(request.headers, bulkQuoteId, request.payload, span)
       request.server.log(['info'], `PUT bulk quote request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
-      await model.handleException(fspiopSource, bulkQuoteId, err, request.headers, span)
+      model.handleException(fspiopSource, bulkQuoteId, err, request.headers, span)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(Enum.Http.ReturnCodes.OK.CODE)

@@ -80,7 +80,6 @@ class BulkQuotesModel {
     // accumulate enum ids
     const refs = {}
 
-    let txn
     let fspiopSource
     let childSpan
 
@@ -95,10 +94,6 @@ class BulkQuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleBulkQuoteRequest for bulkQuoteId ${bulkQuoteRequest.bulkQuoteId}: ${getStackOrInspect(err)}`)
-      if (txn) {
-        txn.rollback(err)
-      }
-
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
@@ -186,8 +181,6 @@ class BulkQuotesModel {
    * @returns {object} - object containing updated entities
    */
   async handleBulkQuoteUpdate (headers, bulkQuoteId, bulkQuoteUpdateRequest, span) {
-    const txn = null
-
     try {
       // ensure no 'accept' header is present in the request headers.
       if ('accept' in headers) {
@@ -220,9 +213,6 @@ class BulkQuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleBulkQuoteUpdate: ${getStackOrInspect(err)}`)
-      if (txn) {
-        txn.rollback(err)
-      }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {

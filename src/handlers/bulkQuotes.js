@@ -76,13 +76,13 @@ module.exports = {
       }, EventSdk.AuditEventAction.start)
 
       // call the quote request handler in the model
-      const result = await model.handleBulkQuoteRequest(request.headers, request.payload, span)
+      const result = model.handleBulkQuoteRequest(request.headers, request.payload, span)
       request.server.log(['info'], `POST bulkQuote request succeeded and returned: ${util.inspect(result)}`)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - POST /quotes: ${LibUtil.getStackOrInspect(err)}`)
+      request.server.log(['error'], `ERROR - POST /bulkQuotes: ${LibUtil.getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      await model.handleException(fspiopSource, bulkQuoteId, fspiopError, request.headers, span)
+      model.handleException(fspiopSource, bulkQuoteId, fspiopError, request.headers, span)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
