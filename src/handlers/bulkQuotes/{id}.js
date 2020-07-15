@@ -79,7 +79,7 @@ module.exports = {
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - GET /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
-      await model.handleException(fspiopSource, bulkQuoteId, err, request.headers, span)
+      model.handleException(fspiopSource, bulkQuoteId, err, request.headers, span)
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
