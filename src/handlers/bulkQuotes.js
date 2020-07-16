@@ -51,7 +51,7 @@ module.exports = {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  post: function BulkQuotes (context, request, h) {
+  post: async function BulkQuotes (context, request, h) {
     // log request
     request.server.log(['info'], `got a POST /bulkQuotes request: ${util.inspect(request.payload)}`)
 
@@ -70,7 +70,7 @@ module.exports = {
     try {
       const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.PREPARE)
       span.setTags(spanTags)
-      span.audit({
+      await span.audit({
         headers: request.headers,
         payload: request.payload
       }, EventSdk.AuditEventAction.start)

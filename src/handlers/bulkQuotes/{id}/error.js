@@ -48,7 +48,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  put: function BulkQuotesErrorById (context, request, h) {
+  put: async function BulkQuotesErrorById (context, request, h) {
     // log request
     request.server.log(['info'], `got a PUT /bulkQuotes/{id}/error request: ${util.inspect(request.payload)}`)
 
@@ -67,7 +67,7 @@ module.exports = {
     try {
       const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.ABORT)
       span.setTags(spanTags)
-      span.audit({
+      await span.audit({
         headers: request.headers,
         payload: request.payload
       }, EventSdk.AuditEventAction.start)

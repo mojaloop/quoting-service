@@ -48,7 +48,7 @@ module.exports = {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  get: function getBulkQuotesById (context, request, h) {
+  get: async function getBulkQuotesById (context, request, h) {
     // log request
     request.server.log(['info'], `got a GET /bulkQuotes/{id} request for bulkQuoteId ${request.params.id}`)
 
@@ -67,7 +67,7 @@ module.exports = {
     try {
       const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.GET)
       span.setTags(spanTags)
-      span.audit({
+      await span.audit({
         headers: request.headers,
         payload: request.payload
       }, EventSdk.AuditEventAction.start)
@@ -91,7 +91,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  put: function putBulkQuotesById (context, request, h) {
+  put: async function putBulkQuotesById (context, request, h) {
     // log request
     request.server.log(['info'], `got a PUT /bulkQuotes/{id} request: ${util.inspect(request.payload)}`)
 
@@ -110,7 +110,7 @@ module.exports = {
     try {
       const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.FULFIL)
       span.setTags(spanTags)
-      span.audit({
+      await span.audit({
         headers: request.headers,
         payload: request.payload
       }, EventSdk.AuditEventAction.start)
