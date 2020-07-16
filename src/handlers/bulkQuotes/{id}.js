@@ -48,7 +48,7 @@ module.exports = {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  get: async function getBulkQuotesById (context, request, h) {
+  get: function getBulkQuotesById (context, request, h) {
     // log request
     request.server.log(['info'], `got a GET /bulkQuotes/{id} request for bulkQuoteId ${request.params.id}`)
 
@@ -67,15 +67,14 @@ module.exports = {
     try {
       const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.GET)
       span.setTags(spanTags)
-      await span.audit({
+      span.audit({
         headers: request.headers,
         payload: request.payload
       }, EventSdk.AuditEventAction.start)
       // call the model to re-forward the quote update to the correct party
       // note that we do not check if our caller is the correct party, but we
       // will send the callback to the correct party regardless.
-      const result = model.handleBulkQuoteGet(request.headers, bulkQuoteId, span)
-      request.server.log(['info'], `GET bulkQuotes/{id} request succeeded and returned: ${util.inspect(result)}`)
+      model.handleBulkQuoteGet(request.headers, bulkQuoteId, span)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - GET /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
@@ -92,7 +91,7 @@ module.exports = {
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  put: async function putBulkQuotesById (context, request, h) {
+  put: function putBulkQuotesById (context, request, h) {
     // log request
     request.server.log(['info'], `got a PUT /bulkQuotes/{id} request: ${util.inspect(request.payload)}`)
 
@@ -111,13 +110,12 @@ module.exports = {
     try {
       const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.FULFIL)
       span.setTags(spanTags)
-      await span.audit({
+      span.audit({
         headers: request.headers,
         payload: request.payload
       }, EventSdk.AuditEventAction.start)
       // call the quote update handler in the model
-      const result = model.handleBulkQuoteUpdate(request.headers, bulkQuoteId, request.payload, span)
-      request.server.log(['info'], `PUT bulk quote request succeeded and returned: ${util.inspect(result)}`)
+      model.handleBulkQuoteUpdate(request.headers, bulkQuoteId, request.payload, span)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)

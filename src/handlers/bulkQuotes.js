@@ -51,7 +51,7 @@ module.exports = {
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  post: async function BulkQuotes (context, request, h) {
+  post: function BulkQuotes (context, request, h) {
     // log request
     request.server.log(['info'], `got a POST /bulkQuotes request: ${util.inspect(request.payload)}`)
 
@@ -70,14 +70,13 @@ module.exports = {
     try {
       const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.PREPARE)
       span.setTags(spanTags)
-      await span.audit({
+      span.audit({
         headers: request.headers,
         payload: request.payload
       }, EventSdk.AuditEventAction.start)
 
       // call the quote request handler in the model
-      const result = model.handleBulkQuoteRequest(request.headers, request.payload, span)
-      request.server.log(['info'], `POST bulkQuote request succeeded and returned: ${util.inspect(result)}`)
+      model.handleBulkQuoteRequest(request.headers, request.payload, span)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - POST /bulkQuotes: ${LibUtil.getStackOrInspect(err)}`)
