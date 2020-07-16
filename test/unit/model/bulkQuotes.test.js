@@ -322,20 +322,17 @@ describe('BulkQuotesModel', () => {
 
           bulkQuotesModel.validateBulkQuoteRequest = jest.fn(() => { throw fspiopError })
 
-          await expect(bulkQuotesModel.handleBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest, mockSpan))
-            .rejects
-            .toBe(fspiopError)
+          await bulkQuotesModel.handleBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest, mockSpan)
+          expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(1)
         })
         it('throws an exception if `span.getChild` fails', async () => {
           expect.assertions(2)
 
           const spanError = new Error('foo')
-          const fspiopError = ErrorHandler.ReformatFSPIOPError(spanError)
           mockSpan.getChild = jest.fn(() => { throw spanError })
-
-          await expect(bulkQuotesModel.handleBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest, mockSpan))
-            .rejects
-            .toEqual(fspiopError)
+          mockSpan.isFinished = false
+          await bulkQuotesModel.handleBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest, mockSpan)
+          expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(1)
           expect(mockSpan.getChild.mock.calls.length).toBe(1)
         })
       })
@@ -448,28 +445,22 @@ describe('BulkQuotesModel', () => {
     })
 
     it('should forward quote update in simple routing mode', async () => {
-      expect.assertions(4)
-
+      expect.assertions(3)
       mockChildSpan.isFinished = false
-
-      const refs = await bulkQuotesModel.handleBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockSpan)
-
+      await bulkQuotesModel.handleBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockSpan)
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
       let args = [{ headers: mockData.headers, params: { bulkQuoteId: mockData.bulkQuotePostRequest.bulkQuoteId }, payload: mockData.bulkQuoteUpdate }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)
       args = [mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockChildSpan]
       expect(bulkQuotesModel.forwardBulkQuoteUpdate).toBeCalledWith(...args)
-      expect(refs).toEqual({})
     })
-    it('should handle exception in simple routing mode', async () => {
-      expect.assertions(6)
+    it('should handle exception', async () => {
+      expect.assertions(5)
 
       const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR)
       bulkQuotesModel.forwardBulkQuoteUpdate = jest.fn(() => { throw fspiopError })
       mockChildSpan.isFinished = false
-
-      const refs = await bulkQuotesModel.handleBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockSpan)
-
+      await bulkQuotesModel.handleBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockSpan)
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
       let args = [{ headers: mockData.headers, params: { bulkQuoteId: mockData.bulkQuotePostRequest.bulkQuoteId }, payload: mockData.bulkQuoteUpdate }, EventSdk.AuditEventAction.start]
       expect(mockChildSpan.audit).toBeCalledWith(...args)
@@ -478,8 +469,6 @@ describe('BulkQuotesModel', () => {
       args = [mockData.headers['fspiop-source'], mockData.bulkQuoteId, fspiopError, mockData.headers, mockChildSpan]
       expect(bulkQuotesModel.handleException).toBeCalledWith(...args)
       expect(bulkQuotesModel.handleException.mock.calls.length).toBe(1)
-
-      expect(refs).toEqual({})
     })
     it('should throw validationError when headers contains accept', async () => {
       expect.assertions(3)
@@ -738,16 +727,12 @@ describe('BulkQuotesModel', () => {
         errorDescription: 'Test Error'
       }
 
-      const errorMessage = {
-        message: 'Test Error'
-      }
-
       // Act
       const action = async () => bulkQuotesModel.handleBulkQuoteError(mockData.headers, mockData.bulkQuoteId, error, mockSpan)
-
+      await action()
       // const es = 'Factory function createFSPIOPError failed due to apiErrorCode being invalid'
       // Assert
-      await expect(action()).rejects.toThrowError(`Factory function createFSPIOPError failed due to apiErrorCode being invalid - ${JSON.stringify(errorMessage)}.`)
+      expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(1)
     })
   })
 

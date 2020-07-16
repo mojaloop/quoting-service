@@ -79,10 +79,8 @@ class BulkQuotesModel {
   async handleBulkQuoteRequest (headers, bulkQuoteRequest, span) {
     // accumulate enum ids
     const refs = {}
-
     let fspiopSource
     let childSpan
-
     try {
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -91,19 +89,6 @@ class BulkQuotesModel {
       await this.validateBulkQuoteRequest(fspiopSource, fspiopDestination, bulkQuoteRequest)
       childSpan = span.getChild('qs_bulkquote_forwardBulkQuoteRequest')
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-    } catch (err) {
-      // internal-error
-      this.writeLog(`Error in handleBulkQuoteRequest for bulkQuoteId ${bulkQuoteRequest.bulkQuoteId}: ${getStackOrInspect(err)}`)
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
-      }
-
-      throw fspiopError
-    }
-    try {
       await childSpan.audit({ headers, payload: bulkQuoteRequest }, EventSdk.AuditEventAction.start)
       await this.forwardBulkQuoteRequest(headers, bulkQuoteRequest.bulkQuoteId, bulkQuoteRequest, childSpan)
     } catch (err) {
@@ -113,7 +98,7 @@ class BulkQuotesModel {
       this.writeLog(`Error forwarding quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
       await this.handleException(fspiopSource, bulkQuoteRequest.bulkQuoteId, err, headers, childSpan)
     } finally {
-      if (!childSpan.isFinished) {
+      if (childSpan && !childSpan.isFinished) {
         await childSpan.finish()
       }
     }
@@ -181,45 +166,28 @@ class BulkQuotesModel {
    * @returns {object} - object containing updated entities
    */
   async handleBulkQuoteUpdate (headers, bulkQuoteId, bulkQuoteUpdateRequest, span) {
-    try {
-      // ensure no 'accept' header is present in the request headers.
-      if ('accept' in headers) {
-        // internal-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-          `Update for bulk quote ${bulkQuoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
-      }
-      // accumulate enum ids
-      const refs = {}
-      // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-      const childSpan = span.getChild('qs_quote_forwardBulkQuoteUpdate')
-      try {
-        await childSpan.audit({ headers, params: { bulkQuoteId }, payload: bulkQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
-        await this.forwardBulkQuoteUpdate(headers, bulkQuoteId, bulkQuoteUpdateRequest, childSpan)
-      } catch (err) {
-        // any-error
-        // as we are on our own in this context, dont just rethrow the error, instead...
-        // get the model to handle it
-        const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-        this.writeLog(`Error forwarding bulk quote update: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-        await this.handleException(fspiopSource, bulkQuoteId, err, headers, childSpan)
-      } finally {
-        if (!childSpan.isFinished) {
-          await childSpan.finish()
-        }
-      }
-
-      // all ok, return refs
-      return refs
-    } catch (err) {
+    // ensure no 'accept' header is present in the request headers.
+    if ('accept' in headers) {
       // internal-error
-      this.writeLog(`Error in handleBulkQuoteUpdate: ${getStackOrInspect(err)}`)
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        `Update for bulk quote ${bulkQuoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
+    }
+    // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+    const childSpan = span.getChild('qs_quote_forwardBulkQuoteUpdate')
+    try {
+      await childSpan.audit({ headers, params: { bulkQuoteId }, payload: bulkQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
+      await this.forwardBulkQuoteUpdate(headers, bulkQuoteId, bulkQuoteUpdateRequest, childSpan)
+    } catch (err) {
+      // any-error
+      // as we are on our own in this context, dont just rethrow the error, instead...
+      // get the model to handle it
+      const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+      this.writeLog(`Error forwarding bulk quote update: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+      await this.handleException(fspiopSource, bulkQuoteId, err, headers, childSpan)
+    } finally {
+      if (childSpan && !childSpan.isFinished) {
+        await childSpan.finish()
       }
-      throw fspiopError
     }
   }
 
@@ -282,32 +250,20 @@ class BulkQuotesModel {
    */
   async handleBulkQuoteGet (headers, bulkQuoteId, span) {
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    const childSpan = span.getChild('qs_quote_forwardBulkQuoteGet')
     try {
-      const childSpan = span.getChild('qs_quote_forwardBulkQuoteGet')
-      try {
-        await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
-        await this.forwardBulkQuoteGet(headers, bulkQuoteId, childSpan)
-      } catch (err) {
-        // any-error
-        // as we are on our own in this context, dont just rethrow the error, instead...
-        // get the model to handle it
-        this.writeLog(`Error forwarding bulk quote get: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-        await this.handleException(fspiopSource, bulkQuoteId, err, headers, childSpan)
-      } finally {
-        if (!childSpan.isFinished) {
-          await childSpan.finish()
-        }
-      }
+      await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
+      await this.forwardBulkQuoteGet(headers, bulkQuoteId, childSpan)
     } catch (err) {
-      // internal-error
-      this.writeLog(`Error in handleQuoteGet: ${getStackOrInspect(err)}`)
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
+      // any-error
+      // as we are on our own in this context, dont just rethrow the error, instead...
+      // get the model to handle it
+      this.writeLog(`Error forwarding bulk quote get: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+      await this.handleException(fspiopSource, bulkQuoteId, err, headers, childSpan)
+    } finally {
+      if (childSpan && !childSpan.isFinished) {
+        await childSpan.finish()
       }
-      throw fspiopError
     }
   }
 
@@ -365,24 +321,23 @@ class BulkQuotesModel {
    */
   async handleBulkQuoteError (headers, bulkQuoteId, error, span) {
     let newError
+    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    const childSpan = span.getChild('qs_quote_forwardBulkQuoteError')
     try {
       // create a new object to represent the error
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
-
+      await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
       // Needed to add await here to prevent 'span already finished' bug
-      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, bulkQuoteId, headers, span, false)
-
+      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, bulkQuoteId, headers, childSpan, false)
       return newError
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleBulkQuoteError: ${getStackOrInspect(err)}`)
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
+      await this.handleException(fspiopSource, bulkQuoteId, err, headers, childSpan)
+    } finally {
+      if (childSpan && !childSpan.isFinished) {
+        await childSpan.finish()
       }
-      throw fspiopError
     }
   }
 
