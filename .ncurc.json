@@ -1,6 +1,8 @@
 {
   "reject": [
     "json-rules-engine",
-    "@mojaloop/sdk-standard-components"
+    "@mojaloop/sdk-standard-components",
+    "jest",
+    "jest-junit"
   ]
 }
