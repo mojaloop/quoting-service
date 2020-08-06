@@ -62,7 +62,7 @@
     "@hapi/hapi": "19.2.0",
     "@mojaloop/central-services-error-handling": "10.6.0",
     "@mojaloop/central-services-logger": "10.6.0",
-    "@mojaloop/central-services-shared": "11.0.0",
+    "@mojaloop/central-services-shared": "11.1.0",
     "@mojaloop/event-sdk": "10.6.0",
     "@mojaloop/ml-number": "8.2.0",
     "@mojaloop/sdk-standard-components": "10.3.2",
@@ -81,7 +81,7 @@
     "rc": "1.2.8"
   },
   "devDependencies": {
-    "@types/jest": "26.0.8",
+    "@types/jest": "26.0.9",
     "eslint": "7.6.0",
     "jest": "26.2.2",
     "jest-junit": "11.1.0",
