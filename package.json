@@ -41,7 +41,7 @@
     "test": "npm run test:unit",
     "test:unit": "npx jest --testMatch '**/test/unit/**/*.test.js'",
     "test:coverage": "npx jest --coverage --coverageThreshold='{}' --testMatch '**/test/unit/**/*.test.js'",
-    "test:coverage-check": "jest --coverage --testMatch '**/test/unit/**/*.test.js'",
+    "test:coverage-check": "npx jest --coverage --testMatch '**/test/unit/**/*.test.js'",
     "test:junit": "npx jest --reporters=default --reporters=jest-junit --testMatch '**/test/unit/**/*.test.js'",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
