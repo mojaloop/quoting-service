@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "12.0.1",
+  "version": "12.0.0",
   "author": "ModusBox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
@@ -65,7 +65,7 @@
     "@mojaloop/central-services-shared": "11.1.2",
     "@mojaloop/event-sdk": "10.6.0",
     "@mojaloop/ml-number": "8.2.0",
-    "@mojaloop/sdk-standard-components": "10.3.2",
+    "@mojaloop/sdk-standard-components": "11.0.0",
     "axios": "0.19.2",
     "blipp": "4.0.1",
     "eslint-config-standard": "14.1.1",

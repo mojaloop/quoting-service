@@ -13,6 +13,7 @@ RUN npm install
 
 RUN apk del build-dependencies
 
+COPY config /opt/quoting-service/config
 COPY src /opt/quoting-service/src
 
 FROM node:12.16.1-alpine
