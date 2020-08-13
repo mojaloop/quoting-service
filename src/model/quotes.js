@@ -30,12 +30,15 @@
  - Henk Kodde <henk.kodde@modusbox.com>
  - Matt Kingston <matt.kingston@modusbox.com>
  - Vassilis Barzokas <vassilis.barzokas@modusbox.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
 const axios = require('axios')
+const crypto = require('crypto')
 const util = require('util')
 
+const { MojaloopApiErrorCodes } = require('@mojaloop/sdk-standard-components').Errors
 const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
@@ -73,8 +76,8 @@ class QuotesModel {
 
     // Collect facts to supply to the rule engine
     // Get quote participants from central ledger admin
-    const { switchEndpoint } = new Config()
-    const url = `${switchEndpoint}/participants`
+    const { centralLedgerAdminServiceEndpoint } = new Config()
+    const url = `${centralLedgerAdminServiceEndpoint}/participants`
     const [payer, payee] = await Promise.all([
       axios.request({ url: `${url}/${headers['fspiop-source']}` }),
       axios.request({ url: `${url}/${headers['fspiop-destination']}` })
@@ -82,16 +85,40 @@ class QuotesModel {
 
     this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
 
+    if (payer.data.isActive === 0) {
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND,
+        `Payer FSP ID not found - Unsupported participant '${headers['fspiop-source']}'`, null, headers['fspiop-source'])
+    }
+    if (payee.data.isActive === 0) {
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
+        `Destination FSP Error - '${headers['fspiop-destination']}' is inactive`, null, headers['fspiop-source'])
+    }
+
+    const payerAccounts = Array.isArray(payer.data.accounts) ? payer.data.accounts : []
+    const payeeAccounts = Array.isArray(payee.data.accounts) ? payee.data.accounts : []
+
+    const activePayerAccounts = payerAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
+    const activePayeeAccounts = payeeAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
+
+    if (activePayerAccounts.length === 0) {
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_ERROR,
+        'Payer does not have any active account', null, headers['fspiop-source'])
+    }
+    if (activePayeeAccounts.length === 0) {
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_ERROR,
+        'Payee does not have any active account', null, headers['fspiop-source'])
+    }
+
     const facts = {
-      payer,
-      payee,
+      payer: payer.data,
+      payee: payee.data,
       payload: quoteRequest,
       headers
     }
 
     const { events } = await RulesEngine.run(rules, facts)
 
-    this.writeLog(`Rules engine returned events ${events}`)
+    this.writeLog(`Rules engine returned events ${JSON.stringify(events)}`)
 
     return events
   }
@@ -136,7 +163,9 @@ class QuotesModel {
         quoteRequest,
         headers: {
           ...headers,
-          'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp
+          'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp,
+          'fspiop-destinationcurrency': interceptQuoteEvents[0].params.rerouteToFspCurrency,
+          'fspiop-sourcecurrency': interceptQuoteEvents[0].params.sourceCurrency
         }
       }
     }
@@ -240,8 +269,10 @@ class QuotesModel {
         await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
 
         // create a txn reference
+        this.writeLog(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
         refs.transactionReferenceId = await this.db.createTransactionReference(txn,
           quoteRequest.quoteId, quoteRequest.transactionId)
+        this.writeLog(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
 
         // get the initiator type
         refs.transactionInitiatorTypeId = await this.db.getInitiatorType(quoteRequest.transactionType.initiatorType)
@@ -363,7 +394,7 @@ class QuotesModel {
     let endpoint
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-    const envConfig = new Config()
+    // const envConfig = new Config()
 
     try {
       if (!originalQuoteRequest) {
@@ -374,13 +405,14 @@ class QuotesModel {
       // lookup payee dfsp callback endpoint
       // TODO: for MVP we assume initiator is always payer dfsp! this may not always be the
       // case if a xfer is requested by payee
-      if (envConfig.simpleRoutingMode) {
-        endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
-      } else {
-        endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYEE')
-      }
+      // if (envConfig.simpleRoutingMode) {
+      //   endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
+      // } else {
+      //   endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYEE')
+      // }
+      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
 
-      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
+      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${endpoint}, destination: ${fspiopDest}`)
 
       if (!endpoint) {
         // internal-error
@@ -600,7 +632,7 @@ class QuotesModel {
    */
   async forwardQuoteUpdate (headers, quoteId, originalQuoteResponse, span) {
     let endpoint = null
-    const envConfig = new Config()
+    // const envConfig = new Config()
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
@@ -612,12 +644,13 @@ class QuotesModel {
       }
 
       // lookup payer dfsp callback endpoint
-      if (envConfig.simpleRoutingMode) {
-        endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
-      } else {
-        // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-        endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
-      }
+      // if (envConfig.simpleRoutingMode) {
+      //   endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
+      // } else {
+      //   // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
+      //   endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
+      // }
+      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
 
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
 
@@ -632,7 +665,7 @@ class QuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/master/API%20Definition%20v1.0.pdf
-      const newHeaders = generateRequestHeaders(headers, true)
+      const newHeaders = this.generateRequestHeaders(headers, true)
 
       this.writeLog(`Forwarding quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote response headers: ${JSON.stringify(newHeaders)}`)
@@ -840,7 +873,25 @@ class QuotesModel {
     const childSpan = span.getChild('qs_quote_sendErrorCallback')
     try {
       await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
-      return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan, true)
+      const syncErrorCodes = [
+        MojaloopApiErrorCodes.MISSING_ELEMENT.code,
+        MojaloopApiErrorCodes.VALIDATION_ERROR.code,
+        MojaloopApiErrorCodes.MALFORMED_SYNTAX.code
+      ]
+      if (error.name === 'FSPIOPError' && syncErrorCodes.includes(error.apiErrorCode.code)) {
+        // We should respond synchronously
+        const envConfig = new Config()
+        return {
+          body: error.toApiErrorObject(envConfig.errorHandling),
+          code: ENUM.Http.ReturnCodes.BADREQUEST.CODE
+        }
+      } else {
+        // We should respond asynchronously
+        await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan, true)
+        return {
+          code: ENUM.Http.ReturnCodes.ACCEPTED.CODE
+        }
+      }
     } catch (err) {
       // any-error
       // not much we can do other than log the error
@@ -1061,6 +1112,93 @@ class QuotesModel {
       this.writeLog(`Error in checkDuplicateQuoteResponse: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
+  }
+
+  /**
+   * Utility function to remove null and undefined keys from an object.
+   * This is useful for removing "nulls" that come back from database queries
+   * when projecting into API spec objects
+   *
+   * @returns {object}
+   */
+  removeEmptyKeys (originalObject) {
+    const obj = { ...originalObject }
+    Object.keys(obj).forEach(key => {
+      if (obj[key] && typeof obj[key] === 'object') {
+        if (Object.keys(obj[key]).length < 1) {
+          // remove empty object
+          delete obj[key]
+        } else {
+          // recurse
+          obj[key] = this.removeEmptyKeys(obj[key])
+        }
+      } else if (obj[key] == null) {
+        // null or undefined, remove it
+        delete obj[key]
+      }
+    })
+    return obj
+  }
+
+  /**
+   * Returns the SHA-256 hash of the supplied request object
+   *
+   * @returns {undefined}
+   */
+  calculateRequestHash (request) {
+    // calculate a SHA-256 of the request
+    const requestStr = JSON.stringify(request)
+    return crypto.createHash('sha256').update(requestStr).digest('hex')
+  }
+
+  /**
+   * Generates and returns an object containing API spec compliant HTTP request headers
+   *
+   * @returns {object}
+   */
+  generateRequestHeaders (headers, noAccept) {
+    const ret = {
+      'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+      Date: headers.date,
+      'FSPIOP-Source': headers['fspiop-source'],
+      'FSPIOP-SourceCurrency': headers['fspiop-sourcecurrency'],
+      'FSPIOP-Destination': headers['fspiop-destination'],
+      'FSPIOP-DestinationCurrency': headers['fspiop-destinationcurrency'],
+      'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
+      'FSPIOP-Signature': headers['fspiop-signature'],
+      'FSPIOP-URI': headers['fspiop-uri'],
+      Accept: null
+    }
+
+    if (!noAccept) {
+      ret.Accept = 'application/vnd.interoperability.quotes+json;version=1'
+    }
+
+    return this.removeEmptyKeys(ret)
+  }
+
+  /**
+   * Generates and returns an object containing API spec compliant lowercase HTTP request headers for JWS Signing
+   *
+   * @returns {object}
+   */
+  generateRequestHeadersForJWS (headers, noAccept) {
+    const ret = {
+      'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+      date: headers.date,
+      'fspiop-source': headers['fspiop-source'],
+      'fspiop-destination': headers['fspiop-destination'],
+      'fspiop-http-method': headers['fspiop-http-method'],
+      'fspiop-signature': headers['fspiop-signature'],
+      'fspiop-uri': headers['fspiop-uri'],
+      Accept: null
+    }
+
+    if (!noAccept) {
+      ret.Accept = 'application/vnd.interoperability.quotes+json;version=1'
+    }
+
+    return this.removeEmptyKeys(ret)
   }
 
   /**

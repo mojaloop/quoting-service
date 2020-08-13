@@ -1882,7 +1882,7 @@
             "$ref": "#/definitions/Extension"
           },
           "minItems": 1,
-          "maxItems": 16,
+          "maxItems": 17,
           "description": "Number of Extension elements"
         }
       },
@@ -2201,15 +2201,21 @@
       "properties": {
         "firstName": {
           "type": "string",
-          "description": "Party’s first name."
+          "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+          "description": "Party’s first name.",
+          "minLength": 1
         },
         "middleName": {
           "type": "string",
-          "description": "Party’s middle name."
+          "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+          "description": "Party’s middle name.",
+          "minLength": 1
         },
         "lastName": {
           "type": "string",
-          "description": "Party’s last name."
+          "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+          "description": "Party’s last name.",
+          "minLength": 1
         }
       }
     },
@@ -2268,7 +2274,7 @@
           "description": "First, middle and last name for the Party."
         },
         "dateOfBirth": {
-          "type": "string",
+          "$ref": "#/definitions/DateOfBirth",
           "description": "Date of birth for the Party."
         }
       }

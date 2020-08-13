@@ -52,7 +52,7 @@ const fxRules = {
           operator: 'notIn',
           value: {
             fact: 'payee',
-            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
+            path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive == 1)].currency'
           }
         },
         {
@@ -91,7 +91,7 @@ const fxRules = {
           operator: 'notIn',
           value: {
             fact: 'payer',
-            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
+            path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive == 1)].currency'
           }
         },
         {
@@ -130,7 +130,7 @@ const fxRules = {
           operator: 'notIn',
           value: {
             fact: 'payee',
-            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
+            path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive == 1)].currency'
           }
         },
         {
@@ -169,7 +169,7 @@ const fxRules = {
           operator: 'notIn',
           value: {
             fact: 'payer',
-            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
+            path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive == 1)].currency'
           }
         },
         {
@@ -204,7 +204,7 @@ const fxRules = {
           operator: 'notIn',
           value: {
             fact: 'payer',
-            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
+            path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive == 1)].currency'
           }
         }
       ]
@@ -232,7 +232,7 @@ const fxRules = {
           operator: 'notIn',
           value: {
             fact: 'payee',
-            path: '$.accounts[?(@.ledgerAccountType == \'SETTLEMENT\')].currency'
+            path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive == 1)].currency'
           }
         }
       ]
@@ -276,6 +276,129 @@ const fxRules = {
         message: 'The payer FSP does not match the fspiop-source header'
       }
     }
+  },
+  firstNameMissing: { // First Name is missing from the quote request
+    conditions: {
+      all: [
+        {
+          any: [
+            {
+              fact: 'payload',
+              path: '$.amount.currency',
+              operator: 'notIn',
+              value: {
+                fact: 'payee',
+                path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive  == 1)].currency'
+              }
+            },
+            {
+              fact: 'payload',
+              path: '$.amount.currency',
+              operator: 'notIn',
+              value: {
+                fact: 'payer',
+                path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive  == 1)].currency'
+              }
+            }
+          ]
+        },
+        {
+          fact: 'payload',
+          path: '$.payer.personalInfo.complexName.firstName',
+          operator: 'isString',
+          value: false
+        }
+      ]
+    },
+    event: {
+      type: 'INVALID_QUOTE_REQUEST',
+      params: {
+        FSPIOPError: 'MISSING_ELEMENT',
+        message: 'child \'Party\' fails because [child \'PartyPersonalInfo\' fails because [child \'PartyComplexName\' fails because [child \'firstName\' fails because [\'firstName\' is required]]]]'
+      }
+    }
+  },
+  payerHasMoreThanOneCurrency: { // Payer has more than one currency
+    conditions: {
+      all: [
+        {
+          any: [
+            {
+              fact: 'payload',
+              path: '$.amount.currency',
+              operator: 'notIn',
+              value: {
+                fact: 'payer',
+                path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive  == 1)].currency'
+              }
+            },
+            {
+              fact: 'payload',
+              path: '$.amount.currency',
+              operator: 'notIn',
+              value: {
+                fact: 'payee',
+                path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive  == 1)].currency'
+              }
+            }
+          ]
+        },
+        {
+          fact: 'payer',
+          path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive  == 1)]',
+          operator: 'isArray',
+          value: true
+        }
+      ]
+    },
+    event: {
+      type: 'INVALID_QUOTE_REQUEST',
+      params: {
+        FSPIOPError: 'PAYER_ERROR',
+        message: 'Payer FSP has more than 1 active currency account. Switch does not support more than 1 active currency account for Forex Requests'
+      }
+    }
+  },
+  payeeHasMoreThanOneCurrency: { // Payee has more than one currency
+    conditions: {
+      all: [
+        {
+          any: [
+            {
+              fact: 'payload',
+              path: '$.amount.currency',
+              operator: 'notIn',
+              value: {
+                fact: 'payer',
+                path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive  == 1)].currency'
+              }
+            },
+            {
+              fact: 'payload',
+              path: '$.amount.currency',
+              operator: 'notIn',
+              value: {
+                fact: 'payee',
+                path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive  == 1)].currency'
+              }
+            }
+          ]
+        },
+        {
+          fact: 'payee',
+          path: '$.accounts[?(@.ledgerAccountType == \'POSITION\' && @.isActive  == 1)]',
+          operator: 'isArray',
+          value: true
+        }
+      ]
+    },
+    event: {
+      type: 'INVALID_QUOTE_REQUEST',
+      params: {
+        FSPIOPError: 'PAYEE_ERROR',
+        message: 'Payee FSP has more than 1 active currency account. Switch does not support more than 1 active currency account for Forex Requests'
+      }
+    }
   }
 }
 
@@ -298,7 +421,7 @@ describe('Forex rules', () => {
         },
         payee: {
           accounts: [
-            { ledgerAccountType: 'SETTLEMENT', currency: 'XYZ' }
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'XYZ' }
           ]
         }
       }
@@ -324,7 +447,7 @@ describe('Forex rules', () => {
         },
         payer: {
           accounts: [
-            { ledgerAccountType: 'SETTLEMENT', currency: 'xyz' }
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'xyz' }
           ]
         }
       }
@@ -350,7 +473,7 @@ describe('Forex rules', () => {
         },
         payee: {
           accounts: [
-            { ledgerAccountType: 'SETTLEMENT', currency: 'EUR' }
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'EUR' }
           ]
         }
       }
@@ -376,7 +499,7 @@ describe('Forex rules', () => {
         },
         payer: {
           accounts: [
-            { ledgerAccountType: 'SETTLEMENT', currency: 'xyz' }
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'xyz' }
           ]
         }
       }
@@ -385,7 +508,7 @@ describe('Forex rules', () => {
     })
   })
   describe('payerUnsupportedCurrency', () => {
-    it('raises INTERCEPT_QUOTE', async () => {
+    it('raises INVALID_QUOTE_REQUEST', async () => {
       const testFacts = {
         payload: {
           payer: {
@@ -403,7 +526,7 @@ describe('Forex rules', () => {
         },
         payer: {
           accounts: [
-            { ledgerAccountType: 'SETTLEMENT', currency: 'xyz' }
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'xyz' }
           ]
         }
       }
@@ -412,7 +535,7 @@ describe('Forex rules', () => {
     })
   })
   describe('payeeUnsupportedCurrency', () => {
-    it('raises INTERCEPT_QUOTE', async () => {
+    it('raises INVALID_QUOTE_REQUEST', async () => {
       const testFacts = {
         payload: {
           payer: {
@@ -430,7 +553,7 @@ describe('Forex rules', () => {
         },
         payee: {
           accounts: [
-            { ledgerAccountType: 'SETTLEMENT', currency: 'xyz' }
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'xyz' }
           ]
         }
       }
@@ -439,7 +562,7 @@ describe('Forex rules', () => {
     })
   })
   describe('FSPIOPSourceDoesNotMatchPayer', () => {
-    it('raises INTERCEPT_QUOTE', async () => {
+    it('raises INVALID_QUOTE_REQUEST', async () => {
       const testFacts = {
         payload: {
           payer: {
@@ -457,12 +580,119 @@ describe('Forex rules', () => {
         },
         payee: {
           accounts: [
-            { ledgerAccountType: 'SETTLEMENT', currency: 'xyz' }
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'xyz' }
           ]
         }
       }
       const { events } = await RulesEngine.run([fxRules.FSPIOPSourceDoesNotMatchPayer], testFacts)
       expect(events).toEqual([fxRules.FSPIOPSourceDoesNotMatchPayer.event])
+    })
+  })
+  describe('firstNameMissing', () => {
+    it('raises INVALID_QUOTE_REQUEST', async () => {
+      const testFacts = {
+        payload: {
+          payer: {
+            partyIdInfo: {
+              fspId: 'payerfsp'
+            }
+          },
+          personalInfo: {
+            complexName: {
+              lastName: 'Hagman'
+            },
+            dateOfBirth: '1983-10-25'
+          },
+          amountType: 'RECEIVE',
+          amount: {
+            currency: 'XOF'
+          }
+        },
+        headers: {
+          'fspiop-source': 'payerfsp'
+        },
+        payer: {
+          accounts: [
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'EUR' }
+          ]
+        },
+        payee: {
+          accounts: [
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'XOF' }
+          ]
+        }
+
+      }
+      const { events } = await RulesEngine.run([fxRules.firstNameMissing], testFacts)
+      expect(events).toEqual([fxRules.firstNameMissing.event])
+    })
+  })
+  describe('payerHasMoreThanOneCurrency', () => {
+    it('raises INVALID_QUOTE_REQUEST', async () => {
+      const testFacts = {
+        payload: {
+          payer: {
+            partyIdInfo: {
+              fspId: 'payerfsp'
+            }
+          },
+          amountType: 'RECEIVE',
+          amount: {
+            currency: 'XOF'
+          }
+        },
+        headers: {
+          'fspiop-source': 'payerfsp'
+        },
+        payer: {
+          accounts: [
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'EUR' },
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'USD' }
+          ]
+        },
+        payee: {
+          accounts: [
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'XOF' }
+          ]
+        }
+
+      }
+      const { events } = await RulesEngine.run([fxRules.payerHasMoreThanOneCurrency], testFacts)
+      expect(events).toEqual([fxRules.payerHasMoreThanOneCurrency.event])
+    })
+  })
+  describe('payeeHasMoreThanOneCurrency', () => {
+    it('raises INVALID_QUOTE_REQUEST', async () => {
+      const testFacts = {
+        payload: {
+          payer: {
+            partyIdInfo: {
+              fspId: 'payerfsp'
+            }
+          },
+          amountType: 'RECEIVE',
+          amount: {
+            currency: 'XOF'
+          }
+        },
+        headers: {
+          'fspiop-source': 'payerfsp'
+        },
+        payer: {
+          accounts: [
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'EUR' }
+          ]
+        },
+        payee: {
+          accounts: [
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'XOF' },
+            { isActive: 1, ledgerAccountType: 'POSITION', currency: 'USD' }
+          ]
+        }
+
+      }
+      const { events } = await RulesEngine.run([fxRules.payeeHasMoreThanOneCurrency], testFacts)
+      expect(events).toEqual([fxRules.payeeHasMoreThanOneCurrency.event])
     })
   })
 })

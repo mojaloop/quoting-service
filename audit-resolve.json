@@ -1,74 +1,9 @@
 {
   "decisions": {
-    "1523|@mojaloop/central-services-error-handling>lodash": {
+    "1500|npm-audit-resolver>audit-resolve-core>yargs-parser": {
       "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/central-services-shared>@mojaloop/central-services-error-handling>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/central-services-logger>winston>async>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/central-services-shared>@mojaloop/central-services-logger>winston>async>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/central-services-shared>@mojaloop/event-sdk>@mojaloop/central-services-logger>winston>async>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/event-sdk>@mojaloop/central-services-logger>winston>async>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/central-services-shared>@mojaloop/event-sdk>winston>async>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/event-sdk>winston>async>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/central-services-shared>@mojaloop/event-sdk>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/event-sdk>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/central-services-shared>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/central-services-shared>openapi-backend>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|@mojaloop/central-services-shared>openapi-backend>mock-json-schema>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
-    },
-    "1523|knex>lodash": {
-      "decision": "ignore",
-      "madeAt": 1593690759717,
-      "expiresAt": 1594295539291
+      "madeAt": 1593089870124,
+      "expiresAt": 1595681864774
     }
   },
   "rules": {},

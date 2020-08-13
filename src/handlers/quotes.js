@@ -78,14 +78,13 @@ module.exports = {
       // call the quote request handler in the model
       const result = await model.handleQuoteRequest(request.headers, request.payload, span)
       request.server.log(['info'], `POST quote request succeeded and returned: ${util.inspect(result)}`)
+      return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - POST /quotes: ${LibUtil.getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      await model.handleException(fspiopSource, quoteId, fspiopError, request.headers, span)
-    } finally {
-      // eslint-disable-next-line no-unsafe-finally
-      return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
+      const { body, code } = await model.handleException(fspiopSource, quoteId, fspiopError, request.headers, span)
+      return h.response(body).code(code)
     }
   }
 }
