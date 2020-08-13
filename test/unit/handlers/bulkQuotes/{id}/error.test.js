@@ -29,18 +29,85 @@
  --------------
  ******/
 
-const BulkQuotesErrorHandler = require('../../../../../src/handlers/bulkQuotes/{id}/error')
+const Enum = require('@mojaloop/central-services-shared').Enum
 
-describe('/bulkQuotes/error/{id}', () => {
+jest.mock('@mojaloop/central-services-logger')
+jest.mock('../../../../../src/model/bulkQuotes')
+
+const BulkQuotesErrorHandler = require('../../../../../src/handlers/bulkQuotes/{id}/error')
+const BulkQuotesModel = require('../../../../../src/model/bulkQuotes')
+const { baseMockRequest } = require('../../../../util/helper')
+
+const mockContext = jest.fn()
+
+describe('/bulkQuotes/{id}/error', () => {
+  beforeEach(() => {
+    BulkQuotesModel.mockClear()
+  })
+
   describe('PUT', () => {
-    it('throws NOT IMPLEMENTED error', async () => {
+    it('handles an error', async () => {
       // Arrange
+      const request = {
+        ...baseMockRequest,
+        payload: {
+          errorInformation: {
+            errorCode: '2201',
+            errorDescription: 'Test Error'
+          }
+        }
+      }
+      const code = jest.fn()
+      const handler = {
+        response: jest.fn(() => ({
+          code
+        }))
+      }
 
       // Act
-      const action = () => BulkQuotesErrorHandler.put()
+      await BulkQuotesErrorHandler.put(mockContext, request, handler)
 
       // Assert
-      expect(action).toThrowError('Bulk quotes not implemented')
+      expect(BulkQuotesModel).toHaveBeenCalledTimes(1)
+      const mockQuoteInstance = BulkQuotesModel.mock.instances[0]
+      expect(mockQuoteInstance.handleBulkQuoteError).toHaveBeenCalledTimes(1)
+      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
+    })
+
+    it('handles an error with the model', async () => {
+      // Arrange
+      const request = {
+        ...baseMockRequest,
+        payload: {
+          errorInformation: {
+            errorCode: '2201',
+            errorDescription: 'Test Error'
+          }
+        }
+      }
+      const handleException = jest.fn()
+      BulkQuotesModel.mockImplementationOnce(() => {
+        return {
+          handleBulkQuoteError: () => {
+            throw new Error('Test error')
+          },
+          handleException
+        }
+      })
+      const code = jest.fn()
+      const handler = {
+        response: jest.fn(() => ({
+          code
+        }))
+      }
+
+      // Act
+      await BulkQuotesErrorHandler.put(mockContext, request, handler)
+
+      // Assert
+      expect(BulkQuotesModel).toHaveBeenCalledTimes(1)
+      expect(handleException).toHaveBeenCalledTimes(1)
+      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
     })
   })
 })

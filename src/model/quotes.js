@@ -34,7 +34,6 @@
  ******/
 
 const axios = require('axios')
-const crypto = require('crypto')
 const util = require('util')
 
 const ENUM = require('@mojaloop/central-services-shared').Enum
@@ -47,7 +46,7 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
-const { getStackOrInspect } = require('../lib/util')
+const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 const rules = require('../../config/rules.json')
 const RulesEngine = require('./rules.js')
@@ -164,8 +163,8 @@ class QuotesModel {
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
 
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP)
-    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP)
+    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
   }
 
   /**
@@ -237,7 +236,7 @@ class QuotesModel {
         // todo: validation
 
         // if we get here we need to create a duplicate check row
-        const hash = this.calculateRequestHash(quoteRequest)
+        const hash = calculateRequestHash(quoteRequest)
         await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
 
         // create a txn reference
@@ -391,7 +390,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes`
-      const newHeaders = this.generateRequestHeaders(headers)
+      const newHeaders = generateRequestHeaders(headers)
 
       this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)
@@ -511,7 +510,7 @@ class QuotesModel {
         refs.quoteResponseId = newQuoteResponse.quoteResponseId
 
         // if we get here we need to create a duplicate check row
-        const hash = this.calculateRequestHash(quoteUpdateRequest)
+        const hash = calculateRequestHash(quoteUpdateRequest)
         await this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash)
 
         // create ilp packet in the db
@@ -633,7 +632,7 @@ class QuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/master/API%20Definition%20v1.0.pdf
-      const newHeaders = this.generateRequestHeaders(headers, true)
+      const newHeaders = generateRequestHeaders(headers, true)
 
       this.writeLog(`Forwarding quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote response headers: ${JSON.stringify(newHeaders)}`)
@@ -807,7 +806,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes/${quoteId}`
-      const newHeaders = this.generateRequestHeaders(headers)
+      const newHeaders = generateRequestHeaders(headers)
 
       this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
 
@@ -904,9 +903,9 @@ class QuotesModel {
 
       // JWS Signer expects headers in lowercase
       if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = this.generateRequestHeadersForJWS(fromSwitchHeaders, true)
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, true)
       } else {
-        formattedHeaders = this.generateRequestHeaders(fromSwitchHeaders, true)
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, true)
       }
 
       let opts = {
@@ -986,7 +985,7 @@ class QuotesModel {
   async checkDuplicateQuoteRequest (quoteRequest) {
     try {
       // calculate a SHA-256 of the request
-      const hash = this.calculateRequestHash(quoteRequest)
+      const hash = calculateRequestHash(quoteRequest)
       this.writeLog(`Calculated sha256 hash of quote request with id ${quoteRequest.quoteId} as: ${hash}`)
 
       const dupchk = await this.db.getQuoteDuplicateCheck(quoteRequest.quoteId)
@@ -1030,7 +1029,7 @@ class QuotesModel {
   async checkDuplicateQuoteResponse (quoteId, quoteResponse) {
     try {
       // calculate a SHA-256 of the request
-      const hash = this.calculateRequestHash(quoteResponse)
+      const hash = calculateRequestHash(quoteResponse)
       this.writeLog(`Calculated sha256 hash of quote response with id ${quoteId} as: ${hash}`)
 
       const dupchk = await this.db.getQuoteResponseDuplicateCheck(quoteId)
@@ -1062,91 +1061,6 @@ class QuotesModel {
       this.writeLog(`Error in checkDuplicateQuoteResponse: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
-  }
-
-  /**
-   * Utility function to remove null and undefined keys from an object.
-   * This is useful for removing "nulls" that come back from database queries
-   * when projecting into API spec objects
-   *
-   * @returns {object}
-   */
-  removeEmptyKeys (originalObject) {
-    const obj = { ...originalObject }
-    Object.keys(obj).forEach(key => {
-      if (obj[key] && typeof obj[key] === 'object') {
-        if (Object.keys(obj[key]).length < 1) {
-          // remove empty object
-          delete obj[key]
-        } else {
-          // recurse
-          obj[key] = this.removeEmptyKeys(obj[key])
-        }
-      } else if (obj[key] == null) {
-        // null or undefined, remove it
-        delete obj[key]
-      }
-    })
-    return obj
-  }
-
-  /**
-   * Returns the SHA-256 hash of the supplied request object
-   *
-   * @returns {undefined}
-   */
-  calculateRequestHash (request) {
-    // calculate a SHA-256 of the request
-    const requestStr = JSON.stringify(request)
-    return crypto.createHash('sha256').update(requestStr).digest('hex')
-  }
-
-  /**
-   * Generates and returns an object containing API spec compliant HTTP request headers
-   *
-   * @returns {object}
-   */
-  generateRequestHeaders (headers, noAccept) {
-    const ret = {
-      'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
-      Date: headers.date,
-      'FSPIOP-Source': headers['fspiop-source'],
-      'FSPIOP-Destination': headers['fspiop-destination'],
-      'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
-      'FSPIOP-Signature': headers['fspiop-signature'],
-      'FSPIOP-URI': headers['fspiop-uri'],
-      Accept: null
-    }
-
-    if (!noAccept) {
-      ret.Accept = 'application/vnd.interoperability.quotes+json;version=1'
-    }
-
-    return this.removeEmptyKeys(ret)
-  }
-
-  /**
-   * Generates and returns an object containing API spec compliant lowercase HTTP request headers for JWS Signing
-   *
-   * @returns {object}
-   */
-  generateRequestHeadersForJWS (headers, noAccept) {
-    const ret = {
-      'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
-      date: headers.date,
-      'fspiop-source': headers['fspiop-source'],
-      'fspiop-destination': headers['fspiop-destination'],
-      'fspiop-http-method': headers['fspiop-http-method'],
-      'fspiop-signature': headers['fspiop-signature'],
-      'fspiop-uri': headers['fspiop-uri'],
-      Accept: null
-    }
-
-    if (!noAccept) {
-      ret.Accept = 'application/vnd.interoperability.quotes+json;version=1'
-    }
-
-    return this.removeEmptyKeys(ret)
   }
 
   /**

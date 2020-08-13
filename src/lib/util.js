@@ -33,6 +33,7 @@
 'use strict'
 
 const util = require('util')
+const crypto = require('crypto')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Logger = require('@mojaloop/central-services-logger')
 
@@ -92,9 +93,98 @@ function getSafe (path, obj) {
   return path.reduce((xs, x) => (xs && xs[x]) ? xs[x] : undefined, obj)
 }
 
+/**
+ * Utility function to remove null and undefined keys from an object.
+ * This is useful for removing "nulls" that come back from database queries
+ * when projecting into API spec objects
+ *
+ * @returns {object}
+ */
+function removeEmptyKeys (originalObject) {
+  const obj = { ...originalObject }
+  Object.keys(obj).forEach(key => {
+    if (obj[key] && typeof obj[key] === 'object') {
+      if (Object.keys(obj[key]).length < 1) {
+        // remove empty object
+        delete obj[key]
+      } else {
+        // recurse
+        obj[key] = removeEmptyKeys(obj[key])
+      }
+    } else if (obj[key] == null) {
+      // null or undefined, remove it
+      delete obj[key]
+    }
+  })
+  return obj
+}
+
+/**
+ * Generates and returns an object containing API spec compliant HTTP request headers
+ *
+ * @returns {object}
+ */
+function generateRequestHeaders (headers, noAccept) {
+  const ret = {
+    'Content-Type': headers['content-type'] || headers['Content-Type'],
+    Date: headers.date,
+    'FSPIOP-Source': headers['fspiop-source'],
+    'FSPIOP-Destination': headers['fspiop-destination'],
+    'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
+    'FSPIOP-Signature': headers['fspiop-signature'],
+    'FSPIOP-URI': headers['fspiop-uri'],
+    Accept: null
+  }
+
+  if (!noAccept) {
+    ret.Accept = headers.accept || headers.Accept
+  }
+
+  return removeEmptyKeys(ret)
+}
+
+/**
+ * Generates and returns an object containing API spec compliant lowercase HTTP request headers for JWS Signing
+ *
+ * @returns {object}
+ */
+function generateRequestHeadersForJWS (headers, noAccept) {
+  const ret = {
+    'Content-Type': headers['content-type'] || headers['Content-Type'],
+    date: headers.date,
+    'fspiop-source': headers['fspiop-source'],
+    'fspiop-destination': headers['fspiop-destination'],
+    'fspiop-http-method': headers['fspiop-http-method'],
+    'fspiop-signature': headers['fspiop-signature'],
+    'fspiop-uri': headers['fspiop-uri'],
+    Accept: null
+  }
+
+  if (!noAccept) {
+    ret.Accept = headers.accept || headers.Accept
+  }
+
+  return removeEmptyKeys(ret)
+}
+
+/**
+ * Returns the SHA-256 hash of the supplied request object
+ *
+ * @returns {undefined}
+ */
+function calculateRequestHash (request) {
+  // calculate a SHA-256 of the request
+  const requestStr = JSON.stringify(request)
+  return crypto.createHash('sha256').update(requestStr).digest('hex')
+}
+
 module.exports = {
   failActionHandler,
   getSafe,
   getSpanTags,
-  getStackOrInspect
+  getStackOrInspect,
+  generateRequestHeaders,
+  generateRequestHeadersForJWS,
+  calculateRequestHash,
+  removeEmptyKeys
 }
