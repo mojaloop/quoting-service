@@ -342,20 +342,30 @@ class Database {
      *
      * @returns {promise} - id of the participant
      */
-  async getParticipant (participantName, participantType, currencyId, ledgerAccountTypeId = Enum.Accounts.LedgerAccountType.POSITION) {
+  async getParticipant (participantName, participantType, currencyId = null, ledgerAccountTypeId = Enum.Accounts.LedgerAccountType.POSITION) {
     try {
-      const rows = await this.queryBuilder('participant')
-        .innerJoin('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
-        .where({ 'participant.name': participantName })
-        .andWhere({ 'participantCurrency.currencyId': currencyId })
-        .andWhere({ 'participantCurrency.ledgerAccountTypeId': ledgerAccountTypeId })
-        .andWhere({ 'participantCurrency.isActive': true })
-        .andWhere({ 'participant.isActive': true })
-        .select(
-          'participant.*',
-          'participantCurrency.participantCurrencyId',
-          'participantCurrency.currencyId'
-        )
+      let rows
+      if (currencyId != null) {
+        rows = await this.queryBuilder('participant')
+          .innerJoin('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
+          .where({ 'participant.name': participantName })
+          .andWhere({ 'participantCurrency.currencyId': currencyId })
+          .andWhere({ 'participantCurrency.ledgerAccountTypeId': ledgerAccountTypeId })
+          .andWhere({ 'participantCurrency.isActive': true })
+          .andWhere({ 'participant.isActive': true })
+          .select(
+            'participant.*',
+            'participantCurrency.participantCurrencyId',
+            'participantCurrency.currencyId'
+          )
+      } else {
+        rows = await this.queryBuilder('participant')
+          .where({
+            name: participantName,
+            isActive: 1
+          })
+          .select()
+      }
       if ((!rows) || rows.length < 1) {
         // active participant does not exist, this is an error
         if (participantType && participantType === LOCAL_ENUM.PAYEE_DFSP) {

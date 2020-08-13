@@ -177,6 +177,7 @@ class QuotesModel {
    * @returns {promise} - promise will reject if request is not valid
    */
   async validateQuoteRequest (fspiopSource, fspiopDestination, quoteRequest) {
+    const envConfig = new Config()
     // note that the framework should validate the form of the request
     // here we can do some hard-coded rule validations to ensure requests
     // do not lead to unsupported scenarios or use-cases.
@@ -191,9 +192,13 @@ class QuotesModel {
       // internal-error
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
-
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    if (!envConfig.simpleRoutingMode) {
+      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    } else {
+      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP)
+      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP)
+    }
   }
 
   /**
