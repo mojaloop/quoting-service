@@ -32,30 +32,97 @@
 
 'use strict'
 
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-
+const util = require('util')
+const Enum = require('@mojaloop/central-services-shared').Enum
+const EventSdk = require('@mojaloop/event-sdk')
+const LibUtil = require('../../lib/util')
+const BulkQuotesModel = require('../../model/bulkQuotes.js')
 /**
  * Operations on /bulkQuotes/{id}
  */
 module.exports = {
   /**
-     * summary: BulkQuotesById
+     * summary: getBulkQuotesById
      * description: The HTTP request GET /bulkQuotes/&lt;id&gt; is used to get information regarding an earlier created or requested bulk quote. The &lt;id&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote.
      * parameters: Accept
      * produces: application/json
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  get: function BulkQuotesById (context, request, h) {
-    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Bulk quotes not implemented')
+  get: async function getBulkQuotesById (context, request, h) {
+    // log request
+    request.server.log(['info'], `got a GET /bulkQuotes/{id} request for bulkQuoteId ${request.params.id}`)
+
+    // instantiate a new quote model
+    const model = new BulkQuotesModel({
+      db: request.server.app.database,
+      requestId: request.info.id
+    })
+
+    // extract some things from the request we may need if we have to deal with an error e.g. the
+    // originator and quoteId
+    const bulkQuoteId = request.params.id
+    const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
+
+    const span = request.span
+    try {
+      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.GET)
+      span.setTags(spanTags)
+      await span.audit({
+        headers: request.headers,
+        payload: request.payload
+      }, EventSdk.AuditEventAction.start)
+      // call the model to re-forward the quote update to the correct party
+      // note that we do not check if our caller is the correct party, but we
+      // will send the callback to the correct party regardless.
+      model.handleBulkQuoteGet(request.headers, bulkQuoteId, span)
+    } catch (err) {
+      // something went wrong, use the model to handle the error in a sensible way
+      request.server.log(['error'], `ERROR - GET /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
+      model.handleException(fspiopSource, bulkQuoteId, err, request.headers, span)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
+    }
   },
   /**
-     * summary: BulkQuotesById
+     * summary: putBulkQuotesById
      * description: The callback PUT /bulkQuotes/&lt;id&gt; is used to inform the client of a requested or created bulk quote. The &lt;id&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;id&gt; that was used in the GET /bulkQuotes/&lt;id&gt;.
      * parameters: body, Content-Length
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
-  put: function BulkQuotesById1 (context, request, h) {
-    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Bulk quotes not implemented')
+  put: async function putBulkQuotesById (context, request, h) {
+    // log request
+    request.server.log(['info'], `got a PUT /bulkQuotes/{id} request: ${util.inspect(request.payload)}`)
+
+    // instantiate a new quote model
+    const model = new BulkQuotesModel({
+      db: request.server.app.database,
+      requestId: request.info.id
+    })
+
+    // extract some things from the request we may need if we have to deal with an error e.g. the
+    // originator and quoteId
+    const bulkQuoteId = request.params.id
+    const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
+
+    const span = request.span
+    try {
+      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.FULFIL)
+      span.setTags(spanTags)
+      await span.audit({
+        headers: request.headers,
+        payload: request.payload
+      }, EventSdk.AuditEventAction.start)
+      // call the quote update handler in the model
+      model.handleBulkQuoteUpdate(request.headers, bulkQuoteId, request.payload, span)
+    } catch (err) {
+      // something went wrong, use the model to handle the error in a sensible way
+      request.server.log(['error'], `ERROR - PUT /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
+      model.handleException(fspiopSource, bulkQuoteId, err, request.headers, span)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return h.response().code(Enum.Http.ReturnCodes.OK.CODE)
+    }
   }
 }

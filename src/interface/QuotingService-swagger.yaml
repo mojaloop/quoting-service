@@ -6,7 +6,7 @@ info:
     - The API supports a maximum size of 65536 bytes (64 Kilobytes) in the HTTP header.
   license:
     name: Open API for FSP Interoperability (FSPIOP) (Implementation Friendly Version)
-  version: "1.0"
+  version: "1.1"
 servers:
   - url: /
 paths:
@@ -746,6 +746,8 @@ components:
         - XDR
         - XOF
         - XPF
+        - XTS
+        - XXX
         - YER
         - ZAR
         - ZMW
