@@ -36,6 +36,7 @@ const util = require('util')
 const crypto = require('crypto')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Logger = require('@mojaloop/central-services-logger')
+const resourceVersions = require('@mojaloop/central-services-shared').Util.resourceVersions
 
 const failActionHandler = async (request, h, err) => {
   Logger.error(`validation failure: ${getStackOrInspect}`)
@@ -125,8 +126,12 @@ function removeEmptyKeys (originalObject) {
  * @returns {object}
  */
 function generateRequestHeaders (headers, noAccept) {
+  let contentTypeHeader = headers['content-type'] || headers['Content-Type']
+  if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!resourceVersions.quotes.contentVersion) {
+    contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${resourceVersions.quotes.contentVersion}`
+  }
   const ret = {
-    'Content-Type': headers['content-type'] || headers['Content-Type'],
+    'Content-Type': contentTypeHeader,
     Date: headers.date,
     'FSPIOP-Source': headers['fspiop-source'],
     'FSPIOP-Destination': headers['fspiop-destination'],
