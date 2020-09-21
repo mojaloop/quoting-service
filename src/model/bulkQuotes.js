@@ -86,8 +86,8 @@ class BulkQuotesModel {
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
       // validate - this will throw if the request is invalid
-      await this.validateBulkQuoteRequest(fspiopSource, fspiopDestination, bulkQuoteRequest)
       childSpan = span.getChild('qs_bulkquote_forwardBulkQuoteRequest')
+      await this.validateBulkQuoteRequest(fspiopSource, fspiopDestination, bulkQuoteRequest)
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       await childSpan.audit({ headers, payload: bulkQuoteRequest }, EventSdk.AuditEventAction.start)
       await this.forwardBulkQuoteRequest(headers, bulkQuoteRequest.bulkQuoteId, bulkQuoteRequest, childSpan)
