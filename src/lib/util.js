@@ -120,16 +120,27 @@ function removeEmptyKeys (originalObject) {
   return obj
 }
 
+function applyResourceVersionHeaders (headers) {
+  let contentTypeHeader = headers['content-type'] || headers['Content-Type']
+  let acceptHeader = headers.accept || headers.Accept
+  if (Enum.Http.Headers.FSPIOP.SWITCH.regex.test(headers['fspiop-source'])) {
+    if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!resourceVersions.quotes.contentVersion) {
+      contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${resourceVersions.quotes.contentVersion}`
+    }
+    if (Enum.Http.Headers.GENERAL.ACCEPT.regex.test(acceptHeader) && !!resourceVersions.quotes.acceptVersion) {
+      acceptHeader = `application/vnd.interoperability.quotes+json;version=${resourceVersions.quotes.acceptVersion}`
+    }
+  }
+  return { contentTypeHeader, acceptHeader }
+}
+
 /**
  * Generates and returns an object containing API spec compliant HTTP request headers
  *
  * @returns {object}
  */
 function generateRequestHeaders (headers, noAccept) {
-  let contentTypeHeader = headers['content-type'] || headers['Content-Type']
-  if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!resourceVersions.quotes.contentVersion) {
-    contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${resourceVersions.quotes.contentVersion}`
-  }
+  const { contentTypeHeader } = applyResourceVersionHeaders(headers)
   const ret = {
     'Content-Type': contentTypeHeader,
     Date: headers.date,
@@ -154,8 +165,9 @@ function generateRequestHeaders (headers, noAccept) {
  * @returns {object}
  */
 function generateRequestHeadersForJWS (headers, noAccept) {
+  const { contentTypeHeader } = applyResourceVersionHeaders(headers)
   const ret = {
-    'Content-Type': headers['content-type'] || headers['Content-Type'],
+    'Content-Type': contentTypeHeader,
     date: headers.date,
     'fspiop-source': headers['fspiop-source'],
     'fspiop-destination': headers['fspiop-destination'],
