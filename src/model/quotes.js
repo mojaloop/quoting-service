@@ -190,8 +190,7 @@ class QuotesModel {
     let txn
     let handledRuleEvents
     let fspiopSource
-    let childSpan
-
+    const handleQuoteRequestSpan = span.getChild('qs_quote_handleQuoteRequest')
     try {
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -227,7 +226,7 @@ class QuotesModel {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
           return this.handleQuoteRequestResend(handledRuleEvents.headers,
-            handledRuleEvents.quoteRequest, span)
+            handledRuleEvents.quoteRequest, handleQuoteRequestSpan)
         }
 
         // do everything in a db txn so we can rollback multiple operations if something goes wrong
@@ -308,7 +307,6 @@ class QuotesModel {
       }
 
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-      childSpan = span.getChild('qs_quote_forwardQuoteRequest')
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleQuoteRequest for quoteId ${quoteRequest.quoteId}: ${getStackOrInspect(err)}`)
@@ -318,21 +316,21 @@ class QuotesModel {
 
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
+      if (handleQuoteRequestSpan) {
+        await handleQuoteRequestSpan.error(fspiopError, state)
+        await handleQuoteRequestSpan.finish(fspiopError.message, state)
       }
-
       throw fspiopError
     }
-
+    let forwardQuoteRequestSpan
     try {
+      forwardQuoteRequestSpan = handleQuoteRequestSpan.getChild('qs_quote_forwardQuoteRequest')
       if (envConfig.simpleRoutingMode) {
-        await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest.quoteId, handledRuleEvents.quoteRequest, childSpan)
+        await forwardQuoteRequestSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
       } else {
-        await childSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(handledRuleEvents.headers, refs.quoteId, handledRuleEvents.quoteRequest, childSpan)
+        await forwardQuoteRequestSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteRequest(handledRuleEvents.headers, refs.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
       }
     } catch (err) {
       // any-error
@@ -340,13 +338,16 @@ class QuotesModel {
       // get the model to handle it
       this.writeLog(`Error forwarding quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
       if (envConfig.simpleRoutingMode) {
-        await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers, childSpan)
+        await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers, forwardQuoteRequestSpan)
       } else {
-        await this.handleException(fspiopSource, refs.quoteId, err, headers, childSpan)
+        await this.handleException(fspiopSource, refs.quoteId, err, headers, forwardQuoteRequestSpan)
       }
     } finally {
-      if (!childSpan.isFinished) {
-        await childSpan.finish()
+      if (!forwardQuoteRequestSpan.isFinished) {
+        await forwardQuoteRequestSpan.finish()
+      }
+      if (!handleQuoteRequestSpan.isFinished) {
+        await handleQuoteRequestSpan.finish()
       }
     }
 
@@ -463,6 +464,7 @@ class QuotesModel {
     let txn = null
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const envConfig = new Config()
+    const handleQuoteUpdateSpan = span.getChild('qs_quote_handleQuoteUpdate')
     try {
       // ensure no 'accept' header is present in the request headers.
       if ('accept' in headers) {
@@ -488,7 +490,7 @@ class QuotesModel {
         if (dupe.isResend && dupe.isDuplicateId) {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-          return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest, span)
+          return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest, handleQuoteUpdateSpan)
         }
 
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
@@ -558,7 +560,7 @@ class QuotesModel {
         // }
       }
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-      const childSpan = span.getChild('qs_quote_forwardQuoteUpdate')
+      const childSpan = handleQuoteUpdateSpan.getChild('qs_quote_forwardQuoteUpdate')
       try {
         await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdateRequest }, EventSdk.AuditEventAction.start)
         await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, childSpan)
@@ -573,6 +575,9 @@ class QuotesModel {
         if (!childSpan.isFinished) {
           await childSpan.finish()
         }
+        if (!handleQuoteUpdateSpan.isFinished) {
+          await handleQuoteUpdateSpan.finish()
+        }
       }
 
       // all ok, return refs
@@ -585,9 +590,9 @@ class QuotesModel {
       }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
+      if (handleQuoteUpdateSpan) {
+        await handleQuoteUpdateSpan.error(fspiopError, state)
+        await handleQuoteUpdateSpan.finish(fspiopError.message, state)
       }
       throw fspiopError
     }
@@ -704,6 +709,7 @@ class QuotesModel {
     let txn = null
     const envConfig = new Config()
     let newError
+    const childSpan = span.getChild('qs_quote_handleQuoteError')
     try {
       if (!envConfig.simpleRoutingMode) {
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
@@ -722,8 +728,8 @@ class QuotesModel {
       // create a new object to represent the error
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
 
-      // Needed to add await here to prevent 'span already finished' bug
-      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, quoteId, headers, span, false)
+      // Needed to add await here to prevent 'childSpan already finished' bug
+      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, quoteId, headers, childSpan, false)
 
       return newError
     } catch (err) {
@@ -734,9 +740,9 @@ class QuotesModel {
       }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
+      if (childSpan) {
+        await childSpan.error(fspiopError, state)
+        await childSpan.finish(fspiopError.message, state)
       }
       throw fspiopError
     }
@@ -749,8 +755,9 @@ class QuotesModel {
    */
   async handleQuoteGet (headers, quoteId, span) {
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    let childSpan
     try {
-      const childSpan = span.getChild('qs_quote_forwardQuoteGet')
+      childSpan = span.getChild('qs_quote_forwardQuoteGet')
       try {
         await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
         await this.forwardQuoteGet(headers, quoteId, childSpan)
@@ -770,9 +777,9 @@ class QuotesModel {
       this.writeLog(`Error in handleQuoteGet: ${getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
+      if (childSpan) {
+        await childSpan.error(fspiopError, state)
+        await childSpan.finish(fspiopError.message, state)
       }
       throw fspiopError
     }
