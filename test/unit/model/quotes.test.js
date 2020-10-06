@@ -1846,7 +1846,6 @@ describe('QuotesModel', () => {
     it('handles the quote get with a child span', async () => {
       // Arrange
       expect.assertions(3)
-
       // Act
       await quotesModel.handleQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
 

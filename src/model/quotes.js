@@ -775,13 +775,7 @@ class QuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleQuoteGet: ${getStackOrInspect(err)}`)
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (childSpan) {
-        await childSpan.error(fspiopError, state)
-        await childSpan.finish(fspiopError.message, state)
-      }
-      throw fspiopError
+      throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
 
