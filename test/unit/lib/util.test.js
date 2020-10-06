@@ -47,6 +47,12 @@ describe('util', () => {
       'fspiop-source': 'dfsp1',
       'fspiop-destination': 'dfsp2'
     },
+    switchHeaders: {
+      Accept: 'application/vnd.interoperability.transfers+json;version=1.0',
+      'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.0',
+      'fspiop-source': 'switch',
+      'fspiop-destination': 'dfsp2'
+    },
     initiatorType: 'fakeInitiatorType',
     initiator: 'fakeInitiator',
     quoteId: 'test123',
@@ -410,6 +416,22 @@ describe('util', () => {
 
       // Act
       const result = generateRequestHeaders(mockData.headers, false)
+
+      // Assert
+      expect(result).toStrictEqual(expected)
+    })
+
+    it('generates request headers, including the and converts accept and content-type to quotes', () => {
+      // Arrange
+      const expected = {
+        Accept: 'application/vnd.interoperability.quotes+json;version=1',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'FSPIOP-Destination': 'dfsp2',
+        'FSPIOP-Source': 'switch'
+      }
+
+      // Act
+      const result = generateRequestHeaders(mockData.switchHeaders, false)
 
       // Assert
       expect(result).toStrictEqual(expected)

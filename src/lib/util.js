@@ -140,7 +140,7 @@ function applyResourceVersionHeaders (headers) {
  * @returns {object}
  */
 function generateRequestHeaders (headers, noAccept) {
-  const { contentTypeHeader } = applyResourceVersionHeaders(headers)
+  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers)
   const ret = {
     'Content-Type': contentTypeHeader,
     Date: headers.date,
@@ -153,7 +153,7 @@ function generateRequestHeaders (headers, noAccept) {
   }
 
   if (!noAccept) {
-    ret.Accept = headers.accept || headers.Accept
+    ret.Accept = acceptHeader
   }
 
   return removeEmptyKeys(ret)
@@ -165,7 +165,7 @@ function generateRequestHeaders (headers, noAccept) {
  * @returns {object}
  */
 function generateRequestHeadersForJWS (headers, noAccept) {
-  const { contentTypeHeader } = applyResourceVersionHeaders(headers)
+  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers)
   const ret = {
     'Content-Type': contentTypeHeader,
     date: headers.date,
@@ -178,7 +178,7 @@ function generateRequestHeadersForJWS (headers, noAccept) {
   }
 
   if (!noAccept) {
-    ret.Accept = headers.accept || headers.Accept
+    ret.Accept = acceptHeader
   }
 
   return removeEmptyKeys(ret)

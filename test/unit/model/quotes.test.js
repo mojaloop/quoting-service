@@ -126,7 +126,9 @@ describe('QuotesModel', () => {
       injectContextToHttpRequest: jest.fn(opts => opts),
       audit: jest.fn(),
       isFinished: undefined,
-      finish: jest.fn()
+      finish: jest.fn(),
+      error: jest.fn(),
+      getChild: jest.fn(() => mockChildSpan)
     }
     mockSpan = {
       getChild: jest.fn(() => mockChildSpan),
@@ -1392,7 +1394,7 @@ describe('QuotesModel', () => {
       expect(refs).toEqual({})
     })
     it('should throw modified update error when duplicate update is not a resend', async () => {
-      expect.assertions(7)
+      expect.assertions(5)
 
       mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: true, isResend: false } })
@@ -1403,8 +1405,6 @@ describe('QuotesModel', () => {
         expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
         expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, mockData.quoteUpdate)
         expect(mockTransaction.rollback.mock.calls.length).toBe(0)
-        expect(mockSpan.error.mock.calls[0][0]).toEqual(err)
-        expect(mockSpan.finish.mock.calls[0][0]).toEqual(err.message)
         expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
         expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code)
       }
@@ -1420,7 +1420,7 @@ describe('QuotesModel', () => {
 
       expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
       expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, mockData.quoteUpdate)
-      const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan]
+      const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.handleQuoteUpdateResend).toBeCalledWith(...args)
       expect(refs).toBe('handleQuoteUpdateResendResult')
     })
@@ -1530,7 +1530,7 @@ describe('QuotesModel', () => {
       expect(refs).toEqual(expected)
     })
     it('should throw partyNotFound error when getQuoteParty coldn\'t find a record in switch mode', async () => {
-      expect.assertions(6)
+      expect.assertions(4)
 
       mockConfig.simpleRoutingMode = false
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: false, isResend: false } })
@@ -1547,8 +1547,6 @@ describe('QuotesModel', () => {
       } catch (err) {
         expect(quotesModel.db.newTransaction.mock.calls.length).toBe(1)
         expect(mockTransaction.rollback.mock.calls.length).toBe(1)
-        expect(mockSpan.error.mock.calls[0][0]).toEqual(err)
-        expect(mockSpan.finish.mock.calls[0][0]).toEqual(err.message)
         expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
         expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND.code)
       }
@@ -1559,7 +1557,7 @@ describe('QuotesModel', () => {
       const localHeaders = clone(mockData.headers)
       localHeaders.accept = 'application/vnd.interoperability.quotes+json;version=1.0'
 
-      await expect(quotesModel.handleQuoteUpdate(localHeaders, mockData.quoteId, mockData.quoteUpdate))
+      await expect(quotesModel.handleQuoteUpdate(localHeaders, mockData.quoteId, mockData.quoteUpdate, mockSpan))
         .rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code)
 
@@ -1848,7 +1846,6 @@ describe('QuotesModel', () => {
     it('handles the quote get with a child span', async () => {
       // Arrange
       expect.assertions(3)
-
       // Act
       await quotesModel.handleQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
 
