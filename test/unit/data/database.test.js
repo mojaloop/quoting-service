@@ -1349,7 +1349,7 @@ describe('/database', () => {
         const action = async () => database.getQuoteView(quoteId)
 
         // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 row for quoteId .*'))
+        await expect(action()).rejects.toThrowError(/Expected 1 row for quoteId .*/)
       })
     })
 
@@ -1424,7 +1424,7 @@ describe('/database', () => {
         const action = async () => database.getQuoteResponseView(quoteId)
 
         // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 row for quoteId .*'))
+        await expect(action()).rejects.toThrowError(/xpected 1 row for quoteId .*/)
       })
     })
 
@@ -1660,7 +1660,8 @@ describe('/database', () => {
         const action = async () => database.getQuoteParty(quoteId, partyType)
 
         // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 quoteParty .*'))
+        // await expect(action()).rejects.toThrowError(new RegExp('Expected 1 quoteParty .*'))
+        await expect(action()).rejects.toThrowError(/Expected 1 quoteParty .*/)
       })
     })
 
@@ -1753,7 +1754,7 @@ describe('/database', () => {
         const action = async () => database.getTxnQuoteParty(txn, quoteId, partyType)
 
         // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 quoteParty .*'))
+        await expect(action()).rejects.toThrowError(/Expected 1 quoteParty .*/)
       })
     })
 
