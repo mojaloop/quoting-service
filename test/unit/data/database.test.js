@@ -1424,7 +1424,7 @@ describe('/database', () => {
         const action = async () => database.getQuoteResponseView(quoteId)
 
         // Assert
-        await expect(action()).rejects.toThrowError(/xpected 1 row for quoteId .*/)
+        await expect(action()).rejects.toThrowError(/Expected 1 row for quoteId .*/)
       })
     })
 
