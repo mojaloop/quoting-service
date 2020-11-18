@@ -1660,7 +1660,6 @@ describe('/database', () => {
         const action = async () => database.getQuoteParty(quoteId, partyType)
 
         // Assert
-        // await expect(action()).rejects.toThrowError(new RegExp('Expected 1 quoteParty .*'))
         await expect(action()).rejects.toThrowError(/Expected 1 quoteParty .*/)
       })
     })
