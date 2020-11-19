@@ -613,7 +613,11 @@ describe('QuotesModel', () => {
       await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest)
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      if (mockConfig.simpleRoutingMode) {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(4)
+      } else {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      }
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopSource)
       expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(fspiopDestination)
     })

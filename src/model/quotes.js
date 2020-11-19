@@ -148,6 +148,7 @@ class QuotesModel {
    * @returns {promise} - promise will reject if request is not valid
    */
   async validateQuoteRequest (fspiopSource, fspiopDestination, quoteRequest) {
+    const envConfig = new Config()
     // note that the framework should validate the form of the request
     // here we can do some hard-coded rule validations to ensure requests
     // do not lead to unsupported scenarios or use-cases.
@@ -165,6 +166,12 @@ class QuotesModel {
 
     await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
     await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+
+    // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
+    if (envConfig.simpleRoutingMode) {
+      await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    }
   }
 
   /**
