@@ -34,9 +34,11 @@
  ******/
 
 'use strict'
-
-const Hapi = require('@hapi/hapi')
+const Package = require('../package.json')
 const Path = require('path')
+const Hapi = require('@hapi/hapi')
+const Inert = require('@hapi/inert')
+const Vision = require('@hapi/vision')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -50,6 +52,7 @@ const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase')
 const Handlers = require('./handlers')
+const Routes = require('./handlers/routes')
 
 /**
  * Initializes a database connection pool
@@ -81,6 +84,15 @@ const initServer = async function (db, config) {
 
   // put the database pool somewhere handlers can use it
   server.app.database = db
+  await server.register({
+    plugin: require('hapi-swagger'),
+    options: {
+      info: {
+        title: 'Quoting Service API Documentation',
+        version: Package.version
+      }
+    }
+  })
   const api = await OpenapiBackend.initialise(Path.resolve(__dirname, './interface/QuotingService-swagger.yaml'), Handlers)
   await server.register(OpenapiBackendValidator)
   await server.register({
@@ -119,30 +131,15 @@ const initServer = async function (db, config) {
     {
       plugin: HeaderValidation
     },
+    Inert,
+    Vision,
     Blipp,
     ErrorHandler,
     CentralServices.Util.Hapi.HapiEventPlugin
   ])
 
-  // use as a catch-all handler
-  server.route({
-    method: ['GET', 'POST', 'PUT', 'DELETE'],
-    path: '/{path*}',
-    handler: (req, h) => {
-      return api.handleRequest(
-        {
-          method: req.method,
-          path: req.path,
-          body: req.payload,
-          query: req.query,
-          headers: req.headers
-        },
-        req,
-        h
-      )
-      // TODO: follow instructions https://github.com/anttiviljami/openapi-backend/blob/master/DOCS.md#postresponsehandler-handler
-    }
-  })
+  server.route(Routes.APIRoutes(api))
+  // TODO: follow instructions https://github.com/anttiviljami/openapi-backend/blob/master/DOCS.md#postresponsehandler-handler
 
   // start the server
   await server.start()
