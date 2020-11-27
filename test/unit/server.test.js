@@ -75,7 +75,7 @@ describe('Server', () => {
     await server()
 
     // Assert
-    expect(mockRegister).toHaveBeenCalledTimes(3)
+    expect(mockRegister).toHaveBeenCalledTimes(4)
     expect(mockStart).toHaveBeenCalledTimes(1)
     expect(mockRoute).toHaveBeenCalledTimes(1)
     expect(mockLog).toHaveBeenCalledTimes(1)
