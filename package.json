@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "11.2.1",
+  "version": "11.2.2",
   "author": "ModusBox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
@@ -64,7 +64,7 @@
     "@hapi/vision": "6.0.1",
     "@mojaloop/central-services-error-handling": "10.6.0",
     "@mojaloop/central-services-logger": "10.6.0",
-    "@mojaloop/central-services-shared": "11.5.0",
+    "@mojaloop/central-services-shared": "11.5.1",
     "@mojaloop/event-sdk": "10.6.0",
     "@mojaloop/ml-number": "11.0.0",
     "@mojaloop/sdk-standard-components": "10.3.2",
@@ -85,12 +85,12 @@
     "rc": "1.2.8"
   },
   "devDependencies": {
-    "@types/jest": "26.0.15",
-    "eslint": "7.14.0",
+    "@types/jest": "26.0.17",
+    "eslint": "7.15.0",
     "jest": "26.6.3",
     "jest-junit": "12.0.0",
     "npm-audit-resolver": "2.2.1",
-    "npm-check-updates": "10.2.2",
+    "npm-check-updates": "10.2.3",
     "nyc": "15.1.0",
     "pre-commit": "1.2.2",
     "proxyquire": "2.1.3",

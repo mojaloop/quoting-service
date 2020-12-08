@@ -94,6 +94,7 @@ class Config {
       jwsSigningKeyPath: RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH,
       jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined
     }
+    this.apiDocumentationEndpoints = RC.API_DOCUMENTATION_ENDPOINTS || false
   }
 }
 

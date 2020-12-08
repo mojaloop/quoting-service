@@ -34,7 +34,6 @@
  ******/
 
 'use strict'
-const Package = require('../package.json')
 const Path = require('path')
 const Hapi = require('@hapi/hapi')
 const Inert = require('@hapi/inert')
@@ -47,12 +46,15 @@ const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.
 const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
 const OpenapiBackendValidator = require('@mojaloop/central-services-shared').Util.Hapi.OpenapiBackendValidator
 const Logger = require('@mojaloop/central-services-logger')
+const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.APIDocumentation
 
 const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase')
 const Handlers = require('./handlers')
 const Routes = require('./handlers/routes')
+
+const OpenAPISpecPath = Path.resolve(__dirname, './interface/QuotingService-swagger.yaml')
 
 /**
  * Initializes a database connection pool
@@ -84,16 +86,17 @@ const initServer = async function (db, config) {
 
   // put the database pool somewhere handlers can use it
   server.app.database = db
-  await server.register({
-    plugin: require('hapi-swagger'),
-    options: {
-      info: {
-        title: 'Quoting Service API Documentation',
-        version: Package.version
+
+  if (config.apiDocumentationEndpoints) {
+    await server.register({
+      plugin: APIDocumentation,
+      options: {
+        documentPath: OpenAPISpecPath
       }
-    }
-  })
-  const api = await OpenapiBackend.initialise(Path.resolve(__dirname, './interface/QuotingService-swagger.yaml'), Handlers)
+    })
+  }
+
+  const api = await OpenapiBackend.initialise(OpenAPISpecPath, Handlers)
   await server.register(OpenapiBackendValidator)
   await server.register({
     plugin: {
@@ -159,8 +162,8 @@ async function start () {
   return initDb(config)
     .then(db => initServer(db, config))
     .then(server => {
-    // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
-    /* istanbul ignore next */
+      // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
+      /* istanbul ignore next */
       process.on('SIGTERM', () => {
         server.log(['info'], 'Received SIGTERM, closing server...')
         server.stop({ timeout: 10000 })
@@ -171,7 +174,7 @@ async function start () {
       })
       server.log(['info'], `Server running on ${server.info.uri}`)
       return server
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     }).catch(err => {
       Logger.error(`Error initializing server: ${getStackOrInspect(err)}`)
     })
