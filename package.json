@@ -71,6 +71,7 @@
     "axios": "0.21.0",
     "blipp": "4.0.2",
     "eslint-config-standard": "16.0.2",
+    "event-stream": "4.0.1",
     "good-console": "8.0.0",
     "good-squeeze": "5.1.0",
     "hapi-swagger": "14.0.0",
