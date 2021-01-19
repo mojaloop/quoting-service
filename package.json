@@ -68,7 +68,7 @@
     "@mojaloop/event-sdk": "10.6.0",
     "@mojaloop/ml-number": "11.0.0",
     "@mojaloop/sdk-standard-components": "10.3.2",
-    "axios": "0.21.0",
+    "axios": "0.21.1",
     "blipp": "4.0.2",
     "eslint-config-standard": "16.0.2",
     "event-stream": "4.0.1",
