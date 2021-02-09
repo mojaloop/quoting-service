@@ -1,9 +1,8 @@
 {
   "decisions": {
     "1500|@mojaloop/central-services-shared>widdershins>yargs>yargs-parser": {
-      "decision": "ignore",
-      "madeAt": 1607511474474,
-      "expiresAt": 1608116265111
+      "decision": "postpone",
+      "madeAt": 1612532362093
     }
   },
   "rules": {},
