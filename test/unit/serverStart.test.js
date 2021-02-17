@@ -70,7 +70,7 @@ describe('Server Start', () => {
     expect(response.statusCode).toBe(200)
   })
 
-  it('throws error when missing mandatory header', async () => {
+  it('post /quotes throws error when missing mandatory header', async () => {
     // Arrange
     Database.mockImplementationOnce(() => ({
       connect: jest.fn().mockResolvedValueOnce()
