@@ -1898,11 +1898,11 @@
       "description": "Data model for the complex type GeoCode. Indicates the geographic location from where the transaction was initiated.",
       "properties": {
         "latitude": {
-          "type": "string",
+          "$ref": "#/definitions/Latitude",
           "description": "Latitude of the Party."
         },
         "longitude": {
-          "type": "string",
+          "$ref": "#/definitions/Longitude",
           "description": "Longitude of the   Party."
         }
       },
@@ -2180,7 +2180,7 @@
           "description": "Party Id type, id, sub id or type, and FSP Id."
         },
         "merchantClassificationCode": {
-          "type": "string",
+          "$ref": "#/definitions/MerchantClassificationCode",
           "description": "Used in the context of Payee Information, where the Payee happens to be a merchant accepting merchant payments."
         },
         "name": {
@@ -2270,7 +2270,7 @@
           "description": "First, middle and last name for the Party."
         },
         "dateOfBirth": {
-          "type": "string",
+          "$ref": "#/definitions/DateOfBirth",
           "description": "Date of birth for the Party."
         }
       }
@@ -2307,7 +2307,7 @@
           "description": "Common id (decided by the Payer FSP) between the FSPs for the future transaction object. The actual transaction will be created as part of a successful transfer process. The id should be reused for resends of the same quote for a transaction. A new id should be generated for each new quote for a transaction."
         },
         "transactionRequestId": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionId",
           "description": "Identifies an optional previously-sent transaction request."
         },
         "payee": {
@@ -2319,7 +2319,7 @@
           "description": "Information about the Payer in the proposed financial transaction."
         },
         "amountType": {
-          "type": "string",
+          "$ref": "#/definitions/AmountType",
           "description": "SEND for send amount, RECEIVE for receive amount."
         },
         "amount": {
@@ -2343,7 +2343,7 @@
           "description": "A memo that will be attached to the transaction."
         },
         "expiration": {
-          "type": "string",
+          "$ref": "#/definitions/DateTime",
           "description": "Expiration is optional. It can be set to get a quick failure in case the peer FSP takes too long to respond. Also, it may be beneficial for Consumer, Agent, and Merchant to know that their request has a time limit."
         },
         "extensionList": {
@@ -2416,7 +2416,7 @@
       "description": "Data model for the complex type Refund.",
       "properties": {
         "originalTransactionId": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionId",
           "description": "Reference to the original transaction id that is requested to be refunded."
         },
         "refundReason": {
@@ -2540,19 +2540,19 @@
       "description": "Data model for the complex type TransactionType.",
       "properties": {
         "scenario": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionScenario",
           "description": "Deposit, withdrawal, refund, …"
         },
         "subScenario": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionSubScenario",
           "description": "Possible sub-scenario, defined locally within the scheme."
         },
         "initiator": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionInitiator",
           "description": "Who is initiating the transaction - Payer or Payee"
         },
         "initiatorType": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionInitiatorType",
           "description": "Consumer, agent, business, …"
         },
         "refundInfo": {
@@ -2560,7 +2560,7 @@
           "description": "Extra information specific to a refund scenario. Should only be populated if scenario is REFUND"
         },
         "balanceOfPayments": {
-          "type": "string",
+          "$ref": "#/definitions/BalanceOfPayments",
           "description": "Balance of Payments code."
         }
       },
@@ -2888,7 +2888,7 @@
       "name": "fspiop-destination",
       "in": "header",
       "type": "string",
-      "required": false,
+      "required": true,
       "description": "The FSPIOP-Destination header field is a non-HTTP standard field used by the API for HTTP header based routing of requests and responses to the destination. The field should be set by the original sender of the request (if known), so that any entities between the client and the server do not need to parse the payload for routing purposes."
     },
     "FSPIOP-Encryption": {
