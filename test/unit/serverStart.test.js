@@ -29,7 +29,7 @@
  --------------
  ******/
 
-const Mockgen = require('../util/helper').mockRequest
+const { mockRequest: Mockgen, defaultHeaders } = require('../util/helper')
 
 let Database
 let server
@@ -68,5 +68,39 @@ describe('Server Start', () => {
     // Act
     const response = await server.inject(options)
     expect(response.statusCode).toBe(200)
+  })
+
+  it('throws error when missing mandatory header', async () => {
+    // Arrange
+    Database.mockImplementationOnce(() => ({
+      connect: jest.fn().mockResolvedValueOnce()
+    }))
+
+    // Act
+    const initialize = require('../../src/server')
+    server = await initialize()
+    const requests = Mockgen().requestsAsync('/quotes', 'post')
+    const mock = await requests
+
+    // Arrange
+    const headers = defaultHeaders()
+    delete headers['fspiop-destination']
+    const expectedResult = {
+      errorInformation: {
+        errorCode: '3102',
+        errorDescription: 'Missing mandatory element - .header should have required property \'fspiop-destination\''
+      }
+    }
+
+    const options = {
+      method: 'post',
+      url: '' + mock.request.path,
+      headers,
+      payload: mock.request.body
+    }
+    // Act
+    const response = await server.inject(options)
+    expect(response.statusCode).toBe(400)
+    expect(response.result).toEqual(expectedResult)
   })
 })
