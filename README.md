@@ -80,4 +80,5 @@ doesNotContain: fact (an array) must not include value
 Event objects must have a type property, and an optional params property. There are two types of events:
 
 INTERCEPT_QUOTE: Used for redirecting quote requests.
-INVALID_QUOTE_REQUEST: Used for validation rules. You do not have to use this type of event when adding support for new currencies.
+- `INTERCEPT_QUOTE`: Used for redirecting quote requests.
+- `INVALID_QUOTE_REQUEST`: Used for validation rules. You do not have to use this type of event when adding support for new currencies.
