@@ -470,13 +470,10 @@ class Database {
       refs.transferParticipantRoleTypeId = enumVals[3]
       refs.ledgerEntryTypeId = enumVals[4]
 
-      // todo: possibly push this subIdType lookup onto the array that gets awaited async...
-      // otherwise requests that have a subIdType will be a little slower due to the extra wait time
-      // TODO: this will not work as the partyIdentifierType table only caters for the 8 main partyTypes
-      // discuss adding a partyIdSubType database table to perform this lookup against
       if (party.partyIdInfo.partySubIdOrType) {
-        // TODO: review method signature
-        refs.partySubIdOrTypeId = await this.getPartyIdentifierType(party.partyIdInfo.partySubIdOrType)
+        // Commenting the below line because subIdOrTypeId value need not be one in the partyIdentifierType list as per the specification.
+        // refs.partySubIdOrTypeId = await this.getPartyIdentifierType(party.partyIdInfo.partySubIdOrType)
+        refs.partySubIdOrTypeId = party.partyIdInfo.partySubIdOrType
       }
 
       // insert a new quote party
