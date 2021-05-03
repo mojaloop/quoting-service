@@ -1132,7 +1132,6 @@ describe('/database', () => {
         }
         database.getPartyIdentifierType = jest.fn()
           .mockResolvedValueOnce('testPartyIdentifierTypeId')
-          .mockResolvedValueOnce('testPartySubIdOrTypeId')
         const mockList = mockKnexBuilder(
           mockKnex,
           ['12345'],
@@ -1143,7 +1142,7 @@ describe('/database', () => {
           partyTypeId: 'testPartyTypeId',
           partyIdentifierTypeId: 'testPartyIdentifierTypeId',
           partyIdentifierValue: 'testPartyIdentifier',
-          partySubIdOrTypeId: 'testPartySubIdOrTypeId',
+          partySubIdOrTypeId: 'testSubId',
           fspId: 'payeeFsp',
           participantId: 'testParticipantId',
           merchantClassificationCode: '0',
