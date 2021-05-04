@@ -471,8 +471,7 @@ class Database {
       refs.ledgerEntryTypeId = enumVals[4]
 
       if (party.partyIdInfo.partySubIdOrType) {
-        // Commenting the below line because subIdOrTypeId value need not be one in the partyIdentifierType list as per the specification.
-        // refs.partySubIdOrTypeId = await this.getPartyIdentifierType(party.partyIdInfo.partySubIdOrType)
+        // subIdOrTypeId value need not be one in the partyIdentifierType list as per the specification.
         refs.partySubIdOrTypeId = party.partyIdInfo.partySubIdOrType
       }
 
