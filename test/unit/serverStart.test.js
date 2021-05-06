@@ -88,7 +88,7 @@ describe('Server Start', () => {
     const expectedResult = {
       errorInformation: {
         errorCode: '3102',
-        errorDescription: 'Missing mandatory element - .header should have required property \'fspiop-destination\''
+        errorDescription: 'Missing mandatory element - /header must have required property \'fspiop-destination\''
       }
     }
 
