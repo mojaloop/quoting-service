@@ -2,23 +2,23 @@
   "decisions": {
     "1500|@mojaloop/central-services-shared>widdershins>yargs>yargs-parser": {
       "decision": "ignore",
-      "madeAt": 1620223161085,
-      "expiresAt": 1620827942685
+      "madeAt": 1622565315339,
+      "expiresAt": 1623170105236
     },
     "1673|@mojaloop/central-services-shared>openapi-backend>lodash": {
       "decision": "ignore",
-      "madeAt": 1620814904190,
-      "expiresAt": 1621419688940
+      "madeAt": 1622565313516,
+      "expiresAt": 1623170105236
     },
     "1673|@mojaloop/central-services-shared>openapi-backend>mock-json-schema>lodash": {
       "decision": "ignore",
-      "madeAt": 1620814904190,
-      "expiresAt": 1621419688940
+      "madeAt": 1622565313516,
+      "expiresAt": 1623170105236
     },
     "1673|@mojaloop/central-services-shared>shins>sanitize-html>lodash": {
       "decision": "ignore",
-      "madeAt": 1620814904191,
-      "expiresAt": 1621419688940
+      "madeAt": 1622565313516,
+      "expiresAt": 1623170105236
     },
     "1673|@mojaloop/central-services-shared>@mojaloop/event-sdk>lodash": {
       "decision": "ignore",
@@ -32,18 +32,23 @@
     },
     "1675|@mojaloop/central-services-shared>shins>sanitize-html": {
       "decision": "ignore",
-      "madeAt": 1620814917810,
-      "expiresAt": 1621419688940
+      "madeAt": 1622565316797,
+      "expiresAt": 1623170105236
     },
     "1676|@mojaloop/central-services-shared>shins>sanitize-html": {
       "decision": "ignore",
-      "madeAt": 1620814917810,
-      "expiresAt": 1621419688940
+      "madeAt": 1622565316797,
+      "expiresAt": 1623170105236
     },
     "1693|@mojaloop/central-services-shared>shins>sanitize-html>postcss": {
       "decision": "ignore",
-      "madeAt": 1620814920118,
-      "expiresAt": 1621419688940
+      "madeAt": 1622565318525,
+      "expiresAt": 1623170105236
+    },
+    "1673|@mojaloop/central-services-shared>data-urls>whatwg-url>lodash": {
+      "decision": "ignore",
+      "madeAt": 1622565313516,
+      "expiresAt": 1623170105236
     }
   },
   "rules": {},
