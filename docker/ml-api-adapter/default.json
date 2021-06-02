@@ -74,6 +74,7 @@
               "client.id": "ml-con-notification-event",
               "group.id": "ml-group-notification-event",
               "metadata.broker.list": "kafka:9092",
+              "allow.auto.create.topics": true,
               "socket.keepalive.enable": true
             },
             "topicConf": {
