@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "12.0.4",
+  "version": "12.0.5",
   "author": "ModusBox",
   "contributors": [
     "Georgi Georgiev <georgi.georgiev@modusbox.com>",
@@ -70,7 +70,7 @@
     "@mojaloop/central-services-shared": "13.0.1",
     "@mojaloop/event-sdk": "10.7.1",
     "@mojaloop/ml-number": "11.1.0",
-    "@mojaloop/sdk-standard-components": "10.3.2",
+    "@mojaloop/sdk-standard-components": "15.10.4",
     "ajv": "8.5.0",
     "ajv-keywords": "5.0.0",
     "axios": "0.21.1",
