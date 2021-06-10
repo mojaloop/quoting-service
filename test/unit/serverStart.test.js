@@ -46,6 +46,7 @@ describe('Server Start', () => {
   })
 
   it('runs the server', async () => {
+    jest.setTimeout(10000)
     // Arrange
     Database.mockImplementationOnce(() => ({
       connect: jest.fn().mockResolvedValueOnce()
@@ -68,6 +69,7 @@ describe('Server Start', () => {
     // Act
     const response = await server.inject(options)
     expect(response.statusCode).toBe(200)
+    jest.setTimeout(5000)
   })
 
   it('post /quotes throws error when missing mandatory header', async () => {
