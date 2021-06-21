@@ -54,3 +54,31 @@ For more information on anchore and anchore-cli, refer to:
 - [Anchore CLI](https://github.com/anchore/anchore-cli)
 - [Circle Orb Registry](https://circleci.com/orbs/registry/orb/anchore/anchore-engine)
 
+## About rules.json
+
+The rules.json file acts as a rules engine and enables defining rules that can accept or reject quotes. A rule is defined as an object with a title, a conditions object, and an event object. A rule specifies that if certain conditions are met, then the specified event will be generated.
+
+The rules engine used by the quoting-service is an off-the-shelf rules engine, called json-rules-engine. For detailed information on how to write rules, see the [json-rules-engine](https://github.com/CacheControl/json-rules-engine/blob/master/docs/rules.md) documentation. This page only focuses on those details that are relevant for adding support for new currencies.
+
+### Conditions
+
+Conditions are a combination of facts, paths, operators, and values.
+
+Each rule's conditions must have either an all or an any operator at its root, containing an array of conditions. The all operator specifies that all conditions must be met for the rule to be applied. The any operator only requires one condition to be met for the rule to be applied.
+
+Operators within the individual conditions can take the following values:
+
+equal: fact must equal value (string or numeric value)
+notEqual: fact must not equal value (string or numeric value)
+in: fact must be included in value (an array)
+notIn: fact must not be included in value (an array)
+contains: fact (an array) must include value
+doesNotContain: fact (an array) must not include value
+
+### Events
+
+Event objects must have a type property, and an optional params property. There are two types of events:
+
+INTERCEPT_QUOTE: Used for redirecting quote requests.
+- `INTERCEPT_QUOTE`: Used for redirecting quote requests.
+- `INVALID_QUOTE_REQUEST`: Used for validation rules. You do not have to use this type of event when adding support for new currencies.
