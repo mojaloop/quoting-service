@@ -105,4 +105,32 @@ describe('Server Start', () => {
     expect(response.statusCode).toBe(400)
     expect(response.result).toEqual(expectedResult)
   })
+
+  it('post /quotes with additional asian (Myanmar) unicode characters', async () => {
+    // Arrange
+    Database.mockImplementationOnce(() => ({
+      connect: jest.fn().mockResolvedValueOnce()
+    }))
+
+    // Act
+    const initialize = require('../../src/server')
+    server = await initialize()
+    const mock = await Mockgen().requestsAsync('/quotes', 'post')
+
+    mock.request.body.payer.personalInfo.complexName.middleName = 'ကောင်းထက်စံ'
+
+    // Arrange
+    const headers = defaultHeaders()
+
+    const options = {
+      method: 'post',
+      url: '' + mock.request.path,
+      headers,
+      payload: mock.request.body
+    }
+
+    // Act
+    const response = await server.inject(options)
+    expect(response.statusCode).toBe(202)
+  })
 })
