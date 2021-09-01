@@ -164,13 +164,18 @@ class QuotesModel {
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
 
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-
     // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
     if (envConfig.simpleRoutingMode) {
       await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
       await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
+      if (quoteRequest.payer && quoteRequest.payer.partyIdInfo && quoteRequest.payer.partyIdInfo.fspId) {
+        await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      }
+      // Lets make sure the optional fspId exists in the payee's partyIdInfo before we validate it
+      if (quoteRequest.payee && quoteRequest.payee.partyIdInfo && quoteRequest.payee.partyIdInfo.fspId) {
+        await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      }
     }
   }
 
