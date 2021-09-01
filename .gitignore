@@ -79,3 +79,7 @@ typings/
 # MacOs
 .[Dd][Ss]_[Ss]tore
 .notes.md
+
+# https://devspace.sh/
+devspace*
+.devspace/**.*
