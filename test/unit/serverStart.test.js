@@ -30,9 +30,12 @@
  ******/
 
 const { mockRequest: Mockgen, defaultHeaders } = require('../util/helper')
+const Server = require('../../src/server')
 
 let Database
 let server
+
+jest.setTimeout(10000)
 
 describe('Server Start', () => {
   beforeEach(() => {
@@ -46,15 +49,13 @@ describe('Server Start', () => {
   })
 
   it('runs the server', async () => {
-    jest.setTimeout(10000)
     // Arrange
     Database.mockImplementationOnce(() => ({
       connect: jest.fn().mockResolvedValueOnce()
     }))
 
     // Act
-    const initialize = require('../../src/server')
-    server = await initialize()
+    server = await Server()
     const requests = Mockgen().requestsAsync('/health', 'get')
     // Arrange
     const mock = await requests
@@ -79,8 +80,7 @@ describe('Server Start', () => {
     }))
 
     // Act
-    const initialize = require('../../src/server')
-    server = await initialize()
+    server = await Server()
     const requests = Mockgen().requestsAsync('/quotes', 'post')
     const mock = await requests
 
@@ -113,8 +113,7 @@ describe('Server Start', () => {
     }))
 
     // Act
-    const initialize = require('../../src/server')
-    server = await initialize()
+    server = await Server()
     const mock = await Mockgen().requestsAsync('/quotes', 'post')
 
     mock.request.body.payer.personalInfo.complexName.middleName = 'ကောင်းထက်စံ'
