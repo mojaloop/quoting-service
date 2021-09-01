@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [12.0.10](https://github.com/mojaloop/quoting-service/compare/v12.0.9...v12.0.10) (2021-09-01)
+
 ### [12.0.9](https://github.com/mojaloop/quoting-service/compare/v12.0.8...v12.0.9) (2021-09-01)
 
 
