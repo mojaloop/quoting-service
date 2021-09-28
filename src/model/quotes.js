@@ -35,7 +35,6 @@
  ******/
 
 const axios = require('axios')
-const crypto = require('crypto')
 const util = require('util')
 
 const { MojaloopApiErrorCodes } = require('@mojaloop/sdk-standard-components').Errors
