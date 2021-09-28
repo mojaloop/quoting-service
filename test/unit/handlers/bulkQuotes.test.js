@@ -26,20 +26,87 @@
 
  * Crosslake
  - Lewis Daly <lewisd@crosslaketech.com>
+
+ * Modusbox
+ - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
+jest.mock('../../../src/model/bulkQuotes')
 
+const Enum = require('@mojaloop/central-services-shared').Enum
+
+const BulkQuotesModel = require('../../../src/model/bulkQuotes')
 const BulkQuotesHandler = require('../../../src/handlers/bulkQuotes')
+const { baseMockRequest } = require('../../util/helper')
+
+const mockContext = jest.fn()
 
 describe('/bulkQuotes', () => {
   describe('POST', () => {
-    it('throws NOT IMPLEMENTED error', async () => {
+    beforeEach(() => {
+      BulkQuotesModel.mockClear()
+    })
+
+    it('creates a bulkQuote', async () => {
       // Arrange
+      const code = jest.fn()
+      const handler = {
+        response: jest.fn(() => ({
+          code
+        }))
+      }
+      const mockRequest = {
+        ...baseMockRequest,
+        payload: {
+          quoteId: '12345'
+        },
+        span: {
+          audit: jest.fn(),
+          setTags: jest.fn()
+        }
+      }
+
       // Act
-      const action = () => BulkQuotesHandler.post()
+      await BulkQuotesHandler.post(mockContext, mockRequest, handler)
 
       // Assert
-      expect(action).toThrowError('Bulk quotes not implemented')
+      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
+      const mockQuoteInstance = BulkQuotesModel.mock.instances[0]
+      expect(mockQuoteInstance.handleBulkQuoteRequest).toHaveBeenCalledTimes(1)
+    })
+
+    it('fails to create a quote', async () => {
+      // Arrange
+      const handleException = jest.fn()
+      BulkQuotesModel.mockImplementationOnce(() => ({
+        handleBulkQuoteRequest: () => {
+          throw new Error('Create Quote Test Error')
+        },
+        handleException
+      }))
+      const code = jest.fn()
+      const handler = {
+        response: jest.fn(() => ({
+          code
+        }))
+      }
+      const mockRequest = {
+        ...baseMockRequest,
+        payload: {
+          bulkQuoteId: '12345'
+        },
+        span: {
+          audit: jest.fn(),
+          setTags: jest.fn()
+        }
+      }
+
+      // Act
+      await BulkQuotesHandler.post(mockContext, mockRequest, handler)
+
+      // Assert
+      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
+      expect(handleException).toHaveBeenCalledTimes(1)
     })
   })
 })

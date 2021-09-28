@@ -33,6 +33,7 @@ jest.mock('knex')
 
 const Knex = require('knex')
 const crypto = require('crypto')
+const ENUM = require('@mojaloop/central-services-shared').Enum
 
 const Database = require('../../../src/data/database')
 const Config = require('../../../src/lib/config')
@@ -786,19 +787,21 @@ describe('/database', () => {
         // Arrange
         const participantName = 'dfsp1'
         const participantType = LibEnum.PAYEE_DFSP
+        const currency = 'USD'
+        const ledgerAccountType = ENUM.Accounts.LedgerAccountType.POSITION
         const mockList = mockKnexBuilder(
           mockKnex,
           [{ participantId: 123 }],
-          ['where', 'select']
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
         )
 
         // Act
-        const result = await database.getParticipant(participantName, participantType)
+        const result = await database.getParticipant(participantName, participantType, currency, ledgerAccountType)
 
         // Assert
         expect(result).toBe(123)
         expect(mockList[0]).toHaveBeenCalledWith('participant')
-        expect(mockList[1]).toHaveBeenCalledWith({ name: participantName, isActive: 1 })
+        expect(mockList[1]).toHaveBeenCalledWith('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
         expect(mockList[2]).toHaveBeenCalledTimes(1)
       })
 
@@ -806,14 +809,16 @@ describe('/database', () => {
         // Arrange
         const participantName = 'dfsp1'
         const participantType = LibEnum.PAYEE_DFSP
+        const currency = 'USD'
+        const ledgerAccountType = ENUM.Accounts.LedgerAccountType.POSITION
         mockKnexBuilder(
           mockKnex,
           undefined,
-          ['where', 'select']
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
         )
 
         // Act
-        const action = async () => database.getParticipant(participantName, participantType)
+        const action = async () => database.getParticipant(participantName, participantType, currency, ledgerAccountType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported participant')
@@ -823,14 +828,16 @@ describe('/database', () => {
         // Arrange
         const participantName = 'dfsp1'
         const participantType = LibEnum.PAYER_DFSP
+        const currency = 'USD'
+        const ledgerAccountType = ENUM.Accounts.LedgerAccountType.POSITION
         mockKnexBuilder(
           mockKnex,
           undefined,
-          ['where', 'select']
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
         )
 
         // Act
-        const action = async () => database.getParticipant(participantName, participantType)
+        const action = async () => database.getParticipant(participantName, participantType, currency, ledgerAccountType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported participant')
@@ -839,14 +846,16 @@ describe('/database', () => {
       it('handles an empty response with no participantType', async () => {
         // Arrange
         const participantName = 'dfsp1'
+        const currency = 'USD'
+        const ledgerAccountType = ENUM.Accounts.LedgerAccountType.POSITION
         mockKnexBuilder(
           mockKnex,
           [],
-          ['where', 'select']
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
         )
 
         // Act
-        const action = async () => database.getParticipant(participantName)
+        const action = async () => database.getParticipant(participantName, undefined, currency, ledgerAccountType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported participant')
@@ -1123,7 +1132,6 @@ describe('/database', () => {
         }
         database.getPartyIdentifierType = jest.fn()
           .mockResolvedValueOnce('testPartyIdentifierTypeId')
-          .mockResolvedValueOnce('testPartySubIdOrTypeId')
         const mockList = mockKnexBuilder(
           mockKnex,
           ['12345'],
@@ -1134,7 +1142,7 @@ describe('/database', () => {
           partyTypeId: 'testPartyTypeId',
           partyIdentifierTypeId: 'testPartyIdentifierTypeId',
           partyIdentifierValue: 'testPartyIdentifier',
-          partySubIdOrTypeId: 'testPartySubIdOrTypeId',
+          partySubIdOrTypeId: 'testSubId',
           fspId: 'payeeFsp',
           participantId: 'testParticipantId',
           merchantClassificationCode: '0',
@@ -1340,7 +1348,7 @@ describe('/database', () => {
         const action = async () => database.getQuoteView(quoteId)
 
         // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 row for quoteId .*'))
+        await expect(action()).rejects.toThrowError(/Expected 1 row for quoteId .*/)
       })
     })
 
@@ -1415,7 +1423,7 @@ describe('/database', () => {
         const action = async () => database.getQuoteResponseView(quoteId)
 
         // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 row for quoteId .*'))
+        await expect(action()).rejects.toThrowError(/Expected 1 row for quoteId .*/)
       })
     })
 
@@ -1651,7 +1659,7 @@ describe('/database', () => {
         const action = async () => database.getQuoteParty(quoteId, partyType)
 
         // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 quoteParty .*'))
+        await expect(action()).rejects.toThrowError(/Expected 1 quoteParty .*/)
       })
     })
 
@@ -1744,7 +1752,7 @@ describe('/database', () => {
         const action = async () => database.getTxnQuoteParty(txn, quoteId, partyType)
 
         // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 quoteParty .*'))
+        await expect(action()).rejects.toThrowError(/Expected 1 quoteParty .*/)
       })
     })
 

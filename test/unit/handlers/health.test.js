@@ -37,6 +37,8 @@ const { baseMockRequest } = require('../../util/helper')
 let Config = require('../../../src/lib/config')
 let HealthCheck = require('@mojaloop/central-services-shared/src/healthCheck')
 
+const mockContext = jest.fn()
+
 describe('/health', () => {
   describe('getSubServiceHealthDatastore', () => {
     beforeAll(() => {
@@ -116,7 +118,7 @@ describe('/health', () => {
       const expectedServiceHealthList = []
 
       // Act
-      await HealthHandlerProxy.get({ ...baseMockRequest }, handler)
+      await HealthHandlerProxy.get(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
       expect(code).toHaveBeenCalledWith(responseCode.success)
@@ -132,7 +134,7 @@ describe('/health', () => {
       const HealthHandlerProxy = require('../../../src/handlers/health')
 
       // Act
-      await HealthHandlerProxy.get({ ...baseMockRequest }, handler)
+      await HealthHandlerProxy.get(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
       expect(code).toHaveBeenCalledWith(responseCode.success)
@@ -175,7 +177,7 @@ describe('/health', () => {
       })
 
       // Act
-      await HealthHandlerProxy.get(mockRequest, handler)
+      await HealthHandlerProxy.get(mockContext, mockRequest, handler)
 
       // Assert
       expect(code).toHaveBeenCalledWith(responseCode.gatewayTimeout)
@@ -193,7 +195,7 @@ describe('/health', () => {
       }))
 
       // Act
-      await HealthHandlerProxy.get({ ...baseMockRequest }, handler)
+      await HealthHandlerProxy.get(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
       expect(code).toHaveBeenCalledWith(responseCode.gatewayTimeout)

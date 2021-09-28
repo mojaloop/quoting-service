@@ -38,6 +38,8 @@ const QuotesErrorHandler = require('../../../../../src/handlers/quotes/{id}/erro
 const QuotesModel = require('../../../../../src/model/quotes')
 const { baseMockRequest } = require('../../../../util/helper')
 
+const mockContext = jest.fn()
+
 describe('/quotes/{id}', () => {
   beforeEach(() => {
     QuotesModel.mockClear()
@@ -63,7 +65,7 @@ describe('/quotes/{id}', () => {
       }
 
       // Act
-      await QuotesErrorHandler.put(request, handler)
+      await QuotesErrorHandler.put(mockContext, request, handler)
 
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
@@ -100,7 +102,7 @@ describe('/quotes/{id}', () => {
       }
 
       // Act
-      await QuotesErrorHandler.put(request, handler)
+      await QuotesErrorHandler.put(mockContext, request, handler)
 
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)

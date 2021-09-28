@@ -53,7 +53,7 @@ describe('Server', () => {
     }))
     const mockRegister = jest.fn()
     const mockStart = jest.fn()
-    const mockSetHost = jest.fn()
+    const mockRoute = jest.fn()
     const mockLog = jest.fn()
     Hapi.Server.mockImplementationOnce(() => ({
       app: {
@@ -61,11 +61,7 @@ describe('Server', () => {
       },
       register: mockRegister,
       start: mockStart,
-      plugins: {
-        openapi: {
-          setHost: mockSetHost
-        }
-      },
+      route: mockRoute,
       log: mockLog,
       info: {
         host: 'localhost',
@@ -79,9 +75,9 @@ describe('Server', () => {
     await server()
 
     // Assert
-    expect(mockRegister).toHaveBeenCalledTimes(1)
+    expect(mockRegister).toHaveBeenCalledTimes(4)
     expect(mockStart).toHaveBeenCalledTimes(1)
-    expect(mockSetHost).toHaveBeenCalledTimes(1)
+    expect(mockRoute).toHaveBeenCalledTimes(1)
     expect(mockLog).toHaveBeenCalledTimes(1)
   })
 
@@ -92,19 +88,15 @@ describe('Server', () => {
     }))
     const mockRegister = jest.fn().mockImplementationOnce(() => { throw new Error('Test Error') })
     const mockStart = jest.fn()
-    const mockSetHost = jest.fn()
+    const mockRoute = jest.fn()
     const mockLog = jest.fn()
     Hapi.Server.mockImplementationOnce(() => ({
       app: {
         database: null
       },
       register: mockRegister,
+      route: mockRoute,
       start: mockStart,
-      plugins: {
-        openapi: {
-          setHost: mockSetHost
-        }
-      },
       log: mockLog,
       info: {
         host: 'localhost',
@@ -120,7 +112,7 @@ describe('Server', () => {
     // Assert
     expect(mockRegister).toHaveBeenCalledTimes(1)
     expect(mockStart).not.toHaveBeenCalled()
-    expect(mockSetHost).not.toHaveBeenCalled()
+    expect(mockRoute).not.toHaveBeenCalled()
     expect(mockLog).not.toHaveBeenCalled()
     expect(Logger.error).toHaveBeenCalledTimes(1)
   })

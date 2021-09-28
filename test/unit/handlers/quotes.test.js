@@ -37,6 +37,8 @@ const QuotesModel = require('../../../src/model/quotes')
 const QuotesHandler = require('../../../src/handlers/quotes')
 const { baseMockRequest } = require('../../util/helper')
 
+const mockContext = jest.fn()
+
 describe('/quotes', () => {
   describe('POST', () => {
     beforeEach(() => {
@@ -63,7 +65,7 @@ describe('/quotes', () => {
       }
 
       // Act
-      await QuotesHandler.post(mockRequest, handler)
+      await QuotesHandler.post(mockContext, mockRequest, handler)
 
       // Assert
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
@@ -98,7 +100,7 @@ describe('/quotes', () => {
       }
 
       // Act
-      await QuotesHandler.post(mockRequest, handler)
+      await QuotesHandler.post(mockContext, mockRequest, handler)
 
       // Assert
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)

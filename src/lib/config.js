@@ -39,8 +39,7 @@ const fs = require('fs')
 class Config {
   getFileContent (path) {
     if (!fs.existsSync(path)) {
-      console.log(`File ${path} doesn't exist, can't enable JWS signing`)
-      throw new Error('File doesn\'t exist')
+      throw new Error(`File ${path} doesn't exist, can't enable JWS signing`)
     }
     return fs.readFileSync(path)
   }
@@ -95,6 +94,7 @@ class Config {
       jwsSigningKeyPath: RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH,
       jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined
     }
+    this.apiDocumentationEndpoints = RC.API_DOCUMENTATION_ENDPOINTS || false
   }
 }
 

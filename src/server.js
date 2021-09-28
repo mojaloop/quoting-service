@@ -34,20 +34,27 @@
  ******/
 
 'use strict'
-
-const Hapi = require('@hapi/hapi')
-const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
+const Hapi = require('@hapi/hapi')
+const Inert = require('@hapi/inert')
+const Vision = require('@hapi/vision')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const CentralServices = require('@mojaloop/central-services-shared')
 const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
+const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
+const OpenapiBackendValidator = require('@mojaloop/central-services-shared').Util.Hapi.OpenapiBackendValidator
 const Logger = require('@mojaloop/central-services-logger')
-const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
+const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.APIDocumentation
 
+const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase')
+const Handlers = require('./handlers')
+const Routes = require('./handlers/routes')
+
+const OpenAPISpecPath = Path.resolve(__dirname, './interface/QuotingService-swagger.yaml')
 
 /**
  * Initializes a database connection pool
@@ -80,15 +87,32 @@ const initServer = async function (db, config) {
   // put the database pool somewhere handlers can use it
   server.app.database = db
 
-  // add plugins to the server
-  await server.register([
-    {
-      plugin: HapiOpenAPI,
+  if (config.apiDocumentationEndpoints) {
+    await server.register({
+      plugin: APIDocumentation,
       options: {
-        api: Path.resolve('./src/interface/swagger.json'),
-        handlers: Path.resolve('./src/handlers')
+        documentPath: OpenAPISpecPath
+      }
+    })
+  }
+
+  const api = await OpenapiBackend.initialise(OpenAPISpecPath, Handlers)
+  await server.register(OpenapiBackendValidator)
+  await server.register({
+    plugin: {
+      name: 'openapi',
+      version: '1.0.0',
+      multiple: true,
+      register: function (server, options) {
+        server.expose('openapi', options.openapi)
       }
     },
+    options: {
+      openapi: api
+    }
+  })
+  // add plugins to the server
+  await server.register([
     {
       plugin: Good,
       options: {
@@ -110,10 +134,15 @@ const initServer = async function (db, config) {
     {
       plugin: HeaderValidation
     },
+    Inert,
+    Vision,
     Blipp,
     ErrorHandler,
     CentralServices.Util.Hapi.HapiEventPlugin
   ])
+
+  server.route(Routes.APIRoutes(api))
+  // TODO: follow instructions https://github.com/anttiviljami/openapi-backend/blob/master/DOCS.md#postresponsehandler-handler
 
   // start the server
   await server.start()
@@ -133,8 +162,8 @@ async function start () {
   return initDb(config)
     .then(db => initServer(db, config))
     .then(server => {
-    // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
-    /* istanbul ignore next */
+      // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
+      /* istanbul ignore next */
       process.on('SIGTERM', () => {
         server.log(['info'], 'Received SIGTERM, closing server...')
         server.stop({ timeout: 10000 })
@@ -143,10 +172,9 @@ async function start () {
             process.exit((err) ? 1 : 0)
           })
       })
-
-      server.plugins.openapi.setHost(server.info.host + ':' + server.info.port)
       server.log(['info'], `Server running on ${server.info.uri}`)
-    // eslint-disable-next-line no-unused-vars
+      return server
+      // eslint-disable-next-line no-unused-vars
     }).catch(err => {
       Logger.error(`Error initializing server: ${getStackOrInspect(err)}`)
     })
