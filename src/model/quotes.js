@@ -76,8 +76,8 @@ class QuotesModel {
 
     // Collect facts to supply to the rule engine
     // Get quote participants from central ledger admin
-    const { centralLedgerAdminServiceEndpoint } = new Config()
-    const url = `${centralLedgerAdminServiceEndpoint}/participants`
+    const { switchEndpoint } = new Config()
+    const url = `${switchEndpoint}/participants`
     const [payer, payee] = await Promise.all([
       axios.request({ url: `${url}/${headers['fspiop-source']}` }),
       axios.request({ url: `${url}/${headers['fspiop-destination']}` })
