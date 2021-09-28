@@ -11,9 +11,9 @@ COPY package.json package-lock.json* /opt/quoting-service/
 
 RUN npm install
 
-COPY config /opt/quoting-service/config
 RUN apk del build-dependencies
 
+COPY config /opt/quoting-service/config
 COPY src /opt/quoting-service/src
 
 FROM node:12.16.1-alpine
