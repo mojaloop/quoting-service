@@ -318,7 +318,7 @@ class QuotesModel {
 
         // store any extension list items
         if (quoteRequest.extensionList &&
-             Array.isArray(quoteRequest.extensionList.extension)) {
+           Array.isArray(quoteRequest.extensionList.extension)) {
           refs.extensions = await this.db.createQuoteExtensions(
             txn, quoteRequest.extensionList.extension, quoteRequest.quoteId, quoteRequest.transactionId)
         }
@@ -499,7 +499,7 @@ class QuotesModel {
       if ('accept' in headers) {
         // internal-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-           `Update for quote ${quoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
+          `Update for quote ${quoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
       }
 
       // accumulate enum ids
@@ -728,10 +728,10 @@ class QuotesModel {
   }
 
   /**
-    * Handles error reports from clients e.g. POST quotes/{id}/error
-    *
-    * @returns {undefined}
-    */
+   * Handles error reports from clients e.g. POST quotes/{id}/error
+   *
+   * @returns {undefined}
+   */
   async handleQuoteError (headers, quoteId, error, span) {
     let txn = null
     const envConfig = new Config()
