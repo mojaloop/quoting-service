@@ -155,6 +155,12 @@ function generateRequestHeaders (headers, noAccept) {
   if (!noAccept) {
     ret.Accept = acceptHeader
   }
+  if (headers['fspiop-sourcecurrency']) {
+    ret['FSPIOP-SourceCurrency'] = headers['fspiop-sourcecurrency']
+  }
+  if (headers['fspiop-destinationcurrency']) {
+    ret['FSPIOP-DestinationCurrency'] = headers['fspiop-destinationcurrency']
+  }
 
   return removeEmptyKeys(ret)
 }
