@@ -231,7 +231,6 @@ class QuotesModel {
     let handledRuleEvents
     let fspiopSource
     const handleQuoteRequestSpan = span.getChild('qs_quote_handleQuoteRequest')
-
     try {
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -265,7 +264,7 @@ class QuotesModel {
           // same quoteId but a different request, this is an error!
           // internal-error
           throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-             `Quote ${quoteRequest.quoteId} is a duplicate but hashes dont match`, null, fspiopSource)
+            `Quote ${quoteRequest.quoteId} is a duplicate but hashes dont match`, null, fspiopSource)
         }
 
         if (dupe.isResend && dupe.isDuplicateId) {
@@ -332,7 +331,7 @@ class QuotesModel {
 
         // store any extension list items
         if (quoteRequest.extensionList &&
-           Array.isArray(quoteRequest.extensionList.extension)) {
+          Array.isArray(quoteRequest.extensionList.extension)) {
           refs.extensions = await this.db.createQuoteExtensions(
             txn, quoteRequest.extensionList.extension, quoteRequest.quoteId, quoteRequest.transactionId)
         }
