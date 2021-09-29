@@ -1149,7 +1149,7 @@ components:
       type: object
       properties:
         extension:
-          maxItems: 16
+          maxItems: 17
           minItems: 1
           type: array
           description: Number of Extension elements

@@ -362,71 +362,14 @@ describe('QuotesModel', () => {
 
     describe('Failures:', () => {
       describe('In case a non empty set of rules is loaded', () => {
-        it('throws an unhandled exception if the first attempt of `axios.request` throws an exception', async () => {
-          axios.request.mockImplementationOnce(() => { throw new Error('foo') })
-
-          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
-            .rejects
-            .toHaveProperty('message', 'foo')
-
-          expect(axios.request.mock.calls.length).toBe(1)
-          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
-        })
-
-        it('throws an unhandled exception if the second attempt of `axios.request` throws an exception', async () => {
-          axios.request
-            .mockImplementationOnce(() => { return { success: true } })
-            .mockImplementationOnce(() => { throw new Error('foo') })
-
-          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
-            .rejects
-            .toHaveProperty('message', 'foo')
-
-          expect(axios.request.mock.calls.length).toBe(2)
-          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
-          expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
-        })
-
-        it('throws an unhandled exception if the first attempt of `axios.request` fails', async () => {
-          axios.request
-            .mockImplementationOnce(() => { return Promise.reject(new Error('foo')) })
-            .mockImplementationOnce(() => { return Promise.resolve({ ok: true }) })
-
-          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
-            .rejects
-            .toHaveProperty('message', 'foo')
-
-          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
-          expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
-        })
-
-        it('throws an unhandled exception if the second attempt of `axios.request` fails', async () => {
-          axios.request
-            .mockImplementationOnce(() => { return Promise.resolve({ ok: true }) })
-            .mockImplementationOnce(() => { return Promise.reject(new Error('foo')) })
-
-          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
-            .rejects
-            .toHaveProperty('message', 'foo')
-
-          expect(axios.request.mock.calls.length).toBe(2)
-          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
-          expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
-        })
-
         it('throws an unhandled exception if `RulesEngine.run` throws an exception', async () => {
-          axios.request
-            .mockImplementationOnce(() => { return { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] } } })
-            .mockImplementationOnce(() => { return { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] } } })
+          const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] } }
+          const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] } }
           RulesEngine.run.mockImplementation(() => { throw new Error('foo') })
 
-          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
+          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest, payer, payee))
             .rejects
             .toHaveProperty('message', 'foo')
-
-          expect(axios.request.mock.calls.length).toBe(2)
-          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
-          expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
         })
       })
     })
@@ -452,11 +395,6 @@ describe('QuotesModel', () => {
       describe('In case a non empty set of rules is loaded', () => {
         it('returns the result of `RulesEngine.run`', async () => {
           const expectedEvents = []
-          axios.request
-            .mockImplementationOnce(() => { return { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] } } })
-            .mockImplementationOnce(() => { return { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] } } })
-          expect(rules.length).not.toBe(0)
-
           rules.forEach((rule) => {
             expectedEvents.push(rule.event)
           })
@@ -466,14 +404,12 @@ describe('QuotesModel', () => {
               events: expectedEvents
             }
           })
+          const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] } }
+          const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] } }
 
-          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
+          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest, payer, payee))
             .resolves
             .toEqual(expectedEvents)
-
-          expect(axios.request.mock.calls.length).toBe(2)
-          expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
-          expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
         })
       })
     })
@@ -611,24 +547,26 @@ describe('QuotesModel', () => {
       quotesModel.validateQuoteRequest.mockRestore()
     })
 
-    it('should validate fspiopSource and fspiopDestination', async () => {
+    it('should validate payer and payee fspId for simple routing mode', async () => {
       expect.assertions(5)
 
       const fspiopSource = 'dfsp1'
       const fspiopDestination = 'dfsp2'
 
       expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
+      const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 } }
+      const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 } }
 
-      await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest)
+      await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest, payer, payee)
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
       if (mockConfig.simpleRoutingMode) {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(4)
-      } else {
         expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      } else {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
       }
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopSource)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(fspiopDestination)
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
     it('should throw internal error if no quoteRequest was supplied', async () => {
       expect.assertions(4)
@@ -645,6 +583,98 @@ describe('QuotesModel', () => {
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
       expect(quotesModel.db.getParticipant).not.toHaveBeenCalled()
+    })
+    it('should throw PAYER_FSP_ID_NOT_FOUND error if payer is not active', async () => {
+      expect.assertions(6)
+
+      const fspiopSource = 'dfsp1'
+      const fspiopDestination = 'dfsp2'
+
+      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
+      const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 0 } }
+      const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 } }
+
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest, payer, payee))
+      .rejects
+      .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND.code)
+
+      expect(quotesModel.db).toBeTruthy() // Constructor should have been called
+      if (mockConfig.simpleRoutingMode) {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      } else {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
+      }
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+    })
+    it('should throw DESTINATION_FSP_ERROR error if payee is not active', async () => {
+      expect.assertions(6)
+
+      const fspiopSource = 'dfsp1'
+      const fspiopDestination = 'dfsp2'
+
+      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
+      const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 } }
+      const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 0 } }
+
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest, payer, payee))
+      .rejects
+      .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
+
+      expect(quotesModel.db).toBeTruthy() // Constructor should have been called
+      if (mockConfig.simpleRoutingMode) {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      } else {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
+      }
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+    })
+    it('should throw PAYER_ERROR error if payer does not have any active account', async () => {
+      expect.assertions(6)
+
+      const fspiopSource = 'dfsp1'
+      const fspiopDestination = 'dfsp2'
+
+      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
+      const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 0 }], isActive: 1 } }
+      const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 } }
+
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest, payer, payee))
+      .rejects
+      .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_ERROR.code)
+
+      expect(quotesModel.db).toBeTruthy() // Constructor should have been called
+      if (mockConfig.simpleRoutingMode) {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      } else {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
+      }
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+    })
+    it('should throw PAYEE_ERROR error if payee does not have any active account', async () => {
+      expect.assertions(6)
+
+      const fspiopSource = 'dfsp1'
+      const fspiopDestination = 'dfsp2'
+
+      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
+      const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 } }
+      const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 0 }], isActive: 1 } }
+
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest, payer, payee))
+      .rejects
+      .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_ERROR.code)
+
+      expect(quotesModel.db).toBeTruthy() // Constructor should have been called
+      if (mockConfig.simpleRoutingMode) {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      } else {
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
+      }
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
   })
   describe('validateQuoteUpdate', () => {
@@ -700,7 +730,7 @@ describe('QuotesModel', () => {
           await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
             .resolves
             .toBe(undefined)
-          expect(quotesModel.validateQuoteRequest).not.toBeCalled()
+          expect(quotesModel.validateQuoteRequest).toHaveBeenCalledTimes(1)
           expect(quotesModel.forwardQuoteRequest).not.toBeCalled()
         })
         it('throws an exception if `validateQuoteRequest` fails', async () => {
@@ -1076,7 +1106,7 @@ describe('QuotesModel', () => {
 
           const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
 
-          expect(quotesModel.validateQuoteRequest.mock.calls.length).toBe(0)
+          expect(quotesModel.db.createQuoteDuplicateCheck.mock.calls.length).toBe(0)
           expect(result).toBe(undefined)
         })
       })
@@ -1091,10 +1121,12 @@ describe('QuotesModel', () => {
             expect.assertions(5)
 
             mockChildSpan.isFinished = false
-
+            const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 } }
+            const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 } }
+            quotesModel.fetchParticipantInfo = jest.fn(() => { return ({payer, payee}) })
             const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
 
-            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
+            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest, payer, payee]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
             expect(mockSpan.getChild.mock.calls.length).toBe(1)
 
@@ -1184,10 +1216,13 @@ describe('QuotesModel', () => {
             expect.assertions(5)
 
             mockChildSpan.isFinished = false
+            const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 } }
+            const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 } }
+            quotesModel.fetchParticipantInfo = jest.fn(() => { return ({payer, payee}) })
 
             const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
 
-            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
+            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest, payer, payee]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
             expect(mockSpan.getChild.mock.calls.length).toBe(1)
 
@@ -2405,6 +2440,82 @@ describe('QuotesModel', () => {
 
       // Assert
       expect(Logger.info).toBeCalledTimes(1)
+    })
+  })
+  describe('fetchParticipantInfo', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel.fetchParticipantInfo.mockRestore()
+    })
+
+    it('returns payer and payee', async () => {
+      // Arrange
+      const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] } }
+      const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] } }
+      axios.request
+          .mockImplementationOnce(() => { return payer })
+          .mockImplementationOnce(() => { return payee })
+      // Act
+      const result = await quotesModel.fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'])
+
+      // Assert
+      expect(result).toEqual({payer, payee})
+      expect(axios.request.mock.calls.length).toBe(2)
+      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+
+    it('throws an unhandled exception if the first attempt of `axios.request` throws an exception', async () => {
+      axios.request
+        .mockImplementationOnce(() => { throw new Error('foo') })
+
+      await expect(quotesModel.fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination']))
+        .rejects
+        .toHaveProperty('message', 'foo')
+
+      expect(axios.request.mock.calls.length).toBe(1)
+      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+    })
+
+    it('throws an unhandled exception if the second attempt of `axios.request` throws an exception', async () => {
+      axios.request
+        .mockImplementationOnce(() => { return { success: true } })
+        .mockImplementationOnce(() => { throw new Error('foo') })
+
+      await expect(quotesModel.fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination']))
+        .rejects
+        .toHaveProperty('message', 'foo')
+
+      expect(axios.request.mock.calls.length).toBe(2)
+      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+
+    it('throws an unhandled exception if the first attempt of `axios.request` fails', async () => {
+      axios.request
+        .mockImplementationOnce(() => { return Promise.reject(new Error('foo')) })
+        .mockImplementationOnce(() => { return Promise.resolve({ ok: true }) })
+
+      await expect(quotesModel.fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination']))
+        .rejects
+        .toHaveProperty('message', 'foo')
+
+      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+
+    it('throws an unhandled exception if the second attempt of `axios.request` fails', async () => {
+      axios.request
+        .mockImplementationOnce(() => { return Promise.resolve({ ok: true }) })
+        .mockImplementationOnce(() => { return Promise.reject(new Error('foo')) })
+
+      await expect(quotesModel.fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination']))
+        .rejects
+        .toHaveProperty('message', 'foo')
+
+      expect(axios.request.mock.calls.length).toBe(2)
+      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
     })
   })
 })

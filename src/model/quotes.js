@@ -181,12 +181,12 @@ class QuotesModel {
     // check if the payer is active fsp, if not send error callback to payer
     if (payer.data.isActive === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND,
-          `Payer FSP ID not found - Unsupported participant '${headers['fspiop-source']}'`, null, headers['fspiop-source'])
+          `Payer FSP ID not found - Unsupported participant '${fspiopSource}'`, null, fspiopSource)
     }
     // check if the payee is active fsp, if not send error callback to payer
     if (payee.data.isActive === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
-          `Destination FSP Error - '${headers['fspiop-destination']}' is inactive`, null, headers['fspiop-source'])
+          `Destination FSP Error - '${fspiopDestination}' is inactive`, null, fspiopSource)
     }
 
     const payerAccounts = Array.isArray(payer.data.accounts) ? payer.data.accounts : []
@@ -198,12 +198,12 @@ class QuotesModel {
     // check if the payer has atleast one active account, if not send error callback to payer
     if (activePayerAccounts.length === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_ERROR,
-        'Payer does not have any active account', null, headers['fspiop-source'])
+        'Payer does not have any active account', null, fspiopSource)
     }
     // check if the payee has atleast one active account, if not send error callback to payer
     if (activePayeeAccounts.length === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_ERROR,
-        'Payee does not have any active account', null, headers['fspiop-source'])
+        'Payee does not have any active account', null, fspiopSource)
     }   
   }
 
@@ -235,9 +235,8 @@ class QuotesModel {
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
-      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination)
-
-      // validate - this will throw if the request is invalid
+      const { payer, payee } = await this.fetchParticipantInfo(fspiopSource, fspiopDestination)
+      // validate - this will throw if the request is invalid      
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest, payer, payee)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
@@ -836,7 +835,7 @@ class QuotesModel {
     let endpoint
 
     try {
-      // we just need to forward this request on to the destinatin dfsp. they should response with a
+      // we just need to forward this request on to the destination dfsp. they should response with a
       // quote update resend (PUT)
 
       // lookup payee dfsp callback endpoint
@@ -1140,13 +1139,13 @@ class QuotesModel {
     Logger.info(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
   }
 
-  async fetchParticipantInfo (source, destinatin) {
+  async fetchParticipantInfo (source, destination) {
     // Get quote participants from central ledger admin
     const { switchEndpoint } = new Config()
     const url = `${switchEndpoint}/participants`
     const [payer, payee] = await Promise.all([
       axios.request({ url: `${url}/${source}` }),
-      axios.request({ url: `${url}/${destinatin}` })
+      axios.request({ url: `${url}/${destination}` })
     ])
     this.writeLog(`Got payer ${payer} and payee ${payee}`)
     return { payer, payee }
