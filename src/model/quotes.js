@@ -351,7 +351,6 @@ class QuotesModel {
       }
 
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-      childSpan = span.getChild('qs_quote_forwardQuoteRequest')
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleQuoteRequest for quoteId ${quoteRequest.quoteId}: ${getStackOrInspect(err)}`)
@@ -361,21 +360,22 @@ class QuotesModel {
 
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
+      await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers, handleQuoteRequestSpan)
+      if (handleQuoteRequestSpan) {
+        await handleQuoteRequestSpan.error(fspiopError, state)
+        await handleQuoteRequestSpan.finish(fspiopError.message, state)
       }
-
       throw fspiopError
     }
-
+    let forwardQuoteRequestSpan
     try {
+      forwardQuoteRequestSpan = handleQuoteRequestSpan.getChild('qs_quote_forwardQuoteRequest')
       if (envConfig.simpleRoutingMode) {
-        await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest.quoteId, handledRuleEvents.quoteRequest, childSpan)
+        await forwardQuoteRequestSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
       } else {
-        await childSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(handledRuleEvents.headers, refs.quoteId, handledRuleEvents.quoteRequest, childSpan)
+        await forwardQuoteRequestSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteRequest(handledRuleEvents.headers, refs.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
       }
     } catch (err) {
       // any-error
@@ -383,13 +383,16 @@ class QuotesModel {
       // get the model to handle it
       this.writeLog(`Error forwarding quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
       if (envConfig.simpleRoutingMode) {
-        await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers, childSpan)
+        await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers, forwardQuoteRequestSpan)
       } else {
-        await this.handleException(fspiopSource, refs.quoteId, err, headers, childSpan)
+        await this.handleException(fspiopSource, refs.quoteId, err, headers, forwardQuoteRequestSpan)
       }
     } finally {
-      if (!childSpan.isFinished) {
-        await childSpan.finish()
+      if (!forwardQuoteRequestSpan.isFinished) {
+        await forwardQuoteRequestSpan.finish()
+      }
+      if (!handleQuoteRequestSpan.isFinished) {
+        await handleQuoteRequestSpan.finish()
       }
     }
 
