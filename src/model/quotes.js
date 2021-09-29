@@ -230,7 +230,7 @@ class QuotesModel {
     let txn
     let handledRuleEvents
     let fspiopSource
-    let childSpan
+    const handleQuoteRequestSpan = span.getChild('qs_quote_handleQuoteRequest')
 
     try {
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
@@ -272,7 +272,7 @@ class QuotesModel {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
           return this.handleQuoteRequestResend(handledRuleEvents.headers,
-            handledRuleEvents.quoteRequest, span)
+            handledRuleEvents.quoteRequest, handleQuoteRequestSpan)
         }
 
         // todo: validation
