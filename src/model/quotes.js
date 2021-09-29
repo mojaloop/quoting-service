@@ -127,7 +127,7 @@ class QuotesModel {
         quoteRequest,
         headers: {
           ...headers,
-          'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp,
+          'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp
         }
       }
       // if rerouteToFspCurrency is present then add the non standard headers used by forex
@@ -218,10 +218,10 @@ class QuotesModel {
   }
 
   /**
-    * Logic for creating and handling quote requests
-    *
-    * @returns {object} - returns object containing keys for created database entities
-    */
+   * Logic for creating and handling quote requests
+   *
+   * @returns {object} - returns object containing keys for created database entities
+   */
   async handleQuoteRequest (headers, quoteRequest, span) {
     const envConfig = new Config()
     // accumulate enum ids
