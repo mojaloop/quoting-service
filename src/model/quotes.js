@@ -251,9 +251,6 @@ class QuotesModel {
       }
 
       if (!envConfig.simpleRoutingMode) {
-        // do everything in a db txn so we can rollback multiple operations if something goes wrong
-        txn = await this.db.newTransaction()
-
         // check if this is a resend or an erroneous duplicate
         const dupe = await this.checkDuplicateQuoteRequest(quoteRequest)
 
@@ -273,6 +270,9 @@ class QuotesModel {
           return this.handleQuoteRequestResend(handledRuleEvents.headers,
             handledRuleEvents.quoteRequest, handleQuoteRequestSpan)
         }
+
+        // do everything in a db txn so we can rollback multiple operations if something goes wrong
+        txn = await this.db.newTransaction()
 
         // todo: validation
 
