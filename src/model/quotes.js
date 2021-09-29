@@ -757,6 +757,7 @@ class QuotesModel {
     let txn = null
     const envConfig = new Config()
     let newError
+    const childSpan = span.getChild('qs_quote_handleQuoteError')
     try {
       if (!envConfig.simpleRoutingMode) {
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
@@ -775,8 +776,8 @@ class QuotesModel {
       // create a new object to represent the error
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
 
-      // Needed to add await here to prevent 'span already finished' bug
-      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, quoteId, headers, span, false)
+      // Needed to add await here to prevent 'childSpan already finished' bug
+      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, quoteId, headers, childSpan, false)
 
       return newError
     } catch (err) {
@@ -787,9 +788,9 @@ class QuotesModel {
       }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
+      if (childSpan) {
+        await childSpan.error(fspiopError, state)
+        await childSpan.finish(fspiopError.message, state)
       }
       throw fspiopError
     }
@@ -802,8 +803,9 @@ class QuotesModel {
    */
   async handleQuoteGet (headers, quoteId, span) {
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    let childSpan
     try {
-      const childSpan = span.getChild('qs_quote_forwardQuoteGet')
+      childSpan = span.getChild('qs_quote_forwardQuoteGet')
       try {
         await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
         await this.forwardQuoteGet(headers, quoteId, childSpan)
@@ -821,13 +823,7 @@ class QuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleQuoteGet: ${getStackOrInspect(err)}`)
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
-      }
-      throw fspiopError
+      throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
 
@@ -1132,32 +1128,6 @@ class QuotesModel {
       this.writeLog(`Error in checkDuplicateQuoteResponse: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
-  }
-
-  /**
-   * Utility function to remove null and undefined keys from an object.
-   * This is useful for removing "nulls" that come back from database queries
-   * when projecting into API spec objects
-   *
-   * @returns {object}
-   */
-  removeEmptyKeys (originalObject) {
-    const obj = { ...originalObject }
-    Object.keys(obj).forEach(key => {
-      if (obj[key] && typeof obj[key] === 'object') {
-        if (Object.keys(obj[key]).length < 1) {
-          // remove empty object
-          delete obj[key]
-        } else {
-          // recurse
-          obj[key] = this.removeEmptyKeys(obj[key])
-        }
-      } else if (obj[key] == null) {
-        // null or undefined, remove it
-        delete obj[key]
-      }
-    })
-    return obj
   }
 
   /**
