@@ -68,18 +68,6 @@ class QuotesModel {
     this.requestId = config.requestId
   }
 
-  async fetchParticipantInfo (source, destinatin) {
-    // Get quote participants from central ledger admin
-    const { switchEndpoint } = new Config()
-    const url = `${switchEndpoint}/participants`
-    const [payer, payee] = await Promise.all([
-      axios.request({ url: `${url}/${source}` }),
-      axios.request({ url: `${url}/${destinatin}` })
-    ])
-    this.writeLog(`Got payer ${payer} and payee ${payee}`)
-    return { payer, payee }
-  }
-
   async executeRules (headers, quoteRequest, payer, payee) {
     if (rules.length === 0) {
       return []
@@ -1174,6 +1162,19 @@ class QuotesModel {
   writeLog (message) {
     Logger.info(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
   }
+
+  async fetchParticipantInfo (source, destinatin) {
+    // Get quote participants from central ledger admin
+    const { switchEndpoint } = new Config()
+    const url = `${switchEndpoint}/participants`
+    const [payer, payee] = await Promise.all([
+      axios.request({ url: `${url}/${source}` }),
+      axios.request({ url: `${url}/${destinatin}` })
+    ])
+    this.writeLog(`Got payer ${payer} and payee ${payee}`)
+    return { payer, payee }
+  }
+
 }
 
 module.exports = QuotesModel
