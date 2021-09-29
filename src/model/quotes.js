@@ -510,6 +510,7 @@ class QuotesModel {
     let txn = null
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const envConfig = new Config()
+    const handleQuoteUpdateSpan = span.getChild('qs_quote_handleQuoteUpdate')
     try {
       // ensure no 'accept' header is present in the request headers.
       if ('accept' in headers) {
@@ -521,9 +522,6 @@ class QuotesModel {
       // accumulate enum ids
       const refs = {}
       if (!envConfig.simpleRoutingMode) {
-        // do everything in a transaction so we can rollback multiple operations if something goes wrong
-        txn = await this.db.newTransaction()
-
         // check if this is a resend or an erroneous duplicate
         const dupe = await this.checkDuplicateQuoteResponse(quoteId, quoteUpdateRequest)
         this.writeLog(`Check duplicate for quoteId ${quoteId} update returned: ${util.inspect(dupe)}`)
@@ -538,8 +536,11 @@ class QuotesModel {
         if (dupe.isResend && dupe.isDuplicateId) {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-          return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest, span)
+          return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest, handleQuoteUpdateSpan)
         }
+
+        // do everything in a transaction so we can rollback multiple operations if something goes wrong
+        txn = await this.db.newTransaction()
 
         // todo: validation
 
@@ -605,7 +606,7 @@ class QuotesModel {
         // }
       }
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-      const childSpan = span.getChild('qs_quote_forwardQuoteUpdate')
+      const childSpan = handleQuoteUpdateSpan.getChild('qs_quote_forwardQuoteUpdate')
       try {
         await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdateRequest }, EventSdk.AuditEventAction.start)
         await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, childSpan)
@@ -620,6 +621,9 @@ class QuotesModel {
         if (!childSpan.isFinished) {
           await childSpan.finish()
         }
+        if (!handleQuoteUpdateSpan.isFinished) {
+          await handleQuoteUpdateSpan.finish()
+        }
       }
 
       // all ok, return refs
@@ -632,9 +636,10 @@ class QuotesModel {
       }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      if (span) {
-        await span.error(fspiopError, state)
-        await span.finish(fspiopError.message, state)
+      await this.handleException(fspiopSource, quoteId, err, headers, handleQuoteUpdateSpan)
+      if (handleQuoteUpdateSpan) {
+        await handleQuoteUpdateSpan.error(fspiopError, state)
+        await handleQuoteUpdateSpan.finish(fspiopError.message, state)
       }
       throw fspiopError
     }
