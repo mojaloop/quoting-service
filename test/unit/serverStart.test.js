@@ -31,7 +31,8 @@
 
 const { mockRequest: Mockgen, defaultHeaders } = require('../util/helper')
 const Server = require('../../src/server')
-
+jest.mock('../../src/model/quotes')
+const QuotesModel = require('../../src/model/quotes')
 let Database
 let server
 
@@ -112,6 +113,9 @@ describe('Server Start', () => {
       connect: jest.fn().mockResolvedValueOnce()
     }))
 
+    QuotesModel.mockImplementationOnce(() => ({
+      handleQuoteRequest: jest.fn().mockResolvedValueOnce()
+    }))
     // Act
     server = await Server()
     const mock = await Mockgen().requestsAsync('/quotes', 'post')

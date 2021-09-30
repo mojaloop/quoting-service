@@ -122,7 +122,7 @@ class QuotesModel {
     }
     if (interceptQuoteEvents.length > 0) {
       // send the quote request to the recipient in the event
-      let result = {
+      const result = {
         terminate: false,
         quoteRequest,
         headers: {
@@ -132,7 +132,7 @@ class QuotesModel {
       }
       // if rerouteToFspCurrency is present then add the non standard headers used by forex
       // Note these headers are not part of the mojaloop specification
-      if(interceptQuoteEvents[0].params.rerouteToFspCurrency) {
+      if (interceptQuoteEvents[0].params.rerouteToFspCurrency) {
         result.headers['fspiop-destinationcurrency'] = interceptQuoteEvents[0].params.rerouteToFspCurrency
         result.headers['fspiop-sourcecurrency'] = interceptQuoteEvents[0].params.sourceCurrency
       }
@@ -204,7 +204,7 @@ class QuotesModel {
     if (activePayeeAccounts.length === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_ERROR,
         'Payee does not have any active account', null, fspiopSource)
-    }   
+    }
   }
 
   /**
@@ -236,7 +236,7 @@ class QuotesModel {
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
       const { payer, payee } = await this.fetchParticipantInfo(fspiopSource, fspiopDestination)
-      // validate - this will throw if the request is invalid      
+      // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest, payer, payee)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
@@ -1150,7 +1150,6 @@ class QuotesModel {
     this.writeLog(`Got payer ${payer} and payee ${payee}`)
     return { payer, payee }
   }
-
 }
 
 module.exports = QuotesModel
