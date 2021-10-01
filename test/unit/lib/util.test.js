@@ -25,8 +25,10 @@
 'use strict'
 
 const Enum = require('@mojaloop/central-services-shared').Enum
+jest.mock('axios')
+const axios = require('axios')
 
-const { failActionHandler, getStackOrInspect, getSpanTags, generateRequestHeaders, generateRequestHeadersForJWS, removeEmptyKeys } = require('../../../src/lib/util')
+const { failActionHandler, getStackOrInspect, getSpanTags, generateRequestHeaders, generateRequestHeadersForJWS, removeEmptyKeys, fetchParticipantInfo } = require('../../../src/lib/util')
 
 describe('util', () => {
   const mockData = {
@@ -468,6 +470,81 @@ describe('util', () => {
 
       // Assert
       expect(result).toStrictEqual(expected)
+    })
+  })
+  describe('fetchParticipantInfo', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      axios.request.mockRestore()
+    })
+
+    it('returns payer and payee', async () => {
+      // Arrange
+      const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] } }
+      const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] } }
+      axios.request
+        .mockImplementationOnce(() => { return payer })
+        .mockImplementationOnce(() => { return payee })
+      // Act
+      const result = await fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'])
+      // Assert
+      expect(result).toEqual({ payer: payer.data, payee: payee.data })
+      expect(axios.request.mock.calls.length).toBe(2)
+      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+
+    it('throws an unhandled exception if the first attempt of `axios.request` throws an exception', async () => {
+      axios.request
+        .mockImplementationOnce(() => { throw new Error('foo') })
+
+      await expect(fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination']))
+        .rejects
+        .toHaveProperty('message', 'foo')
+
+      expect(axios.request.mock.calls.length).toBe(1)
+      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+    })
+
+    it('throws an unhandled exception if the second attempt of `axios.request` throws an exception', async () => {
+      axios.request
+        .mockImplementationOnce(() => { return { success: true } })
+        .mockImplementationOnce(() => { throw new Error('foo') })
+
+      await expect(fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination']))
+        .rejects
+        .toHaveProperty('message', 'foo')
+
+      expect(axios.request.mock.calls.length).toBe(2)
+      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+
+    it('throws an unhandled exception if the first attempt of `axios.request` fails', async () => {
+      axios.request
+        .mockImplementationOnce(() => { return Promise.reject(new Error('foo')) })
+        .mockImplementationOnce(() => { return Promise.resolve({ ok: true }) })
+
+      await expect(fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination']))
+        .rejects
+        .toHaveProperty('message', 'foo')
+
+      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+
+    it('throws an unhandled exception if the second attempt of `axios.request` fails', async () => {
+      axios.request
+        .mockImplementationOnce(() => { return Promise.resolve({ ok: true }) })
+        .mockImplementationOnce(() => { return Promise.reject(new Error('foo')) })
+
+      await expect(fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination']))
+        .rejects
+        .toHaveProperty('message', 'foo')
+
+      expect(axios.request.mock.calls.length).toBe(2)
+      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
     })
   })
 })

@@ -37,6 +37,8 @@ const crypto = require('crypto')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const Logger = require('@mojaloop/central-services-logger')
 const resourceVersions = require('@mojaloop/central-services-shared').Util.resourceVersions
+const Config = require('./config')
+const axios = require('axios')
 
 const failActionHandler = async (request, h, err) => {
   Logger.error(`validation failure: ${getStackOrInspect}`)
@@ -201,6 +203,17 @@ function calculateRequestHash (request) {
   return crypto.createHash('sha256').update(requestStr).digest('hex')
 }
 
+const fetchParticipantInfo = async (source, destination) => {
+  // Get quote participants from central ledger admin
+  const { switchEndpoint } = new Config()
+  const url = `${switchEndpoint}/participants`
+  const [payer, payee] = await Promise.all([
+    axios.request({ url: `${url}/${source}` }),
+    axios.request({ url: `${url}/${destination}` })
+  ])
+  return { payer: payer.data, payee: payee.data }
+}
+
 module.exports = {
   failActionHandler,
   getSafe,
@@ -209,5 +222,6 @@ module.exports = {
   generateRequestHeaders,
   generateRequestHeadersForJWS,
   calculateRequestHash,
-  removeEmptyKeys
+  removeEmptyKeys,
+  fetchParticipantInfo
 }

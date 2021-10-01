@@ -48,7 +48,7 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
-const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash } = require('../lib/util')
+const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 const rules = require('../../config/rules.json')
 const RulesEngine = require('./rules.js')
@@ -74,8 +74,8 @@ class QuotesModel {
     }
 
     const facts = {
-      payer: payer.data,
-      payee: payee.data,
+      payer,
+      payee,
       payload: quoteRequest,
       headers
     }
@@ -178,18 +178,18 @@ class QuotesModel {
     }
 
     // check if the payer is active fsp, if not send error callback to payer
-    if (payer.data.isActive === 0) {
+    if (payer.isActive === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND,
           `Payer FSP ID not found - Unsupported participant '${fspiopSource}'`, null, fspiopSource)
     }
     // check if the payee is active fsp, if not send error callback to payer
-    if (payee.data.isActive === 0) {
+    if (payee.isActive === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
           `Destination FSP Error - '${fspiopDestination}' is inactive`, null, fspiopSource)
     }
 
-    const payerAccounts = Array.isArray(payer.data.accounts) ? payer.data.accounts : []
-    const payeeAccounts = Array.isArray(payee.data.accounts) ? payee.data.accounts : []
+    const payerAccounts = Array.isArray(payer.accounts) ? payer.accounts : []
+    const payeeAccounts = Array.isArray(payee.accounts) ? payee.accounts : []
 
     const activePayerAccounts = payerAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
     const activePayeeAccounts = payeeAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
@@ -234,7 +234,8 @@ class QuotesModel {
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
-      const { payer, payee } = await this.fetchParticipantInfo(fspiopSource, fspiopDestination)
+      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination)
+      this.writeLog(`Got payer ${payer} and payee ${payee}`)
       // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest, payer, payee)
 
@@ -1125,18 +1126,6 @@ class QuotesModel {
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
     Logger.info(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
-  }
-
-  async fetchParticipantInfo (source, destination) {
-    // Get quote participants from central ledger admin
-    const { switchEndpoint } = new Config()
-    const url = `${switchEndpoint}/participants`
-    const [payer, payee] = await Promise.all([
-      axios.request({ url: `${url}/${source}` }),
-      axios.request({ url: `${url}/${destination}` })
-    ])
-    this.writeLog(`Got payer ${payer} and payee ${payee}`)
-    return { payer, payee }
   }
 }
 
