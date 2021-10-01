@@ -161,10 +161,6 @@ class QuotesModel {
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
 
-    // disabled below validation because of FX transfers the currencies are different
-    // await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    // await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-
     // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
     if (envConfig.simpleRoutingMode) {
       // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
