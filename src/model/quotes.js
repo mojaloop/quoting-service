@@ -130,11 +130,10 @@ class QuotesModel {
           'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp
         }
       }
-      // if rerouteToFspCurrency is present then add the non standard headers used by forex
+      // if additionalHeaders are present then add the additional non-standard headers (e.g. used by forex)
       // Note these headers are not part of the mojaloop specification
-      if (interceptQuoteEvents[0].params.rerouteToFspCurrency) {
-        result.headers['fspiop-destinationcurrency'] = interceptQuoteEvents[0].params.rerouteToFspCurrency
-        result.headers['fspiop-sourcecurrency'] = interceptQuoteEvents[0].params.sourceCurrency
+      if (interceptQuoteEvents[0].params.additionalHeaders) {
+        result.headers = { ...result.headers, ...interceptQuoteEvents[0].params.additionalHeaders }
       }
       return result
     }
@@ -419,11 +418,6 @@ class QuotesModel {
       // lookup payee dfsp callback endpoint
       // TODO: for MVP we assume initiator is always payer dfsp! this may not always be the
       // case if a xfer is requested by payee
-      // if (envConfig.simpleRoutingMode) {
-      //   endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
-      // } else {
-      //   endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYEE')
-      // }
       endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
 
       this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${endpoint}, destination: ${fspiopDest}`)
@@ -663,12 +657,6 @@ class QuotesModel {
       }
 
       // lookup payer dfsp callback endpoint
-      // if (envConfig.simpleRoutingMode) {
-      //   endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
-      // } else {
-      //   // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-      //   endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
-      // }
       endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
 
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)

@@ -260,7 +260,11 @@ describe('QuotesModel', () => {
             params: {
               rerouteToFsp: 'DFSPEUR',
               sourceCurrency: 'EUR',
-              rerouteToFspCurrency: 'XOF'
+              rerouteToFspCurrency: 'XOF',
+              additionalHeaders: {
+                'x-fspiop-sourcecurrency': 'EUR',
+                'x-fspiop-destinationcurrency': 'XOF'
+              }
             }
           }
         },
@@ -532,8 +536,7 @@ describe('QuotesModel', () => {
                 headers: {
                   ...mockData.headers,
                   'fspiop-destination': mockEvents[0].params.rerouteToFsp,
-                  'fspiop-destinationcurrency': mockEvents[0].params.rerouteToFspCurrency,
-                  'fspiop-sourcecurrency': mockEvents[0].params.sourceCurrency
+                  ...mockEvents[0].params.additionalHeaders
                 }
               })
           })

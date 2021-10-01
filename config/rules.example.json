@@ -72,7 +72,11 @@
       "params": {
         "rerouteToFsp": "DFSPEUR",
         "sourceCurrency": "EUR",
-        "rerouteToFspCurrency": "XOF"
+        "rerouteToFspCurrency": "XOF",
+        "additionalHeaders": {
+          "x-fspiop-sourcecurrency": "EUR",
+          "x-fspiop-destinationcurrency": "XOF"
+        }        
       }
     }
   },
@@ -111,7 +115,11 @@
       "params": {
         "rerouteToFsp": "DFSPEUR",
         "sourceCurrency": "EUR",
-        "rerouteToFspCurrency": "XOF"
+        "rerouteToFspCurrency": "XOF",
+        "additionalHeaders": {
+          "x-fspiop-sourcecurrency": "EUR",
+          "x-fspiop-destinationcurrency": "XOF"
+        }     
       }
     }
   },
@@ -150,7 +158,11 @@
       "params": {
         "rerouteToFsp": "DFSPXOF",
         "sourceCurrency": "XOF",
-        "rerouteToFspCurrency": "EUR"
+        "rerouteToFspCurrency": "EUR",
+        "additionalHeaders": {
+          "x-fspiop-sourcecurrency": "XOF",
+          "x-fspiop-destinationcurrency": "EUR"
+        }     
       }
     }
   },
@@ -189,7 +201,11 @@
       "params": {
         "rerouteToFsp": "DFSPXOF",
         "sourceCurrency": "XOF",
-        "rerouteToFspCurrency": "EUR"
+        "rerouteToFspCurrency": "EUR",
+        "additionalHeaders": {
+          "x-fspiop-sourcecurrency": "XOF",
+          "x-fspiop-destinationcurrency": "EUR"
+        }     
       }
     }
   },
