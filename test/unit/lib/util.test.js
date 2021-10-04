@@ -423,6 +423,26 @@ describe('util', () => {
       expect(result).toStrictEqual(expected)
     })
 
+    it('generates default request headers, including the Accept and additionalHeaders', () => {
+      // Arrange
+      const expected = {
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'FSPIOP-Destination': 'dfsp2',
+        'FSPIOP-Source': 'dfsp1'
+      }
+      const additionalHeaders = {
+        'x-fspsiop-sourcecurrency': 'EUR',
+        'x-fspsiop-destinationcurrency': 'MAD'
+      }
+
+      // Act
+      const result = generateRequestHeaders(mockData.headers, false, additionalHeaders)
+
+      // Assert
+      expect(result).toStrictEqual({ ...expected, ...additionalHeaders })
+    })
+
     it('generates request headers, including the and converts accept and content-type to quotes', () => {
       // Arrange
       const expected = {
