@@ -134,6 +134,7 @@ class QuotesModel {
       // Note these headers are not part of the mojaloop specification
       if (interceptQuoteEvents[0].params.additionalHeaders) {
         result.headers = { ...result.headers, ...interceptQuoteEvents[0].params.additionalHeaders }
+        result.additionalHeaders = interceptQuoteEvents[0].params.additionalHeaders
       }
       return result
     }
@@ -263,7 +264,7 @@ class QuotesModel {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
           return this.handleQuoteRequestResend(handledRuleEvents.headers,
-            handledRuleEvents.quoteRequest, handleQuoteRequestSpan)
+            handledRuleEvents.quoteRequest, handleQuoteRequestSpan, handledRuleEvents.additionalHeaders)
         }
 
         // do everything in a db txn so we can rollback multiple operations if something goes wrong
@@ -370,7 +371,7 @@ class QuotesModel {
         await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
       } else {
         await forwardQuoteRequestSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(handledRuleEvents.headers, refs.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
+        await this.forwardQuoteRequest(handledRuleEvents.headers, refs.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan, handledRuleEvents.additionalHeaders)
       }
     } catch (err) {
       // any-error
@@ -400,7 +401,7 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardQuoteRequest (headers, quoteId, originalQuoteRequest, span) {
+  async forwardQuoteRequest (headers, quoteId, originalQuoteRequest, span, additionalHeaders) {
     let endpoint
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -427,7 +428,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes`
-      const newHeaders = generateRequestHeaders(headers)
+      const newHeaders = generateRequestHeaders(headers, false, additionalHeaders)
 
       this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)
@@ -458,7 +459,7 @@ class QuotesModel {
    * Deals with resends of quote requests (POST) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
-  async handleQuoteRequestResend (headers, quoteRequest, span) {
+  async handleQuoteRequestResend (headers, quoteRequest, span, additionalHeaders) {
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource} to ${headers[ENUM.Http.Headers.FSPIOP.DESTINATION]}`)
@@ -471,7 +472,7 @@ class QuotesModel {
       const childSpan = span.getChild('qs_quote_forwardQuoteRequestResend')
       try {
         await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan)
+        await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan, additionalHeaders)
       } catch (err) {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...

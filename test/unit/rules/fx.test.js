@@ -68,7 +68,11 @@ const fxRules = {
       params: {
         rerouteToFsp: 'DFSPEUR',
         sourceCurrency: 'EUR',
-        rerouteToFspCurrency: 'XOF'
+        rerouteToFspCurrency: 'XOF',
+        additionalHeaders: {
+          'x-fspiop-sourcecurrency': 'EUR',
+          'x-fspiop-destinationcurrency': 'XOF'
+        }
       }
     }
   },
@@ -107,7 +111,11 @@ const fxRules = {
       params: {
         rerouteToFsp: 'DFSPEUR',
         sourceCurrency: 'EUR',
-        rerouteToFspCurrency: 'XOF'
+        rerouteToFspCurrency: 'XOF',
+        additionalHeaders: {
+          'x-fspiop-sourcecurrency': 'EUR',
+          'x-fspiop-destinationcurrency': 'XOF'
+        }
       }
     }
   },
@@ -146,7 +154,11 @@ const fxRules = {
       params: {
         rerouteToFsp: 'DFSPXOF',
         sourceCurrency: 'XOF',
-        rerouteToFspCurrency: 'EUR'
+        rerouteToFspCurrency: 'EUR',
+        additionalHeaders: {
+          'x-fspiop-sourcecurrency': 'XOF',
+          'x-fspiop-destinationcurrency': 'EUR'
+        }
       }
     }
   },
@@ -185,7 +197,11 @@ const fxRules = {
       params: {
         rerouteToFsp: 'DFSPXOF',
         sourceCurrency: 'XOF',
-        rerouteToFspCurrency: 'EUR'
+        rerouteToFspCurrency: 'EUR',
+        additionalHeaders: {
+          'x-fspiop-sourcecurrency': 'XOF',
+          'x-fspiop-destinationcurrency': 'EUR'
+        }
       }
     }
   },

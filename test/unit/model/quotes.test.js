@@ -539,7 +539,8 @@ describe('QuotesModel', () => {
                   ...mockData.headers,
                   'fspiop-destination': mockEvents[0].params.rerouteToFsp,
                   ...mockEvents[0].params.additionalHeaders
-                }
+                },
+                additionalHeaders: mockEvents[0].params.additionalHeaders
               })
           })
         })
@@ -1084,7 +1085,7 @@ describe('QuotesModel', () => {
 
             const expectedHandleExceptionArgs = [mockData.headers['fspiop-source'], mockData.quoteId, fspiopError, mockData.headers,
               mockChildSpan]
-            const expectedForwardQuoteRequestArgs = [mockData.headers, result.quoteId, mockData.quoteRequest, mockChildSpan]
+            const expectedForwardQuoteRequestArgs = [mockData.headers, result.quoteId, mockData.quoteRequest, mockChildSpan, undefined]
 
             expect(mockChildSpan.audit.mock.calls.length).toBe(1)
             expect(quotesModel.forwardQuoteRequest.mock.calls.length).toBe(1)
@@ -1225,7 +1226,38 @@ describe('QuotesModel', () => {
             const expectedAuditArgs = [{ headers: mockData.headers, payload: expectedResult }, EventSdk.AuditEventAction.start]
             expect(mockChildSpan.audit).toBeCalledWith(...expectedAuditArgs)
 
-            const expectedForwardRequestArgs = [mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan]
+            const expectedForwardRequestArgs = [mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan, undefined]
+            expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...expectedForwardRequestArgs)
+            expect(result).toEqual(expectedResult)
+          })
+
+          it('forwards the quote request properly with additionalHeaders from the rules', async () => {
+            expect.assertions(5)
+
+            quotesModel.handleRuleEvents = jest.fn(() => {
+              return {
+                terminate: false,
+                quoteRequest: mockData.quoteRequest,
+                headers: {
+                  ...mockData.headers,
+                  'fspiop-destination': mockData.rules[0].event.params.rerouteToFsp,
+                  ...mockData.rules[0].event.params.additionalHeaders
+                },
+                additionalHeaders: mockData.rules[0].event.params.additionalHeaders
+              }
+            })
+
+            mockChildSpan.isFinished = false
+            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+
+            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest, mockData.payer, mockData.payee]
+            expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
+            expect(mockSpan.getChild.mock.calls.length).toBe(1)
+
+            const expectedAuditArgs = [{ headers: mockData.headers, payload: expectedResult }, EventSdk.AuditEventAction.start]
+            expect(mockChildSpan.audit).toBeCalledWith(...expectedAuditArgs)
+
+            const expectedForwardRequestArgs = [{ ...mockData.headers, 'fspiop-destination': mockData.rules[0].event.params.rerouteToFsp, ...mockData.rules[0].event.params.additionalHeaders }, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan, mockData.rules[0].event.params.additionalHeaders]
             expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...expectedForwardRequestArgs)
             expect(result).toEqual(expectedResult)
           })
@@ -1336,7 +1368,7 @@ describe('QuotesModel', () => {
 
       expect(mockSpan.getChild).toBeCalled()
       expect(mockChildSpan.audit).toBeCalled()
-      const args = [mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan]
+      const args = [mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan, undefined]
       expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
       expect(mockChildSpan.finish).toBeCalled()
     })

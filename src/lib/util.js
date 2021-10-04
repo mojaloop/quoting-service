@@ -141,9 +141,9 @@ function applyResourceVersionHeaders (headers) {
  *
  * @returns {object}
  */
-function generateRequestHeaders (headers, noAccept) {
+function generateRequestHeaders (headers, noAccept = false, additionalHeaders) {
   const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers)
-  const ret = {
+  let ret = {
     'Content-Type': contentTypeHeader,
     Date: headers.date,
     'FSPIOP-Source': headers['fspiop-source'],
@@ -157,11 +157,9 @@ function generateRequestHeaders (headers, noAccept) {
   if (!noAccept) {
     ret.Accept = acceptHeader
   }
-  if (headers['fspiop-sourcecurrency']) {
-    ret['FSPIOP-SourceCurrency'] = headers['fspiop-sourcecurrency']
-  }
-  if (headers['fspiop-destinationcurrency']) {
-    ret['FSPIOP-DestinationCurrency'] = headers['fspiop-destinationcurrency']
+  // below are the non-standard headers added by the rules
+  if (additionalHeaders) {
+    ret = { ...ret, ...additionalHeaders }
   }
 
   return removeEmptyKeys(ret)
