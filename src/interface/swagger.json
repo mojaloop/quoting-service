@@ -1369,7 +1369,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 128,
-      "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+      "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
       "description": "First name of the Party (Name Type)."
     },
     "FspId": {
@@ -1412,7 +1412,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 128,
-      "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+      "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
       "description": "Last name of the Party (Name Type)."
     },
     "Latitude": {
@@ -1438,7 +1438,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 128,
-      "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+      "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
       "description": "Middle name of the Party (Name Type)."
     },
     "Name": {
@@ -1884,7 +1884,7 @@
             "$ref": "#/definitions/Extension"
           },
           "minItems": 1,
-          "maxItems": 17,
+          "maxItems": 16,
           "description": "Number of Extension elements"
         }
       },
@@ -2203,21 +2203,24 @@
       "properties": {
         "firstName": {
           "type": "string",
-          "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+          "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
           "description": "Party’s first name.",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 128
         },
         "middleName": {
           "type": "string",
-          "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+          "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
           "description": "Party’s middle name.",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 128
         },
         "lastName": {
           "type": "string",
-          "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+          "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
           "description": "Party’s last name.",
-          "minLength": 1
+          "minLength": 1,
+          "maxLength": 128
         }
       }
     },

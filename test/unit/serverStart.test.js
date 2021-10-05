@@ -94,6 +94,17 @@ describe('Server Start', () => {
         errorDescription: 'Missing mandatory element - /header must have required property \'fspiop-destination\''
       }
     }
+    console.log(JSON.stringify(mock.request.body.payee.personalInfo.complexName))
+    mock.request.body.payee.personalInfo.complexName = {
+      firstName: 'firstName payee',
+      middleName: 'middleName payee',
+      lastName: 'lastName payee'
+    }
+    mock.request.body.payer.personalInfo.complexName = {
+      firstName: 'firstName payer',
+      middleName: 'middleName payer',
+      lastName: 'lastName payer'
+    }
 
     const options = {
       method: 'post',
@@ -120,7 +131,16 @@ describe('Server Start', () => {
     server = await Server()
     const mock = await Mockgen().requestsAsync('/quotes', 'post')
 
-    mock.request.body.payer.personalInfo.complexName.middleName = 'ကောင်းထက်စံ'
+    mock.request.body.payee.personalInfo.complexName = {
+      firstName: 'firstName payee',
+      middleName: 'middleName payee',
+      lastName: 'lastName payee'
+    }
+    mock.request.body.payer.personalInfo.complexName = {
+      firstName: 'firstName payer',
+      middleName: 'ကောင်းထက်စံ', // Myanmar unicode characters
+      lastName: 'lastName payer'
+    }
 
     // Arrange
     const headers = defaultHeaders()
