@@ -74,14 +74,14 @@ module.exports = {
         payload: request.payload
       }, EventSdk.AuditEventAction.start)
       // call the quote error handler in the model
-      const result = await model.handleQuoteError(request.headers, quoteId, request.payload.errorInformation, span)
-      request.server.log(['info'], `PUT quote error request succeeded and returned: ${util.inspect(result)}`)
-      return h.response().code(Enum.Http.ReturnCodes.OK.CODE)
+      model.handleQuoteError(request.headers, quoteId, request.payload.errorInformation, span)
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /quotes/{id}/error: ${LibUtil.getStackOrInspect(err)}`)
-      const { body, code } = await model.handleException(fspiopSource, quoteId, err, request.headers, span)
-      return h.response(body).code(code)
+      model.handleException(fspiopSource, quoteId, err, request.headers)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return h.response().code(Enum.Http.ReturnCodes.OK.CODE)
     }
   }
 }
