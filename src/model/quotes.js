@@ -874,25 +874,7 @@ class QuotesModel {
     const childSpan = span.getChild('qs_quote_sendErrorCallback')
     try {
       await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
-      const syncErrorCodes = [
-        MojaloopApiErrorCodes.MISSING_ELEMENT.code,
-        MojaloopApiErrorCodes.VALIDATION_ERROR.code,
-        MojaloopApiErrorCodes.MALFORMED_SYNTAX.code
-      ]
-      if (error.name === 'FSPIOPError' && syncErrorCodes.includes(error.apiErrorCode.code)) {
-        // We should respond synchronously
-        const envConfig = new Config()
-        return {
-          body: error.toApiErrorObject(envConfig.errorHandling),
-          code: ENUM.Http.ReturnCodes.BADREQUEST.CODE
-        }
-      } else {
-        // We should respond asynchronously
-        await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan, true)
-        return {
-          code: ENUM.Http.ReturnCodes.ACCEPTED.CODE
-        }
-      }
+      return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan, true)
     } catch (err) {
       // any-error
       // not much we can do other than log the error
