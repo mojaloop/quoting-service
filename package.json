@@ -62,7 +62,7 @@
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
-    "@hapi/hapi": "20.2.0",
+    "@hapi/hapi": "20.2.1",
     "@hapi/inert": "6.0.4",
     "@hapi/vision": "6.1.0",
     "@mojaloop/central-services-error-handling": "11.3.0",
@@ -92,7 +92,7 @@
   },
   "devDependencies": {
     "eslint": "7.32.0",
-    "jest": "27.2.4",
+    "jest": "27.2.5",
     "jest-junit": "13.0.0",
     "npm-audit-resolver": "2.3.1",
     "npm-check-updates": "11.8.5",
