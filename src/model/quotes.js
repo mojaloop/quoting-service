@@ -37,7 +37,6 @@
 const axios = require('axios')
 const util = require('util')
 
-const { MojaloopApiErrorCodes } = require('@mojaloop/sdk-standard-components').Errors
 const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')

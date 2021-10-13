@@ -69,9 +69,13 @@ describe('Server Start', () => {
     }
 
     // Act
-    const response = await server.inject(options)
-    expect(response.statusCode).toBe(200)
-    jest.setTimeout(5000)
+    try {
+      const response = await server.inject(options)
+      expect(response.statusCode).toBe(200)
+      jest.setTimeout(5000)
+    } catch (error) {
+      console.log(error)
+    }
   })
 
   it('post /quotes throws error when missing mandatory header', async () => {
@@ -94,7 +98,6 @@ describe('Server Start', () => {
         errorDescription: 'Missing mandatory element - /header must have required property \'fspiop-destination\''
       }
     }
-    console.log(JSON.stringify(mock.request.body.payee.personalInfo.complexName))
     mock.request.body.payee.personalInfo.complexName = {
       firstName: 'firstName payee',
       middleName: 'middleName payee',
@@ -113,9 +116,13 @@ describe('Server Start', () => {
       payload: mock.request.body
     }
     // Act
-    const response = await server.inject(options)
-    expect(response.statusCode).toBe(400)
-    expect(response.result).toEqual(expectedResult)
+    try {
+      const response = await server.inject(options)
+      expect(response.statusCode).toBe(400)
+      expect(response.result).toEqual(expectedResult)
+    } catch (error) {
+      console.log(error)
+    }
   })
 
   it('post /quotes with additional asian (Myanmar) unicode characters', async () => {
@@ -153,7 +160,11 @@ describe('Server Start', () => {
     }
 
     // Act
-    const response = await server.inject(options)
-    expect(response.statusCode).toBe(202)
+    try {
+      const response = await server.inject(options)
+      expect(response.statusCode).toBe(202)
+    } catch (error) {
+      console.log(error)
+    }
   })
 })

@@ -51,6 +51,36 @@
     "1781|@mojaloop/event-sdk>grpc>@mapbox/node-pre-gyp>tar": {
       "decision": "fix",
       "madeAt": 1630492425076
+    },
+    "1002401|@mojaloop/central-services-shared>widdershins>yargs>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1634145313719,
+      "expiresAt": 1636737304260
+    },
+    "1002401|@mojaloop/central-services-shared>widdershins>yargs>cliui>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1634145313719,
+      "expiresAt": 1636737304260
+    },
+    "1002401|@mojaloop/event-sdk>grpc>@mapbox/node-pre-gyp>npmlog>gauge>wide-align>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1634145313719,
+      "expiresAt": 1636737304260
+    },
+    "1002865|@mojaloop/central-services-shared>shins>sanitize-html": {
+      "decision": "ignore",
+      "madeAt": 1634145316146,
+      "expiresAt": 1636737304260
+    },
+    "1002866|@mojaloop/central-services-shared>shins>sanitize-html": {
+      "decision": "ignore",
+      "madeAt": 1634145316146,
+      "expiresAt": 1636737304260
+    },
+    "1003019|@mojaloop/central-services-shared>widdershins>yargs>yargs-parser": {
+      "decision": "ignore",
+      "madeAt": 1634145318834,
+      "expiresAt": 1636737304260
     }
   },
   "rules": {},
