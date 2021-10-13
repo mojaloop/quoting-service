@@ -35,6 +35,34 @@ const packageJson = require('../../package.json')
 const envConfig = new Config()
 
 /**
+ * @function getSubServiceHealthDatastore
+ *
+ * @description
+ *   Gets the health of the Datastore by ensuring the table is currently locked
+ *   in a migration state. This implicity checks the connection with the database.
+ *
+ * @returns Promise<SubServiceHealth> The SubService health object for the broker
+ */
+const getSubServiceHealthDatastore = async (db) => {
+  let status = statusEnum.OK
+
+  try {
+    const isLocked = await db.getIsMigrationLocked()
+    if (isLocked) {
+      status = statusEnum.DOWN
+    }
+  } catch (err) {
+    Logger.debug(`getSubServiceHealthDatastore failed with error ${err.message}.`)
+    status = statusEnum.DOWN
+  }
+
+  return {
+    name: serviceName.datastore,
+    status
+  }
+}
+
+/**
  * Operations on /health
  */
 module.exports = {
@@ -45,48 +73,17 @@ module.exports = {
    * produces: application/json
    * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
    */
-  get: async (request, h) => {
-    let db
-    // lets check to see if we are NOT in simpleRoutingMode
+  get: async (context, request, h) => {
+    // Check to see if we are NOT in simpleRoutingMode
+    let serviceHealthList = []
+    // console.log('envConfig', envConfig)
     if (!envConfig.simpleRoutingMode) {
       // assign the db object
-      db = request.server.app.database
-    }
-
-    // Create function to query DB health
-    /**
-     * @function getSubServiceHealthDatastore
-     *
-     * @description
-     *   Gets the health of the Datastore by ensuring the table is currently locked
-     *   in a migration state. This implicity checks the connection with the database.
-     *
-     * @returns Promise<SubServiceHealth> The SubService health object for the broker
-     */
-    const getSubServiceHealthDatastore = async () => {
-      let status = statusEnum.OK
-
-      try {
-        const isLocked = await db.getIsMigrationLocked()
-        if (isLocked) {
-          status = statusEnum.DOWN
-        }
-      } catch (err) {
-        Logger.debug(`getSubServiceHealthDatastore failed with error ${err.message}.`)
-        status = statusEnum.DOWN
-      }
-
-      return {
-        name: serviceName.datastore,
-        status
-      }
-    }
-
-    // lets check to see if we are running in simpleRoutingMode
-    let serviceHealthList = []
-    if (!envConfig.simpleRoutingMode) {
+      /* istanbul ignore next */
+      // ignoring coverage, since we can't test this anonymous function and its tests are covered
+      // elsewhere
       serviceHealthList = [
-        getSubServiceHealthDatastore
+        async () => getSubServiceHealthDatastore(request.server.app.database)
       ]
     }
 
@@ -107,5 +104,6 @@ module.exports = {
 
     // return response
     return h.response(healthCheckResponse).code(code)
-  }
+  },
+  getSubServiceHealthDatastore
 }

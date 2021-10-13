@@ -26,7 +26,15 @@
   "SWITCH_ENDPOINT": "http://localhost:3001",
   "ERROR_HANDLING": {
     "includeCauseExtension": false,
-    "truncateCause": true
+    "truncateExtensions": true
   },
-  "SIMPLE_ROUTING_MODE": true
+  "SIMPLE_ROUTING_MODE": true,
+  "ENDPOINT_SECURITY":{
+    "JWS": {
+      "JWS_SIGN": false,
+      "FSPIOP_SOURCE_TO_SIGN": "switch",
+      "JWS_SIGNING_KEY_PATH": "secrets/jwsSigningKey.key"
+    }
+  },
+  "API_DOCUMENTATION_ENDPOINTS": true
 }

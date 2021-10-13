@@ -34,12 +34,15 @@
 
 'use strict'
 
-const util = require('util')
-const LOCAL_ENUM = require('../lib/enum')
 const Knex = require('knex')
+const util = require('util')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const MLNumber = require('@mojaloop/ml-number')
+const Enum = require('@mojaloop/central-services-shared').Enum
+
+const LOCAL_ENUM = require('../lib/enum')
+const { getStackOrInspect } = require('../lib/util')
 
 /**
  * Abstracts operations against the database
@@ -55,7 +58,7 @@ class Database {
      * @returns {promise}
      */
   async connect () {
-    this.queryBuilder = Knex(this.config.database)
+    this.queryBuilder = new Knex(this.config.database)
 
     return this
   }
@@ -106,7 +109,7 @@ class Database {
         .select()
       return rows.map(r => JSON.parse(r.rule))
     } catch (err) {
-      this.writeLog(`Error in getTransferRules: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getTransferRules: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -128,7 +131,7 @@ class Database {
       }
       return rows[0].transactionInitiatorTypeId
     } catch (err) {
-      this.writeLog(`Error in getInitiatorType: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getInitiatorType: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -150,7 +153,7 @@ class Database {
       }
       return rows[0].transactionInitiatorId
     } catch (err) {
-      this.writeLog(`Error in getInitiator: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getInitiator: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -172,7 +175,7 @@ class Database {
       }
       return rows[0].transactionScenarioId
     } catch (err) {
-      this.writeLog(`Error in getScenario: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getScenario: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -194,7 +197,7 @@ class Database {
       }
       return rows[0].transactionSubScenarioId
     } catch (err) {
-      this.writeLog(`Error in getSubScenario: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getSubScenario: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -216,7 +219,7 @@ class Database {
       }
       return rows[0].amountTypeId
     } catch (err) {
-      this.writeLog(`Error in getAmountType: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getAmountType: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -238,7 +241,7 @@ class Database {
       this.writeLog(`inserted new transactionReference in db: ${transactionReferenceId}`)
       return transactionReferenceId
     } catch (err) {
-      this.writeLog(`Error in createTransactionReference: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in createTransactionReference: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -260,7 +263,7 @@ class Database {
       this.writeLog(`inserted new duplicate check in db for quoteId: ${quoteId}`)
       return quoteId
     } catch (err) {
-      this.writeLog(`Error in createQuoteDuplicateCheck: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in createQuoteDuplicateCheck: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -283,7 +286,7 @@ class Database {
       this.writeLog(`inserted new response duplicate check in db for quote ${quoteId}, quoteResponseId: ${quoteResponseId}`)
       return quoteId
     } catch (err) {
-      this.writeLog(`Error in createQuoteUpdateDuplicateCheck: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in createQuoteUpdateDuplicateCheck: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -306,7 +309,7 @@ class Database {
 
       return rows[0].partyTypeId
     } catch (err) {
-      this.writeLog(`Error in getPartyType: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getPartyType: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -329,7 +332,7 @@ class Database {
 
       return rows[0].partyIdentifierTypeId
     } catch (err) {
-      this.writeLog(`Error in getPartyIdentifierType: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getPartyIdentifierType: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -339,15 +342,20 @@ class Database {
      *
      * @returns {promise} - id of the participant
      */
-  async getParticipant (participantName, participantType) {
+  async getParticipant (participantName, participantType, currencyId, ledgerAccountTypeId = Enum.Accounts.LedgerAccountType.POSITION) {
     try {
       const rows = await this.queryBuilder('participant')
-        .where({
-          name: participantName,
-          isActive: 1
-        })
-        .select()
-
+        .innerJoin('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
+        .where({ 'participant.name': participantName })
+        .andWhere({ 'participantCurrency.currencyId': currencyId })
+        .andWhere({ 'participantCurrency.ledgerAccountTypeId': ledgerAccountTypeId })
+        .andWhere({ 'participantCurrency.isActive': true })
+        .andWhere({ 'participant.isActive': true })
+        .select(
+          'participant.*',
+          'participantCurrency.participantCurrencyId',
+          'participantCurrency.currencyId'
+        )
       if ((!rows) || rows.length < 1) {
         // active participant does not exist, this is an error
         if (participantType && participantType === LOCAL_ENUM.PAYEE_DFSP) {
@@ -361,7 +369,7 @@ class Database {
 
       return rows[0].participantId
     } catch (err) {
-      this.writeLog(`Error in getPartyIdentifierType: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getPartyIdentifierType: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -387,7 +395,7 @@ class Database {
 
       return rows[0].transferParticipantRoleTypeId
     } catch (err) {
-      this.writeLog(`Error in getTransferParticipantRoleType: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getTransferParticipantRoleType: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -413,7 +421,7 @@ class Database {
 
       return rows[0].ledgerEntryTypeId
     } catch (err) {
-      this.writeLog(`Error in getLedgerEntryType: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getLedgerEntryType: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -451,7 +459,7 @@ class Database {
       const enumVals = await Promise.all([
         this.getPartyType(partyType),
         this.getPartyIdentifierType(party.partyIdInfo.partyIdType),
-        this.getParticipant(party.partyIdInfo.fspId),
+        this.getParticipant(party.partyIdInfo.fspId, participantType, currency),
         this.getTransferParticipantRoleType(participantType),
         this.getLedgerEntryType(ledgerEntryType)
       ])
@@ -462,13 +470,9 @@ class Database {
       refs.transferParticipantRoleTypeId = enumVals[3]
       refs.ledgerEntryTypeId = enumVals[4]
 
-      // todo: possibly push this subIdType lookup onto the array that gets awaited async...
-      // otherwise requests that have a subIdType will be a little slower due to the extra wait time
-      // TODO: this will not work as the partyIdentifierType table only caters for the 8 main partyTypes
-      // discuss adding a partyIdSubType database table to perform this lookup against
       if (party.partyIdInfo.partySubIdOrType) {
-        // TODO: review method signature
-        refs.partySubIdOrTypeId = await this.getPartyIdentifierType(party.partyIdInfo.partySubIdOrType)
+        // subIdOrTypeId value need not be one in the partyIdentifierType list as per the specification.
+        refs.partySubIdOrTypeId = party.partyIdInfo.partySubIdOrType
       }
 
       // insert a new quote party
@@ -509,10 +513,23 @@ class Database {
         const createdParty = await this.createParty(txn, quotePartyId, newParty)
         this.writeLog(`inserted new party in db: ${util.inspect(createdParty)}`)
       }
+      if (party.partyIdInfo.extensionList) {
+        const extensions = party.partyIdInfo.extensionList.extension
+        // we need to store personal info also
+        const quoteParty = await this.getTxnQuoteParty(txn, quoteId, partyType)
+        for (const extension of extensions) {
+          const newExtensions = {
+            key: extension.key,
+            value: extension.value
+          }
+          const createQuotePartyIdInfoExtension = await this.createQuotePartyIdInfoExtension(txn, newExtensions, quoteParty)
+          this.writeLog(`inserted new QuotePartyIdInfoExtension in db: ${util.inspect(createQuotePartyIdInfoExtension)}`)
+        }
+      }
 
       return quotePartyId
     } catch (err) {
-      this.writeLog(`Error in createQuoteParty: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in createQuoteParty: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -533,7 +550,7 @@ class Database {
 
       return rows
     } catch (err) {
-      this.writeLog(`Error in getQuotePartyView: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getQuotePartyView: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -561,7 +578,7 @@ class Database {
 
       return rows[0]
     } catch (err) {
-      this.writeLog(`Error in getQuoteView: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getQuoteView: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -575,7 +592,7 @@ class Database {
     try {
       const rows = await this.queryBuilder('quoteResponseView')
         .where({
-          quoteId: quoteId
+          quoteId
         })
         .select()
 
@@ -589,7 +606,7 @@ class Database {
 
       return rows[0]
     } catch (err) {
-      this.writeLog(`Error in getQuoteResponseView: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getQuoteResponseView: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -603,7 +620,7 @@ class Database {
     try {
       const newParty = {
         ...party,
-        quotePartyId: quotePartyId
+        quotePartyId
       }
 
       const res = await this.queryBuilder('party')
@@ -613,7 +630,7 @@ class Database {
       newParty.partyId = res[0]
       return newParty
     } catch (err) {
-      this.writeLog(`Error in createParty: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in createParty: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -646,7 +663,23 @@ class Database {
       this.writeLog(`inserted new quote in db: ${util.inspect(quote)}`)
       return quote.quoteId
     } catch (err) {
-      this.writeLog(`Error in createQuote: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in createQuote: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async createQuotePartyIdInfoExtension (txn, extensionList, quoteParty) {
+    try {
+      await this.queryBuilder('quotePartyIdInfoExtension')
+        .transacting(txn)
+        .insert({
+          quotePartyId: quoteParty.quotePartyId,
+          key: extensionList.key,
+          value: extensionList.value
+        })
+      return true
+    } catch (err) {
+      this.writeLog(`Error in createQuotePartyIdInfoExtension: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -674,16 +707,40 @@ class Database {
 
       return rows[0]
     } catch (err) {
-      this.writeLog(`Error in getQuoteParty: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getQuoteParty: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
 
+  async getTxnQuoteParty (txn, quoteId, partyType) {
+    try {
+      const rows = await this.queryBuilder('quoteParty')
+        .transacting(txn)
+        .innerJoin('partyType', 'partyType.partyTypeId', 'quoteParty.partyTypeId')
+        .where('quoteParty.quoteId', quoteId)
+        .andWhere('partyType.name', partyType)
+        .select('quoteParty.*')
+
+      if ((!rows) || rows.length < 1) {
+        return null
+      }
+
+      if (rows.length > 1) {
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
+      }
+
+      return rows[0]
+    } catch (err) {
+      this.writeLog(`Error in getQuoteParty: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
   /**
      * Gets the specified endpoint for the specified quote party
      *
      * @returns {promise} - resolves to the endpoint base url
      */
+
   async getQuotePartyEndpoint (quoteId, endpointType, partyType) {
     try {
       const rows = await this.queryBuilder('participantEndpoint')
@@ -703,7 +760,7 @@ class Database {
 
       return rows[0].value
     } catch (err) {
-      this.writeLog(`Error in getQuotePartyEndpoint: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getQuotePartyEndpoint: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -729,7 +786,7 @@ class Database {
 
       return rows[0].value
     } catch (err) {
-      this.writeLog(`Error in getParticipantEndpoint: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getParticipantEndpoint: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -753,7 +810,7 @@ class Database {
 
       return rows[0]
     } catch (err) {
-      this.writeLog(`Error in getQuoteDuplicateCheck: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getQuoteDuplicateCheck: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -777,7 +834,7 @@ class Database {
 
       return rows[0]
     } catch (err) {
-      this.writeLog(`Error in getQuoteResponseDuplicateCheck: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getQuoteResponseDuplicateCheck: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -801,7 +858,7 @@ class Database {
 
       return rows[0]
     } catch (err) {
-      this.writeLog(`Error in getTransactionReference: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in getTransactionReference: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -837,7 +894,7 @@ class Database {
       this.writeLog(`inserted new quoteResponse in db: ${util.inspect(newQuoteResponse)}`)
       return newQuoteResponse
     } catch (err) {
-      this.writeLog(`Error in createQuoteResponse: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in createQuoteResponse: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -861,7 +918,7 @@ class Database {
       this.writeLog(`inserted new quoteResponseIlpPacket in db: ${util.inspect(res)}`)
       return res
     } catch (err) {
-      this.writeLog(`Error in createIlpPacket: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in createIlpPacket: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -888,7 +945,7 @@ class Database {
       this.writeLog(`inserted new geoCode in db: ${util.inspect(newGeoCode)}`)
       return res
     } catch (err) {
-      this.writeLog(`Error in createGeoCode: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in createGeoCode: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -915,7 +972,35 @@ class Database {
       this.writeLog(`inserted new quoteError in db: ${util.inspect(newError)}`)
       return res
     } catch (err) {
-      this.writeLog(`Error in createQuoteError: ${err.stack || util.inspect(err)}`)
+      this.writeLog(`Error in createQuoteError: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  /**
+     * Creates quoteExtensions rows
+     *
+     * @returns {object}
+     * @param   {Array[{object}]} extensions - array of extension objects with quoteId, key and value properties
+     */
+  async createQuoteExtensions (txn, extensions, quoteId, transactionId = undefined, quoteResponseId = undefined) {
+    try {
+      const newExtensions = extensions.map(({ key, value }) => ({
+        quoteId,
+        quoteResponseId,
+        transactionId,
+        key,
+        value
+      }))
+
+      const res = await this.queryBuilder('quoteExtension')
+        .transacting(txn)
+        .insert(newExtensions)
+
+      this.writeLog(`inserted new quoteExtensions in db: ${util.inspect(newExtensions)}`)
+      return res
+    } catch (err) {
+      this.writeLog(`Error in createQuoteExtensions: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }

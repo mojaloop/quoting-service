@@ -30,8 +30,12 @@
  --------------
  ******/
 
+// Ignore coverage for this file as it is only a mock implementation for now
+/* istanbul ignore file */
+
 'use strict'
-var Mockgen = require('../../test/util/mockgen.js')
+
+const Mockgen = require('../../test/util/mockgen.js')
 /**
  * Operations on /quotes
  */
