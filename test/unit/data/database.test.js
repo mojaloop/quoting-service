@@ -862,6 +862,79 @@ describe('/database', () => {
       })
     })
 
+    describe('getParticipantByName', () => {
+      it('gets the participant for PAYEE_DFSP', async () => {
+        // Arrange
+        const participantName = 'dfsp1'
+        const participantType = LibEnum.PAYEE_DFSP
+        
+        const mockList = mockKnexBuilder(
+          mockKnex,
+          [{ participantId: 123 }],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getParticipantByName(participantName, participantType)
+
+        // Assert
+        expect(result).toBe(123)
+        expect(mockList[0]).toHaveBeenCalledWith('participant')
+       // expect(mockList[1]).toHaveBeenCalledWith('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
+        expect(mockList[1]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an undefined response with a participantType of PAYEE_DFSP', async () => {
+        // Arrange
+        const participantName = 'dfsp1'
+        const participantType = LibEnum.PAYEE_DFSP
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['where', 'select']
+        )
+
+        // Act
+        const action = async () => database.getParticipantByName(participantName, participantType)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Unsupported participant')
+      })
+
+      it('handles an undefined response with a participantType of PAYER_DFSP', async () => {
+        // Arrange
+        const participantName = 'dfsp1'
+        const participantType = LibEnum.PAYER_DFSP
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['where', 'select']
+        )
+
+        // Act
+        const action = async () => database.getParticipantByName(participantName, participantType)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Unsupported participant')
+      })
+
+      it('handles an empty response with no participantType', async () => {
+        // Arrange
+        const participantName = 'dfsp1'
+        mockKnexBuilder(
+          mockKnex,
+          [],
+          ['where', 'select']
+        )
+
+        // Act
+        const action = async () => database.getParticipantByName(participantName)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Unsupported participant')
+      })
+    })
+
     describe('getTransferParticipantRoleType', () => {
       it('gets the transferParticipantRoleType', async () => {
         // Arrange
