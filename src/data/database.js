@@ -369,7 +369,39 @@ class Database {
 
       return rows[0].participantId
     } catch (err) {
-      this.writeLog(`Error in getPartyIdentifierType: ${getStackOrInspect(err)}`)
+      this.writeLog(`Error in getParticipant: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  /**
+     * Gets the id of the specified participant name
+     *
+     * @returns {promise} - id of the participant
+     */
+  async getParticipantByName (participantName, participantType) {
+    try {
+      const rows = await this.queryBuilder('participant')
+        .where({
+          name: participantName,
+          isActive: 1
+        })
+        .select()
+
+      if ((!rows) || rows.length < 1) {
+        // active participant does not exist, this is an error
+        if (participantType && participantType === LOCAL_ENUM.PAYEE_DFSP) {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${participantName}'`)
+        } else if (participantType && participantType === LOCAL_ENUM.PAYER_DFSP) {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND, `Unsupported participant '${participantName}'`)
+        } else {
+          throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR, `Unsupported participant '${participantName}'`)
+        }
+      }
+
+      return rows[0].participantId
+    } catch (err) {
+      this.writeLog(`Error in getParticipantByName: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -459,7 +491,7 @@ class Database {
       const enumVals = await Promise.all([
         this.getPartyType(partyType),
         this.getPartyIdentifierType(party.partyIdInfo.partyIdType),
-        this.getParticipant(party.partyIdInfo.fspId, participantType, currency),
+        this.getParticipantByName(party.partyIdInfo.fspId),
         this.getTransferParticipantRoleType(participantType),
         this.getLedgerEntryType(ledgerEntryType)
       ])

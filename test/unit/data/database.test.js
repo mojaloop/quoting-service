@@ -1060,6 +1060,7 @@ describe('/database', () => {
         database.getPartyType = jest.fn().mockResolvedValueOnce('testPartyTypeId')
         database.getPartyIdentifierType = jest.fn().mockResolvedValueOnce('testPartyIdentifierTypeId')
         database.getParticipant = jest.fn().mockResolvedValueOnce('testParticipantId')
+        database.getParticipantByName = jest.fn().mockResolvedValueOnce('testParticipantId')
         database.getTransferParticipantRoleType = jest.fn().mockResolvedValueOnce('testTransferParticipantRoleTypeId')
         database.getLedgerEntryType = jest.fn().mockResolvedValueOnce('testLedgerEntryTypeId')
         database.getTxnQuoteParty = jest.fn().mockResolvedValueOnce(quoteParty)
