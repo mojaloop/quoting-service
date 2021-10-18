@@ -867,7 +867,7 @@ describe('/database', () => {
         // Arrange
         const participantName = 'dfsp1'
         const participantType = LibEnum.PAYEE_DFSP
-        
+
         const mockList = mockKnexBuilder(
           mockKnex,
           [{ participantId: 123 }],
@@ -880,7 +880,7 @@ describe('/database', () => {
         // Assert
         expect(result).toBe(123)
         expect(mockList[0]).toHaveBeenCalledWith('participant')
-       // expect(mockList[1]).toHaveBeenCalledWith('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
+        // expect(mockList[1]).toHaveBeenCalledWith('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
         expect(mockList[1]).toHaveBeenCalledTimes(1)
       })
 
