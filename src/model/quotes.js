@@ -178,7 +178,7 @@ class QuotesModel {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND,
           `Payer FSP ID not found - Unsupported participant '${fspiopSource}'`, null, fspiopSource)
     }
-    // check if the payee is active fsp, if not send error callback to payer
+    // check if the payee fsp is active, if not send error callback to payee fsp
     if (payee.isActive === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
           `Destination FSP Error - '${fspiopDestination}' is inactive`, null, fspiopSource)
