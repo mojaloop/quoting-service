@@ -195,7 +195,7 @@ class QuotesModel {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_ERROR,
         'Payer does not have any active account', null, fspiopSource)
     }
-    // check if the payee has atleast one active account, if not send error callback to payer
+    // check if the payee fsp has atleast one active account, if not send error callback
     if (activePayeeAccounts.length === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_ERROR,
         'Payee does not have any active account', null, fspiopSource)
