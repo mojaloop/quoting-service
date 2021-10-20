@@ -190,7 +190,7 @@ class QuotesModel {
     const activePayerAccounts = payerAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
     const activePayeeAccounts = payeeAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
 
-    // check if the payer has atleast one active account, if not send error callback to payer
+    // check if the payer fsp has atleast one active account, if not send error callback
     if (activePayerAccounts.length === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_ERROR,
         'Payer does not have any active account', null, fspiopSource)
