@@ -173,7 +173,7 @@ class QuotesModel {
       }
     }
 
-    // check if the payer is active fsp, if not send error callback to payer
+    // check if the payer fsp is active, if not send error callback to payer fsp
     if (payer.isActive === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND,
           `Payer FSP ID not found - Unsupported participant '${fspiopSource}'`, null, fspiopSource)
