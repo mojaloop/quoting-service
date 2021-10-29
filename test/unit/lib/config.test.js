@@ -33,6 +33,16 @@ const mockDefaultFile = {
     PRECISION: 18,
     SCALE: 4
   },
+  PROTOCOL_VERSIONS: {
+    CONTENT: '1.1',
+    ACCEPT: {
+      DEFAULT: '1',
+      VALIDATELIST: [
+        '1',
+        '1.1'
+      ]
+    }
+  },
   DATABASE: {
     DIALECT: 'mysql',
     HOST: 'localhost',
