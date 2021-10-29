@@ -173,12 +173,12 @@ class QuotesModel {
       }
     }
 
-    // check if the payer is active fsp, if not send error callback to payer
+    // check if the payer fsp is active, if not send error callback to payer fsp
     if (payer.isActive === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND,
           `Payer FSP ID not found - Unsupported participant '${fspiopSource}'`, null, fspiopSource)
     }
-    // check if the payee is active fsp, if not send error callback to payer
+    // check if the payee fsp is active, if not send error callback to payee fsp
     if (payee.isActive === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
           `Destination FSP Error - '${fspiopDestination}' is inactive`, null, fspiopSource)
@@ -190,12 +190,12 @@ class QuotesModel {
     const activePayerAccounts = payerAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
     const activePayeeAccounts = payeeAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
 
-    // check if the payer has atleast one active account, if not send error callback to payer
+    // check if the payer fsp has atleast one active account, if not send error callback
     if (activePayerAccounts.length === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_ERROR,
         'Payer does not have any active account', null, fspiopSource)
     }
-    // check if the payee has atleast one active account, if not send error callback to payer
+    // check if the payee fsp has atleast one active account, if not send error callback
     if (activePayeeAccounts.length === 0) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_ERROR,
         'Payee does not have any active account', null, fspiopSource)
