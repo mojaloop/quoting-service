@@ -28,6 +28,11 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 
 const { failActionHandler, getStackOrInspect, getSpanTags, generateRequestHeaders, generateRequestHeadersForJWS, removeEmptyKeys } = require('../../../src/lib/util')
 
+const Config = require('../../../src/lib/config.js')
+
+// load config
+const config = new Config()
+
 describe('util', () => {
   const mockData = {
     amountTypeId: 'fakeAmountTypeId',
@@ -42,14 +47,14 @@ describe('util', () => {
       longitude: '23.32415'
     },
     headers: {
-      Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
-      'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+      Accept: 'application/vnd.interoperability.quotes+json;version=1.1',
+      'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
       'fspiop-source': 'dfsp1',
       'fspiop-destination': 'dfsp2'
     },
     switchHeaders: {
-      Accept: 'application/vnd.interoperability.transfers+json;version=1.0',
-      'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.0',
+      Accept: 'application/vnd.interoperability.transfers+json;version=1.1',
+      'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.1',
       'fspiop-source': 'switch',
       'fspiop-destination': 'dfsp2'
     },
@@ -393,13 +398,13 @@ describe('util', () => {
     it('generates the default request headers', () => {
       // Arrange
       const expected = {
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'FSPIOP-Destination': 'dfsp2',
         'FSPIOP-Source': 'dfsp1'
       }
 
       // Act
-      const result = generateRequestHeaders(mockData.headers, true)
+      const result = generateRequestHeaders(mockData.headers, config.protocolVersions, true)
 
       // Assert
       expect(result).toStrictEqual(expected)
@@ -408,14 +413,14 @@ describe('util', () => {
     it('generates default request headers, including the Accept', () => {
       // Arrange
       const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.1',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'FSPIOP-Destination': 'dfsp2',
         'FSPIOP-Source': 'dfsp1'
       }
 
       // Act
-      const result = generateRequestHeaders(mockData.headers, false)
+      const result = generateRequestHeaders(mockData.headers, config.protocolVersions, false)
 
       // Assert
       expect(result).toStrictEqual(expected)
@@ -425,13 +430,13 @@ describe('util', () => {
       // Arrange
       const expected = {
         Accept: 'application/vnd.interoperability.quotes+json;version=1',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'FSPIOP-Destination': 'dfsp2',
         'FSPIOP-Source': 'switch'
       }
 
       // Act
-      const result = generateRequestHeaders(mockData.switchHeaders, false)
+      const result = generateRequestHeaders(mockData.switchHeaders, config.protocolVersions, false)
 
       // Assert
       expect(result).toStrictEqual(expected)
@@ -442,7 +447,8 @@ describe('util', () => {
     it('generates the default request headers', () => {
       // Arrange
       const expected = {
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.1',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'fspiop-destination': 'dfsp2',
         'fspiop-source': 'dfsp1'
       }
@@ -457,8 +463,8 @@ describe('util', () => {
     it('generates default request headers, including the Accept', () => {
       // Arrange
       const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.1',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'fspiop-destination': 'dfsp2',
         'fspiop-source': 'dfsp1'
       }

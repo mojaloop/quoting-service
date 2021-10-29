@@ -120,15 +120,15 @@ function removeEmptyKeys (originalObject) {
   return obj
 }
 
-function applyResourceVersionHeaders (headers) {
+function applyResourceVersionHeaders (headers, protocolVersions) {
   let contentTypeHeader = headers['content-type'] || headers['Content-Type']
   let acceptHeader = headers.accept || headers.Accept
   if (Enum.Http.Headers.FSPIOP.SWITCH.regex.test(headers['fspiop-source'])) {
-    if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!resourceVersions.quotes.contentVersion) {
-      contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${resourceVersions.quotes.contentVersion}`
+    if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT) {
+      contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.CONTENT}`
     }
-    if (Enum.Http.Headers.GENERAL.ACCEPT.regex.test(acceptHeader) && !!resourceVersions.quotes.acceptVersion) {
-      acceptHeader = `application/vnd.interoperability.quotes+json;version=${resourceVersions.quotes.acceptVersion}`
+    if (Enum.Http.Headers.GENERAL.ACCEPT.regex.test(acceptHeader) && !!protocolVersions.ACCEPT.DEFAULT) {
+      acceptHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.ACCEPT.DEFAULT}`
     }
   }
   return { contentTypeHeader, acceptHeader }
@@ -139,8 +139,8 @@ function applyResourceVersionHeaders (headers) {
  *
  * @returns {object}
  */
-function generateRequestHeaders (headers, noAccept) {
-  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers)
+function generateRequestHeaders (headers, protocolVersions, noAccept = false) {
+  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions)
   const ret = {
     'Content-Type': contentTypeHeader,
     Date: headers.date,
@@ -164,8 +164,8 @@ function generateRequestHeaders (headers, noAccept) {
  *
  * @returns {object}
  */
-function generateRequestHeadersForJWS (headers, noAccept) {
-  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers)
+function generateRequestHeadersForJWS (headers, protocolVersions, noAccept = false) {
+  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions)
   const ret = {
     'Content-Type': contentTypeHeader,
     date: headers.date,

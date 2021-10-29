@@ -33,6 +33,17 @@
 const RC = require('parse-strings-in-object')(require('rc')('QUOTE', require('../../config/default.json')))
 const fs = require('fs')
 
+const DEFAULT_PROTOCOL_VERSION = {
+  CONTENT: '1.1',
+  ACCEPT: {
+    DEFAULT: '1',
+    VALIDATELIST: [
+      '1',
+      '1.1'
+    ]
+  }
+}
+
 /**
  * Loads config from environment
  */
@@ -95,6 +106,7 @@ class Config {
       jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined
     }
     this.apiDocumentationEndpoints = RC.API_DOCUMENTATION_ENDPOINTS || false
+    this.protocolVersions = RC.PROTOCOL_VERSIONS || DEFAULT_PROTOCOL_VERSION
   }
 }
 
