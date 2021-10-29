@@ -54,13 +54,13 @@
     },
     "1002401|@mojaloop/central-services-shared>widdershins>yargs>string-width>strip-ansi>ansi-regex": {
       "decision": "ignore",
-      "madeAt": 1634145313719,
-      "expiresAt": 1636737304260
+      "madeAt": 1635508643052,
+      "expiresAt": 1638100635402
     },
     "1002401|@mojaloop/central-services-shared>widdershins>yargs>cliui>string-width>strip-ansi>ansi-regex": {
       "decision": "ignore",
-      "madeAt": 1634145313719,
-      "expiresAt": 1636737304260
+      "madeAt": 1635508643052,
+      "expiresAt": 1638100635402
     },
     "1002401|@mojaloop/event-sdk>grpc>@mapbox/node-pre-gyp>npmlog>gauge>wide-align>string-width>strip-ansi>ansi-regex": {
       "decision": "ignore",
@@ -81,6 +81,11 @@
       "decision": "ignore",
       "madeAt": 1634145318834,
       "expiresAt": 1636737304260
+    },
+    "1002401|@mojaloop/event-sdk>grpc>@mapbox/node-pre-gyp>npmlog>gauge>string-width>strip-ansi>ansi-regex": {
+      "decision": "ignore",
+      "madeAt": 1635508643052,
+      "expiresAt": 1638100635402
     }
   },
   "rules": {},
