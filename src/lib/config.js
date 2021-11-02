@@ -44,10 +44,13 @@ const DEFAULT_PROTOCOL_VERSION = {
   }
 }
 
-const T_PROTOCOL_VERSION = { ...DEFAULT_PROTOCOL_VERSION, ...RC.PROTOCOL_VERSIONS }
-if (RC.PROTOCOL_VERSIONS) T_PROTOCOL_VERSION.ACCEPT = { ...DEFAULT_PROTOCOL_VERSION.ACCEPT, ...RC.PROTOCOL_VERSIONS.ACCEPT }
-if (T_PROTOCOL_VERSION.ACCEPT && T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST && (typeof T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST === 'string' || T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST instanceof String)) {
-  T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST = JSON.parse(T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST)
+const getProtocolVersions = (defaultProtocolVersions, overrideProtocolVersions = {}) => {
+  const T_PROTOCOL_VERSION = { ...defaultProtocolVersions, ...overrideProtocolVersions }
+  if (overrideProtocolVersions && overrideProtocolVersions.ACCEPT) T_PROTOCOL_VERSION.ACCEPT = { ...defaultProtocolVersions.ACCEPT, ...overrideProtocolVersions.ACCEPT }
+  if (T_PROTOCOL_VERSION.ACCEPT && T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST && (typeof T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST === 'string' || T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST instanceof String)) {
+    T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST = JSON.parse(T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST)
+  }
+  return T_PROTOCOL_VERSION
 }
 
 /**
@@ -112,7 +115,7 @@ class Config {
       jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined
     }
     this.apiDocumentationEndpoints = RC.API_DOCUMENTATION_ENDPOINTS || false
-    this.protocolVersions = T_PROTOCOL_VERSION
+    this.protocolVersions = getProtocolVersions(DEFAULT_PROTOCOL_VERSION, RC.PROTOCOL_VERSIONS)
   }
 }
 
