@@ -148,8 +148,8 @@ describe('QuotesModel', () => {
         longitude: '23.32415'
       },
       headers: {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.1',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'fspiop-source': 'dfsp1',
         'fspiop-destination': 'dfsp2'
       },
@@ -1559,7 +1559,7 @@ describe('QuotesModel', () => {
       expect.assertions(3)
 
       const localHeaders = clone(mockData.headers)
-      localHeaders.accept = 'application/vnd.interoperability.quotes+json;version=1.0'
+      localHeaders.accept = 'application/vnd.interoperability.quotes+json;version=1.1'
 
       await expect(quotesModel.handleQuoteUpdate(localHeaders, mockData.quoteId, mockData.quoteUpdate, mockSpan))
         .rejects

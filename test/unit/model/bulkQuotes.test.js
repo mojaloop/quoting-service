@@ -137,8 +137,8 @@ describe('BulkQuotesModel', () => {
         longitude: '23.32415'
       },
       headers: {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1.0',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.0',
+        Accept: 'application/vnd.interoperability.quotes+json;version=1.1',
+        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'fspiop-source': 'dfsp1',
         'fspiop-destination': 'dfsp2'
       },
@@ -474,7 +474,7 @@ describe('BulkQuotesModel', () => {
       expect.assertions(3)
 
       const localHeaders = LibUtil.clone(mockData.headers)
-      localHeaders.accept = 'application/vnd.interoperability.quotes+json;version=1.0'
+      localHeaders.accept = 'application/vnd.interoperability.quotes+json;version=1.1'
 
       await expect(bulkQuotesModel.handleBulkQuoteUpdate(localHeaders, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
         .rejects

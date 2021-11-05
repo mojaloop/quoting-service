@@ -33,6 +33,16 @@ const mockDefaultFile = {
     PRECISION: 18,
     SCALE: 4
   },
+  PROTOCOL_VERSIONS: {
+    CONTENT: '1.1',
+    ACCEPT: {
+      DEFAULT: '1',
+      VALIDATELIST: [
+        '1',
+        '1.1'
+      ]
+    }
+  },
   DATABASE: {
     DIALECT: 'mysql',
     HOST: 'localhost',
@@ -68,6 +78,10 @@ const mockDefaultFile = {
 describe('Config', () => {
   beforeEach(() => {
     jest.resetModules()
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
   })
 
   it('sets the default amounts', () => {
@@ -111,5 +125,33 @@ describe('Config', () => {
       expect(error).toBeInstanceOf(Error)
       expect(error).toHaveProperty('message', 'File /fake/path doesn\'t exist, can\'t enable JWS signing')
     }
+  })
+
+  it('should parse ENV var QUOTE_PROTOCOL_VERSIONS__ACCEPT__VALIDATELIST as a string', async () => {
+    // Arrange
+    jest.mock('../../../config/default.json', () => ({
+      ...mockDefaultFile
+    }), { virtual: true })
+
+    // Setup
+    let result = null
+    let isSuccess
+    const validateList = ['1']
+    // set env var
+    process.env.QUOTE_PROTOCOL_VERSIONS__ACCEPT__VALIDATELIST = JSON.stringify(validateList)
+
+    // Act
+    try {
+      const Config = require('../../../src/lib/config')
+      result = new Config()
+      isSuccess = true
+    } catch (e) {
+      isSuccess = false
+    }
+
+    // Assert
+    expect(result != null).toBe(true)
+    expect(isSuccess).toBe(true)
+    expect(result.protocolVersions.ACCEPT.VALIDATELIST).toMatchObject(validateList)
   })
 })
