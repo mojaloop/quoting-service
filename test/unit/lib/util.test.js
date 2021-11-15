@@ -447,14 +447,13 @@ describe('util', () => {
     it('generates the default request headers', () => {
       // Arrange
       const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1.1',
         'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'fspiop-destination': 'dfsp2',
         'fspiop-source': 'dfsp1'
       }
 
       // Act
-      const result = generateRequestHeadersForJWS(mockData.headers, true)
+      const result = generateRequestHeadersForJWS(mockData.headers, config.protocolVersions, true)
 
       // Assert
       expect(result).toStrictEqual(expected)
@@ -470,8 +469,7 @@ describe('util', () => {
       }
 
       // Act
-      const result = generateRequestHeadersForJWS(mockData.headers, false)
-
+      const result = generateRequestHeadersForJWS(mockData.headers, config.protocolVersions, false)
       // Assert
       expect(result).toStrictEqual(expected)
     })
