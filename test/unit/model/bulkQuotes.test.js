@@ -252,7 +252,7 @@ describe('BulkQuotesModel', () => {
       requestId: mockData.bulkQuotePostRequest.bulkQuoteId
     })
     bulkQuotesModel.db.newTransaction.mockImplementation(() => mockTransaction)
-
+    bulkQuotesModel.db.config = mockConfig
     bulkQuotesModel.db.createTransactionReference.mockImplementation(() => mockData.transactionReference)
     bulkQuotesModel.db.getInitiatorType.mockImplementation(() => mockData.initiatorType)
     bulkQuotesModel.db.getInitiator.mockImplementation(() => mockData.initiator)

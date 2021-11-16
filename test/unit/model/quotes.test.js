@@ -307,7 +307,7 @@ describe('QuotesModel', () => {
       requestId: mockData.quoteRequest.quoteId
     })
     quotesModel.db.newTransaction.mockImplementation(() => mockTransaction)
-
+    quotesModel.db.config = mockConfig
     quotesModel.db.createTransactionReference.mockImplementation(() => mockData.transactionReference)
     quotesModel.db.getInitiatorType.mockImplementation(() => mockData.initiatorType)
     quotesModel.db.getInitiator.mockImplementation(() => mockData.initiator)

@@ -133,7 +133,7 @@ class BulkQuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
-      const newHeaders = generateRequestHeaders(headers, this.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
 
       this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)
@@ -217,7 +217,7 @@ class BulkQuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/master/API%20Definition%20v1.0.pdf
-      const newHeaders = generateRequestHeaders(headers, this.config.protocolVersions, true)
+      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions, true)
 
       this.writeLog(`Forwarding bulk quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding bulk quote response headers: ${JSON.stringify(newHeaders)}`)
@@ -291,7 +291,7 @@ class BulkQuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
-      const newHeaders = generateRequestHeaders(headers, this.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
 
       this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
 
@@ -415,9 +415,9 @@ class BulkQuotesModel {
 
       // JWS Signer expects headers in lowercase
       if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, true)
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, this.db.config.protocolVersions, true)
       } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, true)
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, this.db.config.protocolVersions, true)
       }
 
       let opts = {

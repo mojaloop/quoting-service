@@ -24,6 +24,21 @@
       "decision": "ignore",
       "madeAt": 1634736540650,
       "expiresAt": 1637328532038
+    },
+    "1004809|@mojaloop/central-services-shared>widdershins>openapi-sampler>json-pointer": {
+      "decision": "ignore",
+      "madeAt": 1636987481291,
+      "expiresAt": 1639579470858
+    },
+    "1004812|@mojaloop/central-services-shared>widdershins>swagger2openapi>better-ajv-errors>jsonpointer": {
+      "decision": "ignore",
+      "madeAt": 1636987484386,
+      "expiresAt": 1639579470858
+    },
+    "1004812|@mojaloop/central-services-shared>widdershins>swagger2openapi>oas-validator>better-ajv-errors>jsonpointer": {
+      "decision": "ignore",
+      "madeAt": 1636987484386,
+      "expiresAt": 1639579470858
     }
   },
   "rules": {},
