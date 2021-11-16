@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [13.0.1](https://github.com/mojaloop/quoting-service/compare/v13.0.0...v13.0.1) (2021-11-16)
+
+
+### Bug Fixes
+
+* **mojaloop/#2535:** fspiop api version negotiation not handled by quoting service ([#289](https://github.com/mojaloop/quoting-service/issues/289)) ([#290](https://github.com/mojaloop/quoting-service/issues/290)) ([d4d48c1](https://github.com/mojaloop/quoting-service/commit/d4d48c179391ba956d9555432d4738652788190c)), closes [mojaloop/#2535](https://github.com/mojaloop/quoting-service/issues/2535) [mojaloop/#2535](https://github.com/mojaloop/quoting-service/issues/2535)
+
 ## [13.0.0](https://github.com/mojaloop/quoting-service/compare/v12.0.10...v13.0.0) (2021-11-05)
 
 
