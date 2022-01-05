@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "11.0.2-m-snapshot",
+  "version": "11.0.3-m-snapshot",
   "author": "ModusBox",
   "contributors": [
     "James Bush <james.bush@modusbox.com>",
