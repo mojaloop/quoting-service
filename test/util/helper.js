@@ -69,7 +69,7 @@ function defaultHeaders () {
   const destination = 'payeefsp'
   const source = 'payerfsp'
   const resource = 'quotes'
-  const version = '1.0'
+  const version = '1.1'
   // TODO: See API section 3.2.1; what should we do about X-Forwarded-For? Also, should we
   // add/append to this field in all 'queueResponse' calls?
   return {

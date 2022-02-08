@@ -111,6 +111,31 @@ const initServer = async function (db, config) {
       openapi: api
     }
   })
+
+  // Helper to construct FSPIOPHeaderValidation option configuration
+  const getOptionsForFSPIOPHeaderValidation = () => {
+    // configure supported FSPIOP Content-Type versions
+    const supportedProtocolContentVersions = [config.protocolVersions.CONTENT.toString()]
+
+    // configure supported FSPIOP Accept version
+    const supportedProtocolAcceptVersions = []
+    for (const version of config.protocolVersions.ACCEPT.VALIDATELIST) {
+      supportedProtocolAcceptVersions.push(version.toString())
+    }
+
+    // configure FSPIOP resources
+    const resources = [
+      'quotes'
+    ]
+
+    // return FSPIOPHeaderValidation plugin options
+    return {
+      resources,
+      supportedProtocolContentVersions,
+      supportedProtocolAcceptVersions
+    }
+  }
+
   // add plugins to the server
   await server.register([
     {
@@ -132,7 +157,8 @@ const initServer = async function (db, config) {
       }
     },
     {
-      plugin: HeaderValidation
+      plugin: HeaderValidation,
+      options: getOptionsForFSPIOPHeaderValidation()
     },
     Inert,
     Vision,
