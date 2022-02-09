@@ -205,10 +205,11 @@ class QuotesModel {
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
-      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination)
-      this.writeLog(`Got payer ${payer} and payee ${payee}`)
       // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
+
+      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination)
+      this.writeLog(`Got payer ${payer} and payee ${payee}`)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
       // supply a rules file containing an empty array.
