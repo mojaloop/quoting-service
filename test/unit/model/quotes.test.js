@@ -561,13 +561,13 @@ describe('QuotesModel', () => {
 
       expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
 
-      await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest, mockData.payer, mockData.payee)
+      await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest)
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
       if (mockConfig.simpleRoutingMode) {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(4)
       } else {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
+        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
       }
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
       expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
@@ -588,94 +588,40 @@ describe('QuotesModel', () => {
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
       expect(quotesModel.db.getParticipant).not.toHaveBeenCalled()
     })
-    it('should throw PAYER_FSP_ID_NOT_FOUND error if payer is not active', async () => {
-      expect.assertions(6)
+    it('should throw PAYER_FSP_ID_NOT_FOUND error if payer is not active or does not have active account', async () => {
+      expect.assertions(5)
 
       const fspiopSource = 'dfsp1'
       const fspiopDestination = 'dfsp2'
 
+      quotesModel.db.getParticipant.mockRejectedValue(ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND, `Unsupported participant '${fspiopSource}'`))
       expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
-      const payer = { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 0 }
-      const payee = { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 }
 
-      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest, payer, payee))
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest))
         .rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND.code)
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-      if (mockConfig.simpleRoutingMode) {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
-      } else {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
-      }
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(1)
+
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
-    it('should throw DESTINATION_FSP_ERROR error if payee is not active', async () => {
+    it('should throw DESTINATION_FSP_ERROR error if payee is not active or does not have active account', async () => {
       expect.assertions(6)
 
       const fspiopSource = 'dfsp1'
       const fspiopDestination = 'dfsp2'
+      quotesModel.db.getParticipant.mockReturnValueOnce(mockData.payer)
 
+      quotesModel.db.getParticipant.mockRejectedValue(ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${fspiopDestination}'`))
       expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
-      const payer = { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 }
-      const payee = { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 0 }
 
-      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest, payer, payee))
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest))
         .rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-      if (mockConfig.simpleRoutingMode) {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
-      } else {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
-      }
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
-    })
-    it('should throw PAYER_ERROR error if payer does not have any active account', async () => {
-      expect.assertions(6)
-
-      const fspiopSource = 'dfsp1'
-      const fspiopDestination = 'dfsp2'
-
-      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
-      const payer = { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 0 }], isActive: 1 }
-      const payee = { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 }
-
-      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest, payer, payee))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_ERROR.code)
-
-      expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-      if (mockConfig.simpleRoutingMode) {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
-      } else {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
-      }
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
-    })
-    it('should throw PAYEE_ERROR error if payee does not have any active account', async () => {
-      expect.assertions(6)
-
-      const fspiopSource = 'dfsp1'
-      const fspiopDestination = 'dfsp2'
-
-      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
-      const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 0 }], isActive: 1 } }
-
-      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest, mockData.payer, payee))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_ERROR.code)
-
-      expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-      if (mockConfig.simpleRoutingMode) {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
-      } else {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
-      }
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
       expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
@@ -1127,7 +1073,7 @@ describe('QuotesModel', () => {
             mockChildSpan.isFinished = false
             const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
 
-            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest, mockData.payer, mockData.payee]
+            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
             expect(mockSpan.getChild.mock.calls.length).toBe(1)
 
@@ -1219,7 +1165,7 @@ describe('QuotesModel', () => {
             mockChildSpan.isFinished = false
             const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
 
-            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest, mockData.payer, mockData.payee]
+            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
             expect(mockSpan.getChild.mock.calls.length).toBe(1)
 
@@ -1250,7 +1196,7 @@ describe('QuotesModel', () => {
             mockChildSpan.isFinished = false
             const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
 
-            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest, mockData.payer, mockData.payee]
+            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
             expect(mockSpan.getChild.mock.calls.length).toBe(1)
 

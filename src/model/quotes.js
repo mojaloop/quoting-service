@@ -144,7 +144,7 @@ class QuotesModel {
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateQuoteRequest (fspiopSource, fspiopDestination, quoteRequest, payer, payee) {
+  async validateQuoteRequest (fspiopSource, fspiopDestination, quoteRequest) {
     const envConfig = new Config()
     // note that the framework should validate the form of the request
     // here we can do some hard-coded rule validations to ensure requests
@@ -161,6 +161,9 @@ class QuotesModel {
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
 
+    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+
     // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
     if (envConfig.simpleRoutingMode) {
       // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
@@ -171,34 +174,6 @@ class QuotesModel {
       if (quoteRequest.payee && quoteRequest.payee.partyIdInfo && quoteRequest.payee.partyIdInfo.fspId) {
         await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
       }
-    }
-
-    // check if the payer fsp is active, if not send error callback to payer fsp
-    if (payer.isActive === 0) {
-      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_FSP_ID_NOT_FOUND,
-          `Payer FSP ID not found - Unsupported participant '${fspiopSource}'`, null, fspiopSource)
-    }
-    // check if the payee fsp is active, if not send error callback to payee fsp
-    if (payee.isActive === 0) {
-      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
-          `Destination FSP Error - '${fspiopDestination}' is inactive`, null, fspiopSource)
-    }
-
-    const payerAccounts = Array.isArray(payer.accounts) ? payer.accounts : []
-    const payeeAccounts = Array.isArray(payee.accounts) ? payee.accounts : []
-
-    const activePayerAccounts = payerAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
-    const activePayeeAccounts = payeeAccounts.filter(account => account.isActive === 1 && account.ledgerAccountType === 'POSITION')
-
-    // check if the payer fsp has atleast one active account, if not send error callback
-    if (activePayerAccounts.length === 0) {
-      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYER_ERROR,
-        'Payer does not have any active account', null, fspiopSource)
-    }
-    // check if the payee fsp has atleast one active account, if not send error callback
-    if (activePayeeAccounts.length === 0) {
-      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PAYEE_ERROR,
-        'Payee does not have any active account', null, fspiopSource)
     }
   }
 
@@ -233,7 +208,7 @@ class QuotesModel {
       const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination)
       this.writeLog(`Got payer ${payer} and payee ${payee}`)
       // validate - this will throw if the request is invalid
-      await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest, payer, payee)
+      await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
       // supply a rules file containing an empty array.
