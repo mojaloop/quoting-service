@@ -84,9 +84,6 @@ const createEngine = () => {
  * @returns {promise} - array of failure cases, may be empty
  */
 const run = (rules, runtimeFacts) => {
-  console.log(rules)
-  console.log('-------------------------')
-  console.log(runtimeFacts)
   const engine = createEngine()
   rules.map(r => new jre.Rule(r)).forEach(r => engine.addRule(r))
 
