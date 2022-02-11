@@ -102,8 +102,9 @@ class Config {
         // how often to check for idle resources to destroy
         reapIntervalMillis: RC.DATABASE.REAP_INTERVAL_MILLIS,
         // long long to idle after failed create before trying again
-        createRetryIntervalMillis: RC.DATABASE.CREATE_RETRY_INTERVAL_MILLIS
+        createRetryIntervalMillis: RC.DATABASE.CREATE_RETRY_INTERVAL_MILLIS,
         // ping: function (conn, cb) { conn.query('SELECT 1', cb) }
+        propagateCreateError: false
       },
       debug: RC.DATABASE.DEBUG ? RC.DATABASE.DEBUG : false
     }

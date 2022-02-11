@@ -93,6 +93,119 @@ push a release triggering another subsequent build that also publishes a docker 
 - It is unknown if a race condition might occur with multiple merges with master in
   quick succession, but this is a suspected edge case.
 
+
+## How to use quoting-service JSON rules
+### About rules.json
+The rules.json file acts as a rules engine and enables you to define arbitrary rules that will accept or reject quotes. A rule is defined as an object with a title, a conditions object, and an event object. A rule specifies that if certain conditions are met, then the specified event will be generated.
+
+The rules engine used by the quoting-service is an off-the-shelf rules engine, called json-rules-engine. For detailed information on how to write rules, see the [json-rules-engine documentation](https://github.com/CacheControl/json-rules-engine/blob/master/docs/rules.md). This page only focuses on those details that are relevant for adding support for new currencies.
+
+### Conditions
+Conditions are a combination of facts, paths, operators, and values.
+
+Each rule's conditions must have either an all or an any operator at its root, containing an array of conditions. The all operator specifies that all conditions must be met for the rule to be applied. The any operator only requires one condition to be met for the rule to be applied.
+
+Operators within the individual conditions can take the following values:
+
+  - `equal:` fact must equal value (string or numeric value)
+  - `notEqual:` fact must not equal value (string or numeric value)
+  - `in:` fact must be included in value (an array)
+  - `notIn:` fact must not be included in value (an array)
+  - `contains:` fact (an array) must include value
+  - `doesNotContain:` fact (an array) must not include value
+
+### Events
+Event objects must have a type property, and an optional params property. There are two types of events:
+
+  - `INTERCEPT_QUOTE`: Used for redirecting quote requests.
+  - `INVALID_QUOTE_REQUEST`: Used for validation rules. You do not have to use this type of event when adding support for new currencies.
+
+### Configuration – an example
+```
+  [
+    {
+        "title": "This is UGX -> ZMW transfer rule",
+        "conditions": {
+          "all": [
+              {
+                "fact": "headers",
+                "path": "$.fspiop-source",
+                "operator": "notIn",
+                "value":[
+                    "DFSPUGX",
+                    "DFSPZMW"
+                ]
+              },
+              {
+                "fact": "payer",
+                "path": "$.accounts[?(@.ledgerAccountType == 'POSITION' && @.isActive  == 1)].currency",
+                "operator": "equal",
+                "value": "UGX"
+              },
+              {
+                "fact": "payee",
+                "path": "$.accounts[?(@.ledgerAccountType == 'POSITION' && @.isActive  == 1)].currency",
+                "operator": "equal",
+                "value": "ZMW"
+              }
+          ]
+        },
+        "event":{
+          "type": "INTERCEPT_QUOTE",
+          "params":{
+              "rerouteToFsp": "DFSPUGX",
+              "additionalHeaders": {
+                "x-fspiop-sourcecurrency": "UGX",
+                "x-fspiop-destinationcurrency": "ZMW"
+              }
+          }
+        }
+    },
+    {
+      "title": "Payee fsp should have only one active account",
+      "conditions": {
+        "all": [
+          {
+            "any": [
+              {
+                "fact": "payload",
+                "path": "$.amount.currency",
+                "operator": "notIn",
+                "value": {
+                  "fact": "payer",
+                  "path": "$.accounts[?(@.ledgerAccountType == \"POSITION\" && @.isActive  == 1)].currency"
+                }
+              },
+              {
+                "fact": "payload",
+                "path": "$.amount.currency",
+                "operator": "notIn",
+                "value": {
+                  "fact": "payee",
+                  "path": "$.accounts[?(@.ledgerAccountType == \"POSITION\" && @.isActive  == 1)].currency"
+                }
+              }
+            ]
+          },
+          {
+            "fact": "payee",
+            "path": "$.accounts[?(@.ledgerAccountType == \"POSITION\" && @.isActive  == 1)]",
+            "operator": "isArray",
+            "value": true
+          }
+        ]
+      },
+      "event": {
+        "type": "INVALID_QUOTE_REQUEST",
+        "params": {
+          "FSPIOPError": "PAYEE_ERROR",
+          "message": "Payee FSP has more than 1 active currency account. Switch does not support more than 1 active currency account for Forex Requests"
+        }
+      }
+    }
+  ]
+
+```
 ## Additional Notes
 
 N/A

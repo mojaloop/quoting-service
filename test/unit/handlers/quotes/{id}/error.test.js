@@ -85,7 +85,7 @@ describe('/quotes/{id}', () => {
           }
         }
       }
-      const handleException = jest.fn()
+      const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.OK.CODE }))
       QuotesModel.mockImplementationOnce(() => {
         return {
           handleQuoteError: () => {

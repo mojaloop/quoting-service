@@ -30,6 +30,7 @@
  - Henk Kodde <henk.kodde@modusbox.com>
  - Matt Kingston <matt.kingston@modusbox.com>
  - Vassilis Barzokas <vassilis.barzokas@modusbox.com>
+ - Shashikant Hirugade <shashikant.hirugade@modusbox.com>
  --------------
  ******/
 
@@ -46,7 +47,7 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
-const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash } = require('../lib/util')
+const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 const rules = require('../../config/rules.json')
 const RulesEngine = require('./rules.js')
@@ -66,21 +67,10 @@ class QuotesModel {
     this.requestId = config.requestId
   }
 
-  async executeRules (headers, quoteRequest) {
+  async executeRules (headers, quoteRequest, payer, payee) {
     if (rules.length === 0) {
       return []
     }
-
-    // Collect facts to supply to the rule engine
-    // Get quote participants from central ledger admin
-    const { switchEndpoint } = new Config()
-    const url = `${switchEndpoint}/participants`
-    const [payer, payee] = await Promise.all([
-      axios.request({ url: `${url}/${headers['fspiop-source']}` }),
-      axios.request({ url: `${url}/${headers['fspiop-destination']}` })
-    ])
-
-    this.writeLog(`Got rules engine facts payer ${payer} and payee ${payee}`)
 
     const facts = {
       payer,
@@ -91,7 +81,7 @@ class QuotesModel {
 
     const { events } = await RulesEngine.run(rules, facts)
 
-    this.writeLog(`Rules engine returned events ${events}`)
+    this.writeLog(`Rules engine returned events ${JSON.stringify(events)}`)
 
     return events
   }
@@ -131,7 +121,7 @@ class QuotesModel {
     }
     if (interceptQuoteEvents.length > 0) {
       // send the quote request to the recipient in the event
-      return {
+      const result = {
         terminate: false,
         quoteRequest,
         headers: {
@@ -139,6 +129,13 @@ class QuotesModel {
           'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp
         }
       }
+      // if additionalHeaders are present then add the additional non-standard headers (e.g. used by forex)
+      // Note these headers are not part of the mojaloop specification
+      if (interceptQuoteEvents[0].params.additionalHeaders) {
+        result.headers = { ...result.headers, ...interceptQuoteEvents[0].params.additionalHeaders }
+        result.additionalHeaders = interceptQuoteEvents[0].params.additionalHeaders
+      }
+      return result
     }
   }
 
@@ -208,18 +205,21 @@ class QuotesModel {
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
+      // validate - this will throw if the request is invalid
+      await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
+
+      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination)
+      this.writeLog(`Got payer ${payer} and payee ${payee}`)
+
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
       // supply a rules file containing an empty array.
-      const events = await this.executeRules(headers, quoteRequest)
+      const events = await this.executeRules(headers, quoteRequest, payer, payee)
 
       handledRuleEvents = await this.handleRuleEvents(events, headers, quoteRequest)
 
       if (handledRuleEvents.terminate) {
         return
       }
-
-      // validate - this will throw if the request is invalid
-      await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
       if (!envConfig.simpleRoutingMode) {
         // check if this is a resend or an erroneous duplicate
@@ -239,7 +239,7 @@ class QuotesModel {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
           return this.handleQuoteRequestResend(handledRuleEvents.headers,
-            handledRuleEvents.quoteRequest, handleQuoteRequestSpan)
+            handledRuleEvents.quoteRequest, handleQuoteRequestSpan, handledRuleEvents.additionalHeaders)
         }
 
         // do everything in a db txn so we can rollback multiple operations if something goes wrong
@@ -252,8 +252,10 @@ class QuotesModel {
         await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
 
         // create a txn reference
+        this.writeLog(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
         refs.transactionReferenceId = await this.db.createTransactionReference(txn,
           quoteRequest.quoteId, quoteRequest.transactionId)
+        this.writeLog(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
 
         // get the initiator type
         refs.transactionInitiatorTypeId = await this.db.getInitiatorType(quoteRequest.transactionType.initiatorType)
@@ -300,7 +302,7 @@ class QuotesModel {
 
         // store any extension list items
         if (quoteRequest.extensionList &&
-            Array.isArray(quoteRequest.extensionList.extension)) {
+          Array.isArray(quoteRequest.extensionList.extension)) {
           refs.extensions = await this.db.createQuoteExtensions(
             txn, quoteRequest.extensionList.extension, quoteRequest.quoteId, quoteRequest.transactionId)
         }
@@ -344,7 +346,7 @@ class QuotesModel {
         await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
       } else {
         await forwardQuoteRequestSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(handledRuleEvents.headers, refs.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
+        await this.forwardQuoteRequest(handledRuleEvents.headers, refs.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan, handledRuleEvents.additionalHeaders)
       }
     } catch (err) {
       // any-error
@@ -374,11 +376,10 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardQuoteRequest (headers, quoteId, originalQuoteRequest, span) {
+  async forwardQuoteRequest (headers, quoteId, originalQuoteRequest, span, additionalHeaders) {
     let endpoint
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-    const envConfig = new Config()
 
     try {
       if (!originalQuoteRequest) {
@@ -389,13 +390,9 @@ class QuotesModel {
       // lookup payee dfsp callback endpoint
       // TODO: for MVP we assume initiator is always payer dfsp! this may not always be the
       // case if a xfer is requested by payee
-      if (envConfig.simpleRoutingMode) {
-        endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
-      } else {
-        endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYEE')
-      }
+      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
 
-      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
+      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${endpoint}, destination: ${fspiopDest}`)
 
       if (!endpoint) {
         // internal-error
@@ -405,7 +402,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions, false, additionalHeaders)
 
       this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)
@@ -436,7 +433,7 @@ class QuotesModel {
    * Deals with resends of quote requests (POST) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
-  async handleQuoteRequestResend (headers, quoteRequest, span) {
+  async handleQuoteRequestResend (headers, quoteRequest, span, additionalHeaders) {
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource} to ${headers[ENUM.Http.Headers.FSPIOP.DESTINATION]}`)
@@ -449,7 +446,7 @@ class QuotesModel {
       const childSpan = span.getChild('qs_quote_forwardQuoteRequestResend')
       try {
         await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan)
+        await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan, additionalHeaders)
       } catch (err) {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
@@ -551,7 +548,7 @@ class QuotesModel {
 
         // store any extension list items
         if (quoteUpdateRequest.extensionList &&
-            Array.isArray(quoteUpdateRequest.extensionList.extension)) {
+             Array.isArray(quoteUpdateRequest.extensionList.extension)) {
           refs.extensions = await this.db.createQuoteExtensions(
             txn, quoteUpdateRequest.extensionList.extension, quoteId, null, refs.quoteResponseId)
         }
@@ -620,7 +617,6 @@ class QuotesModel {
    */
   async forwardQuoteUpdate (headers, quoteId, originalQuoteResponse, span) {
     let endpoint = null
-    const envConfig = new Config()
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
@@ -632,12 +628,7 @@ class QuotesModel {
       }
 
       // lookup payer dfsp callback endpoint
-      if (envConfig.simpleRoutingMode) {
-        endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
-      } else {
-        // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-        endpoint = await this.db.getQuotePartyEndpoint(quoteId, 'FSPIOP_CALLBACK_URL_QUOTES', 'PAYER')
-      }
+      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
 
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
 
@@ -803,7 +794,7 @@ class QuotesModel {
     let endpoint
 
     try {
-      // we just need to forward this request on to the destinatin dfsp. they should response with a
+      // we just need to forward this request on to the destination dfsp. they should response with a
       // quote update resend (PUT)
 
       // lookup payee dfsp callback endpoint

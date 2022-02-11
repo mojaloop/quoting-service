@@ -66,7 +66,7 @@ describe('/quotes/{id}', () => {
 
     it('handles an error with the model', async () => {
       // Arrange
-      const handleException = jest.fn()
+      const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
       QuotesModel.mockImplementationOnce(() => {
         return {
           handleQuoteGet: () => {
@@ -116,7 +116,7 @@ describe('/quotes/{id}', () => {
 
     it('handles an error with the model', async () => {
       // Arrange
-      const handleException = jest.fn()
+      const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
       QuotesModel.mockImplementationOnce(() => {
         return {
           handleQuoteUpdate: () => {
