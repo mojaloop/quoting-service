@@ -99,6 +99,11 @@
       "decision": "ignore",
       "madeAt": 1646300337227,
       "expiresAt": 1648892323604
+    },
+    "1007017|@mojaloop/central-services-shared>widdershins>swagger2openapi>oas-validator>ajv": {
+      "decision": "ignore",
+      "madeAt": 1646313638323,
+      "expiresAt": 1648905630501
     }
   },
   "rules": {},
