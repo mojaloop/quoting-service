@@ -125,8 +125,8 @@ function applyResourceVersionHeaders (headers, protocolVersions) {
   let contentTypeHeader = headers['content-type'] || headers['Content-Type']
   let acceptHeader = headers.accept || headers.Accept
   if (Enum.Http.Headers.FSPIOP.SWITCH.regex.test(headers['fspiop-source'])) {
-    if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT) {
-      contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.CONTENT}`
+    if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
+      contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.CONTENT.DEFAULT}`
     }
     if (Enum.Http.Headers.GENERAL.ACCEPT.regex.test(acceptHeader) && !!protocolVersions.ACCEPT.DEFAULT) {
       acceptHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.ACCEPT.DEFAULT}`
