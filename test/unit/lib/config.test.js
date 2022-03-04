@@ -34,7 +34,13 @@ const mockDefaultFile = {
     SCALE: 4
   },
   PROTOCOL_VERSIONS: {
-    CONTENT: '1.1',
+    CONTENT: {
+      DEFAULT: '1.1',
+      VALIDATELIST: [
+        '1',
+        '1.1'
+      ]
+    },
     ACCEPT: {
       DEFAULT: '1',
       VALIDATELIST: [
@@ -138,6 +144,7 @@ describe('Config', () => {
     let isSuccess
     const validateList = ['1']
     // set env var
+    process.env.QUOTE_PROTOCOL_VERSIONS__CONTENT__VALIDATELIST = JSON.stringify(validateList)
     process.env.QUOTE_PROTOCOL_VERSIONS__ACCEPT__VALIDATELIST = JSON.stringify(validateList)
 
     // Act
@@ -152,6 +159,7 @@ describe('Config', () => {
     // Assert
     expect(result != null).toBe(true)
     expect(isSuccess).toBe(true)
+    expect(result.protocolVersions.CONTENT.VALIDATELIST).toMatchObject(validateList)
     expect(result.protocolVersions.ACCEPT.VALIDATELIST).toMatchObject(validateList)
   })
 })

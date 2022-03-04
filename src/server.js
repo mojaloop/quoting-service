@@ -115,7 +115,10 @@ const initServer = async function (db, config) {
   // Helper to construct FSPIOPHeaderValidation option configuration
   const getOptionsForFSPIOPHeaderValidation = () => {
     // configure supported FSPIOP Content-Type versions
-    const supportedProtocolContentVersions = [config.protocolVersions.CONTENT.toString()]
+    const supportedProtocolContentVersions = []
+    for (const version of config.protocolVersions.CONTENT.VALIDATELIST) {
+      supportedProtocolContentVersions.push(version.toString())
+    }
 
     // configure supported FSPIOP Accept version
     const supportedProtocolAcceptVersions = []
