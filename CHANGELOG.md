@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.0.0](https://github.com/mojaloop/quoting-service/compare/v13.0.1...v14.0.0) (2022-03-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mojaloop/#2704:** - Config PROTOCOL_VERSIONS.CONTENT has now been modified to support backward compatibility for minor versions (i.e. v1.0 & 1.1) as follows:
+
+> ```
+>   "PROTOCOL_VERSIONS": {
+>     "CONTENT": "1.1", <-- used when generating messages from the "SWITCH", and validate incoming FSPIOP API requests/callbacks CONTENT-TYPE headers
+>     "ACCEPT": {
+>       "DEFAULT": "1", <-- used when generating messages from the "SWITCH"
+>       "VALIDATELIST": [ <-- used to validate incoming FSPIOP API requests/callbacks ACCEPT headers
+>         "1",
+>         "1.0",
+>         "1.1"
+>       ]
+>     }
+>   },
+> ```
+> 
+> to be consistent with the ACCEPT structure as follows:
+> 
+> ```
+>   "PROTOCOL_VERSIONS": {
+>     "CONTENT": {
+>       "DEFAULT": "1.1", <-- used when generating messages from the "SWITCH"
+>       "VALIDATELIST": [ <-- used to validate incoming FSPIOP API requests/callbacks CONTENT-TYPE headers
+>         "1.1",
+>         "1.0"
+>       ]
+>     },
+>     "ACCEPT": {
+>       "DEFAULT": "1", <-- used when generating messages from the "SWITCH"
+>       "VALIDATELIST": [ <-- used to validate incoming FSPIOP API requests/callbacks ACCEPT headers
+>         "1",
+>         "1.0",
+>         "1.1"
+>       ]
+>     }
+>   },
+> ```
+
+### Features
+
+* merge mowali branch ([#286](https://github.com/mojaloop/quoting-service/issues/286)) ([f92299b](https://github.com/mojaloop/quoting-service/commit/f92299bb2ad66bd89c00a04c382183b7845d881c)), closes [#100](https://github.com/mojaloop/quoting-service/issues/100) [#101](https://github.com/mojaloop/quoting-service/issues/101) [#102](https://github.com/mojaloop/quoting-service/issues/102) [#127](https://github.com/mojaloop/quoting-service/issues/127)
+* **mojaloop/#2704:** core-services support for non-breaking backward api compatibility ([#295](https://github.com/mojaloop/quoting-service/issues/295)) ([812b75d](https://github.com/mojaloop/quoting-service/commit/812b75d616c87792bab7c80b6552ac894424ec5d)), closes [mojaloop/#2704](https://github.com/mojaloop/quoting-service/issues/2704) [mojaloop/#2704](https://github.com/mojaloop/quoting-service/issues/2704)
+
+
+### Bug Fixes
+
+* [#2704](https://github.com/mojaloop/quoting-service/issues/2704) core services support for non breaking backward api compatibility ([#297](https://github.com/mojaloop/quoting-service/issues/297)) ([acf48a5](https://github.com/mojaloop/quoting-service/commit/acf48a5ba7b482c126bc345df121e5b0044921b1))
+
 ### [13.0.1](https://github.com/mojaloop/quoting-service/compare/v13.0.0...v13.0.1) (2021-11-16)
 
 
