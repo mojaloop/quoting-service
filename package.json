@@ -84,7 +84,7 @@
     "json-rules-engine": "5.0.2",
     "knex": "1.0.3",
     "memory-cache": "0.2.0",
-    "minimist": "1.2.5",
+    "minimist": "1.2.6",
     "mysql": "2.18.1",
     "node-fetch": "3.2.1",
     "parse-strings-in-object": "2.0.0",
