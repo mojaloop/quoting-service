@@ -12,4 +12,4 @@ services:
       environment:
         - CSL_LOG_TRANSPORT=file
       volumes:
-       - ./docker/quoting-service/default.json:/opt/quoting-service/config/default.json
+       - ./docker/quoting-service/default.json:/opt/app/config/default.json
