@@ -106,7 +106,6 @@
     "mysql": "2.18.1",
     "node-fetch": "3.2.5",
     "npm-audit-resolver": "3.0.0-7",
-    "npm-check-updates": "13.0.3",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8"
   },
