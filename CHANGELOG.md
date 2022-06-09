@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.0.1](https://github.com/mojaloop/quoting-service/compare/v15.0.0...v15.0.1) (2022-06-09)
+
+
+### Bug Fixes
+
+* dockerfile typo fix ([938bf65](https://github.com/mojaloop/quoting-service/commit/938bf65ed781f7c8b950b310a366d06ed0a72781))
+
 ## [15.0.0](https://github.com/mojaloop/quoting-service/compare/v14.0.0...v15.0.0) (2022-06-09)
 
 
