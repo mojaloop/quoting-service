@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "14.0.1",
+  "version": "14.0.0",
   "author": "ModusBox",
   "contributors": [
     "Georgi Georgiev <georgi.georgiev@modusbox.com>",
@@ -103,7 +103,7 @@
     "memory-cache": "0.2.0",
     "minimist": "1.2.6",
     "mysql": "2.18.1",
-    "node-fetch": "3.2.5",
+    "node-fetch": "3.2.6",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8"
   },
