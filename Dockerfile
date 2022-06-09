@@ -3,7 +3,7 @@ USER root
 
 WORKDIR /opt/app
 
-RUN RUN apk --no-cache add git
+RUN apk --no-cache add git
 RUN apk add --no-cache -t build-dependencies make gcc g++ python3 libtool libressl-dev openssl-dev autoconf automake \
     && cd $(npm root -g)/npm \
     && npm config set unsafe-perm true \
