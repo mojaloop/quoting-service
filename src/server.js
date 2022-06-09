@@ -146,17 +146,19 @@ const initServer = async function (db, config) {
       options: {
         ops: {
           interval: 1000
-        },
-        reporters: {
-          console: [{
-            module: 'good-squeeze',
-            name: 'Squeeze',
-            args: [{ log: '*', response: '*' }]
-          }, {
-            module: 'good-console',
-            args: [{ format: '' }]
-          }, 'stdout']
         }
+        // TODO: hapi good is deprecated per https://www.npmjs.com/package/@hapi/good/v/9.0.1 and is
+        // suggesting we consider another plugin from https://hapi.dev/plugins/#logging
+        // reporters: {
+        //   console: [{
+        //     module: 'good-squeeze',
+        //     name: 'Squeeze',
+        //     args: [{ log: '*', response: '*' }]
+        //   }, {
+        //     module: 'good-console',
+        //     args: [{ format: '' }]
+        //   }, 'stdout']
+        // }
       }
     },
     {
