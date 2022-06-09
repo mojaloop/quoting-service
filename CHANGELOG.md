@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.0.0](https://github.com/mojaloop/quoting-service/compare/v14.0.0...v15.0.0) (2022-06-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* Major version bump for node v16 LTS support, re-structuring of project directories to align to core Mojaloop repositories and docker image now uses /opt/app instead of /opt/quoting-service which will impact config mounts.
+
+### Features
+
+* upgrade to node LTS v16 ([#302](https://github.com/mojaloop/quoting-service/issues/302)) ([bc11b7c](https://github.com/mojaloop/quoting-service/commit/bc11b7cef03d34662e58fab06911ecb82566c3bc)), closes [mojaloop/#2767](https://github.com/mojaloop/project/issues/2767)
+
 ## [14.0.0](https://github.com/mojaloop/quoting-service/compare/v13.0.1...v14.0.0) (2022-03-04)
 
 
@@ -48,7 +59,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Features
 
 * merge mowali branch ([#286](https://github.com/mojaloop/quoting-service/issues/286)) ([f92299b](https://github.com/mojaloop/quoting-service/commit/f92299bb2ad66bd89c00a04c382183b7845d881c)), closes [#100](https://github.com/mojaloop/quoting-service/issues/100) [#101](https://github.com/mojaloop/quoting-service/issues/101) [#102](https://github.com/mojaloop/quoting-service/issues/102) [#127](https://github.com/mojaloop/quoting-service/issues/127)
-* **mojaloop/#2704:** core-services support for non-breaking backward api compatibility ([#295](https://github.com/mojaloop/quoting-service/issues/295)) ([812b75d](https://github.com/mojaloop/quoting-service/commit/812b75d616c87792bab7c80b6552ac894424ec5d)), closes [mojaloop/#2704](https://github.com/mojaloop/quoting-service/issues/2704) [mojaloop/#2704](https://github.com/mojaloop/quoting-service/issues/2704)
+* **mojaloop/#2704:** core-services support for non-breaking backward api compatibility ([#295](https://github.com/mojaloop/quoting-service/issues/295)) ([812b75d](https://github.com/mojaloop/quoting-service/commit/812b75d616c87792bab7c80b6552ac894424ec5d)), closes [mojaloop/#2704](https://github.com/mojaloop/project/issues/2704)
 
 
 ### Bug Fixes
@@ -60,7 +71,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* **mojaloop/#2535:** fspiop api version negotiation not handled by quoting service ([#289](https://github.com/mojaloop/quoting-service/issues/289)) ([#290](https://github.com/mojaloop/quoting-service/issues/290)) ([d4d48c1](https://github.com/mojaloop/quoting-service/commit/d4d48c179391ba956d9555432d4738652788190c)), closes [mojaloop/#2535](https://github.com/mojaloop/quoting-service/issues/2535) [mojaloop/#2535](https://github.com/mojaloop/quoting-service/issues/2535)
+* **mojaloop/#2535:** fspiop api version negotiation not handled by quoting service ([#289](https://github.com/mojaloop/quoting-service/issues/289)) ([#290](https://github.com/mojaloop/quoting-service/issues/290)) ([d4d48c1](https://github.com/mojaloop/quoting-service/commit/d4d48c179391ba956d9555432d4738652788190c)), closes [mojaloop/#2535](https://github.com/mojaloop/project/issues/2535)
 
 ## [13.0.0](https://github.com/mojaloop/quoting-service/compare/v12.0.10...v13.0.0) (2021-11-05)
 
@@ -71,7 +82,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* **mojaloop/#2535:** fspiop api version negotiation not handled by quoting service ([#289](https://github.com/mojaloop/quoting-service/issues/289)) ([737c7b4](https://github.com/mojaloop/quoting-service/commit/737c7b48e5ba0b80cef3e6b5ae701df1cb3440b6)), closes [mojaloop/#2535](https://github.com/mojaloop/quoting-service/issues/2535) [mojaloop/#2535](https://github.com/mojaloop/quoting-service/issues/2535)
+* **mojaloop/#2535:** fspiop api version negotiation not handled by quoting service ([#289](https://github.com/mojaloop/quoting-service/issues/289)) ([737c7b4](https://github.com/mojaloop/quoting-service/commit/737c7b48e5ba0b80cef3e6b5ae701df1cb3440b6)), closes [mojaloop/#2535](https://github.com/mojaloop/project/issues/2535)
 
 ### [12.0.10](https://github.com/mojaloop/quoting-service/compare/v12.0.9...v12.0.10) (2021-09-01)
 
@@ -87,5 +98,5 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* **mojaloop/#2439:** quoting-service-model.validatequoterequest-doesnt-perform-correct-validation ([#280](https://github.com/mojaloop/quoting-service/issues/280)) ([b0c2cdc](https://github.com/mojaloop/quoting-service/commit/b0c2cdc42422ecf604a58d48e9e5e9c2402d4341)), closes [mojaloop/#2439](https://github.com/mojaloop/quoting-service/issues/2439) [mojaloop/#2439](https://github.com/mojaloop/quoting-service/issues/2439)
+* **mojaloop/#2439:** quoting-service-model.validatequoterequest-doesnt-perform-correct-validation ([#280](https://github.com/mojaloop/quoting-service/issues/280)) ([b0c2cdc](https://github.com/mojaloop/quoting-service/commit/b0c2cdc42422ecf604a58d48e9e5e9c2402d4341)), closes [mojaloop/#2439](https://github.com/mojaloop/project/issues/2439)
 * updated circleci config to use the SHA1 hash of the last commit of the current build ([#281](https://github.com/mojaloop/quoting-service/issues/281)) ([9ee10d7](https://github.com/mojaloop/quoting-service/commit/9ee10d72b5941b973e15e97633835aa6d34d20eb))
