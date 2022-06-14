@@ -74,7 +74,9 @@ module.exports = {
       // call the model to re-forward the quote update to the correct party
       // note that we do not check if our caller is the correct party, but we
       // will send the callback to the correct party regardless.
-      model.handleBulkQuoteGet(request.headers, bulkQuoteId, span)
+      model.handleBulkQuoteGet(request.headers, bulkQuoteId, span).catch(err => {
+        request.server.log(['error'], `ERROR - handleBulkQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
+      })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - GET /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
