@@ -76,6 +76,7 @@ describe('/quotes/{id}', () => {
 
     it('handles an error with the model', async () => {
       // Arrange
+      const throwError = new Error('Create Quote Test Error')
       const request = {
         ...baseMockRequest,
         payload: {
@@ -88,9 +89,9 @@ describe('/quotes/{id}', () => {
       const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.OK.CODE }))
       QuotesModel.mockImplementationOnce(() => {
         return {
-          handleQuoteError: async () => {
-            throw new Error('Test error')
-          },
+          handleQuoteError: jest.fn(async () => {
+            throw throwError
+          }),
           handleException
         }
       })
@@ -106,6 +107,7 @@ describe('/quotes/{id}', () => {
 
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
+      expect(QuotesModel.mock.results[0].value.handleQuoteError.mock.results[0].value).rejects.toThrow(throwError)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
     })
   })

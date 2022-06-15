@@ -66,12 +66,13 @@ describe('/quotes/{id}', () => {
 
     it('handles an error with the model', async () => {
       // Arrange
+      const throwError = new Error('Create Quote Test Error')
       const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
       QuotesModel.mockImplementationOnce(() => {
         return {
-          handleQuoteGet: async () => {
-            throw new Error('Test error')
-          },
+          handleQuoteGet: jest.fn(async () => {
+            throw throwError
+          }),
           handleException
         }
       })
@@ -86,6 +87,8 @@ describe('/quotes/{id}', () => {
       await QuotesHandler.get(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
+      expect(QuotesModel).toHaveBeenCalledTimes(1)
+      expect(QuotesModel.mock.results[0].value.handleQuoteGet.mock.results[0].value).rejects.toThrow(throwError)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     })
   })
@@ -114,12 +117,13 @@ describe('/quotes/{id}', () => {
 
     it('handles an error with the model', async () => {
       // Arrange
+      const throwError = new Error('Create Quote Test Error')
       const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
       QuotesModel.mockImplementationOnce(() => {
         return {
-          handleQuoteUpdate: async () => {
-            throw new Error('Test error')
-          },
+          handleQuoteUpdate: jest.fn(async () => {
+            throw throwError
+          }),
           handleException
         }
       })
@@ -135,6 +139,7 @@ describe('/quotes/{id}', () => {
 
       // Assert
       expect(QuotesModel).toHaveBeenCalledTimes(1)
+      expect(QuotesModel.mock.results[0].value.handleQuoteUpdate.mock.results[0].value).rejects.toThrow(throwError)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
     })
   })
