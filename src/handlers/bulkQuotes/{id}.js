@@ -117,7 +117,9 @@ module.exports = {
         payload: request.payload
       }, EventSdk.AuditEventAction.start)
       // call the quote update handler in the model
-      model.handleBulkQuoteUpdate(request.headers, bulkQuoteId, request.payload, span)
+      model.handleBulkQuoteUpdate(request.headers, bulkQuoteId, request.payload, span).catch(err => {
+        request.server.log(['error'], `ERROR - handleBulkQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
+      })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)

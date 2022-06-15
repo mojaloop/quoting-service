@@ -77,7 +77,7 @@ describe('/quotes', () => {
       // Arrange
       const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
       QuotesModel.mockImplementationOnce(() => ({
-        handleQuoteRequest: () => {
+        handleQuoteRequest: async () => {
           throw new Error('Create Quote Test Error')
         },
         handleException
@@ -103,8 +103,8 @@ describe('/quotes', () => {
       await QuotesHandler.post(mockContext, mockRequest, handler)
 
       // Assert
+      expect(QuotesModel).toHaveBeenCalledTimes(1)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
-      expect(handleException).toHaveBeenCalledTimes(1)
     })
   })
 })

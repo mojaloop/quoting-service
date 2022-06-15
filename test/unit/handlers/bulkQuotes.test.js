@@ -79,7 +79,7 @@ describe('/bulkQuotes', () => {
       // Arrange
       const handleException = jest.fn()
       BulkQuotesModel.mockImplementationOnce(() => ({
-        handleBulkQuoteRequest: () => {
+        handleBulkQuoteRequest: async () => {
           throw new Error('Create Quote Test Error')
         },
         handleException
@@ -105,8 +105,8 @@ describe('/bulkQuotes', () => {
       await BulkQuotesHandler.post(mockContext, mockRequest, handler)
 
       // Assert
+      expect(BulkQuotesModel).toHaveBeenCalledTimes(1)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
-      expect(handleException).toHaveBeenCalledTimes(1)
     })
   })
 })

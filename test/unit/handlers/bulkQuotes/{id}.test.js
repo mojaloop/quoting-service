@@ -72,7 +72,7 @@ describe('/bulkQuotes/{id}', () => {
       const handleException = jest.fn()
       BulkQuotesModel.mockImplementationOnce(() => {
         return {
-          handleBulkQuoteGet: () => {
+          handleBulkQuoteGet: async () => {
             throw new Error('Test error')
           },
           handleException
@@ -90,7 +90,6 @@ describe('/bulkQuotes/{id}', () => {
 
       // Assert
       expect(BulkQuotesModel).toHaveBeenCalledTimes(1)
-      expect(handleException).toHaveBeenCalledTimes(1)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     })
   })
@@ -122,7 +121,7 @@ describe('/bulkQuotes/{id}', () => {
       const handleException = jest.fn()
       BulkQuotesModel.mockImplementationOnce(() => {
         return {
-          handleBulkQuoteUpdate: () => {
+          handleBulkQuoteUpdate: async () => {
             throw new Error('Test error')
           },
           handleException
@@ -140,7 +139,6 @@ describe('/bulkQuotes/{id}', () => {
 
       // Assert
       expect(BulkQuotesModel).toHaveBeenCalledTimes(1)
-      expect(handleException).toHaveBeenCalledTimes(1)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
     })
   })
