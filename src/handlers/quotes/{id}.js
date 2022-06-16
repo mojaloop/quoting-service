@@ -76,7 +76,9 @@ module.exports = {
       // call the model to re-forward the quote update to the correct party
       // note that we do not check if our caller is the correct party, but we
       // will send the callback to the correct party regardless.
-      model.handleQuoteGet(request.headers, quoteId, span)
+      model.handleQuoteGet(request.headers, quoteId, span).catch(err => {
+        request.server.log(['error'], `ERROR - handleQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
+      })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - GET /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
@@ -118,7 +120,9 @@ module.exports = {
         payload: request.payload
       }, EventSdk.AuditEventAction.start)
       // call the quote update handler in the model
-      model.handleQuoteUpdate(request.headers, quoteId, request.payload, span)
+      model.handleQuoteUpdate(request.headers, quoteId, request.payload, span).catch(err => {
+        request.server.log(['error'], `ERROR - handleQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
+      })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)

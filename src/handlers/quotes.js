@@ -76,7 +76,9 @@ module.exports = {
       }, EventSdk.AuditEventAction.start)
 
       // call the quote request handler in the model
-      model.handleQuoteRequest(request.headers, request.payload, span)
+      model.handleQuoteRequest(request.headers, request.payload, span).catch(err => {
+        request.server.log(['error'], `ERROR - handleQuoteRequest: ${LibUtil.getStackOrInspect(err)}`)
+      })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - POST /quotes: ${LibUtil.getStackOrInspect(err)}`)

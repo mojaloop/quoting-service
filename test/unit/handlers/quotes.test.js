@@ -75,11 +75,12 @@ describe('/quotes', () => {
 
     it('fails to create a quote', async () => {
       // Arrange
+      const throwError = new Error('Create Quote Test Error')
       const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
       QuotesModel.mockImplementationOnce(() => ({
-        handleQuoteRequest: () => {
-          throw new Error('Create Quote Test Error')
-        },
+        handleQuoteRequest: jest.fn(async () => {
+          throw throwError
+        }),
         handleException
       }))
       const code = jest.fn()
@@ -103,8 +104,9 @@ describe('/quotes', () => {
       await QuotesHandler.post(mockContext, mockRequest, handler)
 
       // Assert
+      expect(QuotesModel).toHaveBeenCalledTimes(1)
+      expect(QuotesModel.mock.results[0].value.handleQuoteRequest.mock.results[0].value).rejects.toThrow(throwError)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
-      expect(handleException).toHaveBeenCalledTimes(1)
     })
   })
 })
