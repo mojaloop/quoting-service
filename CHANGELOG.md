@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.0.2](https://github.com/mojaloop/quoting-service/compare/v15.0.1...v15.0.2) (2022-06-16)
+
+
+### Bug Fixes
+
+* handle unhandled promise rejections ([#303](https://github.com/mojaloop/quoting-service/issues/303)) ([802e627](https://github.com/mojaloop/quoting-service/commit/802e6276ced1754f7f6cc70861149b80d6558e2d))
+
 ### [15.0.1](https://github.com/mojaloop/quoting-service/compare/v15.0.0...v15.0.1) (2022-06-09)
 
 
