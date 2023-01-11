@@ -99,7 +99,7 @@
     "good-squeeze": "5.1.0",
     "joi": "17.6.0",
     "json-rules-engine": "5.0.2",
-    "knex": "2.1.0",
+    "knex": "2.4.0",
     "memory-cache": "0.2.0",
     "minimist": "1.2.6",
     "mysql": "2.18.1",
