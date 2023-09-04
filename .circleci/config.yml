@@ -7,11 +7,10 @@ version: 2.1
 # Orbs used in this pipeline
 ##
 orbs:
-  slack: circleci/slack@4.9.3 # Ref: https://github.com/mojaloop/ci-config/tree/master/slack-templates
+  slack: circleci/slack@4.12.5 # Ref: https://github.com/mojaloop/ci-config/tree/master/slack-templates
   pr-tools: mojaloop/pr-tools@0.1.10 # Ref: https://github.com/mojaloop/ci-config/
-  gh: circleci/github-cli@2.1.0
+  gh: circleci/github-cli@2.2.0
   anchore: anchore/anchore-engine@1.9.0
-  deploy-kube: mojaloop/deployment@0.1.6
 
 ##
 # defaults
@@ -26,8 +25,6 @@ defaults_Dependencies: &defaults_Dependencies |
   apk --no-cache add openssh-client
   apk add --no-cache -t build-dependencies make gcc g++ python3 libtool autoconf automake jq
   apk add --no-cache -t openssl ncurses coreutils libgcc linux-headers grep util-linux binutils findutils
-  npm config set unsafe-perm true
-  npm install -g node-gyp
 
 defaults_awsCliDependencies: &defaults_awsCliDependencies |
     apk --no-cache add aws-cli
@@ -154,7 +151,7 @@ jobs:
           command: npm -s run test:junit
       - store_artifacts:
           path: ./test/results
-          prefix: test
+          destination: test
       - store_test_results:
           path: ./test/results
 
@@ -177,7 +174,7 @@ jobs:
           command: npm -s run test:coverage-check
       - store_artifacts:
           path: coverage
-          prefix: test
+          destination: test
       - store_test_results:
           path: coverage
       - run:
@@ -228,7 +225,7 @@ jobs:
   #           ENDPOINT_URL: http://localhost:4545/notification  
   #     - store_artifacts:
   #         path: ./test/results
-  #         prefix: test
+  #         destination: test
   #     - store_test_results:
   #         path: ./test/results
 
@@ -248,10 +245,10 @@ jobs:
           command: mkdir -p ./audit/results
       - run:
           name: Check for new npm vulnerabilities
-          command: npm run audit:check --silent -- --json > ./audit/results/auditResults.json
+          command: npm run audit:check -- -o json > ./audit/results/auditResults.json
       - store_artifacts:
           path: ./audit/results
-          prefix: audit
+          destination: audit
 
   audit-licenses:
     executor: default-docker
@@ -269,7 +266,7 @@ jobs:
           command: cd /tmp/license-scanner && pathToRepo=$CIRCLE_WORKING_DIRECTORY make run
       - store_artifacts:
           path: /tmp/license-scanner/results
-          prefix: licenses
+          destination: licenses
 
   build:
     executor: default-machine
@@ -303,7 +300,7 @@ jobs:
           command: cd /tmp/license-scanner && mode=docker dockerImages=$DOCKER_ORG/$CIRCLE_PROJECT_REPONAME:$CIRCLE_TAG make run
       - store_artifacts:
           path: /tmp/license-scanner/results
-          prefix: licenses
+          destination: licenses
 
   image-scan:
     executor: anchore/anchore_engine
@@ -410,6 +407,7 @@ jobs:
 
   github-release:
     executor: default-machine
+    shell: "/bin/bash -eo pipefail"
     steps:
       - run:
           name: Install git
@@ -572,7 +570,6 @@ jobs:
 # CircleCI Workflow config
 ##
 workflows:
-  version: 2
   build_and_test:
     jobs:
       - pr-tools/pr-title-check:
