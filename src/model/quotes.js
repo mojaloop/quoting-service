@@ -723,7 +723,7 @@ class QuotesModel {
 
         // persist the error
         newError = await this.db.createQuoteError(txn, {
-          quoteId: quoteId,
+          quoteId,
           errorCode: Number(error.errorCode),
           errorDescription: error.errorDescription
         })
