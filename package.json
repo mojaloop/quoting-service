@@ -39,7 +39,7 @@
     }
   },
   "engines": {
-    "node": "=16.x"
+    "node": ">=18.x"
   },
   "pre-commit": [
     "lint",
@@ -69,8 +69,8 @@
     "docker:down": "docker-compose -f docker-compose.yml -f docker-compose.base.yml down -v",
     "docker:clean": "docker-compose -f docker-compose.yml -f docker-compose.base.yml down --rmi local",
     "generate-docs": "npx jsdoc -c jsdoc.json",
-    "audit:resolve": "npx resolve-audit --production",
-    "audit:check": "npx check-audit --production",
+    "audit:fix": "npm audit fix",
+    "audit:check": "npx audit-ci --config ./audit-ci.jsonc",
     "dep:check": "npx ncu -e 2",
     "dep:update": "npx ncu -u",
     "release": "npx standard-version --no-verify --releaseCommitMessageFormat 'chore(release): {{currentTag}} [skip ci]'",
@@ -108,11 +108,11 @@
     "rc": "1.2.8"
   },
   "devDependencies": {
+    "audit-ci": "^6.6.1",
     "eslint": "8.16.0",
     "eslint-config-standard": "17.0.0",
     "jest": "28.1.1",
     "jest-junit": "13.2.0",
-    "npm-audit-resolver": "3.0.0-7",
     "npm-check-updates": "13.1.5",
     "nyc": "15.1.0",
     "pre-commit": "1.2.2",
