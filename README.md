@@ -36,12 +36,12 @@ Please follow the instruction in [Onboarding Document](onboarding.md) to setup a
 
 ## Auditing Dependencies
 
-We use `npm-audit-resolver` along with `npm audit` to check dependencies for node vulnerabilities, and keep track of resolved dependencies with an `audit-resolve.json` file.
+We use `audit-ci` along with `npm audit` to check dependencies for node vulnerabilities, and keep track of resolved dependencies with an `audit-ci.jsonc` file.
 
 To start a new resolution process, run:
 
 ```bash
-npm run audit:resolve
+npm run audit:fix
 ```
 
 You can then check to see if the CI will pass based on the current dependencies with:
@@ -50,7 +50,7 @@ You can then check to see if the CI will pass based on the current dependencies 
 npm run audit:check
 ```
 
-And commit the changed `audit-resolve.json` to ensure that CircleCI will build correctly.
+The [audit-ci.jsonc](./audit-ci.jsonc) contains any audit-exceptions that cannot be fixed to ensure that CircleCI will build correctly.
 
 ## Container Scans
 
