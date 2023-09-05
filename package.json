@@ -58,7 +58,7 @@
     "test:unit": "jest --runInBand --testMatch '**/test/unit/**/*.test.js'",
     "test:coverage": "jest --runInBand --coverage --coverageThreshold='{}' --testMatch '**/test/unit/**/*.test.js'",
     "test:coverage-check": "jest --runInBand --coverage --testMatch '**/test/unit/**/*.test.js'",
-    "test:junit": "jest --reporters=default --reporters=jest-junit --testMatch '**/test/unit/**/*.test.js'",
+    "test:junit": "jest --runInBand --reporters=default --reporters=jest-junit --testMatch '**/test/unit/**/*.test.js'",
     "regenerate": "yo swaggerize:test --framework hapi --apiPath './src/interface/swagger.json'",
     "package-lock": "docker run --rm -it quoting-service:local cat package-lock.json > package-lock.json",
     "run": "docker run -p 3002:3002 --rm --link db:mysql quoting-service:local",
