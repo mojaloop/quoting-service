@@ -7,7 +7,7 @@ version: 2.1
 # Orbs used in this pipeline
 ##
 orbs:
-  slack: circleci/slack@4.12.5 # Ref: https://github.com/mojaloop/ci-config/tree/master/slack-templates
+  slack: circleci/slack@4.12.5 # Ref: https://github.com/mojaloop/ci-config/tree/main/slack-templates
   pr-tools: mojaloop/pr-tools@0.1.10 # Ref: https://github.com/mojaloop/ci-config/
   gh: circleci/github-cli@2.2.0
   anchore: anchore/anchore-engine@1.9.0
@@ -39,7 +39,7 @@ defaults_license_scanner: &defaults_license_scanner
 defaults_export_version_from_package: &defaults_export_version_from_package
   name: Format the changelog into the github release body and get release tag
   command: |
-    git diff --no-indent-heuristic master~1 HEAD CHANGELOG.md | sed -n '/^+[^+]/ s/^+//p' > /tmp/changes
+    git diff --no-indent-heuristic main~1 HEAD CHANGELOG.md | sed -n '/^+[^+]/ s/^+//p' > /tmp/changes
     echo 'export RELEASE_CHANGES=`cat /tmp/changes`' >> $BASH_ENV
     echo 'export RELEASE_TAG=`cat package-lock.json | jq -r .version`' >> $BASH_ENV
 
@@ -789,7 +789,6 @@ workflows:
           context: org-global
           requires:
             - setup
-            - test-dependencies
             - test-lint
             - test-unit
             - test-coverage
@@ -823,7 +822,7 @@ workflows:
             branches:
               ignore:
                 - /.*/
-      # New commits to master release automatically
+      # New commits to main release automatically
       - release:
           context: org-global
           requires:
@@ -840,7 +839,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
                 - /release\/v.*/
       - github-release:
           context: org-global
@@ -849,13 +848,12 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
                 - /release\/v.*/
       - publish:
           context: org-global
           requires:
             - pr-tools/pr-title-check
-            - test-dependencies
             - test-lint
             - test-unit
             - test-coverage
