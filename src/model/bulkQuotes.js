@@ -216,7 +216,7 @@ class BulkQuotesModel {
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
-      // https://github.com/mojaloop/mojaloop-specification/blob/master/API%20Definition%20v1.0.pdf
+      // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
       const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions, true)
 
       this.writeLog(`Forwarding bulk quote response to endpoint: ${fullCallbackUrl}`)
