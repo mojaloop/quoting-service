@@ -25,16 +25,7 @@ defaults_docker_Dependencies: &defaults_docker_Dependencies |
   apk --no-cache add openssh-client
   apk add --no-cache -t build-dependencies make gcc g++ python3 libtool autoconf automake jq
   apk add --no-cache -t openssl ncurses coreutils libgcc linux-headers grep util-linux binutils findutils
-
-## Default 'default-machine' executor dependencies
-defaults_machine_Dependencies: &defaults_machine_Dependencies |
-  ## Add Package Repos
-  ## Ref: https://docs.confluent.io/platform/current/installation/installing_cp/deb-ubuntu.html#get-the-software
-  wget -qO - https://packages.confluent.io/deb/7.4/archive.key | sudo apt-key add -
-  sudo add-apt-repository -y "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
-
-  ## Install deps
-  sudo apt install -y librdkafka-dev curl bash
+  apk --no-cache add librdkafka-dev
 
 defaults_awsCliDependencies: &defaults_awsCliDependencies |
     apk --no-cache add aws-cli
