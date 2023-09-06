@@ -62,7 +62,7 @@
     "regenerate": "yo swaggerize:test --framework hapi --apiPath './src/interface/swagger.json'",
     "package-lock": "docker run --rm -it quoting-service:local cat package-lock.json > package-lock.json",
     "run": "docker run -p 3002:3002 --rm --link db:mysql quoting-service:local",
-    "docker:build": "docker build --build-arg NODE_VERSION=\"$(cat .nvmrc)-alpine\" -t mojaloop/quoting-service:local -f ./Dockerfile ../",
+    "docker:build": "docker build --build-arg NODE_VERSION=\"$(cat .nvmrc)-alpine\" -t mojaloop/quoting-service:local -f ./Dockerfile .",
     "docker:up": "docker-compose -f docker-compose.yml -f docker-compose.base.yml up",
     "docker:stop": "docker-compose -f docker-compose.yml -f docker-compose.base.yml stop",
     "docker:rm": "docker-compose -f docker-compose.yml -f docker-compose.base.yml rm -f -v",
