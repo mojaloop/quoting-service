@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.0.3](https://github.com/mojaloop/quoting-service/compare/v15.0.2...v15.0.3) (2023-09-06)
+
+
+### Chore
+
+* **mojaloop/#3438:** nodejs upgrade ([#309](https://github.com/mojaloop/quoting-service/issues/309)) ([d3aba52](https://github.com/mojaloop/quoting-service/commit/d3aba52c26ecbe207fc544e0f125865c2888e2ad)), closes [mojaloop/#3438](https://github.com/mojaloop/project/issues/3438)
+
 ### [15.0.2](https://github.com/mojaloop/quoting-service/compare/v15.0.1...v15.0.2) (2022-06-16)
 
 
