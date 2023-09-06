@@ -1,6 +1,6 @@
 # Onboarding
 
->*Note:* Before completing this guide, make sure you have completed the _general_ onboarding guide in the [base mojaloop repository](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#mojaloop-onboarding).
+>*Note:* Before completing this guide, make sure you have completed the _general_ onboarding guide in the [base mojaloop repository](https://github.com/mojaloop/mojaloop/blob/main/onboarding.md#mojaloop-onboarding).
 
 ## Contents
 
@@ -21,7 +21,7 @@
 
 #  1. <a name='Prerequisites'></a>Prerequisites
 
-If you have followed the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/master/onboarding.md#mojaloop-onboarding), you should already have the following cli tools installed:
+If you have followed the [general onboarding guide](https://github.com/mojaloop/mojaloop/blob/main/onboarding.md#mojaloop-onboarding), you should already have the following cli tools installed:
 
 * `brew` (macOS), [todo: windows package manager]
 * `curl`, `wget`
@@ -163,9 +163,9 @@ npm run cover
 
 ### 5.1 Testing the `quoting-service` API with Postman
 
-Refer to the [central-ledger onboarding guide](https://github.com/mojaloop/central-ledger/blob/master/Onboarding.md#51-testing-the-central-ledger-api-with-postman) to test the `quoting-service` using postman.
+Refer to the [central-ledger onboarding guide](https://github.com/mojaloop/central-ledger/blob/main/Onboarding.md#51-testing-the-central-ledger-api-with-postman) to test the `quoting-service` using postman.
 
->Note: Before running the postman scripts, ensure you have populated the test data using the `test/util/scripts/populateTestData.sh` in the `central-ledger` directory. For more information, follow the [Running `central-ledger` Inside Docker](https://github.com/mojaloop/central-ledger/blob/master/Onboarding.md#4-running-inside-docker) guide
+>Note: Before running the postman scripts, ensure you have populated the test data using the `test/util/scripts/populateTestData.sh` in the `central-ledger` directory. For more information, follow the [Running `central-ledger` Inside Docker](https://github.com/mojaloop/central-ledger/blob/main/Onboarding.md#4-running-inside-docker) guide
 
 
 ##  6. <a name='CommonErrorsFAQs'></a>Common Errors/FAQs

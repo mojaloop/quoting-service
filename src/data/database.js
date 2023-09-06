@@ -234,8 +234,8 @@ class Database {
       await this.queryBuilder('transactionReference')
         .transacting(txn)
         .insert({
-          quoteId: quoteId,
-          transactionReferenceId: transactionReferenceId
+          quoteId,
+          transactionReferenceId
         })
 
       this.writeLog(`inserted new transactionReference in db: ${transactionReferenceId}`)
@@ -256,8 +256,8 @@ class Database {
       await this.queryBuilder('quoteDuplicateCheck')
         .transacting(txn)
         .insert({
-          quoteId: quoteId,
-          hash: hash
+          quoteId,
+          hash
         })
 
       this.writeLog(`inserted new duplicate check in db for quoteId: ${quoteId}`)
@@ -278,9 +278,9 @@ class Database {
       await this.queryBuilder('quoteResponseDuplicateCheck')
         .transacting(txn)
         .insert({
-          quoteResponseId: quoteResponseId,
-          quoteId: quoteId,
-          hash: hash
+          quoteResponseId,
+          quoteId,
+          hash
         })
 
       this.writeLog(`inserted new response duplicate check in db for quote ${quoteId}, quoteResponseId: ${quoteResponseId}`)
@@ -415,7 +415,7 @@ class Database {
     try {
       const rows = await this.queryBuilder('transferParticipantRoleType')
         .where({
-          name: name,
+          name,
           isActive: 1
         })
         .select()
@@ -441,7 +441,7 @@ class Database {
     try {
       const rows = await this.queryBuilder('ledgerEntryType')
         .where({
-          name: name,
+          name,
           isActive: 1
         })
         .select()
@@ -509,7 +509,7 @@ class Database {
 
       // insert a new quote party
       const newQuoteParty = {
-        quoteId: quoteId,
+        quoteId,
         partyTypeId: refs.partyTypeId,
         partyIdentifierTypeId: refs.partyIdentifierTypeId,
         partyIdentifierValue: party.partyIdInfo.partyIdentifier,
@@ -576,7 +576,7 @@ class Database {
     try {
       const rows = await this.queryBuilder('quotePartyView')
         .where({
-          quoteId: quoteId
+          quoteId
         })
         .select()
 
@@ -596,7 +596,7 @@ class Database {
     try {
       const rows = await this.queryBuilder('quoteView')
         .where({
-          quoteId: quoteId
+          quoteId
         })
         .select()
 
@@ -832,7 +832,7 @@ class Database {
     try {
       const rows = await this.queryBuilder('quoteDuplicateCheck')
         .where({
-          quoteId: quoteId
+          quoteId
         })
         .select()
 
@@ -856,7 +856,7 @@ class Database {
     try {
       const rows = await this.queryBuilder('quoteResponseDuplicateCheck')
         .where({
-          quoteId: quoteId
+          quoteId
         })
         .select()
 
@@ -880,7 +880,7 @@ class Database {
     try {
       const rows = await this.queryBuilder('transactionReference')
         .where({
-          quoteId: quoteId
+          quoteId
         })
         .select()
 
@@ -903,7 +903,7 @@ class Database {
   async createQuoteResponse (txn, quoteId, quoteResponse) {
     try {
       const newQuoteResponse = {
-        quoteId: quoteId,
+        quoteId,
         transferAmountCurrencyId: quoteResponse.transferAmount.currency,
         transferAmount: new MLNumber(quoteResponse.transferAmount.amount).toFixed(this.config.amount.scale),
         payeeReceiveAmountCurrencyId: quoteResponse.payeeReceiveAmount ? quoteResponse.payeeReceiveAmount.currency : null,
@@ -939,7 +939,7 @@ class Database {
   async createQuoteResponseIlpPacket (txn, quoteResponseId, ilpPacket) {
     try {
       const newPacket = {
-        quoteResponseId: quoteResponseId,
+        quoteResponseId,
         value: ilpPacket
       }
 
