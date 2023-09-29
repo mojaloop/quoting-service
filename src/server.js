@@ -47,6 +47,7 @@ const OpenapiBackend = require('@mojaloop/central-services-shared').Util.Openapi
 const OpenapiBackendValidator = require('@mojaloop/central-services-shared').Util.Hapi.OpenapiBackendValidator
 const Logger = require('@mojaloop/central-services-logger')
 const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.APIDocumentation
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 const Config = require('./lib/config.js')
@@ -181,6 +182,12 @@ const initServer = async function (db, config) {
   return server
 }
 
+const initializeInstrumentation = (config) => {
+  if (!config.instrumentationMetricsDisabled) {
+    Metrics.setup(config.instrumentationMetricsConfig)
+  }
+}
+
 // load config
 const config = new Config()
 
@@ -189,7 +196,8 @@ const config = new Config()
  * @description Starts the web server
  */
 async function start () {
-  // initialise database connection pool and start the api server
+  initializeInstrumentation(config)
+  // initialize database connection pool and start the api server
   return initDb(config)
     .then(db => initServer(db, config))
     .then(server => {

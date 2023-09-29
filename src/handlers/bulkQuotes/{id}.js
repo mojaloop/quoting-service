@@ -37,6 +37,8 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('../../lib/util')
 const BulkQuotesModel = require('../../model/bulkQuotes.js')
+const Metrics = require('@mojaloop/central-services-metrics')
+
 /**
  * Operations on /bulkQuotes/{id}
  */
@@ -49,6 +51,11 @@ module.exports = {
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
   get: async function getBulkQuotesById (context, request, h) {
+    const histTimerEnd = Metrics.getHistogram(
+      'quotes_id_get',
+      'Process HTTP GET /bulkQuotes/{id} request',
+      ['success']
+    ).startTimer()
     // log request
     request.server.log(['info'], `got a GET /bulkQuotes/{id} request for bulkQuoteId ${request.params.id}`)
 
@@ -77,10 +84,12 @@ module.exports = {
       model.handleBulkQuoteGet(request.headers, bulkQuoteId, span).catch(err => {
         request.server.log(['error'], `ERROR - handleBulkQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
       })
+      histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - GET /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, bulkQuoteId, err, request.headers, span)
+      histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
@@ -94,6 +103,11 @@ module.exports = {
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
   put: async function putBulkQuotesById (context, request, h) {
+    const histTimerEnd = Metrics.getHistogram(
+      'quotes_id_get',
+      'Process HTTP PUT /bulkQuotes/{id} request',
+      ['success']
+    ).startTimer()
     // log request
     request.server.log(['info'], `got a PUT /bulkQuotes/{id} request: ${util.inspect(request.payload)}`)
 
@@ -120,10 +134,12 @@ module.exports = {
       model.handleBulkQuoteUpdate(request.headers, bulkQuoteId, request.payload, span).catch(err => {
         request.server.log(['error'], `ERROR - handleBulkQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
       })
+      histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, bulkQuoteId, err, request.headers, span)
+      histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(Enum.Http.ReturnCodes.OK.CODE)

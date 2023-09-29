@@ -26,7 +26,7 @@ services:
     volumes:
       # override the default values with our own - this is because the KAFKA_HOST env variable is ignored for some reason
       - ./docker/ml-api-adapter/default.json:/opt/app/config/default.json
-    
+
     # TODO: we should be able to remove this - I think the image command is broken
     command:
       - "node"
@@ -64,12 +64,10 @@ services:
       - /opt/wait-for-mockserver.sh
     environment:
       - MOCK_HOST=mockserver
-  
+
   kafka:
     image: docker.io/bitnami/kafka:3.5
     container_name: cl_kafka
-    networks:
-      - cl-mojaloop-net
     ports:
       - "9092:9092"
     environment:
@@ -97,8 +95,6 @@ services:
 
   init-kafka:
     container_name: cl_init_kafka
-    networks:
-      - cl-mojaloop-net
     image: docker.io/bitnami/kafka:3.5
     depends_on:
       - kafka

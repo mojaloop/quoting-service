@@ -44,6 +44,7 @@ const LibUtil = require('@mojaloop/central-services-shared').Util
 const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
@@ -145,6 +146,11 @@ class QuotesModel {
    * @returns {promise} - promise will reject if request is not valid
    */
   async validateQuoteRequest (fspiopSource, fspiopDestination, quoteRequest) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'validateQuoteRequest - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     const envConfig = new Config()
     // note that the framework should validate the form of the request
     // here we can do some hard-coded rule validations to ensure requests
@@ -158,11 +164,13 @@ class QuotesModel {
     // Any quoteRequest specific validations to be added here
     if (!quoteRequest) {
       // internal-error
+      histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
 
     await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
     await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
 
     // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
     if (envConfig.simpleRoutingMode) {
@@ -193,6 +201,11 @@ class QuotesModel {
    * @returns {object} - returns object containing keys for created database entities
    */
   async handleQuoteRequest (headers, quoteRequest, span) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'handleQuoteRequest - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     const envConfig = new Config()
     // accumulate enum ids
     const refs = {}
@@ -336,11 +349,13 @@ class QuotesModel {
         await handleQuoteRequestSpan.error(fspiopError, state)
         await handleQuoteRequestSpan.finish(fspiopError.message, state)
       }
+      histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
       throw fspiopError
     }
     let forwardQuoteRequestSpan
     try {
       forwardQuoteRequestSpan = handleQuoteRequestSpan.getChild('qs_quote_forwardQuoteRequest')
+      histTimer({ success: true, queryName: 'quote_handleQuoteRequest' })
       if (envConfig.simpleRoutingMode) {
         await forwardQuoteRequestSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
         await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
@@ -353,6 +368,7 @@ class QuotesModel {
       // as we are on our own in this context, dont just rethrow the error, instead...
       // get the model to handle it
       this.writeLog(`Error forwarding quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+      histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
       if (envConfig.simpleRoutingMode) {
         await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers, forwardQuoteRequestSpan)
       } else {
@@ -377,6 +393,11 @@ class QuotesModel {
    * @returns {undefined}
    */
   async forwardQuoteRequest (headers, quoteId, originalQuoteRequest, span, additionalHeaders) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'forwardQuoteRequest - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     let endpoint
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -421,10 +442,12 @@ class QuotesModel {
       }
 
       this.writeLog(`Forwarding request : ${util.inspect(opts)}`)
+      histTimer({ success: true, queryName: 'quote_forwardQuoteRequest' })
       await httpRequest(opts, fspiopSource)
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding quote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
+      histTimer({ success: false, queryName: 'quote_forwardQuoteRequest' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -434,6 +457,11 @@ class QuotesModel {
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
   async handleQuoteRequestResend (headers, quoteRequest, span, additionalHeaders) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'handleQuoteRequestResend - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       this.writeLog(`Handling resend of quoteRequest: ${util.inspect(quoteRequest)} from ${fspiopSource} to ${headers[ENUM.Http.Headers.FSPIOP.DESTINATION]}`)
@@ -446,6 +474,7 @@ class QuotesModel {
       const childSpan = span.getChild('qs_quote_forwardQuoteRequestResend')
       try {
         await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
+        histTimer({ success: true, queryName: 'quote_handleQuoteRequestResend' })
         await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan, additionalHeaders)
       } catch (err) {
         // any-error
@@ -453,6 +482,7 @@ class QuotesModel {
         // get the model to handle it
         this.writeLog(`Error forwarding quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
         const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+        histTimer({ success: false, queryName: 'quote_handleQuoteRequestResend' })
         await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers, childSpan)
       } finally {
         if (!childSpan.isFinished) {
@@ -462,6 +492,7 @@ class QuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleQuoteRequestResend: ${getStackOrInspect(err)}`)
+      histTimer({ success: false, queryName: 'quote_handleQuoteRequestResend' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -472,6 +503,11 @@ class QuotesModel {
    * @returns {object} - object containing updated entities
    */
   async handleQuoteUpdate (headers, quoteId, quoteUpdateRequest, span) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'handleQuoteUpdate - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     let txn = null
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const envConfig = new Config()
@@ -574,6 +610,7 @@ class QuotesModel {
       const childSpan = handleQuoteUpdateSpan.getChild('qs_quote_forwardQuoteUpdate')
       try {
         await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdateRequest }, EventSdk.AuditEventAction.start)
+        histTimer({ success: true, queryName: 'quote_handleQuoteUpdate' })
         await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, childSpan)
       } catch (err) {
         // any-error
@@ -581,6 +618,7 @@ class QuotesModel {
         // get the model to handle it
         const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
         this.writeLog(`Error forwarding quote update: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        histTimer({ success: false, queryName: 'quote_handleQuoteUpdate' })
         await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
       } finally {
         if (!childSpan.isFinished) {
@@ -606,6 +644,7 @@ class QuotesModel {
         await handleQuoteUpdateSpan.error(fspiopError, state)
         await handleQuoteUpdateSpan.finish(fspiopError.message, state)
       }
+      histTimer({ success: false, queryName: 'quote_handleQuoteUpdate' })
       throw fspiopError
     }
   }
@@ -616,6 +655,11 @@ class QuotesModel {
    * @returns {undefined}
    */
   async forwardQuoteUpdate (headers, quoteId, originalQuoteResponse, span) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'forwardQuoteUpdate - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     let endpoint = null
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -660,11 +704,12 @@ class QuotesModel {
         opts = span.injectContextToHttpRequest(opts)
         span.audit(opts, EventSdk.AuditEventAction.egress)
       }
-
+      histTimer({ success: true, queryName: 'quote_forwardQuoteUpdate' })
       await httpRequest(opts, fspiopSource)
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding quote response to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
+      histTimer({ success: false, queryName: 'quote_forwardQuoteUpdate' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -674,6 +719,11 @@ class QuotesModel {
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
   async handleQuoteUpdateResend (headers, quoteId, quoteUpdate, span) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'handleQuoteUpdateResend - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -687,12 +737,14 @@ class QuotesModel {
       const childSpan = span.getChild('qs_quote_forwardQuoteUpdateResend')
       try {
         await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdate }, EventSdk.AuditEventAction.start)
+        histTimer({ success: true, queryName: 'quote_handleQuoteUpdateResend' })
         await this.forwardQuoteUpdate(headers, quoteId, quoteUpdate, childSpan)
       } catch (err) {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
         // get the model to handle it
         this.writeLog(`Error forwarding quote response: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        histTimer({ success: false, queryName: 'quote_handleQuoteUpdateResend' })
         await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
       } finally {
         if (!childSpan.isFinished) {
@@ -702,6 +754,7 @@ class QuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleQuoteUpdateResend: ${getStackOrInspect(err)}`)
+      histTimer({ success: false, queryName: 'quote_handleQuoteUpdateResend' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -712,6 +765,11 @@ class QuotesModel {
    * @returns {undefined}
    */
   async handleQuoteError (headers, quoteId, error, span) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'handleQuoteError - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     let txn = null
     const envConfig = new Config()
     let newError
@@ -735,6 +793,7 @@ class QuotesModel {
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
 
       // Needed to add await here to prevent 'childSpan already finished' bug
+      histTimer({ success: true, queryName: 'quote_handleQuoteError' })
       await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, quoteId, headers, childSpan, false)
 
       return newError
@@ -750,6 +809,7 @@ class QuotesModel {
         await childSpan.error(fspiopError, state)
         await childSpan.finish(fspiopError.message, state)
       }
+      histTimer({ success: false, queryName: 'quote_handleQuoteError' })
       throw fspiopError
     }
   }
@@ -760,18 +820,25 @@ class QuotesModel {
    * @returns {undefined}
    */
   async handleQuoteGet (headers, quoteId, span) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'handleQuoteGet - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     let childSpan
     try {
       childSpan = span.getChild('qs_quote_forwardQuoteGet')
       try {
         await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
+        histTimer({ success: false, queryName: 'quote_handleQuoteGet' })
         await this.forwardQuoteGet(headers, quoteId, childSpan)
       } catch (err) {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
         // get the model to handle it
         this.writeLog(`Error forwarding quote get: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        histTimer({ success: false, queryName: 'quote_handleQuoteGet' })
         await this.handleException(fspiopSource, quoteId, err, headers, childSpan)
       } finally {
         if (!childSpan.isFinished) {
@@ -781,6 +848,7 @@ class QuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in handleQuoteGet: ${getStackOrInspect(err)}`)
+      histTimer({ success: false, queryName: 'quote_handleQuoteGet' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -791,6 +859,11 @@ class QuotesModel {
    * @returns {undefined}
    */
   async forwardQuoteGet (headers, quoteId, span) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'forwardQuoteGet - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     let endpoint
 
     try {
@@ -828,10 +901,12 @@ class QuotesModel {
         span.audit(opts, EventSdk.AuditEventAction.egress)
       }
 
+      histTimer({ success: true, queryName: 'quote_forwardQuoteGet' })
       await httpRequest(opts, fspiopSource)
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
+      histTimer({ success: false, queryName: 'quote_forwardQuoteGet' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -841,17 +916,24 @@ class QuotesModel {
    * source of the request that caused the error.
    */
   async handleException (fspiopSource, quoteId, error, headers, span) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'handleException - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     // is this exception already wrapped as an API spec compatible type?
     const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
 
     const childSpan = span.getChild('qs_quote_sendErrorCallback')
     try {
       await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
+      histTimer({ success: true, queryName: 'quote_handleException' })
       return await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan, true)
     } catch (err) {
       // any-error
       // not much we can do other than log the error
       this.writeLog(`Error occurred while handling error. Check service logs as this error may not have been propagated successfully to any other party: ${getStackOrInspect(err)}`)
+      histTimer({ success: false, queryName: 'quote_handleException' })
     } finally {
       if (!childSpan.isFinished) {
         await childSpan.finish()
@@ -867,6 +949,11 @@ class QuotesModel {
    * @returns {promise}
    */
   async sendErrorCallback (fspiopSource, fspiopError, quoteId, headers, span, modifyHeaders = true) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'sendErrorCallback - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     const envConfig = new Config()
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
@@ -943,7 +1030,7 @@ class QuotesModel {
           })
           opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
         }
-
+        histTimer({ success: true, queryName: 'quote_sendErrorCallback' })
         res = await axios.request(opts)
       } catch (err) {
         // external-error
@@ -978,6 +1065,7 @@ class QuotesModel {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
+      histTimer({ success: false, queryName: 'quote_sendErrorCallback' })
       throw fspiopError
     }
   }
@@ -990,6 +1078,11 @@ class QuotesModel {
    * @returns {promise} - resolves to an object thus: { isResend: {boolean}, isDuplicateId: {boolean} }
    */
   async checkDuplicateQuoteRequest (quoteRequest) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'checkDuplicateQuoteRequest - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     try {
       // calculate a SHA-256 of the request
       const hash = calculateRequestHash(quoteRequest)
@@ -1014,6 +1107,7 @@ class QuotesModel {
         }
       }
 
+      histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest' })
       // if we get here then this is a duplicate id but not a resend e.g. hashes dont match.
       return {
         isResend: false,
@@ -1022,6 +1116,7 @@ class QuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in checkDuplicateQuoteRequest: ${getStackOrInspect(err)}`)
+      histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteRequest' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -1034,6 +1129,11 @@ class QuotesModel {
    * @returns {promise} - resolves to an object thus: { isResend: {boolean}, isDuplicateId: {boolean} }
    */
   async checkDuplicateQuoteResponse (quoteId, quoteResponse) {
+    const histTimer = Metrics.getHistogram(
+      'model_quote',
+      'checkDuplicateQuoteResponse - Metrics for quote model',
+      ['success', 'queryName']
+    ).startTimer()
     try {
       // calculate a SHA-256 of the request
       const hash = calculateRequestHash(quoteResponse)
@@ -1059,6 +1159,7 @@ class QuotesModel {
       }
 
       // if we get here then this is a duplicate id but not a resend e.g. hashes dont match.
+      histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteResponse' })
       return {
         isResend: false,
         isDuplicateId: true
@@ -1066,6 +1167,7 @@ class QuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in checkDuplicateQuoteResponse: ${getStackOrInspect(err)}`)
+      histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteResponse' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }

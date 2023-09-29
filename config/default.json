@@ -53,5 +53,20 @@
       "JWS_SIGNING_KEY_PATH": "secrets/jwsSigningKey.key"
     }
   },
-  "API_DOCUMENTATION_ENDPOINTS": true
+  "API_DOCUMENTATION_ENDPOINTS": true,
+  "INSTRUMENTATION": {
+    "METRICS": {
+      "DISABLED": false,
+      "labels": {
+        "fspId": "*"
+      },
+      "config": {
+        "timeout": 5000,
+        "prefix": "moja_qs_",
+        "defaultLabels": {
+          "serviceName": "quoting-service"
+        }
+      }
+    }
+  }
 }

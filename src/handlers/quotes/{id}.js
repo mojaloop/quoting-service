@@ -38,6 +38,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('../../lib/util')
 const QuotesModel = require('../../model/quotes.js')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 /**
  * Operations on /quotes/{id}
@@ -51,6 +52,11 @@ module.exports = {
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
   get: async function getQuotesById (context, request, h) {
+    const histTimerEnd = Metrics.getHistogram(
+      'quotes_id_get',
+      'Process HTTP GET /quotes/{id} request',
+      ['success']
+    ).startTimer()
     // log request
     request.server.log(['info'], `got a GET /quotes/{id} request for quoteId ${request.params.id}`)
 
@@ -79,10 +85,12 @@ module.exports = {
       model.handleQuoteGet(request.headers, quoteId, span).catch(err => {
         request.server.log(['error'], `ERROR - handleQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
       })
+      histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - GET /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, quoteId, err, request.headers, span)
+      histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
@@ -97,6 +105,11 @@ module.exports = {
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
   put: async function putQuotesById (context, request, h) {
+    const histTimerEnd = Metrics.getHistogram(
+      'quotes_id_put',
+      'Process HTTP PUT /quotes/{id} request',
+      ['success']
+    ).startTimer()
     // log request
     request.server.log(['info'], `got a PUT /quotes/{id} request: ${util.inspect(request.payload)}`)
 
@@ -123,10 +136,12 @@ module.exports = {
       model.handleQuoteUpdate(request.headers, quoteId, request.payload, span).catch(err => {
         request.server.log(['error'], `ERROR - handleQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
       })
+      histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, quoteId, err, request.headers, span)
+      histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(Enum.Http.ReturnCodes.OK.CODE)

@@ -149,6 +149,9 @@ class Config {
     }
     this.apiDocumentationEndpoints = RC.API_DOCUMENTATION_ENDPOINTS || false
     this.protocolVersions = getProtocolVersions(DEFAULT_PROTOCOL_VERSION, RC.PROTOCOL_VERSIONS)
+    this.instrumentationMetricsDisabled = RC.INSTRUMENTATION.METRICS.DISABLED
+    this.instrumentationMetricsLabels = RC.INSTRUMENTATION.METRICS.labels
+    this.instrumentationMetricsConfig = RC.INSTRUMENTATION.METRICS.config
   }
 }
 
