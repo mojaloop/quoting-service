@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.1.0](https://github.com/mojaloop/quoting-service/compare/v15.0.4...v15.1.0) (2023-10-02)
+
+
+### Features
+
+* **mojaloop/#3432:** add metrics for quote handlers and models ([#311](https://github.com/mojaloop/quoting-service/issues/311)) ([de37e1e](https://github.com/mojaloop/quoting-service/commit/de37e1e8aa660151a3b42a3f50475414feeb0b80)), closes [mojaloop/#3432](https://github.com/mojaloop/project/issues/3432)
+
 ### [15.0.4](https://github.com/mojaloop/quoting-service/compare/v15.0.3...v15.0.4) (2023-09-07)
 
 
