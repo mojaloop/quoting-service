@@ -10,6 +10,34 @@ info:
 servers:
   - url: /
 paths:
+  /metrics:
+    get:
+      tags:
+        - metrics
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseHealth200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+      operationId: MetricsGet
+      summary: Get Server
+      description: >-
+        The HTTP request GET /health is used to return the current status of the
+        API.
   /quotes/{id}/error:
     put:
       tags:

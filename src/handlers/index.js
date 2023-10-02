@@ -33,9 +33,11 @@ const health = require('./health')
 const bulkQuotes = require('./bulkQuotes')
 const bulkQuotesById = require('./bulkQuotes/{id}')
 const bulkQuotesErrorById = require('./bulkQuotes/{id}/error')
+const metrics = require('./metrics')
 
 module.exports = {
   HealthGet: health.get,
+  MetricsGet: metrics.get,
   QuotesErrorByIDPut: quotesErrorByID.put,
   QuotesByIdGet: quotesById.get,
   QuotesByIdPut: quotesById.put,

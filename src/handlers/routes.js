@@ -127,6 +127,16 @@ const APIRoutes = (api) => [
       tags: ['api', 'health'],
       description: 'GET health'
     }
+  },
+  {
+    method: 'GET',
+    path: '/metrics',
+    handler: (req, h) => handleRequest(api, req, h),
+    config: {
+      tags: ['api', 'metrics'],
+      description: 'Prometheus metrics endpoint',
+      id: 'metrics'
+    }
   }
 ]
 

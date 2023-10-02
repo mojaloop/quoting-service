@@ -77,6 +77,21 @@ const mockDefaultFile = {
       FSPIOP_SOURCE_TO_SIGN: 'switch',
       JWS_SIGNING_KEY_PATH: 'secrets/jwsSigningKey.key'
     }
+  },
+  INSTRUMENTATION: {
+    METRICS: {
+      DISABLED: false,
+      labels: {
+        fspId: '*'
+      },
+      config: {
+        timeout: 5000,
+        prefix: 'moja_qs_',
+        defaultLabels: {
+          serviceName: 'quoting-service'
+        }
+      }
+    }
   }
 }
 

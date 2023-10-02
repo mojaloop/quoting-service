@@ -37,6 +37,8 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('../../../lib/util')
 const BulkQuotesModel = require('../../../model/bulkQuotes')
+const Metrics = require('@mojaloop/central-services-metrics')
+
 /**
  * Operations on /bulkQuotes/{id}/error
  */
@@ -49,6 +51,11 @@ module.exports = {
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
   put: async function BulkQuotesErrorById (context, request, h) {
+    const histTimerEnd = Metrics.getHistogram(
+      'quotes_id_get',
+      'Process HTTP PUT /bulkQuotes/{id}/error request',
+      ['success']
+    ).startTimer()
     // log request
     request.server.log(['info'], `got a PUT /bulkQuotes/{id}/error request: ${util.inspect(request.payload)}`)
 
@@ -75,10 +82,12 @@ module.exports = {
       model.handleBulkQuoteError(request.headers, bulkQuoteId, request.payload.errorInformation, span).catch(err => {
         request.server.log(['error'], `ERROR - handleBulkQuoteError: ${LibUtil.getStackOrInspect(err)}`)
       })
+      histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /bulkQuotes/{id}/error: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, bulkQuoteId, err, request.headers)
+      histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally
       return h.response().code(Enum.Http.ReturnCodes.OK.CODE)
