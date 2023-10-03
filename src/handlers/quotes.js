@@ -41,6 +41,7 @@ const LibUtil = require('../lib/util')
 const QuotesModel = require('../model/quotes')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Logger = require('@mojaloop/central-services-logger')
+const lodash = require('lodash')
 
 /**
  * Operations on /quotes
@@ -74,6 +75,7 @@ module.exports = {
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
     const span = request.span
+    const requestDeepCopy = lodash.cloneDeep(request)
     try {
       const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.PREPARE)
       span.setTags(spanTags)
@@ -83,7 +85,7 @@ module.exports = {
       }, EventSdk.AuditEventAction.start)
 
       // call the quote request handler in the model
-      model.handleQuoteRequest(request.headers, request.payload, span).catch(err => {
+      model.handleQuoteRequest(requestDeepCopy.headers, requestDeepCopy.payload, span).catch(err => {
         Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteRequest: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
@@ -91,7 +93,7 @@ module.exports = {
       // something went wrong, use the model to handle the error in a sensible way
       Logger.isErrorEnabled && Logger.error(`ERROR - POST /quotes: ${LibUtil.getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      model.handleException(fspiopSource, quoteId, fspiopError, request.headers, span)
+      model.handleException(fspiopSource, quoteId, fspiopError, requestDeepCopy.headers, span)
       histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally

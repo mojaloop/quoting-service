@@ -40,6 +40,7 @@ const LibUtil = require('../../lib/util')
 const QuotesModel = require('../../model/quotes.js')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Logger = require('@mojaloop/central-services-logger')
+const lodash = require('lodash')
 
 /**
  * Operations on /quotes/{id}
@@ -73,6 +74,7 @@ module.exports = {
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
     const span = request.span
+    const requestDeepCopy = lodash.cloneDeep(request)
     try {
       const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.GET)
       span.setTags(spanTags)
@@ -83,14 +85,14 @@ module.exports = {
       // call the model to re-forward the quote update to the correct party
       // note that we do not check if our caller is the correct party, but we
       // will send the callback to the correct party regardless.
-      model.handleQuoteGet(request.headers, quoteId, span).catch(err => {
+      model.handleQuoteGet(requestDeepCopy.headers, quoteId, span).catch(err => {
         Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       Logger.isErrorEnabled && Logger.error(`ERROR - GET /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
-      model.handleException(fspiopSource, quoteId, err, request.headers, span)
+      model.handleException(fspiopSource, quoteId, err, requestDeepCopy.headers, span)
       histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally
@@ -126,6 +128,7 @@ module.exports = {
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
 
     const span = request.span
+    const requestDeepCopy = lodash.cloneDeep(request)
     try {
       const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.FULFIL)
       span.setTags(spanTags)
@@ -134,14 +137,14 @@ module.exports = {
         payload: request.payload
       }, EventSdk.AuditEventAction.start)
       // call the quote update handler in the model
-      model.handleQuoteUpdate(request.headers, quoteId, request.payload, span).catch(err => {
+      model.handleQuoteUpdate(requestDeepCopy.headers, quoteId, requestDeepCopy.payload, span).catch(err => {
         Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       Logger.isErrorEnabled && Logger.error(`ERROR - PUT /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
-      model.handleException(fspiopSource, quoteId, err, request.headers, span)
+      model.handleException(fspiopSource, quoteId, err, requestDeepCopy.headers, span)
       histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally

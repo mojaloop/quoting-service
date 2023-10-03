@@ -100,6 +100,7 @@
     "joi": "17.10.2",
     "json-rules-engine": "5.0.2",
     "knex": "2.5.1",
+    "lodash": "^4.17.21",
     "memory-cache": "0.2.0",
     "minimist": "1.2.8",
     "mysql": "2.18.1",
