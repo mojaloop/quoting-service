@@ -37,7 +37,11 @@ jest.mock('../../../../../src/model/quotes')
 const QuotesErrorHandler = require('../../../../../src/handlers/quotes/{id}/error')
 const QuotesModel = require('../../../../../src/model/quotes')
 const { baseMockRequest } = require('../../../../util/helper')
+const Logger = require('@mojaloop/central-services-logger')
 
+Logger.isDebugEnabled = jest.fn(() => true)
+Logger.isErrorEnabled = jest.fn(() => true)
+Logger.isInfoEnabled = jest.fn(() => true)
 const mockContext = jest.fn()
 
 describe('/quotes/{id}', () => {

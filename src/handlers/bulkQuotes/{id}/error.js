@@ -38,6 +38,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('../../../lib/util')
 const BulkQuotesModel = require('../../../model/bulkQuotes')
 const Metrics = require('@mojaloop/central-services-metrics')
+const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * Operations on /bulkQuotes/{id}/error
@@ -57,7 +58,7 @@ module.exports = {
       ['success']
     ).startTimer()
     // log request
-    request.server.log(['info'], `got a PUT /bulkQuotes/{id}/error request: ${util.inspect(request.payload)}`)
+    Logger.isDebugEnabled && Logger.debug(`got a PUT /bulkQuotes/{id}/error request: ${util.inspect(request.payload)}`)
 
     // instantiate a new quote model
     const model = new BulkQuotesModel({
@@ -80,12 +81,12 @@ module.exports = {
       }, EventSdk.AuditEventAction.start)
       // call the quote error handler in the model
       model.handleBulkQuoteError(request.headers, bulkQuoteId, request.payload.errorInformation, span).catch(err => {
-        request.server.log(['error'], `ERROR - handleBulkQuoteError: ${LibUtil.getStackOrInspect(err)}`)
+        Logger.isErrorEnabled && Logger.error(`ERROR - handleBulkQuoteError: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - PUT /bulkQuotes/{id}/error: ${LibUtil.getStackOrInspect(err)}`)
+      Logger.isErrorEnabled && Logger.error(`ERROR - PUT /bulkQuotes/{id}/error: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, bulkQuoteId, err, request.headers)
       histTimerEnd({ success: false })
     } finally {

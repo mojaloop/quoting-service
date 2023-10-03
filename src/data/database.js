@@ -1056,7 +1056,7 @@ class Database {
      */
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
-    Logger.debug(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
   }
 }
 

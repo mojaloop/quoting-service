@@ -39,6 +39,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const LibUtil = require('../../../lib/util')
 const QuotesModel = require('../../../model/quotes')
 const Metrics = require('@mojaloop/central-services-metrics')
+const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * Operations on /quotes/{id}/error
@@ -58,7 +59,7 @@ module.exports = {
       ['success']
     ).startTimer()
     // log request
-    request.server.log(['info'], `got a PUT /quotes/{id}/error request: ${util.inspect(request.payload)}`)
+    Logger.isDebugEnabled && Logger.debug(`got a PUT /quotes/{id}/error request: ${util.inspect(request.payload)}`)
 
     // instantiate a new quote model
     const model = new QuotesModel({
@@ -81,12 +82,12 @@ module.exports = {
       }, EventSdk.AuditEventAction.start)
       // call the quote error handler in the model
       model.handleQuoteError(request.headers, quoteId, request.payload.errorInformation, span).catch(err => {
-        request.server.log(['error'], `ERROR - handleQuoteError: ${LibUtil.getStackOrInspect(err)}`)
+        Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteError: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - PUT /quotes/{id}/error: ${LibUtil.getStackOrInspect(err)}`)
+      Logger.isErrorEnabled && Logger.error(`ERROR - PUT /quotes/{id}/error: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, quoteId, err, request.headers)
       histTimerEnd({ success: false })
     } finally {

@@ -87,6 +87,10 @@ ARzXM2vUWEet4OVn3DXyOdaWFR1ppehz7rAWBiPgsMg4fjAusYb9Mft1GMxMzuwT
 Oyqsp6pzAWFrCD3JAoTLxClV+j5m+SXZ/ItD6ziGpl/h7DyayrFZ
 -----END RSA PRIVATE KEY-----`
 
+Logger.isDebugEnabled = jest.fn(() => true)
+Logger.isErrorEnabled = jest.fn(() => true)
+Logger.isInfoEnabled = jest.fn(() => true)
+
 describe('BulkQuotesModel', () => {
   let mockData
   let mockTransaction
@@ -1014,9 +1018,8 @@ describe('BulkQuotesModel', () => {
       // Arrange
       // Act
       bulkQuotesModel.writeLog('test message')
-
       // Assert
-      expect(Logger.info).toBeCalledTimes(1)
+      expect(Logger.debug).toBeCalledTimes(1)
     })
   })
 })

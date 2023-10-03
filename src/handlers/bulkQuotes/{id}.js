@@ -38,6 +38,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('../../lib/util')
 const BulkQuotesModel = require('../../model/bulkQuotes.js')
 const Metrics = require('@mojaloop/central-services-metrics')
+const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * Operations on /bulkQuotes/{id}
@@ -57,7 +58,7 @@ module.exports = {
       ['success']
     ).startTimer()
     // log request
-    request.server.log(['info'], `got a GET /bulkQuotes/{id} request for bulkQuoteId ${request.params.id}`)
+    Logger.isDebugEnabled && Logger.debug(`got a GET /bulkQuotes/{id} request for bulkQuoteId ${request.params.id}`)
 
     // instantiate a new quote model
     const model = new BulkQuotesModel({
@@ -82,12 +83,12 @@ module.exports = {
       // note that we do not check if our caller is the correct party, but we
       // will send the callback to the correct party regardless.
       model.handleBulkQuoteGet(request.headers, bulkQuoteId, span).catch(err => {
-        request.server.log(['error'], `ERROR - handleBulkQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
+        Logger.isErrorEnabled && Logger.error(`ERROR - handleBulkQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - GET /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
+      Logger.isErrorEnabled && Logger.error(`ERROR - GET /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, bulkQuoteId, err, request.headers, span)
       histTimerEnd({ success: false })
     } finally {
@@ -109,7 +110,7 @@ module.exports = {
       ['success']
     ).startTimer()
     // log request
-    request.server.log(['info'], `got a PUT /bulkQuotes/{id} request: ${util.inspect(request.payload)}`)
+    Logger.isDebugEnabled && Logger.debug(`got a PUT /bulkQuotes/{id} request: ${util.inspect(request.payload)}`)
 
     // instantiate a new quote model
     const model = new BulkQuotesModel({
@@ -132,12 +133,12 @@ module.exports = {
       }, EventSdk.AuditEventAction.start)
       // call the quote update handler in the model
       model.handleBulkQuoteUpdate(request.headers, bulkQuoteId, request.payload, span).catch(err => {
-        request.server.log(['error'], `ERROR - handleBulkQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
+        Logger.isErrorEnabled && Logger.error(`ERROR - handleBulkQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - PUT /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
+      Logger.isErrorEnabled && Logger.error(`ERROR - PUT /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, bulkQuoteId, err, request.headers, span)
       histTimerEnd({ success: false })
     } finally {

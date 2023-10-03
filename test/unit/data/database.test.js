@@ -30,6 +30,7 @@
 ******/
 
 jest.mock('knex')
+jest.mock('@mojaloop/central-services-logger')
 
 const Knex = require('knex')
 const crypto = require('crypto')
@@ -38,6 +39,11 @@ const ENUM = require('@mojaloop/central-services-shared').Enum
 const Database = require('../../../src/data/database')
 const Config = require('../../../src/lib/config')
 const LibEnum = require('../../../src/lib/enum')
+const Logger = require('@mojaloop/central-services-logger')
+
+Logger.isDebugEnabled = jest.fn(() => true)
+Logger.isErrorEnabled = jest.fn(() => true)
+Logger.isInfoEnabled = jest.fn(() => true)
 
 let database
 

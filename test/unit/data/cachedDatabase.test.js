@@ -29,8 +29,15 @@
  --------------
  ******/
 
+jest.mock('@mojaloop/central-services-logger')
+
 const Config = require('../../../src/lib/config')
 const CachedDatabase = require('../../../src/data/cachedDatabase')
+const Logger = require('@mojaloop/central-services-logger')
+
+Logger.isDebugEnabled = jest.fn(() => true)
+Logger.isErrorEnabled = jest.fn(() => true)
+Logger.isInfoEnabled = jest.fn(() => true)
 
 describe('cachedDatabase', () => {
   describe('getCacheMethods', () => {

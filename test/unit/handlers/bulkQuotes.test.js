@@ -32,13 +32,18 @@
  --------------
  ******/
 jest.mock('../../../src/model/bulkQuotes')
+jest.mock('@mojaloop/central-services-logger')
 
 const Enum = require('@mojaloop/central-services-shared').Enum
 
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')
 const BulkQuotesHandler = require('../../../src/handlers/bulkQuotes')
 const { baseMockRequest } = require('../../util/helper')
+const Logger = require('@mojaloop/central-services-logger')
 
+Logger.isDebugEnabled = jest.fn(() => true)
+Logger.isErrorEnabled = jest.fn(() => true)
+Logger.isInfoEnabled = jest.fn(() => true)
 const mockContext = jest.fn()
 
 describe('/bulkQuotes', () => {
