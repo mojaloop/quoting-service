@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.2.1](https://github.com/mojaloop/quoting-service/compare/v15.2.0...v15.2.1) (2023-10-05)
+
+
+### Bug Fixes
+
+* **mojaloop/#3537:** add mitigation for req obj mutation in handler async functions ([#315](https://github.com/mojaloop/quoting-service/issues/315)) ([250a2fe](https://github.com/mojaloop/quoting-service/commit/250a2fec96aeac544219fd64c544739842b67550)), closes [mojaloop/#3537](https://github.com/mojaloop/project/issues/3537)
+
+## [15.2.0](https://github.com/mojaloop/quoting-service/compare/v15.1.0...v15.2.0) (2023-10-05)
+
+
+### Features
+
+* **mojaloop/#3537:** add metrics for cache hits and duplicate result ([#314](https://github.com/mojaloop/quoting-service/issues/314)) ([05708ac](https://github.com/mojaloop/quoting-service/commit/05708acbda137415ec0ca0b277aab584fdd58770)), closes [mojaloop/#3537](https://github.com/mojaloop/project/issues/3537)
+
+
+### Chore
+
+* **mojaloop/#3537:** add missing histgram ending ([#313](https://github.com/mojaloop/quoting-service/issues/313)) ([0ae94d7](https://github.com/mojaloop/quoting-service/commit/0ae94d7a97fb354cc3cd35a5a43598e2e2cafe0b)), closes [mojaloop/#3537](https://github.com/mojaloop/project/issues/3537)
+
 ## [15.1.0](https://github.com/mojaloop/quoting-service/compare/v15.0.4...v15.1.0) (2023-10-02)
 
 
