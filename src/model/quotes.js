@@ -149,7 +149,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'validateQuoteRequest - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     const envConfig = new Config()
     // note that the framework should validate the form of the request
@@ -204,7 +204,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteRequest - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     const envConfig = new Config()
     // accumulate enum ids
@@ -396,7 +396,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'forwardQuoteRequest - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     let endpoint
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
@@ -460,7 +460,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteRequestResend - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
@@ -506,7 +506,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteUpdate - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     let txn = null
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
@@ -659,7 +659,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'forwardQuoteUpdate - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     let endpoint = null
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
@@ -723,7 +723,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteUpdateResend - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
@@ -769,7 +769,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteError - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     let txn = null
     const envConfig = new Config()
@@ -824,7 +824,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteGet - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     let childSpan
@@ -863,7 +863,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'forwardQuoteGet - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     let endpoint
 
@@ -920,7 +920,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleException - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     // is this exception already wrapped as an API spec compatible type?
     const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
@@ -953,7 +953,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'sendErrorCallback - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     const envConfig = new Config()
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -1082,7 +1082,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'checkDuplicateQuoteRequest - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     try {
       // calculate a SHA-256 of the request
@@ -1094,7 +1094,7 @@ class QuotesModel {
 
       if (!dupchk) {
         // no existing record for this quoteId found
-        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest' })
+        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'none' })
         return {
           isResend: false,
           isDuplicateId: false
@@ -1103,14 +1103,14 @@ class QuotesModel {
 
       if (dupchk.hash === hash) {
         // hash matches, this is a resend
-        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest' })
+        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'resend' })
         return {
           isResend: true,
           isDuplicateId: true
         }
       }
 
-      histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest' })
+      histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'duplicate' })
       // if we get here then this is a duplicate id but not a resend e.g. hashes dont match.
       return {
         isResend: false,
@@ -1119,7 +1119,7 @@ class QuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in checkDuplicateQuoteRequest: ${getStackOrInspect(err)}`)
-      histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteRequest' })
+      histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'error' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -1135,7 +1135,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'checkDuplicateQuoteResponse - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     try {
       // calculate a SHA-256 of the request
@@ -1147,6 +1147,7 @@ class QuotesModel {
 
       if (!dupchk) {
         // no existing record for this quoteId found
+        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteResponse', duplicateResult: 'none' })
         return {
           isResend: false,
           isDuplicateId: false
@@ -1155,6 +1156,7 @@ class QuotesModel {
 
       if (dupchk.hash === hash) {
         // hash matches, this is a resend
+        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteResponse', duplicateResult: 'resend' })
         return {
           isResend: true,
           isDuplicateId: true
@@ -1162,7 +1164,7 @@ class QuotesModel {
       }
 
       // if we get here then this is a duplicate id but not a resend e.g. hashes dont match.
-      histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteResponse' })
+      histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteResponse', duplicateResult: 'duplicate' })
       return {
         isResend: false,
         isDuplicateId: true
@@ -1170,7 +1172,7 @@ class QuotesModel {
     } catch (err) {
       // internal-error
       this.writeLog(`Error in checkDuplicateQuoteResponse: ${getStackOrInspect(err)}`)
-      histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteResponse' })
+      histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteResponse', duplicateResult: 'error' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
