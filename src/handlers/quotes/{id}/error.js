@@ -66,28 +66,34 @@ module.exports = {
       requestId: request.info.id
     })
 
+    const quoteRequest = {
+      payload: { ...request.payload },
+      headers: { ...request.headers },
+      span: request.span,
+      params: { ...request.params }
+    }
+
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
     const quoteId = request.params.id
     const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
-
     const span = request.span
     try {
-      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.ABORT)
+      const spanTags = LibUtil.getSpanTags(quoteRequest, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.ABORT)
       span.setTags(spanTags)
       await span.audit({
-        headers: request.headers,
-        payload: request.payload
+        headers: quoteRequest.headers,
+        payload: quoteRequest.payload
       }, EventSdk.AuditEventAction.start)
       // call the quote error handler in the model
-      model.handleQuoteError(request.headers, quoteId, request.payload.errorInformation, span).catch(err => {
+      model.handleQuoteError(quoteRequest.headers, quoteId, quoteRequest.payload.errorInformation, span).catch(err => {
         request.server.log(['error'], `ERROR - handleQuoteError: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - PUT /quotes/{id}/error: ${LibUtil.getStackOrInspect(err)}`)
-      model.handleException(fspiopSource, quoteId, err, request.headers)
+      model.handleException(fspiopSource, quoteId, err, quoteRequest.headers)
       histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally

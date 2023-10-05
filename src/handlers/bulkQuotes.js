@@ -66,23 +66,28 @@ module.exports = {
       db: request.server.app.database,
       requestId: request.info.id
     })
+    const quoteRequest = {
+      payload: { ...request.payload },
+      headers: { ...request.headers },
+      span: request.span,
+      params: { ...request.params }
+    }
 
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
-    const bulkQuoteId = request.payload.bulkQuoteId
-    const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
-
-    const span = request.span
+    const bulkQuoteId = quoteRequest.payload.bulkQuoteId
+    const fspiopSource = quoteRequest.headers[Enum.Http.Headers.FSPIOP.SOURCE]
+    const span = quoteRequest.span
     try {
-      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.PREPARE)
+      const spanTags = LibUtil.getSpanTags(quoteRequest, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.PREPARE)
       span.setTags(spanTags)
       await span.audit({
-        headers: request.headers,
-        payload: request.payload
+        headers: quoteRequest.headers,
+        payload: quoteRequest.payload
       }, EventSdk.AuditEventAction.start)
 
       // call the quote request handler in the model
-      model.handleBulkQuoteRequest(request.headers, request.payload, span).catch(err => {
+      model.handleBulkQuoteRequest(quoteRequest.headers, quoteRequest.payload, span).catch(err => {
         request.server.log(['error'], `ERROR - handleBulkQuoteRequest: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
@@ -90,7 +95,7 @@ module.exports = {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - POST /bulkQuotes: ${LibUtil.getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      model.handleException(fspiopSource, bulkQuoteId, fspiopError, request.headers, span)
+      model.handleException(fspiopSource, bulkQuoteId, fspiopError, quoteRequest.headers, span)
       histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally

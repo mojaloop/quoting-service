@@ -67,22 +67,28 @@ module.exports = {
       requestId: request.info.id
     })
 
+    const quoteRequest = {
+      payload: { ...request.payload },
+      headers: { ...request.headers },
+      span: request.span,
+      params: { ...request.params }
+    }
+
     // extract some things from the request we may need if we have to deal with an error e.g. the
     // originator and quoteId
-    const quoteId = request.payload.quoteId
-    const fspiopSource = request.headers[Enum.Http.Headers.FSPIOP.SOURCE]
-
-    const span = request.span
+    const quoteId = quoteRequest.payload.quoteId
+    const fspiopSource = quoteRequest.headers[Enum.Http.Headers.FSPIOP.SOURCE]
+    const span = quoteRequest.span
     try {
-      const spanTags = LibUtil.getSpanTags(request, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.PREPARE)
+      const spanTags = LibUtil.getSpanTags(quoteRequest, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.PREPARE)
       span.setTags(spanTags)
       await span.audit({
-        headers: request.headers,
-        payload: request.payload
+        headers: quoteRequest.headers,
+        payload: quoteRequest.payload
       }, EventSdk.AuditEventAction.start)
 
       // call the quote request handler in the model
-      model.handleQuoteRequest(request.headers, request.payload, span).catch(err => {
+      model.handleQuoteRequest(quoteRequest.headers, quoteRequest.payload, span).catch(err => {
         request.server.log(['error'], `ERROR - handleQuoteRequest: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
@@ -90,7 +96,7 @@ module.exports = {
       // something went wrong, use the model to handle the error in a sensible way
       request.server.log(['error'], `ERROR - POST /quotes: ${LibUtil.getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      model.handleException(fspiopSource, quoteId, fspiopError, request.headers, span)
+      model.handleException(fspiopSource, quoteId, fspiopError, quoteRequest.headers, span)
       histTimerEnd({ success: false })
     } finally {
       // eslint-disable-next-line no-unsafe-finally
