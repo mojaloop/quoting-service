@@ -69,7 +69,7 @@ module.exports = {
     const quoteRequest = {
       payload: { ...request.payload },
       headers: { ...request.headers },
-      span: { ...request.span },
+      span: request.span,
       params: { ...request.params }
     }
 
@@ -128,7 +128,7 @@ module.exports = {
     const quoteRequest = {
       payload: { ...request.payload },
       headers: { ...request.headers },
-      span: { ...request.span },
+      span: request.span,
       params: { ...request.params }
     }
 
