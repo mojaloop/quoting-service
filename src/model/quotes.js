@@ -1082,7 +1082,7 @@ class QuotesModel {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'checkDuplicateQuoteRequest - Metrics for quote model',
-      ['success', 'queryName']
+      ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     try {
       // calculate a SHA-256 of the request
@@ -1094,7 +1094,7 @@ class QuotesModel {
 
       if (!dupchk) {
         // no existing record for this quoteId found
-        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest' })
+        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'none' })
         return {
           isResend: false,
           isDuplicateId: false
@@ -1103,14 +1103,14 @@ class QuotesModel {
 
       if (dupchk.hash === hash) {
         // hash matches, this is a resend
-        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest' })
+        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'resend' })
         return {
           isResend: true,
           isDuplicateId: true
         }
       }
 
-      histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest' })
+      histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'duplicate' })
       // if we get here then this is a duplicate id but not a resend e.g. hashes dont match.
       return {
         isResend: false,

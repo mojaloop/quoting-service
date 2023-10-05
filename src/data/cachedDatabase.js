@@ -34,6 +34,7 @@ const util = require('util')
 const Database = require('./database.js')
 const Cache = require('memory-cache').Cache
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const { getStackOrInspect } = require('../lib/util')
 
@@ -100,6 +101,11 @@ class CachedDatabase extends Database {
   // }
 
   async getCacheValue (type, params) {
+    const histTimer = Metrics.getHistogram(
+      'database_get_cache_value',
+      'database_getCacheValue - Metrics for database cache',
+      ['success', 'queryName', 'hit']
+    ).startTimer()
     try {
       let value = this.cacheGet(type, params)
 
@@ -108,13 +114,16 @@ class CachedDatabase extends Database {
         this.writeLog(`Cache miss for ${type}: ${util.inspect(params)}`)
         value = await super[type].apply(this, params)
         this.cachePut(type, params, value)
+        histTimer({ success: true, queryName: type, hit: false })
       } else {
         this.writeLog(`Cache hit for ${type} ${util.inspect(params)}: ${value}`)
+        histTimer({ success: true, queryName: type, hit: true })
       }
 
       return value
     } catch (err) {
       this.writeLog(`Error in getCacheValue: ${getStackOrInspect(err)}`)
+      histTimer({ success: false, queryName: type, hit: false })
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
