@@ -537,6 +537,7 @@ class QuotesModel {
         if (dupe.isResend && dupe.isDuplicateId) {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+          histTimer({ success: true, queryName: 'quote_handleQuoteUpdate' })
           return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest, handleQuoteUpdateSpan)
         }
 
@@ -1093,6 +1094,7 @@ class QuotesModel {
 
       if (!dupchk) {
         // no existing record for this quoteId found
+        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest' })
         return {
           isResend: false,
           isDuplicateId: false
@@ -1101,6 +1103,7 @@ class QuotesModel {
 
       if (dupchk.hash === hash) {
         // hash matches, this is a resend
+        histTimer({ success: true, queryName: 'quote_checkDuplicateQuoteRequest' })
         return {
           isResend: true,
           isDuplicateId: true
