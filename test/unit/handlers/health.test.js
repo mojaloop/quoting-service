@@ -29,6 +29,7 @@
  --------------
  ******/
 jest.mock('../../../src/lib/config')
+jest.mock('@mojaloop/central-services-logger')
 
 const { responseCode, statusEnum } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
 const HealthHandler = require('../../../src/handlers/health')

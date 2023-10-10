@@ -30,13 +30,18 @@
  ******/
 
 jest.mock('../../../src/model/quotes')
+jest.mock('@mojaloop/central-services-logger')
 
 const Enum = require('@mojaloop/central-services-shared').Enum
 
 const QuotesModel = require('../../../src/model/quotes')
 const QuotesHandler = require('../../../src/handlers/quotes')
 const { baseMockRequest } = require('../../util/helper')
+const Logger = require('@mojaloop/central-services-logger')
 
+Logger.isDebugEnabled = jest.fn(() => true)
+Logger.isErrorEnabled = jest.fn(() => true)
+Logger.isInfoEnabled = jest.fn(() => true)
 const mockContext = jest.fn()
 
 describe('/quotes', () => {

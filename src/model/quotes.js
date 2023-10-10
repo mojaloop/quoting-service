@@ -1184,7 +1184,7 @@ class QuotesModel {
    */
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
-    Logger.info(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, (${this.requestId}) [quotesmodel]: ${message}`)
   }
 }
 

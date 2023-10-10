@@ -40,6 +40,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('../lib/util')
 const QuotesModel = require('../model/quotes')
 const Metrics = require('@mojaloop/central-services-metrics')
+const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * Operations on /quotes
@@ -59,7 +60,7 @@ module.exports = {
       ['success']
     ).startTimer()
     // log request
-    request.server.log(['info'], `got a POST /quotes request: ${util.inspect(request.payload)}`)
+    Logger.isDebugEnabled && Logger.debug(`got a POST /quotes request: ${util.inspect(request.payload)}`)
 
     // instantiate a new quote model
     const model = new QuotesModel({
@@ -89,12 +90,12 @@ module.exports = {
 
       // call the quote request handler in the model
       model.handleQuoteRequest(quoteRequest.headers, quoteRequest.payload, span).catch(err => {
-        request.server.log(['error'], `ERROR - handleQuoteRequest: ${LibUtil.getStackOrInspect(err)}`)
+        Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteRequest: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - POST /quotes: ${LibUtil.getStackOrInspect(err)}`)
+      Logger.isErrorEnabled && Logger.error(`ERROR - POST /quotes: ${LibUtil.getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       model.handleException(fspiopSource, quoteId, fspiopError, quoteRequest.headers, span)
       histTimerEnd({ success: false })

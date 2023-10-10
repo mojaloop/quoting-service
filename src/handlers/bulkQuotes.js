@@ -40,6 +40,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('../lib/util')
 const BulkQuotesModel = require('../model/bulkQuotes')
 const Metrics = require('@mojaloop/central-services-metrics')
+const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * Operations on /bulkQuotes
@@ -59,7 +60,7 @@ module.exports = {
       ['success']
     ).startTimer()
     // log request
-    request.server.log(['info'], `got a POST /bulkQuotes request: ${util.inspect(request.payload)}`)
+    Logger.isDebugEnabled && Logger.debug(`got a POST /bulkQuotes request: ${util.inspect(request.payload)}`)
 
     // instantiate a new quote model
     const model = new BulkQuotesModel({
@@ -93,7 +94,7 @@ module.exports = {
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - POST /bulkQuotes: ${LibUtil.getStackOrInspect(err)}`)
+      Logger.isErrorEnabled && Logger.error(`ERROR - POST /bulkQuotes: ${LibUtil.getStackOrInspect(err)}`)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       model.handleException(fspiopSource, bulkQuoteId, fspiopError, quoteRequest.headers, span)
       histTimerEnd({ success: false })

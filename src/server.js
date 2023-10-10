@@ -207,7 +207,7 @@ async function start () {
         server.log(['info'], 'Received SIGTERM, closing server...')
         server.stop({ timeout: 10000 })
           .then(err => {
-            Logger.warn(`server stopped. ${err ? (getStackOrInspect(err)) : ''}`)
+            Logger.isWarnEnabled && Logger.warn(`server stopped. ${err ? (getStackOrInspect(err)) : ''}`)
             process.exit((err) ? 1 : 0)
           })
       })
@@ -215,7 +215,7 @@ async function start () {
       return server
       // eslint-disable-next-line no-unused-vars
     }).catch(err => {
-      Logger.error(`Error initializing server: ${getStackOrInspect(err)}`)
+      Logger.isErrorEnabled && Logger.error(`Error initializing server: ${getStackOrInspect(err)}`)
     })
 }
 

@@ -494,7 +494,7 @@ class BulkQuotesModel {
    */
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
-    Logger.info(`${new Date().toISOString()}, (${this.requestId}) [bulkQuotesModel]: ${message}`)
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, (${this.requestId}) [bulkQuotesModel]: ${message}`)
   }
 }
 

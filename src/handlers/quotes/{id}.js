@@ -39,6 +39,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('../../lib/util')
 const QuotesModel = require('../../model/quotes.js')
 const Metrics = require('@mojaloop/central-services-metrics')
+const Logger = require('@mojaloop/central-services-logger')
 
 /**
  * Operations on /quotes/{id}
@@ -58,7 +59,7 @@ module.exports = {
       ['success']
     ).startTimer()
     // log request
-    request.server.log(['info'], `got a GET /quotes/{id} request for quoteId ${request.params.id}`)
+    Logger.isDebugEnabled && Logger.debug(`got a GET /quotes/{id} request for quoteId ${request.params.id}`)
 
     // instantiate a new quote model
     const model = new QuotesModel({
@@ -89,12 +90,12 @@ module.exports = {
       // note that we do not check if our caller is the correct party, but we
       // will send the callback to the correct party regardless.
       model.handleQuoteGet(quoteRequest.headers, quoteId, span).catch(err => {
-        request.server.log(['error'], `ERROR - handleQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
+        Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - GET /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
+      Logger.isErrorEnabled && Logger.error(`ERROR - GET /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, quoteId, err, quoteRequest.headers, span)
       histTimerEnd({ success: false })
     } finally {
@@ -117,7 +118,7 @@ module.exports = {
       ['success']
     ).startTimer()
     // log request
-    request.server.log(['info'], `got a PUT /quotes/{id} request: ${util.inspect(request.payload)}`)
+    Logger.isDebugEnabled && Logger.debug(`got a PUT /quotes/{id} request: ${util.inspect(request.payload)}`)
 
     // instantiate a new quote model
     const model = new QuotesModel({
@@ -146,12 +147,12 @@ module.exports = {
       }, EventSdk.AuditEventAction.start)
       // call the quote update handler in the model
       model.handleQuoteUpdate(quoteRequest.headers, quoteId, quoteRequest.payload, span).catch(err => {
-        request.server.log(['error'], `ERROR - handleQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
+        Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })
     } catch (err) {
       // something went wrong, use the model to handle the error in a sensible way
-      request.server.log(['error'], `ERROR - PUT /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
+      Logger.isErrorEnabled && Logger.error(`ERROR - PUT /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, quoteId, err, quoteRequest.headers, span)
       histTimerEnd({ success: false })
     } finally {

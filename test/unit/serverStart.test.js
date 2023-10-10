@@ -32,6 +32,7 @@
 const { mockRequest: Mockgen, defaultHeaders } = require('../util/helper')
 const Server = require('../../src/server')
 jest.mock('../../src/model/quotes')
+jest.mock('@mojaloop/central-services-logger')
 const QuotesModel = require('../../src/model/quotes')
 let Database
 let server
