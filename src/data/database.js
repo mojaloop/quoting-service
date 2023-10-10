@@ -463,9 +463,9 @@ class Database {
      *
      * @returns {promise}
      */
-  async createPayerQuoteParty (txn, quoteId, party, amount, currency) {
+  async createPayerQuoteParty (txn, quoteId, party, amount, currency, enumVals) {
     // note amount is negative for payee and positive for payer
-    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYER, LOCAL_ENUM.PAYER_DFSP, LOCAL_ENUM.PRINCIPLE_VALUE, party, amount, currency)
+    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYER, party, amount, currency, enumVals)
   }
 
   /**
@@ -473,9 +473,9 @@ class Database {
      *
      * @returns {promise}
      */
-  async createPayeeQuoteParty (txn, quoteId, party, amount, currency) {
+  async createPayeeQuoteParty (txn, quoteId, party, amount, currency, enumVals) {
     // note amount is negative for payee and positive for payer
-    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYEE, LOCAL_ENUM.PAYEE_DFSP, LOCAL_ENUM.PRINCIPLE_VALUE, party, -amount, currency)
+    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYEE, party, -amount, currency, enumVals)
   }
 
   /**
@@ -483,18 +483,9 @@ class Database {
      *
      * @returns {integer} - id of created quoteParty
      */
-  async createQuoteParty (txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency) {
+  async createQuoteParty (txn, quoteId, partyType, party, amount, currency, enumVals) {
     try {
       const refs = {}
-
-      // get various enum ids (async, as parallel as possible)
-      const enumVals = await Promise.all([
-        this.getPartyType(partyType),
-        this.getPartyIdentifierType(party.partyIdInfo.partyIdType),
-        this.getParticipantByName(party.partyIdInfo.fspId),
-        this.getTransferParticipantRoleType(participantType),
-        this.getLedgerEntryType(ledgerEntryType)
-      ])
 
       refs.partyTypeId = enumVals[0]
       refs.partyIdentifierTypeId = enumVals[1]

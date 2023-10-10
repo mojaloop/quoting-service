@@ -255,20 +255,10 @@ class QuotesModel {
             handledRuleEvents.quoteRequest, handleQuoteRequestSpan, handledRuleEvents.additionalHeaders)
         }
 
-        // do everything in a db txn so we can rollback multiple operations if something goes wrong
-        txn = await this.db.newTransaction()
-
         // todo: validation
 
         // if we get here we need to create a duplicate check row
         const hash = calculateRequestHash(quoteRequest)
-        await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
-
-        // create a txn reference
-        this.writeLog(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
-        refs.transactionReferenceId = await this.db.createTransactionReference(txn,
-          quoteRequest.quoteId, quoteRequest.transactionId)
-        this.writeLog(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
 
         // get the initiator type
         refs.transactionInitiatorTypeId = await this.db.getInitiatorType(quoteRequest.transactionType.initiatorType)
@@ -286,6 +276,33 @@ class QuotesModel {
 
         // get amount type
         refs.amountTypeId = await this.db.getAmountType(quoteRequest.amountType)
+
+        // get various enum ids (async, as parallel as possible)
+        const payerEnumVals = await Promise.all([
+          this.db.getPartyType(LOCAL_ENUM.PAYER),
+          this.db.getPartyIdentifierType(quoteRequest.payer.partyIdInfo.partyIdType),
+          this.db.getParticipantByName(quoteRequest.payer.partyIdInfo.fspId),
+          this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYER_DFSP),
+          this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE)
+        ])
+
+        const payeeEnumVals = await Promise.all([
+          this.db.getPartyType(LOCAL_ENUM.PAYEE),
+          this.db.getPartyIdentifierType(quoteRequest.payee.partyIdInfo.partyIdType),
+          this.db.getParticipantByName(quoteRequest.payee.partyIdInfo.fspId),
+          this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYEE_DFSP),
+          this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE)
+        ])
+
+        // do everything in a db txn so we can rollback multiple operations if something goes wrong
+        txn = await this.db.newTransaction()
+        await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
+
+        // create a txn reference
+        this.writeLog(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
+        refs.transactionReferenceId = await this.db.createTransactionReference(txn,
+          quoteRequest.quoteId, quoteRequest.transactionId)
+        this.writeLog(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
 
         // create the quote row itself
         // eslint-disable-next-line require-atomic-updates
@@ -307,11 +324,11 @@ class QuotesModel {
 
         // eslint-disable-next-line require-atomic-updates
         refs.payerId = await this.db.createPayerQuoteParty(txn, refs.quoteId, quoteRequest.payer,
-          quoteRequest.amount.amount, quoteRequest.amount.currency)
+          quoteRequest.amount.amount, quoteRequest.amount.currency, payerEnumVals)
 
         // eslint-disable-next-line require-atomic-updates
         refs.payeeId = await this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
-          quoteRequest.amount.amount, quoteRequest.amount.currency)
+          quoteRequest.amount.amount, quoteRequest.amount.currency, payeeEnumVals)
 
         // store any extension list items
         if (quoteRequest.extensionList &&
@@ -509,6 +526,7 @@ class QuotesModel {
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     let txn = null
+    let payeeParty = null
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const envConfig = new Config()
     const handleQuoteUpdateSpan = span.getChild('qs_quote_handleQuoteUpdate')
@@ -541,6 +559,15 @@ class QuotesModel {
           return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest, handleQuoteUpdateSpan)
         }
 
+        if (quoteUpdateRequest.geoCode) {
+          payeeParty = await this.db.getQuoteParty(quoteId, 'PAYEE')
+
+          if (!payeeParty) {
+            // internal-error
+            throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `Unable to find payee party for quote ${quoteId}`, null, fspiopSource)
+          }
+        }
+
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
 
@@ -569,13 +596,6 @@ class QuotesModel {
 
         // did we get a geoCode for the payee?
         if (quoteUpdateRequest.geoCode) {
-          const payeeParty = await this.db.getQuoteParty(quoteId, 'PAYEE')
-
-          if (!payeeParty) {
-            // internal-error
-            throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `Unable to find payee party for quote ${quoteId}`, null, fspiopSource)
-          }
-
           refs.geoCodeId = await this.db.createGeoCode(txn, {
             quotePartyId: payeeParty.quotePartyId,
             latitude: quoteUpdateRequest.geoCode.latitude,

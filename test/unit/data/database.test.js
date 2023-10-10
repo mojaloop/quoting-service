@@ -1079,21 +1079,27 @@ describe('/database', () => {
         const party = {}
         const amount = 100
         const currency = 'AUD'
+        const enumVals = [
+          'testPartyTypeId',
+          'testPartyIdentifierTypeId',
+          'testParticipantId',
+          'testTransferParticipantRoleTypeId',
+          'testLedgerEntryTypeId'
+        ]
         database.createQuoteParty = jest.fn()
 
         // Act
-        database.createPayerQuoteParty(txn, quoteId, party, amount, currency)
+        database.createPayerQuoteParty(txn, quoteId, party, amount, currency, enumVals)
 
         // Assert
         expect(database.createQuoteParty).toHaveBeenCalledWith(
           txn,
           quoteId,
           LibEnum.PAYER,
-          LibEnum.PAYER_DFSP,
-          LibEnum.PRINCIPLE_VALUE,
           party,
           100,
-          'AUD'
+          'AUD',
+          enumVals
         )
       })
     })
@@ -1106,21 +1112,27 @@ describe('/database', () => {
         const party = {}
         const amount = 100
         const currency = 'AUD'
+        const enumVals = [
+          'testPartyTypeId',
+          'testPartyIdentifierTypeId',
+          'testParticipantId',
+          'testTransferParticipantRoleTypeId',
+          'testLedgerEntryTypeId'
+        ]
         database.createQuoteParty = jest.fn()
 
         // Act
-        database.createPayeeQuoteParty(txn, quoteId, party, amount, currency)
+        database.createPayeeQuoteParty(txn, quoteId, party, amount, currency, enumVals)
 
         // Assert
         expect(database.createQuoteParty).toHaveBeenCalledWith(
           txn,
           quoteId,
           LibEnum.PAYEE,
-          LibEnum.PAYEE_DFSP,
-          LibEnum.PRINCIPLE_VALUE,
           party,
           -100,
-          'AUD'
+          'AUD',
+          enumVals
         )
       })
     })
@@ -1128,13 +1140,18 @@ describe('/database', () => {
     describe('createQuoteParty', () => {
       const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
       const partyType = LibEnum.PAYEE
-      const participantType = LibEnum.PAYEE_DFSP
-      const ledgerEntryType = LibEnum.PRINCIPLE_VALUE
       const amount = 100
       const currency = 'AUD'
       const quoteParty = {
         quotePartyId: 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
       }
+      const enumVals = [
+        'testPartyTypeId',
+        'testPartyIdentifierTypeId',
+        'testParticipantId',
+        'testTransferParticipantRoleTypeId',
+        'testLedgerEntryTypeId'
+      ]
       beforeEach(() => {
         database.getPartyType = jest.fn().mockResolvedValueOnce('testPartyTypeId')
         database.getPartyIdentifierType = jest.fn().mockResolvedValueOnce('testPartyIdentifierTypeId')
@@ -1188,7 +1205,7 @@ describe('/database', () => {
         }
 
         // Act
-        const result = await database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
+        const result = await database.createQuoteParty(txn, quoteId, partyType, party, amount, currency, enumVals)
 
         // Assert
         expect(result).toBe('12345')
@@ -1234,7 +1251,7 @@ describe('/database', () => {
         }
 
         // Act
-        const result = await database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
+        const result = await database.createQuoteParty(txn, quoteId, partyType, party, amount, currency, enumVals)
 
         // Assert
         expect(result).toBe('12345')
@@ -1292,7 +1309,7 @@ describe('/database', () => {
         }
 
         // Act
-        const result = await database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
+        const result = await database.createQuoteParty(txn, quoteId, partyType, party, amount, currency, enumVals)
 
         // Assert
         expect(result).toBe('12345')
@@ -1317,7 +1334,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
+        const action = async () => database.createQuoteParty(txn, quoteId, partyType, party, amount, currency, enumVals)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')

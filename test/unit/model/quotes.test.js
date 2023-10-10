@@ -333,6 +333,12 @@ describe('QuotesModel', () => {
     quotesModel.db.createGeoCode.mockImplementation(() => mockData.geoCode)
     quotesModel.db.createQuoteExtensions.mockImplementation(() => mockData.quoteRequest.extensionList.extension)
 
+    quotesModel.db.getPartyType.mockImplementation(() => 'testPartyTypeId')
+    quotesModel.db.getPartyIdentifierType.mockImplementation(() => 'testPartyIdentifierTypeId')
+    quotesModel.db.getTransferParticipantRoleType.mockImplementation(() => 'testTransferParticipantRoleType')
+    quotesModel.db.getParticipantByName.mockImplementation(() => 'testParticipantId')
+    quotesModel.db.getLedgerEntryType.mockImplementation(() => 'testLedgerEntryTypeId')
+
     // make all methods of the quotesModel instance be a mock. This helps us re-mock in every
     // method's test suite.
     const propertyNames = Object.getOwnPropertyNames(QuotesModel.prototype)
@@ -1135,10 +1141,22 @@ describe('QuotesModel', () => {
             }]
             const mockCreatePayerQuotePartyArgs = [mockTransaction, mockData.quoteRequest.quoteId,
               mockData.quoteRequest.payer, mockData.quoteRequest.amount.amount,
-              mockData.quoteRequest.amount.currency]
+              mockData.quoteRequest.amount.currency, [
+                'testPartyTypeId',
+                'testPartyIdentifierTypeId',
+                'testParticipantId',
+                'testTransferParticipantRoleType',
+                'testLedgerEntryTypeId'
+              ]]
             const mockCreatePayeeQuotePartyArgs = [mockTransaction, mockData.quoteRequest.quoteId,
               mockData.quoteRequest.payee, mockData.quoteRequest.amount.amount,
-              mockData.quoteRequest.amount.currency]
+              mockData.quoteRequest.amount.currency, [
+                'testPartyTypeId',
+                'testPartyIdentifierTypeId',
+                'testParticipantId',
+                'testTransferParticipantRoleType',
+                'testLedgerEntryTypeId'
+              ]]
             const mockCreateQuoteExtensionsArgs = [mockTransaction,
               mockData.quoteRequest.extensionList.extension,
               mockData.quoteRequest.quoteId,
@@ -1555,7 +1573,7 @@ describe('QuotesModel', () => {
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toEqual(expected)
     })
-    it('should throw partyNotFound error when getQuoteParty coldn\'t find a record in switch mode', async () => {
+    it('should throw partyNotFound error when getQuoteParty couldn\'t find a record in switch mode', async () => {
       expect.assertions(4)
 
       mockConfig.simpleRoutingMode = false
@@ -1571,8 +1589,8 @@ describe('QuotesModel', () => {
       try {
         await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
       } catch (err) {
-        expect(quotesModel.db.newTransaction.mock.calls.length).toBe(1)
-        expect(mockTransaction.rollback.mock.calls.length).toBe(1)
+        expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
+        expect(mockTransaction.rollback.mock.calls.length).toBe(0)
         expect(err instanceof ErrorHandler.Factory.FSPIOPError).toBeTruthy()
         expect(err.apiErrorCode.code).toBe(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND.code)
       }
