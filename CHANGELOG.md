@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.2.2](https://github.com/mojaloop/quoting-service/compare/v15.2.1...v15.2.2) (2023-10-10)
+
+
+### Chore
+
+* **mojaloop/#3565:** fix logger statements ([#312](https://github.com/mojaloop/quoting-service/issues/312)) ([47fa7f3](https://github.com/mojaloop/quoting-service/commit/47fa7f321235276209ad2d5acdad3e0a69669280))
+
 ### [15.2.1](https://github.com/mojaloop/quoting-service/compare/v15.2.0...v15.2.1) (2023-10-05)
 
 
