@@ -152,6 +152,7 @@ class Config {
     this.instrumentationMetricsDisabled = (RC.INSTRUMENTATION.METRICS.DISABLED === true || RC.INSTRUMENTATION.METRICS.DISABLED === 'true')
     this.instrumentationMetricsLabels = RC.INSTRUMENTATION.METRICS.labels
     this.instrumentationMetricsConfig = RC.INSTRUMENTATION.METRICS.config
+    this.cacheExpiresInMs = RC.CACHE.EXPIRES_IN_MS || 2000
   }
 }
 
