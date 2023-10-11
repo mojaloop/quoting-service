@@ -81,8 +81,12 @@ class CachedDatabase extends Database {
     return this.getCacheValue('getPartyIdentifierType', [partyIdentifierType])
   }
 
-  async getParticipant (participantName) {
-    return this.getCacheValue('getParticipant', [participantName])
+  async getParticipant (participantName, participantType, currencyId, ledgerAccountTypeId) {
+    return this.getCacheValue('getParticipant', [participantName, participantType, currencyId, ledgerAccountTypeId])
+  }
+
+  async getParticipantByName (participantName, participantType) {
+    return this.getCacheValue('getParticipantByName', [participantName, participantType])
   }
 
   async getTransferParticipantRoleType (name) {
