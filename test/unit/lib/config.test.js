@@ -92,6 +92,10 @@ const mockDefaultFile = {
         }
       }
     }
+  },
+  CACHE: {
+    CACHE_ENABLED: true,
+    EXPIRES_IN_MS: 1000
   }
 }
 

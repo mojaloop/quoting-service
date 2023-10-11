@@ -38,8 +38,6 @@ const Metrics = require('@mojaloop/central-services-metrics')
 
 const { getStackOrInspect } = require('../lib/util')
 
-const DEFAULT_TTL_SECONDS = 60
-
 /**
  * An extension of the Database class that caches enum values in memory
  */
@@ -83,10 +81,9 @@ class CachedDatabase extends Database {
     return this.getCacheValue('getPartyIdentifierType', [partyIdentifierType])
   }
 
-  // This has been commented out as the participant data should not be cached. This is mainly due to the scenario when the participant is made inactive vs active. Ref: https://github.com/mojaloop/project/issues/933
-  // async getParticipant (participantName) {
-  //   return this.getCacheValue('getParticipant', [participantName])
-  // }
+  async getParticipant (participantName) {
+    return this.getCacheValue('getParticipant', [participantName])
+  }
 
   async getTransferParticipantRoleType (name) {
     return this.getCacheValue('getTransferParticipantRoleType', [name])
@@ -96,9 +93,9 @@ class CachedDatabase extends Database {
     return this.getCacheValue('getLedgerEntryType', [name])
   }
 
-  // async getParticipantEndpoint (participantName, endpointType) {
-  //  return this.getCacheValue('getParticipantEndpoint', [participantName, endpointType])
-  // }
+  async getParticipantEndpoint (participantName, endpointType) {
+    return this.getCacheValue('getParticipantEndpoint', [participantName, endpointType])
+  }
 
   async getCacheValue (type, params) {
     const histTimer = Metrics.getHistogram(
@@ -135,7 +132,7 @@ class CachedDatabase extends Database {
      */
   cachePut (type, params, value) {
     const key = this.getCacheKey(type, params)
-    this.cache.put(key, value, (this.config.database.cacheTtlSeconds || DEFAULT_TTL_SECONDS) * 1000)
+    this.cache.put(key, value, this.config.cacheExpiresInMs)
   }
 
   /**
