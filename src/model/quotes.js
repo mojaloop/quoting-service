@@ -257,9 +257,6 @@ class QuotesModel {
 
         // todo: validation
 
-        // if we get here we need to create a duplicate check row
-        const hash = calculateRequestHash(quoteRequest)
-
         // get the initiator type
         refs.transactionInitiatorTypeId = await this.db.getInitiatorType(quoteRequest.transactionType.initiatorType)
 
@@ -293,6 +290,9 @@ class QuotesModel {
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYEE_DFSP),
           this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE)
         ])
+
+        // if we get here we need to create a duplicate check row
+        const hash = calculateRequestHash(quoteRequest)
 
         // do everything in a db txn so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
