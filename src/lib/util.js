@@ -40,7 +40,7 @@ const Config = require('./config')
 const axios = require('axios')
 
 const failActionHandler = async (request, h, err) => {
-  Logger.error(`validation failure: ${getStackOrInspect}`)
+  Logger.isErrorEnabled && Logger.error(`validation failure: ${getStackOrInspect}`)
   throw err
 }
 
