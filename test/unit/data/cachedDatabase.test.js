@@ -181,6 +181,9 @@ describe('cachedDatabase', () => {
       expect(Database.prototype.getLedgerEntryType).toBeCalledTimes(1)
       expect(result).toStrictEqual(expected)
       expect(result2).toStrictEqual(expected)
+
+      // invalidate to stop jest open handles
+      await cachedDb.invalidateCache()
     })
 
     it('handles an exception', async () => {

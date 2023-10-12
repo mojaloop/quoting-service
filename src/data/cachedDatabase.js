@@ -166,6 +166,10 @@ class CachedDatabase extends Database {
   getCacheKey (type, params) {
     return `${type}_${params.join('__')}`
   }
+
+  invalidateCache () {
+    this.cache.clear()
+  }
 }
 
 module.exports = CachedDatabase

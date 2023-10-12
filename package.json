@@ -55,7 +55,7 @@
     "lint": "npx standard",
     "lint:fix": "npx standard --fix",
     "test": "npm run test:unit",
-    "test:unit": "jest --runInBand --testMatch '**/test/unit/**/*.test.js'",
+    "test:unit": "jest --runInBand --testMatch  '**/test/unit/**/*.test.js' ",
     "test:coverage": "jest --runInBand --coverage --coverageThreshold='{}' --testMatch '**/test/unit/**/*.test.js'",
     "test:coverage-check": "jest --runInBand --coverage --testMatch '**/test/unit/**/*.test.js'",
     "test:junit": "jest --runInBand --reporters=default --reporters=jest-junit --testMatch '**/test/unit/**/*.test.js'",
