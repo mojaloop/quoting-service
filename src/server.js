@@ -202,7 +202,7 @@ async function start () {
   const cache = new Cache()
   initializeInstrumentation(config)
   // initialize database connection pool and start the api server
-  return initDb(config, cache)
+  return initDb(config)
     .then(db => initServer(db, config, cache))
     .then(server => {
       // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest

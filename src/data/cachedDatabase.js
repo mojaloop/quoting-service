@@ -42,7 +42,7 @@ const { getStackOrInspect } = require('../lib/util')
  * An extension of the Database class that caches enum values in memory
  */
 class CachedDatabase extends Database {
-  constructor (config, cache) {
+  constructor (config) {
     super(config)
 
     this.cache = new Cache()
