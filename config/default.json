@@ -70,6 +70,7 @@
     }
   },
   "CACHE": {
-    "EXPIRES_IN_MS": 1000
+    "ENUM_DATA_EXPIRES_IN_MS": 4170000,
+    "PARTICIPANT_DATA_EXPIRES_IN_MS": 60000
   }
 }

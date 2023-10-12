@@ -54,15 +54,16 @@ const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase')
 const Handlers = require('./handlers')
 const Routes = require('./handlers/routes')
+const { Cache } = require('memory-cache')
 
 const OpenAPISpecPath = Path.resolve(__dirname, './interface/QuotingService-swagger.yaml')
 
 /**
  * Initializes a database connection pool
  */
-const initDb = function (config) {
+const initDb = function (config, cache) {
   // try open a db connection pool
-  const database = new Database(config)
+  const database = new Database(config, cache)
   return database.connect()
 }
 
@@ -72,7 +73,7 @@ const initDb = function (config) {
  * @param db - database instance
  * @param config - configuration object
  */
-const initServer = async function (db, config) {
+const initServer = async function (db, config, cache) {
   // init a server
   const server = new Hapi.Server({
     address: config.listenAddress,
@@ -87,6 +88,8 @@ const initServer = async function (db, config) {
 
   // put the database pool somewhere handlers can use it
   server.app.database = db
+
+  server.app.cache = cache
 
   if (config.apiDocumentationEndpoints) {
     await server.register({
@@ -196,10 +199,11 @@ const config = new Config()
  * @description Starts the web server
  */
 async function start () {
+  const cache = new Cache()
   initializeInstrumentation(config)
   // initialize database connection pool and start the api server
-  return initDb(config)
-    .then(db => initServer(db, config))
+  return initDb(config, cache)
+    .then(db => initServer(db, config, cache))
     .then(server => {
       // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
       /* istanbul ignore next */

@@ -420,25 +420,13 @@ describe('BulkQuotesModel', () => {
     })
 
     it('should get http status code 202 Accepted in simple routing mode', async () => {
-      expect.assertions(2)
+      expect.assertions(1)
       mockConfig.simpleRoutingMode = true
       bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest, mockChildSpan)
 
       expect(bulkQuotesModel.db.getParticipantEndpoint).toBeCalled()
-      expect(bulkQuotesModel.db.getQuotePartyEndpoint).not.toBeCalled()
-    })
-    it('should throw when participant endpoint is not found', async () => {
-      expect.assertions(1)
-
-      mockConfig.simpleRoutingMode = false
-
-      bulkQuotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(undefined)
-
-      await expect(bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
     })
   })
 

@@ -42,7 +42,7 @@ const { getStackOrInspect } = require('../lib/util')
  * An extension of the Database class that caches enum values in memory
  */
 class CachedDatabase extends Database {
-  constructor (config) {
+  constructor (config, cache) {
     super(config)
 
     this.cache = new Cache()
@@ -114,7 +114,16 @@ class CachedDatabase extends Database {
         // we need to get the value from the db and cache it
         this.writeLog(`Cache miss for ${type}: ${util.inspect(params)}`)
         value = await super[type].apply(this, params)
-        this.cachePut(type, params, value)
+        // cache participant with a shorter TTL than enums (participant data is more likely to change)
+        if (
+          type === 'getParticipant' ||
+          type === 'getParticipantByName' ||
+          type === 'getParticipantEndpoint'
+        ) {
+          this.cachePut(type, params, value, this.config.participantDataCacheExpiresInMs)
+        } else {
+          this.cachePut(type, params, value, this.config.enumDataCacheExpiresInMs)
+        }
         histTimer({ success: true, queryName: type, hit: false })
       } else {
         this.writeLog(`Cache hit for ${type} ${util.inspect(params)}: ${value}`)
@@ -134,9 +143,9 @@ class CachedDatabase extends Database {
      *
      * @returns {undefined}
      */
-  cachePut (type, params, value) {
+  cachePut (type, params, value, ttl) {
     const key = this.getCacheKey(type, params)
-    this.cache.put(key, value, this.config.cacheExpiresInMs)
+    this.cache.put(key, value, ttl)
   }
 
   /**

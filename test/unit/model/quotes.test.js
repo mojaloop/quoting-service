@@ -574,13 +574,31 @@ describe('QuotesModel', () => {
       await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest)
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+    })
+    it('should validate payer and payee fspId and headers for simple routing mode', async () => {
+      expect.assertions(7)
+
+      const fspiopSource = 'dfsp123'
+      const fspiopDestination = 'dfsp234'
+
+      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
+
+      await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest)
+
+      expect(quotesModel.db).toBeTruthy() // Constructor should have been called
       if (mockConfig.simpleRoutingMode) {
         expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(4)
       } else {
         expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
       }
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopSource)
+      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(fspiopDestination)
+      expect(quotesModel.db.getParticipant.mock.calls[2][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[3][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
     it('should throw internal error if no quoteRequest was supplied', async () => {
       expect.assertions(4)
@@ -1247,7 +1265,6 @@ describe('QuotesModel', () => {
       await quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan)
 
       expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
-      // expect(quotesModel.db.getQuotePartyEndpoint).not.toBeCalled()
     })
     it('should get http status code 202 Accepted in switch mode', async () => {
       expect.assertions(1)
@@ -1258,7 +1275,6 @@ describe('QuotesModel', () => {
       await quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan)
 
       expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
-      // expect(quotesModel.db.getQuotePartyEndpoint).toBeCalled()
     })
     it('should throw when quoteRequest is undefined', async () => {
       expect.assertions(1)
@@ -1266,17 +1282,6 @@ describe('QuotesModel', () => {
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, undefined, mockChildSpan))
         .rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
-    })
-    it('should throw when participant endpoint is not found', async () => {
-      expect.assertions(1)
-
-      mockConfig.simpleRoutingMode = false
-
-      quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(undefined)
-
-      await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
     })
     it('should not use spans when undefined and should throw when participant endpoint is invalid', async () => {
       expect.assertions(3)
@@ -1631,7 +1636,7 @@ describe('QuotesModel', () => {
     })
 
     it('should get http status code 200 OK in simple routing mode', async () => {
-      expect.assertions(3)
+      expect.assertions(2)
       mockConfig.simpleRoutingMode = true
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
@@ -1640,10 +1645,9 @@ describe('QuotesModel', () => {
         .toBe(undefined)
 
       expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
-      expect(quotesModel.db.getQuotePartyEndpoint).not.toBeCalled()
     })
     it('should get http status code 200 OK in switch mode', async () => {
-      expect.assertions(3)
+      expect.assertions(2)
 
       mockConfig.simpleRoutingMode = false
       quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
@@ -1653,7 +1657,6 @@ describe('QuotesModel', () => {
         .toBe(undefined)
 
       expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
-      expect(quotesModel.db.getQuotePartyEndpoint).not.toBeCalled()
     })
     it('should throw when quoteUpdate is undefined', async () => {
       expect.assertions(1)
@@ -1661,18 +1664,6 @@ describe('QuotesModel', () => {
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, undefined, mockChildSpan))
         .rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
-    })
-    it('should throw when participant endpoint is not found', async () => {
-      expect.assertions(1)
-
-      mockConfig.simpleRoutingMode = false
-      const endpoint = undefined
-      quotesModel.db.getQuotePartyEndpoint.mockReturnValueOnce(endpoint)
-      quotesModel.sendErrorCallback = jest.fn((_, fspiopError) => { throw fspiopError })
-
-      await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
     })
     it('should not use spans when undefined and should throw when participant endpoint is invalid', async () => {
       expect.assertions(3)

@@ -152,7 +152,8 @@ class Config {
     this.instrumentationMetricsDisabled = (RC.INSTRUMENTATION.METRICS.DISABLED === true || RC.INSTRUMENTATION.METRICS.DISABLED === 'true')
     this.instrumentationMetricsLabels = RC.INSTRUMENTATION.METRICS.labels
     this.instrumentationMetricsConfig = RC.INSTRUMENTATION.METRICS.config
-    this.cacheExpiresInMs = RC.CACHE.EXPIRES_IN_MS || 2000
+    this.enumDataCacheExpiresInMs = RC.CACHE.ENUM_DATA_EXPIRES_IN_MS || 4170000
+    this.participantDataCacheExpiresInMs = RC.CACHE.PARTICIPANT_DATA_EXPIRES_IN_MS || 60000
   }
 }
 

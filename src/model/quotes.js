@@ -175,11 +175,21 @@ class QuotesModel {
     // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
     if (envConfig.simpleRoutingMode) {
       // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
-      if (quoteRequest.payer && quoteRequest.payer.partyIdInfo && quoteRequest.payer.partyIdInfo.fspId) {
+      if (
+        quoteRequest.payer &&
+        quoteRequest.payer.partyIdInfo &&
+        quoteRequest.payer.partyIdInfo.fspId &&
+        quoteRequest.payer.partyIdInfo.fspId !== fspiopSource
+      ) {
         await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
       }
       // Lets make sure the optional fspId exists in the payee's partyIdInfo before we validate it
-      if (quoteRequest.payee && quoteRequest.payee.partyIdInfo && quoteRequest.payee.partyIdInfo.fspId) {
+      if (
+        quoteRequest.payee &&
+        quoteRequest.payee.partyIdInfo &&
+        quoteRequest.payee.partyIdInfo.fspId &&
+        quoteRequest.payee.partyIdInfo.fspId !== fspiopDestination
+      ) {
         await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
       }
     }
@@ -200,7 +210,7 @@ class QuotesModel {
    *
    * @returns {object} - returns object containing keys for created database entities
    */
-  async handleQuoteRequest (headers, quoteRequest, span) {
+  async handleQuoteRequest (headers, quoteRequest, span, cache) {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteRequest - Metrics for quote model',
@@ -221,7 +231,7 @@ class QuotesModel {
       // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
-      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination)
+      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination, cache)
       this.writeLog(`Got payer ${payer} and payee ${payee}`)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
@@ -257,39 +267,45 @@ class QuotesModel {
 
         // todo: validation
 
-        // get the initiator type
-        refs.transactionInitiatorTypeId = await this.db.getInitiatorType(quoteRequest.transactionType.initiatorType)
-
-        // get the initiator
-        refs.transactionInitiatorId = await this.db.getInitiator(quoteRequest.transactionType.initiator)
-
-        // get the txn scenario id
-        refs.transactionScenarioId = await this.db.getScenario(quoteRequest.transactionType.scenario)
-
-        if (quoteRequest.transactionType.subScenario) {
-          // a sub scenario is specified, we need to look it up
-          refs.transactionSubScenarioId = await this.db.getSubScenario(quoteRequest.transactionType.subScenario)
-        }
-
-        // get amount type
-        refs.amountTypeId = await this.db.getAmountType(quoteRequest.amountType)
-
         // get various enum ids (async, as parallel as possible)
-        const payerEnumVals = await Promise.all([
+        const payerEnumVals = []
+        const payeeEnumVals = []
+        ;[
+          refs.transactionInitiatorTypeId,
+          refs.transactionInitiatorId,
+          refs.transactionScenarioId,
+          refs.amountTypeId,
+          payerEnumVals[0],
+          payerEnumVals[1],
+          payerEnumVals[2],
+          payerEnumVals[3],
+          payerEnumVals[4],
+          payeeEnumVals[0],
+          payeeEnumVals[1],
+          payeeEnumVals[2],
+          payeeEnumVals[3],
+          payeeEnumVals[4]
+        ] = await Promise.all([
+          this.db.getInitiatorType(quoteRequest.transactionType.initiatorType),
+          this.db.getInitiator(quoteRequest.transactionType.initiator),
+          this.db.getScenario(quoteRequest.transactionType.scenario),
+          this.db.getAmountType(quoteRequest.amountType),
           this.db.getPartyType(LOCAL_ENUM.PAYER),
           this.db.getPartyIdentifierType(quoteRequest.payer.partyIdInfo.partyIdType),
           this.db.getParticipantByName(quoteRequest.payer.partyIdInfo.fspId),
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYER_DFSP),
-          this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE)
-        ])
-
-        const payeeEnumVals = await Promise.all([
+          this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE),
           this.db.getPartyType(LOCAL_ENUM.PAYEE),
           this.db.getPartyIdentifierType(quoteRequest.payee.partyIdInfo.partyIdType),
           this.db.getParticipantByName(quoteRequest.payee.partyIdInfo.fspId),
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYEE_DFSP),
           this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE)
         ])
+
+        if (quoteRequest.transactionType.subScenario) {
+          // a sub scenario is specified, we need to look it up
+          refs.transactionSubScenarioId = await this.db.getSubScenario(quoteRequest.transactionType.subScenario)
+        }
 
         // if we get here we need to create a duplicate check row
         const hash = calculateRequestHash(quoteRequest)
@@ -322,13 +338,15 @@ class QuotesModel {
           currencyId: quoteRequest.amount.currency
         })
 
-        // eslint-disable-next-line require-atomic-updates
-        refs.payerId = await this.db.createPayerQuoteParty(txn, refs.quoteId, quoteRequest.payer,
-          quoteRequest.amount.amount, quoteRequest.amount.currency, payerEnumVals)
-
-        // eslint-disable-next-line require-atomic-updates
-        refs.payeeId = await this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
-          quoteRequest.amount.amount, quoteRequest.amount.currency, payeeEnumVals)
+        ;[
+          refs.payerId,
+          refs.payeeId
+        ] = await Promise.all([
+          this.db.createPayerQuoteParty(txn, refs.quoteId, quoteRequest.payer,
+            quoteRequest.amount.amount, quoteRequest.amount.currency, payerEnumVals),
+          this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
+            quoteRequest.amount.amount, quoteRequest.amount.currency, payeeEnumVals)
+        ])
 
         // store any extension list items
         if (quoteRequest.extensionList &&
