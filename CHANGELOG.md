@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.3.0](https://github.com/mojaloop/quoting-service/compare/v15.2.2...v15.3.0) (2023-10-13)
+
+
+### Features
+
+* **mojaloop/#3565:** database and cache optimizations  ([#318](https://github.com/mojaloop/quoting-service/issues/318)) ([da15567](https://github.com/mojaloop/quoting-service/commit/da155678bdebb35375a5f1db5fac5c25e9bf2c60)), closes [mojaloop/#3565](https://github.com/mojaloop/project/issues/3565)
+
 ### [15.2.2](https://github.com/mojaloop/quoting-service/compare/v15.2.1...v15.2.2) (2023-10-10)
 
 
