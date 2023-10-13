@@ -40,7 +40,7 @@ const Config = require('./config')
 const axios = require('axios')
 
 const failActionHandler = async (request, h, err) => {
-  Logger.error(`validation failure: ${getStackOrInspect}`)
+  Logger.isErrorEnabled && Logger.error(`validation failure: ${getStackOrInspect}`)
   throw err
 }
 
@@ -200,15 +200,33 @@ function calculateRequestHash (request) {
   return crypto.createHash('sha256').update(requestStr).digest('hex')
 }
 
-const fetchParticipantInfo = async (source, destination) => {
+// Add caching to the participant endpoint
+const fetchParticipantInfo = async (source, destination, cache) => {
   // Get quote participants from central ledger admin
   const { switchEndpoint } = new Config()
   const url = `${switchEndpoint}/participants`
-  const [payer, payee] = await Promise.all([
-    axios.request({ url: `${url}/${source}` }),
-    axios.request({ url: `${url}/${destination}` })
-  ])
-  return { payer: payer.data, payee: payee.data }
+  let requestPayer
+  let requestPayee
+  const cachedPayer = cache && cache.get(`fetchParticipantInfo_${source}`)
+  const cachedPayee = cache && cache.get(`fetchParticipantInfo_${destination}`)
+
+  if (!cachedPayer) {
+    requestPayer = await axios.request({ url: `${url}/${source}` })
+    cache && cache.put(`fetchParticipantInfo_${source}`, requestPayer, Config.participantDataCacheExpiresInMs)
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
+  } else {
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payer ${source}`)
+  }
+  if (!cachedPayee) {
+    requestPayee = await axios.request({ url: `${url}/${destination}` })
+    cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
+  } else {
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payee ${destination}`)
+  }
+  const payer = cachedPayer || requestPayer.data
+  const payee = cachedPayee || requestPayee.data
+  return { payer, payee }
 }
 
 module.exports = {

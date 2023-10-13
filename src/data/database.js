@@ -98,23 +98,6 @@ class Database {
   }
 
   /**
-     * Gets the set of enabled transfer rules
-     *
-     * @returns {promise} - all enabled transfer rules
-     */
-  async getTransferRules () {
-    try {
-      const rows = await this.queryBuilder('transferRules')
-        .where('enabled', true)
-        .select()
-      return rows.map(r => JSON.parse(r.rule))
-    } catch (err) {
-      this.writeLog(`Error in getTransferRules: ${getStackOrInspect(err)}`)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
-    }
-  }
-
-  /**
      * Gets the id of the specified transaction initiator type
      *
      * @returns {promise} - id of the transactionInitiatorType
@@ -463,9 +446,9 @@ class Database {
      *
      * @returns {promise}
      */
-  async createPayerQuoteParty (txn, quoteId, party, amount, currency) {
+  async createPayerQuoteParty (txn, quoteId, party, amount, currency, enumVals) {
     // note amount is negative for payee and positive for payer
-    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYER, LOCAL_ENUM.PAYER_DFSP, LOCAL_ENUM.PRINCIPLE_VALUE, party, amount, currency)
+    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYER, party, amount, currency, enumVals)
   }
 
   /**
@@ -473,9 +456,9 @@ class Database {
      *
      * @returns {promise}
      */
-  async createPayeeQuoteParty (txn, quoteId, party, amount, currency) {
+  async createPayeeQuoteParty (txn, quoteId, party, amount, currency, enumVals) {
     // note amount is negative for payee and positive for payer
-    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYEE, LOCAL_ENUM.PAYEE_DFSP, LOCAL_ENUM.PRINCIPLE_VALUE, party, -amount, currency)
+    return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYEE, party, -amount, currency, enumVals)
   }
 
   /**
@@ -483,18 +466,9 @@ class Database {
      *
      * @returns {integer} - id of created quoteParty
      */
-  async createQuoteParty (txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency) {
+  async createQuoteParty (txn, quoteId, partyType, party, amount, currency, enumVals) {
     try {
       const refs = {}
-
-      // get various enum ids (async, as parallel as possible)
-      const enumVals = await Promise.all([
-        this.getPartyType(partyType),
-        this.getPartyIdentifierType(party.partyIdInfo.partyIdType),
-        this.getParticipantByName(party.partyIdInfo.fspId),
-        this.getTransferParticipantRoleType(participantType),
-        this.getLedgerEntryType(ledgerEntryType)
-      ])
 
       refs.partyTypeId = enumVals[0]
       refs.partyIdentifierTypeId = enumVals[1]
@@ -562,83 +536,6 @@ class Database {
       return quotePartyId
     } catch (err) {
       this.writeLog(`Error in createQuoteParty: ${getStackOrInspect(err)}`)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
-    }
-  }
-
-  /**
-     * Returns an array of quote parties associated with the specified quote
-     * that have enum values resolved to their text identifiers
-     *
-     * @returns {object[]}
-     */
-  async getQuotePartyView (quoteId) {
-    try {
-      const rows = await this.queryBuilder('quotePartyView')
-        .where({
-          quoteId
-        })
-        .select()
-
-      return rows
-    } catch (err) {
-      this.writeLog(`Error in getQuotePartyView: ${getStackOrInspect(err)}`)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
-    }
-  }
-
-  /**
-     * Returns a quote that has enum values resolved to their text identifiers
-     *
-     * @returns {object}
-     */
-  async getQuoteView (quoteId) {
-    try {
-      const rows = await this.queryBuilder('quoteView')
-        .where({
-          quoteId
-        })
-        .select()
-
-      if ((!rows) || rows.length < 1) {
-        return null
-      }
-
-      if (rows.length > 1) {
-        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`)
-      }
-
-      return rows[0]
-    } catch (err) {
-      this.writeLog(`Error in getQuoteView: ${getStackOrInspect(err)}`)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
-    }
-  }
-
-  /**
-     * Returns a quote response that has enum values resolved to their text identifiers
-     *
-     * @returns {object}
-     */
-  async getQuoteResponseView (quoteId) {
-    try {
-      const rows = await this.queryBuilder('quoteResponseView')
-        .where({
-          quoteId
-        })
-        .select()
-
-      if ((!rows) || rows.length < 1) {
-        return null
-      }
-
-      if (rows.length > 1) {
-        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 row for quoteId ${quoteId} but got: ${util.inspect(rows)}`)
-      }
-
-      return rows[0]
-    } catch (err) {
-      this.writeLog(`Error in getQuoteResponseView: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -767,35 +664,6 @@ class Database {
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
-  /**
-     * Gets the specified endpoint for the specified quote party
-     *
-     * @returns {promise} - resolves to the endpoint base url
-     */
-
-  async getQuotePartyEndpoint (quoteId, endpointType, partyType) {
-    try {
-      const rows = await this.queryBuilder('participantEndpoint')
-        .innerJoin('endpointType', 'participantEndpoint.endpointTypeId', 'endpointType.endpointTypeId')
-        .innerJoin('quoteParty', 'quoteParty.participantId', 'participantEndpoint.participantId')
-        .innerJoin('partyType', 'partyType.partyTypeId', 'quoteParty.partyTypeId')
-        .innerJoin('quote', 'quote.quoteId', 'quoteParty.quoteId')
-        .where('endpointType.name', endpointType)
-        .andWhere('partyType.name', partyType)
-        .andWhere('quote.quoteId', quoteId)
-        .andWhere('participantEndpoint.isActive', 1)
-        .select('participantEndpoint.value')
-
-      if ((!rows) || rows.length < 1) {
-        return null
-      }
-
-      return rows[0].value
-    } catch (err) {
-      this.writeLog(`Error in getQuotePartyEndpoint: ${getStackOrInspect(err)}`)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
-    }
-  }
 
   /**
      * Gets the specified endpoint of the specified type for the specified participant
@@ -867,30 +735,6 @@ class Database {
       return rows[0]
     } catch (err) {
       this.writeLog(`Error in getQuoteResponseDuplicateCheck: ${getStackOrInspect(err)}`)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
-    }
-  }
-
-  /**
-     * Gets any transactionReference for the specified quote from the database
-     *
-     * @returns {object} - transaction reference or null if none found
-     */
-  async getTransactionReference (quoteId) {
-    try {
-      const rows = await this.queryBuilder('transactionReference')
-        .where({
-          quoteId
-        })
-        .select()
-
-      if ((!rows) || rows.length < 1) {
-        return null
-      }
-
-      return rows[0]
-    } catch (err) {
-      this.writeLog(`Error in getTransactionReference: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }

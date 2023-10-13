@@ -38,8 +38,6 @@ const Metrics = require('@mojaloop/central-services-metrics')
 
 const { getStackOrInspect } = require('../lib/util')
 
-const DEFAULT_TTL_SECONDS = 60
-
 /**
  * An extension of the Database class that caches enum values in memory
  */
@@ -83,10 +81,13 @@ class CachedDatabase extends Database {
     return this.getCacheValue('getPartyIdentifierType', [partyIdentifierType])
   }
 
-  // This has been commented out as the participant data should not be cached. This is mainly due to the scenario when the participant is made inactive vs active. Ref: https://github.com/mojaloop/project/issues/933
-  // async getParticipant (participantName) {
-  //   return this.getCacheValue('getParticipant', [participantName])
-  // }
+  async getParticipant (participantName, participantType, currencyId, ledgerAccountTypeId) {
+    return this.getCacheValue('getParticipant', [participantName, participantType, currencyId, ledgerAccountTypeId])
+  }
+
+  async getParticipantByName (participantName, participantType) {
+    return this.getCacheValue('getParticipantByName', [participantName, participantType])
+  }
 
   async getTransferParticipantRoleType (name) {
     return this.getCacheValue('getTransferParticipantRoleType', [name])
@@ -96,9 +97,9 @@ class CachedDatabase extends Database {
     return this.getCacheValue('getLedgerEntryType', [name])
   }
 
-  // async getParticipantEndpoint (participantName, endpointType) {
-  //  return this.getCacheValue('getParticipantEndpoint', [participantName, endpointType])
-  // }
+  async getParticipantEndpoint (participantName, endpointType) {
+    return this.getCacheValue('getParticipantEndpoint', [participantName, endpointType])
+  }
 
   async getCacheValue (type, params) {
     const histTimer = Metrics.getHistogram(
@@ -113,7 +114,16 @@ class CachedDatabase extends Database {
         // we need to get the value from the db and cache it
         this.writeLog(`Cache miss for ${type}: ${util.inspect(params)}`)
         value = await super[type].apply(this, params)
-        this.cachePut(type, params, value)
+        // cache participant with a shorter TTL than enums (participant data is more likely to change)
+        if (
+          type === 'getParticipant' ||
+          type === 'getParticipantByName' ||
+          type === 'getParticipantEndpoint'
+        ) {
+          this.cachePut(type, params, value, this.config.participantDataCacheExpiresInMs)
+        } else {
+          this.cachePut(type, params, value, this.config.enumDataCacheExpiresInMs)
+        }
         histTimer({ success: true, queryName: type, hit: false })
       } else {
         this.writeLog(`Cache hit for ${type} ${util.inspect(params)}: ${value}`)
@@ -133,9 +143,9 @@ class CachedDatabase extends Database {
      *
      * @returns {undefined}
      */
-  cachePut (type, params, value) {
+  cachePut (type, params, value, ttl) {
     const key = this.getCacheKey(type, params)
-    this.cache.put(key, value, (this.config.database.cacheTtlSeconds || DEFAULT_TTL_SECONDS) * 1000)
+    this.cache.put(key, value, ttl)
   }
 
   /**
@@ -155,6 +165,10 @@ class CachedDatabase extends Database {
      */
   getCacheKey (type, params) {
     return `${type}_${params.join('__')}`
+  }
+
+  invalidateCache () {
+    this.cache.clear()
   }
 }
 

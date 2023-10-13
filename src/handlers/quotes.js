@@ -89,7 +89,7 @@ module.exports = {
       }, EventSdk.AuditEventAction.start)
 
       // call the quote request handler in the model
-      model.handleQuoteRequest(quoteRequest.headers, quoteRequest.payload, span).catch(err => {
+      model.handleQuoteRequest(quoteRequest.headers, quoteRequest.payload, span, request.server.app.cache).catch(err => {
         Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteRequest: ${LibUtil.getStackOrInspect(err)}`)
       })
       histTimerEnd({ success: true })

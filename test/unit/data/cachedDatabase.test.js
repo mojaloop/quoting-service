@@ -146,6 +146,39 @@ describe('cachedDatabase', () => {
       // Assert
       expect(result).toBe('getLedgerEntryTypeValue')
     })
+
+    it('getParticipant', async () => {
+      // Arrange
+      cachedDb.cachePut('getParticipant', ['paramA', 'paramB', 'paramC', 'paramD'], 'getParticipantValue')
+
+      // Act
+      const result = await cachedDb.getParticipant('paramA', 'paramB', 'paramC', 'paramD')
+
+      // Assert
+      expect(result).toBe('getParticipantValue')
+    })
+
+    it('getParticipantByName', async () => {
+      // Arrange
+      cachedDb.cachePut('getParticipantByName', ['paramA', 'paramB'], 'getParticipantByNameValue')
+
+      // Act
+      const result = await cachedDb.getParticipantByName('paramA', 'paramB')
+
+      // Assert
+      expect(result).toBe('getParticipantByNameValue')
+    })
+
+    it('getParticipantEndpoint', async () => {
+      // Arrange
+      cachedDb.cachePut('getParticipantEndpoint', ['paramA', 'paramB'], 'getParticipantEndpointValue')
+
+      // Act
+      const result = await cachedDb.getParticipantEndpoint('paramA', 'paramB')
+
+      // Assert
+      expect(result).toBe('getParticipantEndpointValue')
+    })
   })
 
   describe('Cache Handling', () => {
@@ -181,6 +214,9 @@ describe('cachedDatabase', () => {
       expect(Database.prototype.getLedgerEntryType).toBeCalledTimes(1)
       expect(result).toStrictEqual(expected)
       expect(result2).toStrictEqual(expected)
+
+      // invalidate to stop jest open handles
+      await cachedDb.invalidateCache()
     })
 
     it('handles an exception', async () => {
