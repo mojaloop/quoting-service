@@ -1116,7 +1116,7 @@ describe('/database', () => {
         database.getTransferParticipantRoleType = jest.fn().mockResolvedValueOnce('testTransferParticipantRoleTypeId')
         database.getLedgerEntryType = jest.fn().mockResolvedValueOnce('testLedgerEntryTypeId')
         database.getTxnQuoteParty = jest.fn().mockResolvedValueOnce(quoteParty)
-        database.createQuotePartyIdInfoExtension = jest.fn().mockResolvedValueOnce(true)
+        database.createQuotePartyIdInfoExtensions = jest.fn().mockResolvedValueOnce(true)
       })
 
       it('Creates a quote party', async () => {
@@ -1396,16 +1396,17 @@ describe('/database', () => {
       })
     })
 
-    describe('createQuotePartyIdInfoExtension', () => {
-      const mockQuotePartyIdInfoExtension = {
-        quotePartyId: 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37',
-        key: 'Test',
-        value: 'data'
-      }
-      const extensionList = {
-        key: 'Test',
-        value: 'data'
-      }
+    describe('createQuotePartyIdInfoExtensions', () => {
+      const extensions = [
+        {
+          key: 'Test',
+          value: 'data'
+        },
+        {
+          key: 'Test1',
+          value: 'data1'
+        }
+      ]
       const quoteParty = {
         quotePartyId: 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
       }
@@ -1418,12 +1419,21 @@ describe('/database', () => {
           null,
           ['transacting', 'insert']
         )
-        const expectedInsert = {
-          ...mockQuotePartyIdInfoExtension
-        }
+        const expectedInsert = [
+          {
+            quotePartyId: quoteParty.quotePartyId,
+            key: 'Test',
+            value: 'data'
+          },
+          {
+            quotePartyId: quoteParty.quotePartyId,
+            key: 'Test1',
+            value: 'data1'
+          }
+        ]
 
         // Act
-        const result = await database.createQuotePartyIdInfoExtension(txn, extensionList, quoteParty)
+        const result = await database.createQuotePartyIdInfoExtensions(txn, extensions, quoteParty)
 
         // Assert
         expect(result).toEqual(true)
@@ -1438,7 +1448,7 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => database.createQuotePartyIdInfoExtension(txn, extensionList, quoteParty)
+        const action = async () => database.createQuotePartyIdInfoExtensions(txn, extensions, quoteParty)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
