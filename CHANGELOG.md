@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.4.0](https://github.com/mojaloop/quoting-service/compare/v15.3.0...v15.4.0) (2023-10-17)
+
+
+### Features
+
+* **mojaloop/#3564:** multi insert quote party extensions ([#319](https://github.com/mojaloop/quoting-service/issues/319)) ([b413ffd](https://github.com/mojaloop/quoting-service/commit/b413ffdd7614e2280452fada120deb1df569ec84)), closes [mojaloop/#3564](https://github.com/mojaloop/project/issues/3564)
+
 ## [15.3.0](https://github.com/mojaloop/quoting-service/compare/v15.2.2...v15.3.0) (2023-10-13)
 
 
