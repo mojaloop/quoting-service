@@ -523,14 +523,7 @@ class Database {
         const extensions = party.partyIdInfo.extensionList.extension
         // we need to store personal info also
         const quoteParty = await this.getTxnQuoteParty(txn, quoteId, partyType)
-        for (const extension of extensions) {
-          const newExtensions = {
-            key: extension.key,
-            value: extension.value
-          }
-          const createQuotePartyIdInfoExtension = await this.createQuotePartyIdInfoExtension(txn, newExtensions, quoteParty)
-          this.writeLog(`inserted new QuotePartyIdInfoExtension in db: ${util.inspect(createQuotePartyIdInfoExtension)}`)
-        }
+        await this.createQuotePartyIdInfoExtensions(txn, extensions, quoteParty)
       }
 
       return quotePartyId
@@ -541,7 +534,7 @@ class Database {
   }
 
   /**
-     * Creates the specifid party and returns its id
+     * Creates the specific party and returns its id
      *
      * @returns {promise} - id of party
      */
@@ -597,18 +590,20 @@ class Database {
     }
   }
 
-  async createQuotePartyIdInfoExtension (txn, extensionList, quoteParty) {
+  async createQuotePartyIdInfoExtensions (txn, extensions, quoteParty) {
     try {
+      const newExtensions = extensions.map(({ key, value }) => ({
+        quotePartyId: quoteParty.quotePartyId,
+        key,
+        value
+      }))
+
       await this.queryBuilder('quotePartyIdInfoExtension')
         .transacting(txn)
-        .insert({
-          quotePartyId: quoteParty.quotePartyId,
-          key: extensionList.key,
-          value: extensionList.value
-        })
+        .insert(newExtensions)
       return true
     } catch (err) {
-      this.writeLog(`Error in createQuotePartyIdInfoExtension: ${getStackOrInspect(err)}`)
+      this.writeLog(`Error in createQuotePartyIdInfoExtensions: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
