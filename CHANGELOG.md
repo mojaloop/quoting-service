@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.5.0](https://github.com/mojaloop/quoting-service/compare/v15.4.0...v15.5.0) (2023-11-02)
+
+
+### Bug Fixes
+
+* **mojaloop/#3604:** update dependencies ([#320](https://github.com/mojaloop/quoting-service/issues/320)) ([c0ae7bd](https://github.com/mojaloop/quoting-service/commit/c0ae7bd2a2462fd63ef801154bc00a0ea02ede53)), closes [mojaloop/#3604](https://github.com/mojaloop/project/issues/3604)
+
 ## [15.4.0](https://github.com/mojaloop/quoting-service/compare/v15.3.0...v15.4.0) (2023-10-17)
 
 
