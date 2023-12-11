@@ -1,7 +1,7 @@
 /* eslint-disable space-before-function-paren */
 const { AuditEventAction } = require('@mojaloop/event-sdk')
 const { Enum } = require('@mojaloop/central-services-shared')
-const { /* createFSPIOPError, */ reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
+const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
 const { ErrorMessages } = require('../lib/enum')
 const { getSpanTags } = require('../lib/util')
@@ -37,20 +37,20 @@ class QuotingHandler {
 
   async defineHandlerByTopic(message) {
     const { topic, requestData } = dto.requestDataFromMessageDto(message)
-    const { QUOTES, BULK_QUOTES } = this.config.kafkaConfig.CONSUMER
+    const { QUOTE, BULK_QUOTE } = this.config.kafkaConfig.CONSUMER
 
     switch (topic) {
-      case QUOTES.POST.topic:
+      case QUOTE.POST.topic:
         return this.handlePostQuotes(requestData)
-      case QUOTES.PUT.topic:
+      case QUOTE.PUT.topic:
         return this.handlePutQuotes(requestData)
-      case QUOTES.GET.topic:
+      case QUOTE.GET.topic:
         return this.handleGetQuotes(requestData)
-      case BULK_QUOTES.POST.topic:
+      case BULK_QUOTE.POST.topic:
         return this.handlePostBulkQuotes(requestData)
-      case BULK_QUOTES.PUT.topic:
+      case BULK_QUOTE.PUT.topic:
         return this.handlePutBulkQuotes(requestData)
-      case BULK_QUOTES.GET.topic:
+      case BULK_QUOTE.GET.topic:
         return this.handleGetBulkQuotes(requestData)
 
       default:
