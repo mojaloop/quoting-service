@@ -29,122 +29,116 @@
  --------------
  ******/
 
-jest.mock('@mojaloop/central-services-logger')
-jest.mock('../../../../src/model/quotes')
+const { randomUUID } = require('node:crypto')
+const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+const { Producer } = require('@mojaloop/central-services-stream').Util
 
-const Enum = require('@mojaloop/central-services-shared').Enum
-const QuotesHandler = require('../../../../src/api/quotes/{id}')
-const QuotesModel = require('../../../../src/model/quotes')
-const { baseMockRequest } = require('../../../util/helper')
-const Logger = require('@mojaloop/central-services-logger')
+const quotesApi = require('../../../../src/api/quotes/{id}')
+const Config = require('../../../../src/lib/config')
+const { logger } = require('../../../../src/lib/logger')
 
-Logger.isDebugEnabled = jest.fn(() => true)
-Logger.isErrorEnabled = jest.fn(() => true)
-Logger.isInfoEnabled = jest.fn(() => true)
-const mockContext = jest.fn()
+const mocks = require('../../mocks')
 
-describe('/quotes/{id}', () => {
-  beforeEach(() => {
-    QuotesModel.mockClear()
+const { kafkaConfig } = new Config()
+
+describe('/quotes/{id} API Tests -->', () => {
+  const mockContext = jest.fn()
+
+  afterEach(() => {
+    jest.clearAllMocks()
   })
 
-  describe('GET', () => {
-    it('gets a quote by id', async () => {
+  describe('GET /quotes/{id} Endpoint Tests', () => {
+    const { topic, config } = kafkaConfig.PRODUCER.QUOTE.GET
+
+    it('should publish a message to get a quote by id', async () => {
       // Arrange
-      const code = jest.fn()
-      const handler = {
-        response: jest.fn(() => ({
-          code
-        }))
-      }
+      Producer.produceMessage = jest.fn()
+      const quoteId = randomUUID()
+      const mockRequest = mocks.mockHttpRequest({
+        params: { id: quoteId }
+      })
+      const { handler, code } = mocks.createMockHapiHandler()
 
       // Act
-      await QuotesHandler.get(mockContext, { ...baseMockRequest }, handler)
+      await quotesApi.get(mockContext, mockRequest, handler)
 
       // Assert
-      expect(QuotesModel).toHaveBeenCalledTimes(1)
-      const mockQuoteInstance = QuotesModel.mock.instances[0]
-      expect(mockQuoteInstance.handleQuoteGet).toHaveBeenCalledTimes(1)
-      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
+      expect(code).toHaveBeenCalledWith(Http.ReturnCodes.ACCEPTED.CODE)
+      expect(Producer.produceMessage).toHaveBeenCalledTimes(1)
+
+      const [message, topicConfig, producerConfig] = Producer.produceMessage.mock.calls[0]
+      const { id, type, action } = message.content
+      expect(id).toBe(quoteId)
+      expect(type).toBe(Events.Event.Type.QUOTE)
+      expect(action).toBe(Events.Event.Action.GET)
+      expect(topicConfig.topicName).toBe(topic)
+      expect(producerConfig).toStrictEqual(config)
     })
 
-    it('handles an error with the model', async () => {
+    it('should return accept statusCode in case of error during publish a message', async () => {
       // Arrange
-      const throwError = new Error('Create Quote Test Error')
-      const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
-      QuotesModel.mockImplementationOnce(() => {
-        return {
-          handleQuoteGet: jest.fn(async () => {
-            throw throwError
-          }),
-          handleException
-        }
-      })
-      const code = jest.fn()
-      const handler = {
-        response: jest.fn(() => ({
-          code
-        }))
-      }
+      const error = new Error('Get Quote Test Error')
+      Producer.produceMessage = jest.fn(async () => { throw error })
+
+      const mockRequest = mocks.mockHttpRequest()
+      const { handler, code } = mocks.createMockHapiHandler()
+      const spyErrorLog = jest.spyOn(logger, 'error')
 
       // Act
-      await QuotesHandler.get(mockContext, { ...baseMockRequest }, handler)
+      await quotesApi.get(mockContext, mockRequest, handler)
 
       // Assert
-      expect(QuotesModel).toHaveBeenCalledTimes(1)
-      expect(QuotesModel.mock.results[0].value.handleQuoteGet.mock.results[0].value).rejects.toThrow(throwError)
-      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
+      expect(code).toHaveBeenCalledWith(Http.ReturnCodes.ACCEPTED.CODE)
+      expect(spyErrorLog).toHaveBeenCalledTimes(1)
+      expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
     })
   })
 
-  describe('PUT', () => {
-    it('puts a quote by id', async () => {
-      QuotesModel.mockClear()
+  describe('PUT /quotes/{id} Endpoint Tests', () => {
+    const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
 
+    it('should publish a message with PUT quotes callback payload', async () => {
       // Arrange
-      const code = jest.fn()
-      const handler = {
-        response: jest.fn(() => ({
-          code
-        }))
-      }
+      Producer.produceMessage = jest.fn()
+      const quoteId = randomUUID()
+      const mockRequest = mocks.mockHttpRequest({
+        payload: { quoteId }
+      })
+      const { handler, code } = mocks.createMockHapiHandler()
 
       // Act
-      await QuotesHandler.put(mockContext, { ...baseMockRequest }, handler)
+      await quotesApi.put(mockContext, mockRequest, handler)
 
       // Assert
-      expect(QuotesModel).toHaveBeenCalledTimes(1)
-      const mockQuoteInstance = QuotesModel.mock.instances[0]
-      expect(mockQuoteInstance.handleQuoteUpdate).toHaveBeenCalledTimes(1)
-      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
+      expect(code).toHaveBeenCalledWith(Http.ReturnCodes.OK.CODE)
+      expect(Producer.produceMessage).toHaveBeenCalledTimes(1)
+
+      const [message, topicConfig, producerConfig] = Producer.produceMessage.mock.calls[0]
+      const { id, type, action } = message.content
+      expect(id).toBe(quoteId)
+      expect(type).toBe(Events.Event.Type.QUOTE)
+      expect(action).toBe(Events.Event.Action.PUT)
+      expect(topicConfig.topicName).toBe(topic)
+      expect(producerConfig).toStrictEqual(config)
     })
 
-    it('handles an error with the model', async () => {
+    it('should return OK statusCode in case of error during publish callback message', async () => {
       // Arrange
-      const throwError = new Error('Create Quote Test Error')
-      const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
-      QuotesModel.mockImplementationOnce(() => {
-        return {
-          handleQuoteUpdate: jest.fn(async () => {
-            throw throwError
-          }),
-          handleException
-        }
-      })
-      const code = jest.fn()
-      const handler = {
-        response: jest.fn(() => ({
-          code
-        }))
-      }
+      const error = new Error('Put Quote Test Error')
+      Producer.produceMessage = jest.fn(async () => { throw error })
+
+      const mockRequest = mocks.mockHttpRequest()
+      const { handler, code } = mocks.createMockHapiHandler()
+      const spyErrorLog = jest.spyOn(logger, 'error')
 
       // Act
-      await QuotesHandler.put(mockContext, { ...baseMockRequest }, handler)
+      await quotesApi.put(mockContext, mockRequest, handler)
 
       // Assert
-      expect(QuotesModel).toHaveBeenCalledTimes(1)
-      expect(QuotesModel.mock.results[0].value.handleQuoteUpdate.mock.results[0].value).rejects.toThrow(throwError)
-      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
+      expect(code).toHaveBeenCalledWith(Http.ReturnCodes.OK.CODE)
+      expect(spyErrorLog).toHaveBeenCalledTimes(1)
+      expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
     })
   })
 })

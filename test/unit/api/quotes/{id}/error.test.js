@@ -29,90 +29,63 @@
  --------------
  ******/
 
-const Enum = require('@mojaloop/central-services-shared').Enum
+const { randomUUID } = require('node:crypto')
+const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+const { Producer } = require('@mojaloop/central-services-stream').Util
 
-jest.mock('@mojaloop/central-services-logger')
-jest.mock('../../../../../src/model/quotes')
+const quotesApi = require('../../../../../src/api/quotes/{id}/error')
+const Config = require('../../../../../src/lib/config')
+const { logger } = require('../../../../../src/lib/logger')
 
-const QuotesErrorHandler = require('../../../../../src/api/quotes/{id}/error')
-const QuotesModel = require('../../../../../src/model/quotes')
-const { baseMockRequest } = require('../../../../util/helper')
-const Logger = require('@mojaloop/central-services-logger')
+const mocks = require('../../../mocks')
 
-Logger.isDebugEnabled = jest.fn(() => true)
-Logger.isErrorEnabled = jest.fn(() => true)
-Logger.isInfoEnabled = jest.fn(() => true)
-const mockContext = jest.fn()
+const { kafkaConfig } = new Config()
 
-describe('/quotes/{id}', () => {
-  beforeEach(() => {
-    QuotesModel.mockClear()
+describe('PUT /quotes/{id}/error API Tests -->', () => {
+  const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
+  const mockContext = jest.fn()
+
+  it('should publish a message with callback error payload', async () => {
+    // Arrange
+    Producer.produceMessage = jest.fn()
+    const quoteId = randomUUID()
+    const mockRequest = mocks.mockHttpRequest({
+      payload: { errorInformation: {} },
+      params: { id: quoteId }
+    })
+    const { handler, code } = mocks.createMockHapiHandler()
+
+    // Act
+    await quotesApi.put(mockContext, mockRequest, handler)
+
+    // Assert
+    expect(code).toHaveBeenCalledWith(Http.ReturnCodes.OK.CODE)
+    expect(Producer.produceMessage).toHaveBeenCalledTimes(1)
+
+    const [message, topicConfig, producerConfig] = Producer.produceMessage.mock.calls[0]
+    const { id, type, action } = message.content
+    expect(id).toBe(quoteId)
+    expect(type).toBe(Events.Event.Type.QUOTE)
+    expect(action).toBe(Events.Event.Action.PUT)
+    expect(topicConfig.topicName).toBe(topic)
+    expect(producerConfig).toStrictEqual(config)
   })
 
-  describe('PUT', () => {
-    it('handles an error', async () => {
-      // Arrange
-      const request = {
-        ...baseMockRequest,
-        payload: {
-          errorInformation: {
-            errorCode: '2201',
-            errorDescription: 'Test Error'
-          }
-        }
-      }
-      const code = jest.fn()
-      const handler = {
-        response: jest.fn(() => ({
-          code
-        }))
-      }
+  it('should return OK statusCode in case of error during publish a message', async () => {
+    // Arrange
+    const error = new Error('PUT Quote Test Error')
+    Producer.produceMessage = jest.fn(async () => { throw error })
 
-      // Act
-      await QuotesErrorHandler.put(mockContext, request, handler)
+    const mockRequest = mocks.mockHttpRequest()
+    const { handler, code } = mocks.createMockHapiHandler()
+    const spyErrorLog = jest.spyOn(logger, 'error')
 
-      // Assert
-      expect(QuotesModel).toHaveBeenCalledTimes(1)
-      const mockQuoteInstance = QuotesModel.mock.instances[0]
-      expect(mockQuoteInstance.handleQuoteError).toHaveBeenCalledTimes(1)
-      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
-    })
+    // Act
+    await quotesApi.put(mockContext, mockRequest, handler)
 
-    it('handles an error with the model', async () => {
-      // Arrange
-      const throwError = new Error('Create Quote Test Error')
-      const request = {
-        ...baseMockRequest,
-        payload: {
-          errorInformation: {
-            errorCode: '2201',
-            errorDescription: 'Test Error'
-          }
-        }
-      }
-      const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.OK.CODE }))
-      QuotesModel.mockImplementationOnce(() => {
-        return {
-          handleQuoteError: jest.fn(async () => {
-            throw throwError
-          }),
-          handleException
-        }
-      })
-      const code = jest.fn()
-      const handler = {
-        response: jest.fn(() => ({
-          code
-        }))
-      }
-
-      // Act
-      await QuotesErrorHandler.put(mockContext, request, handler)
-
-      // Assert
-      expect(QuotesModel).toHaveBeenCalledTimes(1)
-      expect(QuotesModel.mock.results[0].value.handleQuoteError.mock.results[0].value).rejects.toThrow(throwError)
-      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
-    })
+    // Assert
+    expect(code).toHaveBeenCalledWith(Http.ReturnCodes.OK.CODE)
+    expect(spyErrorLog).toHaveBeenCalledTimes(1)
+    expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
   })
 })

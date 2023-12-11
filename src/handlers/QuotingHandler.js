@@ -21,7 +21,7 @@ class QuotingHandler {
   }
 
   async handleMessages(error, messages) {
-    // todo: think, if we need to add Metrics.getHistogram here
+    // think, if we need to add Metrics.getHistogram here
     if (error) {
       this.logger.error(`${ErrorMessages.consumingErrorFromKafka}: ${error.message}`, { error })
       throw reformatFSPIOPError(error)
@@ -42,13 +42,19 @@ class QuotingHandler {
     switch (topic) {
       case QUOTES.POST.topic:
         return this.handlePostQuotes(requestData)
+      case QUOTES.PUT.topic:
+        return this.handlePutQuotes(requestData)
+      case QUOTES.GET.topic:
+        return this.handleGetQuotes(requestData)
       case BULK_QUOTES.POST.topic:
         return this.handlePostBulkQuotes(requestData)
-        // todo: add the rest of cases
+      case BULK_QUOTES.PUT.topic:
+        return this.handlePutBulkQuotes(requestData)
+      case BULK_QUOTES.GET.topic:
+        return this.handleGetBulkQuotes(requestData)
 
       default:
         this.logger.warn(ErrorMessages.unsupportedKafkaTopic, message)
-      // todo: think, if we should throw an error here
     }
   }
 
@@ -71,8 +77,101 @@ class QuotingHandler {
     return true
   }
 
+  async handlePutQuotes(requestData) {
+    const { id: quoteId, requestId, payload, headers } = requestData
+    const model = this.quotesModelFactory(requestId)
+    const isError = !!payload.errorInformation
+    let span
+
+    try {
+      span = await this.createSpan(requestData)
+      const result = isError
+        ? await model.handleQuoteError(headers, quoteId, payload.errorInformation, span)
+        : await model.handleQuoteUpdate(headers, quoteId, payload, span)
+      this.logger.debug('handlePutQuotes is done:', { isError, result })
+    } catch (err) {
+      this.logger.error(`error in handlePutQuotes: ${err?.message}`, { isError, requestData })
+      const fspiopSource = headers[FSPIOP.SOURCE]
+      await model.handleException(fspiopSource, quoteId, err, headers, span)
+    }
+
+    return true
+  }
+
+  async handleGetQuotes(requestData) {
+    const { id: quoteId, requestId, headers } = requestData
+    const model = this.quotesModelFactory(requestId)
+    let span
+
+    try {
+      span = await this.createSpan(requestData)
+      const result = await model.handleQuoteGet(headers, quoteId, span)
+      this.logger.debug('handleGetQuotes is done:', { result })
+    } catch (err) {
+      this.logger.error(`error in handleGetQuotes: ${err?.message}`, { requestData })
+      const fspiopSource = headers[FSPIOP.SOURCE]
+      await model.handleException(fspiopSource, quoteId, err, headers, span)
+    }
+
+    return true
+  }
+
   async handlePostBulkQuotes(requestData) {
-    // todo: add impl.
+    const { requestId, payload, headers } = requestData
+    const model = this.bulkQuotesModelFactory(requestId)
+    let span
+
+    try {
+      span = await this.createSpan(requestData)
+      const result = await model.handleBulkQuoteRequest(headers, payload, span)
+      this.logger.debug('handlePostBulkQuotes is done:', { result })
+    } catch (err) {
+      this.logger.error(`error in handlePostBulkQuotes: ${err?.message}`, { requestData })
+      const fspiopError = reformatFSPIOPError(err)
+      const fspiopSource = headers[FSPIOP.SOURCE]
+      await model.handleException(fspiopSource, payload.bulkQuoteId, fspiopError, headers, span)
+    }
+
+    return true
+  }
+
+  async handlePutBulkQuotes(requestData) {
+    const { id: bulkQuoteId, requestId, payload, headers } = requestData
+    const model = this.bulkQuotesModelFactory(requestId)
+    const isError = !!payload.errorInformation
+    let span
+
+    try {
+      span = await this.createSpan(requestData)
+      const result = isError
+        ? await model.handleBulkQuoteError(headers, bulkQuoteId, payload.errorInformation, span)
+        : await model.handleBulkQuoteUpdate(headers, bulkQuoteId, payload, span)
+      this.logger.debug('handlePutBulkQuotes is done:', { isError, result })
+    } catch (err) {
+      this.logger.error(`error in handlePutBulkQuotes: ${err?.message}`, { isError, requestData })
+      const fspiopSource = headers[FSPIOP.SOURCE]
+      await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
+    }
+
+    return true
+  }
+
+  async handleGetBulkQuotes(requestData) {
+    const { id: bulkQuoteId, requestId, headers } = requestData
+    const model = this.bulkQuotesModelFactory(requestId)
+    let span
+
+    try {
+      span = await this.createSpan(requestData)
+      const result = await model.handleBulkQuoteGet(headers, bulkQuoteId, span)
+      this.logger.debug('handleGetBulkQuotes is done:', { result })
+    } catch (err) {
+      this.logger.error(`error in handleGetBulkQuotes: ${err?.message}`, { requestData })
+      const fspiopSource = headers[FSPIOP.SOURCE]
+      await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
+    }
+
+    return true
   }
 
   async createSpan(requestData) {

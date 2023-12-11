@@ -31,89 +31,63 @@
  - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
-jest.mock('../../../src/model/bulkQuotes')
-jest.mock('@mojaloop/central-services-logger')
 
-const Enum = require('@mojaloop/central-services-shared').Enum
+const { randomUUID } = require('node:crypto')
+const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+const { Producer } = require('@mojaloop/central-services-stream').Util
 
-const BulkQuotesModel = require('../../../src/model/bulkQuotes')
-const BulkQuotesHandler = require('../../../src/api/bulkQuotes')
-const { baseMockRequest } = require('../../util/helper')
-const Logger = require('@mojaloop/central-services-logger')
+const bulkQuotesApi = require('../../../src/api/bulkQuotes')
+const Config = require('../../../src/lib/config')
+const { logger } = require('../../../src/lib/logger')
 
-Logger.isDebugEnabled = jest.fn(() => true)
-Logger.isErrorEnabled = jest.fn(() => true)
-Logger.isInfoEnabled = jest.fn(() => true)
-const mockContext = jest.fn()
+const mocks = require('../mocks')
 
-describe('/bulkQuotes', () => {
-  describe('POST', () => {
-    beforeEach(() => {
-      BulkQuotesModel.mockClear()
+const { kafkaConfig } = new Config()
+const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.POST
+
+describe('POST /bulkQuotes endpoint Tests -->', () => {
+  const mockContext = jest.fn()
+
+  it('should publish a bulkQuote request message', async () => {
+    // Arrange
+    Producer.produceMessage = jest.fn()
+    const bulkQuoteId = randomUUID()
+    const mockRequest = mocks.mockHttpRequest({
+      payload: { bulkQuoteId }
     })
+    const { handler, code } = mocks.createMockHapiHandler()
 
-    it('creates a bulkQuote', async () => {
-      // Arrange
-      const code = jest.fn()
-      const handler = {
-        response: jest.fn(() => ({
-          code
-        }))
-      }
-      const mockRequest = {
-        ...baseMockRequest,
-        payload: {
-          quoteId: '12345'
-        },
-        span: {
-          audit: jest.fn(),
-          setTags: jest.fn()
-        }
-      }
+    // Act
+    await bulkQuotesApi.post(mockContext, mockRequest, handler)
 
-      // Act
-      await BulkQuotesHandler.post(mockContext, mockRequest, handler)
+    // Assert
+    expect(code).toHaveBeenCalledWith(Http.ReturnCodes.ACCEPTED.CODE)
+    expect(Producer.produceMessage).toHaveBeenCalledTimes(1)
 
-      // Assert
-      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
-      const mockQuoteInstance = BulkQuotesModel.mock.instances[0]
-      expect(mockQuoteInstance.handleBulkQuoteRequest).toHaveBeenCalledTimes(1)
-    })
+    const [message, topicConfig, producerConfig] = Producer.produceMessage.mock.calls[0]
+    const { id, type, action } = message.content
+    expect(id).toBe(bulkQuoteId)
+    expect(type).toBe(Events.Event.Type.BULK_QUOTE)
+    expect(action).toBe(Events.Event.Action.POST)
+    expect(topicConfig.topicName).toBe(topic)
+    expect(producerConfig).toStrictEqual(config)
+  })
 
-    it('fails to create a quote', async () => {
-      // Arrange
-      const throwError = new Error('Create Quote Test Error')
-      const handleException = jest.fn()
-      BulkQuotesModel.mockImplementationOnce(() => ({
-        handleBulkQuoteRequest: jest.fn(async () => {
-          throw throwError
-        }),
-        handleException
-      }))
-      const code = jest.fn()
-      const handler = {
-        response: jest.fn(() => ({
-          code
-        }))
-      }
-      const mockRequest = {
-        ...baseMockRequest,
-        payload: {
-          bulkQuoteId: '12345'
-        },
-        span: {
-          audit: jest.fn(),
-          setTags: jest.fn()
-        }
-      }
+  it('should return accept statusCode and log error in case of error on publishing bulkQuote', async () => {
+    // Arrange
+    const error = new Error('Create BulkQuote Test Error')
+    Producer.produceMessage = jest.fn(async () => { throw error })
 
-      // Act
-      await BulkQuotesHandler.post(mockContext, mockRequest, handler)
+    const mockRequest = mocks.mockHttpRequest()
+    const { handler, code } = mocks.createMockHapiHandler()
+    const spyErrorLog = jest.spyOn(logger, 'error')
 
-      // Assert
-      expect(BulkQuotesModel).toHaveBeenCalledTimes(1)
-      expect(BulkQuotesModel.mock.results[0].value.handleBulkQuoteRequest.mock.results[0].value).rejects.toThrow(throwError)
-      expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
-    })
+    // Act
+    await bulkQuotesApi.post(mockContext, mockRequest, handler)
+
+    // Assert
+    expect(code).toHaveBeenCalledWith(Http.ReturnCodes.ACCEPTED.CODE)
+    expect(spyErrorLog).toHaveBeenCalledTimes(1)
+    expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
   })
 })

@@ -45,7 +45,7 @@ const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
 describe('POST /quotes API Tests -->', () => {
   const mockContext = jest.fn()
 
-  it('should publish a quote request data', async () => {
+  it('should publish a quote request message', async () => {
     // Arrange
     Producer.produceMessage = jest.fn()
     const quoteId = randomUUID()
@@ -70,7 +70,7 @@ describe('POST /quotes API Tests -->', () => {
     expect(producerConfig).toStrictEqual(config)
   })
 
-  it('should fails to create a quote', async () => {
+  it('should return accept statusCode and log error in case of error on publishing quote', async () => {
     // Arrange
     const error = new Error('Create Quote Test Error')
     Producer.produceMessage = jest.fn(async () => { throw error })

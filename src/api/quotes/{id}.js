@@ -31,15 +31,15 @@
  --------------
  ******/
 
-'use strict'
-
-const util = require('util')
-const Enum = require('@mojaloop/central-services-shared').Enum
-const EventSdk = require('@mojaloop/event-sdk')
-const LibUtil = require('../../lib/util')
-const QuotesModel = require('../../model/quotes.js')
 const Metrics = require('@mojaloop/central-services-metrics')
-const Logger = require('@mojaloop/central-services-logger')
+const { Producer } = require('@mojaloop/central-services-stream').Util
+const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+
+const { logger } = require('../../lib/logger')
+const Config = require('../../lib/config')
+const dto = require('../../lib/dto')
+
+const { kafkaConfig } = new Config()
 
 /**
  * Operations on /quotes/{id}
@@ -55,53 +55,28 @@ module.exports = {
   get: async function getQuotesById (context, request, h) {
     const histTimerEnd = Metrics.getHistogram(
       'quotes_id_get',
-      'Process HTTP GET /quotes/{id} request',
+      'Publish HTTP GET /quotes/{id} request',
       ['success']
     ).startTimer()
-    // log request
-    Logger.isDebugEnabled && Logger.debug(`got a GET /quotes/{id} request for quoteId ${request.params.id}`)
 
-    // instantiate a new quote model
-    const model = new QuotesModel({
-      db: request.server.app.database,
-      requestId: request.info.id
-    })
-
-    const quoteRequest = {
-      payload: { ...request.payload },
-      headers: { ...request.headers },
-      span: request.span,
-      params: { ...request.params }
-    }
-
-    // extract some things from the request we may need if we have to deal with an error e.g. the
-    // originator and quoteId
-    const quoteId = quoteRequest.params.id
-    const fspiopSource = quoteRequest.headers[Enum.Http.Headers.FSPIOP.SOURCE]
-    const span = quoteRequest.span
     try {
-      const spanTags = LibUtil.getSpanTags(quoteRequest, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.GET)
-      span.setTags(spanTags)
-      await span.audit({
-        headers: quoteRequest.headers,
-        payload: quoteRequest.payload
-      }, EventSdk.AuditEventAction.start)
-      // call the model to re-forward the quote update to the correct party
-      // note that we do not check if our caller is the correct party, but we
-      // will send the callback to the correct party regardless.
-      model.handleQuoteGet(quoteRequest.headers, quoteId, span).catch(err => {
-        Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
-      })
+      logger.debug('got a GET /quotes request: ', request.payload)
+      const { topic, config } = kafkaConfig.PRODUCER.QUOTE.GET
+      const topicConfig = dto.topicConfigDto({ topicName: topic })
+      const message = dto.messageFromRequestDto(request, Events.Event.Type.QUOTE, Events.Event.Action.GET)
+
+      await Producer.produceMessage(message, topicConfig, config)
+
       histTimerEnd({ success: true })
     } catch (err) {
-      // something went wrong, use the model to handle the error in a sensible way
-      Logger.isErrorEnabled && Logger.error(`ERROR - GET /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
-      model.handleException(fspiopSource, quoteId, err, quoteRequest.headers, span)
+      logger.error(`error in GET /quotes request: ${err?.message}`)
+      // todo: think, how we should handle such error cases:
+      //   - how to send callback ?
+      //   - OR reply with errorCode (not 202)?
       histTimerEnd({ success: false })
-    } finally {
-      // eslint-disable-next-line no-unsafe-finally
-      return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     }
+
+    return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
   },
 
   /**
@@ -114,50 +89,27 @@ module.exports = {
   put: async function putQuotesById (context, request, h) {
     const histTimerEnd = Metrics.getHistogram(
       'quotes_id_put',
-      'Process HTTP PUT /quotes/{id} request',
+      'Publish HTTP PUT /quotes/{id} request',
       ['success']
     ).startTimer()
-    // log request
-    Logger.isDebugEnabled && Logger.debug(`got a PUT /quotes/{id} request: ${util.inspect(request.payload)}`)
 
-    // instantiate a new quote model
-    const model = new QuotesModel({
-      db: request.server.app.database,
-      requestId: request.info.id
-    })
-
-    const quoteRequest = {
-      payload: { ...request.payload },
-      headers: { ...request.headers },
-      span: request.span,
-      params: { ...request.params }
-    }
-
-    // extract some things from the request we may need if we have to deal with an error e.g. the
-    // originator and quoteId
-    const quoteId = quoteRequest.params.id
-    const fspiopSource = quoteRequest.headers[Enum.Http.Headers.FSPIOP.SOURCE]
-    const span = quoteRequest.span
     try {
-      const spanTags = LibUtil.getSpanTags(quoteRequest, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.FULFIL)
-      span.setTags(spanTags)
-      await span.audit({
-        headers: quoteRequest.headers,
-        payload: quoteRequest.payload
-      }, EventSdk.AuditEventAction.start)
-      // call the quote update handler in the model
-      model.handleQuoteUpdate(quoteRequest.headers, quoteId, quoteRequest.payload, span).catch(err => {
-        Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
-      })
+      logger.debug('got a PUT /quotes request: ', request.payload)
+      const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
+      const topicConfig = dto.topicConfigDto({ topicName: topic })
+      const message = dto.messageFromRequestDto(request, Events.Event.Type.QUOTE, Events.Event.Action.PUT)
+
+      await Producer.produceMessage(message, topicConfig, config)
+
       histTimerEnd({ success: true })
     } catch (err) {
-      // something went wrong, use the model to handle the error in a sensible way
-      Logger.isErrorEnabled && Logger.error(`ERROR - PUT /quotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
-      model.handleException(fspiopSource, quoteId, err, quoteRequest.headers, span)
+      logger.error(`error in PUT /quotes request: ${err?.message}`)
+      // todo: think, how we should handle such error cases:
+      //   - how to send callback ?
+      //   - OR reply with errorCode (not 200)?
       histTimerEnd({ success: false })
-    } finally {
-      // eslint-disable-next-line no-unsafe-finally
-      return h.response().code(Enum.Http.ReturnCodes.OK.CODE)
     }
+
+    return h.response().code(Http.ReturnCodes.OK.CODE)
   }
 }

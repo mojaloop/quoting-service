@@ -30,15 +30,15 @@
  --------------
  ******/
 
-'use strict'
-
-const util = require('util')
-const Enum = require('@mojaloop/central-services-shared').Enum
-const EventSdk = require('@mojaloop/event-sdk')
-const LibUtil = require('../../lib/util')
-const BulkQuotesModel = require('../../model/bulkQuotes')
 const Metrics = require('@mojaloop/central-services-metrics')
-const Logger = require('@mojaloop/central-services-logger')
+const { Producer } = require('@mojaloop/central-services-stream').Util
+const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+
+const { logger } = require('../../lib/logger')
+const Config = require('../../lib/config')
+const dto = require('../../lib/dto')
+
+const { kafkaConfig } = new Config()
 
 /**
  * Operations on /bulkQuotes/{id}
@@ -53,54 +53,29 @@ module.exports = {
      */
   get: async function getBulkQuotesById (context, request, h) {
     const histTimerEnd = Metrics.getHistogram(
-      'quotes_id_get',
-      'Process HTTP GET /bulkQuotes/{id} request',
+      'bulkQuotes_id_get',
+      'Publish HTTP GET /bulkQuotes/{id} request',
       ['success']
     ).startTimer()
-    // log request
-    Logger.isDebugEnabled && Logger.debug(`got a GET /bulkQuotes/{id} request for bulkQuoteId ${request.params.id}`)
 
-    // instantiate a new quote model
-    const model = new BulkQuotesModel({
-      db: request.server.app.database,
-      requestId: request.info.id
-    })
-
-    const quoteRequest = {
-      payload: { ...request.payload },
-      headers: { ...request.headers },
-      params: { ...request.params },
-      span: request.span
-    }
-
-    // extract some things from the request we may need if we have to deal with an error e.g. the
-    // originator and quoteId
-    const bulkQuoteId = quoteRequest.params.id
-    const fspiopSource = quoteRequest.headers[Enum.Http.Headers.FSPIOP.SOURCE]
-    const span = quoteRequest.span
     try {
-      const spanTags = LibUtil.getSpanTags(quoteRequest, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.GET)
-      span.setTags(spanTags)
-      await span.audit({
-        headers: quoteRequest.headers,
-        payload: quoteRequest.payload
-      }, EventSdk.AuditEventAction.start)
-      // call the model to re-forward the quote update to the correct party
-      // note that we do not check if our caller is the correct party, but we
-      // will send the callback to the correct party regardless.
-      model.handleBulkQuoteGet(quoteRequest.headers, bulkQuoteId, span).catch(err => {
-        Logger.isErrorEnabled && Logger.error(`ERROR - handleBulkQuoteGet: ${LibUtil.getStackOrInspect(err)}`)
-      })
+      logger.debug('got a GET /bulkQuotes request: ', request.payload)
+      const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.GET
+      const topicConfig = dto.topicConfigDto({ topicName: topic })
+      const message = dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.GET)
+
+      await Producer.produceMessage(message, topicConfig, config)
+
       histTimerEnd({ success: true })
     } catch (err) {
-      // something went wrong, use the model to handle the error in a sensible way
-      Logger.isErrorEnabled && Logger.error(`ERROR - GET /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
-      model.handleException(fspiopSource, bulkQuoteId, err, quoteRequest.headers, span)
+      logger.error(`error in GET /bulkQuotes request: ${err?.message}`)
+      // todo: think, how we should handle such error cases:
+      //   - how to send callback ?
+      //   - OR reply with errorCode (not 202)?
       histTimerEnd({ success: false })
-    } finally {
-      // eslint-disable-next-line no-unsafe-finally
-      return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     }
+
+    return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
   },
   /**
      * summary: putBulkQuotesById
@@ -111,51 +86,28 @@ module.exports = {
      */
   put: async function putBulkQuotesById (context, request, h) {
     const histTimerEnd = Metrics.getHistogram(
-      'quotes_id_get',
-      'Process HTTP PUT /bulkQuotes/{id} request',
+      'bulkQuotes_id_put',
+      'Publish HTTP PUT /bulkQuotes/{id} request',
       ['success']
     ).startTimer()
-    // log request
-    Logger.isDebugEnabled && Logger.debug(`got a PUT /bulkQuotes/{id} request: ${util.inspect(request.payload)}`)
-
-    // instantiate a new quote model
-    const model = new BulkQuotesModel({
-      db: request.server.app.database,
-      requestId: request.info.id
-    })
-
-    const quoteRequest = {
-      payload: { ...request.payload },
-      headers: { ...request.headers },
-      span: request.span,
-      params: { ...request.params }
-    }
-
-    // extract some things from the request we may need if we have to deal with an error e.g. the
-    // originator and quoteId
-    const bulkQuoteId = quoteRequest.params.id
-    const fspiopSource = quoteRequest.headers[Enum.Http.Headers.FSPIOP.SOURCE]
-    const span = quoteRequest.span
 
     try {
-      const spanTags = LibUtil.getSpanTags(quoteRequest, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.FULFIL)
-      span.setTags(spanTags)
-      await span.audit({
-        headers: quoteRequest.headers,
-        payload: quoteRequest.payload
-      }, EventSdk.AuditEventAction.start)
-      // call the quote update handler in the model
-      model.handleBulkQuoteUpdate(quoteRequest.headers, bulkQuoteId, quoteRequest.payload, span).catch(err => {
-        Logger.isErrorEnabled && Logger.error(`ERROR - handleBulkQuoteUpdate: ${LibUtil.getStackOrInspect(err)}`)
-      })
+      logger.debug('got a PUT /bulkQuotes request: ', request.payload)
+      const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
+      const topicConfig = dto.topicConfigDto({ topicName: topic })
+      const message = dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.PUT)
+
+      await Producer.produceMessage(message, topicConfig, config)
+
       histTimerEnd({ success: true })
     } catch (err) {
-      // something went wrong, use the model to handle the error in a sensible way
-      Logger.isErrorEnabled && Logger.error(`ERROR - PUT /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
-      model.handleException(fspiopSource, bulkQuoteId, err, quoteRequest.headers, span)
+      logger.error(`error in PUT /bulkQuotes request: ${err?.message}`)
+      // todo: think, how we should handle such error cases:
+      //   - how to send callback ?
+      //   - OR reply with errorCode (not 200)?
       histTimerEnd({ success: false })
     }
 
-    return h.response().code(Enum.Http.ReturnCodes.OK.CODE)
+    return h.response().code(Http.ReturnCodes.OK.CODE)
   }
 }
