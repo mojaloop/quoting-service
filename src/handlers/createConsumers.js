@@ -5,6 +5,7 @@ const { logger } = require('../lib/logger')
 const { ErrorMessages } = require('../lib/enum')
 const Config = require('../lib/config')
 
+// todo: pass Consumer as a param
 const createConsumers = async (onMessageFn, handlerList = []) => {
   try {
     if (typeof onMessageFn !== 'function') {
@@ -17,7 +18,7 @@ const createConsumers = async (onMessageFn, handlerList = []) => {
     for (const [key, value] of Object.entries(kafkaConfig.CONSUMER)) {
       if (handlerList.includes(key)) {
         for (const { topic, config } of Object.values(value)) {
-          creating.push(Consumer.createHandler(topic, config, onMessageFn)) // todo: think, if we need to each topic a separate fn
+          creating.push(Consumer.createHandler(topic, config, onMessageFn)) // think, if we need to pass for each topic a separate fn
           topics.push(topic)
         }
       }
