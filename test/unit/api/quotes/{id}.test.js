@@ -26,29 +26,30 @@
 
  * Crosslake
  - Lewis Daly <lewisd@crosslaketech.com>
-
- * Modusbox
- - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
 
 jest.mock('@mojaloop/central-services-logger')
-jest.mock('../../../../src/model/bulkQuotes')
+jest.mock('../../../../src/model/quotes')
 
 const Enum = require('@mojaloop/central-services-shared').Enum
-const BulkQuotesHandler = require('../../../../src/handlers/bulkQuotes/{id}')
-const BulkQuotesModel = require('../../../../src/model/bulkQuotes')
+const QuotesHandler = require('../../../../src/api/quotes/{id}')
+const QuotesModel = require('../../../../src/model/quotes')
 const { baseMockRequest } = require('../../../util/helper')
+const Logger = require('@mojaloop/central-services-logger')
 
+Logger.isDebugEnabled = jest.fn(() => true)
+Logger.isErrorEnabled = jest.fn(() => true)
+Logger.isInfoEnabled = jest.fn(() => true)
 const mockContext = jest.fn()
 
-describe('/bulkQuotes/{id}', () => {
+describe('/quotes/{id}', () => {
   beforeEach(() => {
-    BulkQuotesModel.mockClear()
+    QuotesModel.mockClear()
   })
 
   describe('GET', () => {
-    it('gets a bulk quote by id', async () => {
+    it('gets a quote by id', async () => {
       // Arrange
       const code = jest.fn()
       const handler = {
@@ -58,22 +59,22 @@ describe('/bulkQuotes/{id}', () => {
       }
 
       // Act
-      await BulkQuotesHandler.get(mockContext, { ...baseMockRequest }, handler)
+      await QuotesHandler.get(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
-      expect(BulkQuotesModel).toHaveBeenCalledTimes(1)
-      const mockQuoteInstance = BulkQuotesModel.mock.instances[0]
-      expect(mockQuoteInstance.handleBulkQuoteGet).toHaveBeenCalledTimes(1)
+      expect(QuotesModel).toHaveBeenCalledTimes(1)
+      const mockQuoteInstance = QuotesModel.mock.instances[0]
+      expect(mockQuoteInstance.handleQuoteGet).toHaveBeenCalledTimes(1)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     })
 
     it('handles an error with the model', async () => {
       // Arrange
       const throwError = new Error('Create Quote Test Error')
-      const handleException = jest.fn()
-      BulkQuotesModel.mockImplementationOnce(() => {
+      const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
+      QuotesModel.mockImplementationOnce(() => {
         return {
-          handleBulkQuoteGet: jest.fn(async () => {
+          handleQuoteGet: jest.fn(async () => {
             throw throwError
           }),
           handleException
@@ -87,18 +88,18 @@ describe('/bulkQuotes/{id}', () => {
       }
 
       // Act
-      await BulkQuotesHandler.get(mockContext, { ...baseMockRequest }, handler)
+      await QuotesHandler.get(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
-      expect(BulkQuotesModel).toHaveBeenCalledTimes(1)
-      expect(BulkQuotesModel.mock.results[0].value.handleBulkQuoteGet.mock.results[0].value).rejects.toThrow(throwError)
+      expect(QuotesModel).toHaveBeenCalledTimes(1)
+      expect(QuotesModel.mock.results[0].value.handleQuoteGet.mock.results[0].value).rejects.toThrow(throwError)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     })
   })
 
   describe('PUT', () => {
-    it('puts a bulk quote by id', async () => {
-      BulkQuotesModel.mockClear()
+    it('puts a quote by id', async () => {
+      QuotesModel.mockClear()
 
       // Arrange
       const code = jest.fn()
@@ -109,22 +110,22 @@ describe('/bulkQuotes/{id}', () => {
       }
 
       // Act
-      await BulkQuotesHandler.put(mockContext, { ...baseMockRequest }, handler)
+      await QuotesHandler.put(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
-      expect(BulkQuotesModel).toHaveBeenCalledTimes(1)
-      const mockQuoteInstance = BulkQuotesModel.mock.instances[0]
-      expect(mockQuoteInstance.handleBulkQuoteUpdate).toHaveBeenCalledTimes(1)
+      expect(QuotesModel).toHaveBeenCalledTimes(1)
+      const mockQuoteInstance = QuotesModel.mock.instances[0]
+      expect(mockQuoteInstance.handleQuoteUpdate).toHaveBeenCalledTimes(1)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
     })
 
     it('handles an error with the model', async () => {
       // Arrange
       const throwError = new Error('Create Quote Test Error')
-      const handleException = jest.fn()
-      BulkQuotesModel.mockImplementationOnce(() => {
+      const handleException = jest.fn(() => ({ code: Enum.Http.ReturnCodes.ACCEPTED.CODE }))
+      QuotesModel.mockImplementationOnce(() => {
         return {
-          handleBulkQuoteUpdate: jest.fn(async () => {
+          handleQuoteUpdate: jest.fn(async () => {
             throw throwError
           }),
           handleException
@@ -138,11 +139,11 @@ describe('/bulkQuotes/{id}', () => {
       }
 
       // Act
-      await BulkQuotesHandler.put(mockContext, { ...baseMockRequest }, handler)
+      await QuotesHandler.put(mockContext, { ...baseMockRequest }, handler)
 
       // Assert
-      expect(BulkQuotesModel).toHaveBeenCalledTimes(1)
-      expect(BulkQuotesModel.mock.results[0].value.handleBulkQuoteUpdate.mock.results[0].value).rejects.toThrow(throwError)
+      expect(QuotesModel).toHaveBeenCalledTimes(1)
+      expect(QuotesModel.mock.results[0].value.handleQuoteUpdate.mock.results[0].value).rejects.toThrow(throwError)
       expect(code).toHaveBeenCalledWith(Enum.Http.ReturnCodes.OK.CODE)
     })
   })

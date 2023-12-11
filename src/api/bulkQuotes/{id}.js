@@ -36,7 +36,7 @@ const util = require('util')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('../../lib/util')
-const BulkQuotesModel = require('../../model/bulkQuotes.js')
+const BulkQuotesModel = require('../../model/bulkQuotes')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Logger = require('@mojaloop/central-services-logger')
 
@@ -69,8 +69,8 @@ module.exports = {
     const quoteRequest = {
       payload: { ...request.payload },
       headers: { ...request.headers },
-      span: request.span,
-      params: { ...request.params }
+      params: { ...request.params },
+      span: request.span
     }
 
     // extract some things from the request we may need if we have to deal with an error e.g. the
@@ -136,6 +136,7 @@ module.exports = {
     const bulkQuoteId = quoteRequest.params.id
     const fspiopSource = quoteRequest.headers[Enum.Http.Headers.FSPIOP.SOURCE]
     const span = quoteRequest.span
+
     try {
       const spanTags = LibUtil.getSpanTags(quoteRequest, Enum.Events.Event.Type.BULK_QUOTE, Enum.Events.Event.Action.FULFIL)
       span.setTags(spanTags)
@@ -153,9 +154,8 @@ module.exports = {
       Logger.isErrorEnabled && Logger.error(`ERROR - PUT /bulkQuotes/{id}: ${LibUtil.getStackOrInspect(err)}`)
       model.handleException(fspiopSource, bulkQuoteId, err, quoteRequest.headers, span)
       histTimerEnd({ success: false })
-    } finally {
-      // eslint-disable-next-line no-unsafe-finally
-      return h.response().code(Enum.Http.ReturnCodes.OK.CODE)
     }
+
+    return h.response().code(Enum.Http.ReturnCodes.OK.CODE)
   }
 }

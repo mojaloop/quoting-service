@@ -32,7 +32,7 @@ jest.mock('../../../src/lib/config')
 jest.mock('@mojaloop/central-services-logger')
 
 const { responseCode, statusEnum } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
-const HealthHandler = require('../../../src/handlers/health')
+const HealthHandler = require('../../../src/api/health')
 const { baseMockRequest } = require('../../util/helper')
 
 let Config = require('../../../src/lib/config')
@@ -115,7 +115,7 @@ describe('/health', () => {
       Config.mockImplementation(() => ({
         simpleRoutingMode: true
       }))
-      const HealthHandlerProxy = require('../../../src/handlers/health')
+      const HealthHandlerProxy = require('../../../src/api/health')
       const expectedServiceHealthList = []
 
       // Act
@@ -132,7 +132,7 @@ describe('/health', () => {
       Config.mockImplementation(() => ({
         simpleRoutingMode: false
       }))
-      const HealthHandlerProxy = require('../../../src/handlers/health')
+      const HealthHandlerProxy = require('../../../src/api/health')
 
       // Act
       await HealthHandlerProxy.get(mockContext, { ...baseMockRequest }, handler)
@@ -167,7 +167,7 @@ describe('/health', () => {
     it('returns an down response when getHealth returns DOWN', async () => {
       // Arrange
       HealthCheck = require('@mojaloop/central-services-shared/src/healthCheck').HealthCheck
-      HealthHandlerProxy = require('../../../src/handlers/health')
+      HealthHandlerProxy = require('../../../src/api/health')
 
       code = jest.fn()
       const mockRequest = {
@@ -188,7 +188,7 @@ describe('/health', () => {
       // Arrange
       jest.mock('@mojaloop/central-services-shared/src/healthCheck')
       HealthCheck = require('@mojaloop/central-services-shared/src/healthCheck').HealthCheck
-      HealthHandlerProxy = require('../../../src/handlers/health')
+      HealthHandlerProxy = require('../../../src/api/health')
 
       code = jest.fn()
       HealthCheck.mockImplementationOnce(() => ({

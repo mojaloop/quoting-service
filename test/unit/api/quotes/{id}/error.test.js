@@ -34,7 +34,7 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 jest.mock('@mojaloop/central-services-logger')
 jest.mock('../../../../../src/model/quotes')
 
-const QuotesErrorHandler = require('../../../../../src/handlers/quotes/{id}/error')
+const QuotesErrorHandler = require('../../../../../src/api/quotes/{id}/error')
 const QuotesModel = require('../../../../../src/model/quotes')
 const { baseMockRequest } = require('../../../../util/helper')
 const Logger = require('@mojaloop/central-services-logger')

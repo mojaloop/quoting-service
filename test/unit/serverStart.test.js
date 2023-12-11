@@ -29,25 +29,32 @@
  --------------
  ******/
 
+jest.mock('@mojaloop/central-services-logger')
+jest.mock('../../src/model/quotes')
+
+const { Producer } = require('@mojaloop/central-services-stream').Util
 const { mockRequest: Mockgen, defaultHeaders } = require('../util/helper')
 const Server = require('../../src/server')
-jest.mock('../../src/model/quotes')
-jest.mock('@mojaloop/central-services-logger')
 const QuotesModel = require('../../src/model/quotes')
-let Database
-let server
 
 jest.setTimeout(10000)
 
 describe('Server Start', () => {
+  let Database
+  let server
+
+  beforeAll(() => {
+    Producer.produceMessage = jest.fn()
+  })
+
   beforeEach(() => {
     jest.resetModules()
     jest.mock('../../src/data/cachedDatabase')
     Database = require('../../src/data/cachedDatabase')
   })
 
-  afterEach(() => {
-    server.stop()
+  afterEach(async () => {
+    await server.stop({ timeout: 100 })
   })
 
   it('runs the server', async () => {
@@ -70,13 +77,8 @@ describe('Server Start', () => {
     }
 
     // Act
-    try {
-      const response = await server.inject(options)
-      expect(response.statusCode).toBe(200)
-      jest.setTimeout(5000)
-    } catch (error) {
-      console.log(error)
-    }
+    const response = await server.inject(options)
+    expect(response.statusCode).toBe(200)
   })
 
   it('post /quotes throws error when missing mandatory header', async () => {
@@ -117,13 +119,9 @@ describe('Server Start', () => {
       payload: mock.request.body
     }
     // Act
-    try {
-      const response = await server.inject(options)
-      expect(response.statusCode).toBe(400)
-      expect(response.result).toEqual(expectedResult)
-    } catch (error) {
-      console.log(error)
-    }
+    const response = await server.inject(options)
+    expect(response.statusCode).toBe(400)
+    expect(response.result).toEqual(expectedResult)
   })
 
   it('post /quotes with additional asian (Myanmar) unicode characters', async () => {
@@ -161,11 +159,7 @@ describe('Server Start', () => {
     }
 
     // Act
-    try {
-      const response = await server.inject(options)
-      expect(response.statusCode).toBe(202)
-    } catch (error) {
-      console.log(error)
-    }
+    const response = await server.inject(options)
+    expect(response.statusCode).toBe(202)
   })
 })

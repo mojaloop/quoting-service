@@ -52,8 +52,8 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 const Config = require('./lib/config.js')
 const Database = require('./data/cachedDatabase')
-const Handlers = require('./handlers')
-const Routes = require('./handlers/routes')
+const Handlers = require('./api')
+const Routes = require('./api/routes')
 const { Cache } = require('memory-cache')
 
 const OpenAPISpecPath = Path.resolve(__dirname, './interface/QuotingService-swagger.yaml')
@@ -61,9 +61,9 @@ const OpenAPISpecPath = Path.resolve(__dirname, './interface/QuotingService-swag
 /**
  * Initializes a database connection pool
  */
-const initDb = function (config, cache) {
+const initDb = function (config) {
   // try open a db connection pool
-  const database = new Database(config, cache)
+  const database = new Database(config)
   return database.connect()
 }
 

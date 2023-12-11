@@ -387,6 +387,7 @@ class QuotesModel {
       histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
       throw fspiopError
     }
+
     let forwardQuoteRequestSpan
     try {
       forwardQuoteRequestSpan = handleQuoteRequestSpan.getChild('qs_quote_forwardQuoteRequest')

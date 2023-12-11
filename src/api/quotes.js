@@ -31,16 +31,15 @@
  --------------
  ******/
 
-'use strict'
-
-const util = require('util')
-const Enum = require('@mojaloop/central-services-shared').Enum
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const EventSdk = require('@mojaloop/event-sdk')
-const LibUtil = require('../lib/util')
-const QuotesModel = require('../model/quotes')
 const Metrics = require('@mojaloop/central-services-metrics')
-const Logger = require('@mojaloop/central-services-logger')
+const { Producer } = require('@mojaloop/central-services-stream').Util
+const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+
+const { logger } = require('../lib/logger')
+const Config = require('../lib/config')
+const dto = require('../lib/dto')
+
+const { kafkaConfig } = new Config()
 
 /**
  * Operations on /quotes
@@ -56,52 +55,27 @@ module.exports = {
   post: async function Quotes (context, request, h) {
     const histTimerEnd = Metrics.getHistogram(
       'quotes_post',
-      'Process HTTP POST quotes request',
+      'Publish HTTP POST quotes request',
       ['success']
     ).startTimer()
-    // log request
-    Logger.isDebugEnabled && Logger.debug(`got a POST /quotes request: ${util.inspect(request.payload)}`)
 
-    // instantiate a new quote model
-    const model = new QuotesModel({
-      db: request.server.app.database,
-      requestId: request.info.id
-    })
-
-    const quoteRequest = {
-      payload: { ...request.payload },
-      headers: { ...request.headers },
-      span: request.span,
-      params: { ...request.params }
-    }
-
-    // extract some things from the request we may need if we have to deal with an error e.g. the
-    // originator and quoteId
-    const quoteId = quoteRequest.payload.quoteId
-    const fspiopSource = quoteRequest.headers[Enum.Http.Headers.FSPIOP.SOURCE]
-    const span = quoteRequest.span
     try {
-      const spanTags = LibUtil.getSpanTags(quoteRequest, Enum.Events.Event.Type.QUOTE, Enum.Events.Event.Action.PREPARE)
-      span.setTags(spanTags)
-      await span.audit({
-        headers: quoteRequest.headers,
-        payload: quoteRequest.payload
-      }, EventSdk.AuditEventAction.start)
+      logger.debug('got a POST /quotes request: ', request.payload)
+      const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
+      const topicConfig = dto.topicConfigDto({ topicName: topic })
+      const message = dto.messageFromRequestDto(request, Events.Event.Type.QUOTE, Events.Event.Action.POST)
 
-      // call the quote request handler in the model
-      model.handleQuoteRequest(quoteRequest.headers, quoteRequest.payload, span, request.server.app.cache).catch(err => {
-        Logger.isErrorEnabled && Logger.error(`ERROR - handleQuoteRequest: ${LibUtil.getStackOrInspect(err)}`)
-      })
+      await Producer.produceMessage(message, topicConfig, config)
+
       histTimerEnd({ success: true })
     } catch (err) {
-      // something went wrong, use the model to handle the error in a sensible way
-      Logger.isErrorEnabled && Logger.error(`ERROR - POST /quotes: ${LibUtil.getStackOrInspect(err)}`)
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-      model.handleException(fspiopSource, quoteId, fspiopError, quoteRequest.headers, span)
+      logger.error(`error in POST /quotes request: ${err?.message}`)
+      // todo: think, how we should handle such error cases:
+      //   - how to send callback ?
+      //   - OR reply with errorCode (not 202)?
       histTimerEnd({ success: false })
-    } finally {
-      // eslint-disable-next-line no-unsafe-finally
-      return h.response().code(Enum.Http.ReturnCodes.ACCEPTED.CODE)
     }
+
+    return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
   }
 }

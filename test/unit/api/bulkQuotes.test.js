@@ -37,7 +37,7 @@ jest.mock('@mojaloop/central-services-logger')
 const Enum = require('@mojaloop/central-services-shared').Enum
 
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')
-const BulkQuotesHandler = require('../../../src/handlers/bulkQuotes')
+const BulkQuotesHandler = require('../../../src/api/bulkQuotes')
 const { baseMockRequest } = require('../../util/helper')
 const Logger = require('@mojaloop/central-services-logger')
 

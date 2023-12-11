@@ -28,7 +28,7 @@ describe('/metrics', () => {
     it('returns a 200 response code', async () => {
       // Arrange
       code = jest.fn()
-      const MetricsHandlerProxy = require('../../../src/handlers/metrics')
+      const MetricsHandlerProxy = require('../../../src/api/metrics')
 
       // Act
       await MetricsHandlerProxy.get(mockContext, { ...baseMockRequest }, handler)
