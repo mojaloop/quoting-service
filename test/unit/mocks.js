@@ -1,11 +1,13 @@
 const { randomUUID } = require('node:crypto')
-// const dto = require('../../src/lib/dto')
 
 const mockHttpRequest = ({
+  requestId = randomUUID(),
   payload = {},
   params = {},
-  headers = { 'fspiop-source': 'payerFsp' },
-  requestId = randomUUID()
+  headers = {
+    'fspiop-source': 'payerFsp',
+    'content-type': 'application/vnd.interoperability.quotes+json;version=1.0'
+  }
 } = {}) => ({
   payload,
   params,
@@ -25,14 +27,6 @@ const mockHttpRequest = ({
   }
 })
 
-// const toKafkaMessageFormat = ({
-//   topic = 'topic',
-//   messageData = {}
-// } = {}) => Object.freeze({
-//   topic,
-//   value: messageData
-// })
-
 const createMockHapiHandler = () => {
   const code = jest.fn()
   const handler = {
@@ -43,7 +37,6 @@ const createMockHapiHandler = () => {
 }
 
 module.exports = {
-  // toKafkaMessageFormat,
   mockHttpRequest,
   createMockHapiHandler
 }

@@ -20,13 +20,17 @@ const createRequestData = ({
   action = 'action'
 } = {}) => {
   const httpRequest = mocks.mockHttpRequest({ payload })
-  const { content } = dto.messageFromRequestDto(httpRequest, type, action)
-  return content
+  const messageValue = dto.messageFromRequestDto(httpRequest, type, action)
+  const { requestData } = dto.requestDataFromMessageDto({ value: messageValue })
+
+  return requestData
 }
 
 const createKafkaMessage = (topic) => ({
   topic,
-  value: { content: {} }
+  value: {
+    content: { payload: '{}' }
+  }
 })
 
 describe('QuotingHandler Tests -->', () => {

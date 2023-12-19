@@ -1,15 +1,19 @@
-const { Headers } = require('@mojaloop/central-services-shared').Enum.Http
+const { Enum, Util } = require('@mojaloop/central-services-shared')
+
+const { Headers } = Enum.Http
+const { decodePayload, encodePayload } = Util.StreamingProtocol
 
 const messageFromRequestDto = (request, type, action) => {
   const { headers, payload, params } = request
   const { spanContext } = request.span || {}
   const id = params.id || payload.quoteId || payload.bulkQuoteId
+  const encodedJson = encodePayload(JSON.stringify(payload), headers[Headers.GENERAL.CONTENT_TYPE.value])
 
   return Object.freeze({
     content: {
       requestId: request.info?.id,
       headers,
-      payload, // todo: base64 encoded
+      payload: encodedJson,
       uriParams: params,
       spanContext,
       id,
@@ -30,7 +34,8 @@ const requestDataFromMessageDto = (message) => {
   return Object.freeze({
     topic,
     requestData: {
-      ...value.content
+      ...value.content,
+      payload: decodePayload(value.content?.payload)
       // see messageFromRequestDto for details of "content" field
     }
   })
