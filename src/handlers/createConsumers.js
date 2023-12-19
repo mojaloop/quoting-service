@@ -5,7 +5,6 @@ const { logger } = require('../lib/logger')
 const { ErrorMessages } = require('../lib/enum')
 const Config = require('../lib/config')
 
-// todo: pass Consumer as a param
 const createConsumers = async (onMessageFn, handlerList = []) => {
   try {
     if (typeof onMessageFn !== 'function') {

@@ -5,8 +5,10 @@ module.exports = {
   collectCoverageFrom: [
     '**/src/**/**/*.js',
     '!src/server.js',
+    '!src/api/routes.js',
     '!src/handlers/index.js',
     '!src/handlers/init.js',
+    '!src/model/quotes.js',
     '!src/lib/logger/*.js',
     '!src/lib/startingProcess.js'
   ],
