@@ -9,8 +9,8 @@ const messageFromRequestDto = (request, type, action) => {
     content: {
       requestId: request.info?.id,
       headers,
-      payload,
-      params, // think, if we need this field (we have id)
+      payload, // todo: base64 encoded
+      uriParams: params,
       spanContext,
       id,
       type,

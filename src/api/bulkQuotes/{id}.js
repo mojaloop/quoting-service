@@ -35,6 +35,7 @@ const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 
 const { logger } = require('../../lib/logger')
+const util = require('../../lib/util')
 const Config = require('../../lib/config')
 const dto = require('../../lib/dto')
 
@@ -59,7 +60,9 @@ module.exports = {
     ).startTimer()
 
     try {
+      await util.auditSpan(request)
       logger.debug('got a GET /bulkQuotes request: ', request.payload)
+
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.GET
       const topicConfig = dto.topicConfigDto({ topicName: topic })
       const message = dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.GET)
@@ -67,15 +70,11 @@ module.exports = {
       await Producer.produceMessage(message, topicConfig, config)
 
       histTimerEnd({ success: true })
+      return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
-      logger.error(`error in GET /bulkQuotes request: ${err?.message}`)
-      // todo: think, how we should handle such error cases:
-      //   - how to send callback ?
-      //   - OR reply with errorCode (not 202)?
       histTimerEnd({ success: false })
+      util.rethrowFspiopError(err)
     }
-
-    return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
   },
   /**
      * summary: putBulkQuotesById
@@ -92,7 +91,9 @@ module.exports = {
     ).startTimer()
 
     try {
+      await util.auditSpan(request)
       logger.debug('got a PUT /bulkQuotes request: ', request.payload)
+
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: topic })
       const message = dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.PUT)
@@ -100,14 +101,10 @@ module.exports = {
       await Producer.produceMessage(message, topicConfig, config)
 
       histTimerEnd({ success: true })
+      return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
-      logger.error(`error in PUT /bulkQuotes request: ${err?.message}`)
-      // todo: think, how we should handle such error cases:
-      //   - how to send callback ?
-      //   - OR reply with errorCode (not 200)?
       histTimerEnd({ success: false })
+      util.rethrowFspiopError(err)
     }
-
-    return h.response().code(Http.ReturnCodes.OK.CODE)
   }
 }

@@ -70,21 +70,21 @@ describe('POST /quotes API Tests -->', () => {
     expect(producerConfig).toStrictEqual(config)
   })
 
-  it('should return accept statusCode and log error in case of error on publishing quote', async () => {
+  it('should rethrow and log error in case of error on publishing quote', async () => {
     // Arrange
     const error = new Error('Create Quote Test Error')
     Producer.produceMessage = jest.fn(async () => { throw error })
 
     const mockRequest = mocks.mockHttpRequest()
-    const { handler, code } = mocks.createMockHapiHandler()
+    const { handler } = mocks.createMockHapiHandler()
     const spyErrorLog = jest.spyOn(logger, 'error')
 
     // Act
-    await quotesApi.post(mockContext, mockRequest, handler)
+    await expect(() => quotesApi.post(mockContext, mockRequest, handler))
+      .rejects.toThrowError(error.message)
 
     // Assert
-    expect(code).toHaveBeenCalledWith(Http.ReturnCodes.ACCEPTED.CODE)
     expect(spyErrorLog).toHaveBeenCalledTimes(1)
-    expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
+    expect(spyErrorLog.mock.calls[0][0].message).toContain(error.message)
   })
 })

@@ -6,7 +6,6 @@ const { logger } = require('./logger')
 const processName = `${name}@${version}`
 const SIGNALS = ['SIGINT', 'SIGTERM']
 
-// todo: add JS Docs
 const startingProcess = (startFn, stopFn) => {
   const startTime = Date.now()
   logger.verbose(`starting ${processName}...`, { startTime })
@@ -21,13 +20,9 @@ const startingProcess = (startFn, stopFn) => {
     process.exit(3)
   })
 
-  if (typeof startFn !== 'function') {
-    logger.error('startFn should be async function!')
+  if (typeof startFn !== 'function' || typeof stopFn !== 'function') {
+    logger.error('startFn and stopFn should be async functions!')
     process.exit(4)
-  }
-  if (typeof stopFn !== 'function') {
-    logger.error('stopFn should be async function!')
-    process.exit(5)
   }
 
   SIGNALS.forEach(sig => process.on(sig, () => {

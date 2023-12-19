@@ -385,7 +385,7 @@ class QuotesModel {
         await handleQuoteRequestSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
-      throw fspiopError
+      throw fspiopError // think, if we need to throw error here?
     }
 
     let forwardQuoteRequestSpan

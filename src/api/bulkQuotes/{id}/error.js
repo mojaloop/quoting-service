@@ -35,6 +35,7 @@ const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 
 const { logger } = require('../../../lib/logger')
+const util = require('../../../lib/util')
 const Config = require('../../../lib/config')
 const dto = require('../../../lib/dto')
 
@@ -52,7 +53,7 @@ module.exports = {
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
   put: async function BulkQuotesErrorById (context, request, h) {
-    // todo: the same as PUT /bulkQuotes
+    // the same as PUT /bulkQuotes
     const histTimerEnd = Metrics.getHistogram(
       'bulkQuotes_id_put_error',
       'Process HTTP PUT /bulkQuotes/{id}/error request',
@@ -60,7 +61,9 @@ module.exports = {
     ).startTimer()
 
     try {
+      await util.auditSpan(request)
       logger.debug('got a PUT /bulkQuotes error request: ', request.payload)
+
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: topic })
       const message = dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.PUT)
@@ -68,14 +71,10 @@ module.exports = {
       await Producer.produceMessage(message, topicConfig, config)
 
       histTimerEnd({ success: true })
+      return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
-      logger.error(`error in PUT /bulkQuotes error request: ${err?.message}`)
-      // todo: think, how we should handle such error cases:
-      //   - how to send callback ?
-      //   - OR reply with errorCode (not 200)?
       histTimerEnd({ success: false })
+      util.rethrowFspiopError(err)
     }
-
-    return h.response().code(Http.ReturnCodes.OK.CODE)
   }
 }

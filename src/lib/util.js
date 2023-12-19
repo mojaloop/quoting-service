@@ -34,13 +34,17 @@
 
 const util = require('util')
 const crypto = require('crypto')
-const Enum = require('@mojaloop/central-services-shared').Enum
-const Logger = require('@mojaloop/central-services-logger')
-const Config = require('./config')
 const axios = require('axios')
+const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { Enum } = require('@mojaloop/central-services-shared')
+const { AuditEventAction } = require('@mojaloop/event-sdk')
+
+const Config = require('./config')
+const { logger } = require('./logger')
 
 const failActionHandler = async (request, h, err) => {
-  Logger.isErrorEnabled && Logger.error(`validation failure: ${getStackOrInspect}`)
+  Logger.isErrorEnabled && Logger.error(`validation failure: ${err ? getStackOrInspect(err) : ''}`)
   throw err
 }
 
@@ -229,7 +233,23 @@ const fetchParticipantInfo = async (source, destination, cache) => {
   return { payer, payee }
 }
 
+const auditSpan = async (request) => {
+  const { span, headers, payload } = request
+  await span.audit({
+    headers,
+    payload
+  }, AuditEventAction.start)
+}
+
+const rethrowFspiopError = (error) => {
+  const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
+  logger.error(fspiopError)
+  // todo: fix logging
+  throw fspiopError
+}
+
 module.exports = {
+  auditSpan,
   failActionHandler,
   getSafe,
   getSpanTags,
@@ -238,5 +258,6 @@ module.exports = {
   generateRequestHeadersForJWS,
   calculateRequestHash,
   removeEmptyKeys,
+  rethrowFspiopError,
   fetchParticipantInfo
 }

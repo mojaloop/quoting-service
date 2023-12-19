@@ -73,21 +73,21 @@ describe('POST /bulkQuotes endpoint Tests -->', () => {
     expect(producerConfig).toStrictEqual(config)
   })
 
-  it('should return accept statusCode and log error in case of error on publishing bulkQuote', async () => {
+  it('should rethrow error in case of error on publishing bulkQuote', async () => {
     // Arrange
     const error = new Error('Create BulkQuote Test Error')
     Producer.produceMessage = jest.fn(async () => { throw error })
 
     const mockRequest = mocks.mockHttpRequest()
-    const { handler, code } = mocks.createMockHapiHandler()
+    const { handler } = mocks.createMockHapiHandler()
     const spyErrorLog = jest.spyOn(logger, 'error')
 
     // Act
-    await bulkQuotesApi.post(mockContext, mockRequest, handler)
+    await expect(() => bulkQuotesApi.post(mockContext, mockRequest, handler))
+      .rejects.toThrowError(error.message)
 
     // Assert
-    expect(code).toHaveBeenCalledWith(Http.ReturnCodes.ACCEPTED.CODE)
     expect(spyErrorLog).toHaveBeenCalledTimes(1)
-    expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
+    expect(spyErrorLog.mock.calls[0][0].message).toContain(error.message)
   })
 })
