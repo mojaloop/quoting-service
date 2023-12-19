@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.6.0](https://github.com/mojaloop/quoting-service/compare/v15.5.1-snapshot.0...v15.6.0) (2023-12-19)
+
+
+### Features
+
+* **3666:** encoded/decoded message payload ([79fe024](https://github.com/mojaloop/quoting-service/commit/79fe024b14008be721a3591a4a22a2cd19d0fa1d))
+* **3666:** rethrow errors in api handlers; fixed some PR comments ([97942e7](https://github.com/mojaloop/quoting-service/commit/97942e7066cf73d65d6c7bf25c09b824326fcedf))
+
 ## [15.5.0](https://github.com/mojaloop/quoting-service/compare/v15.4.0...v15.5.0) (2023-11-02)
 
 
