@@ -29,36 +29,37 @@
  --------------
  ******/
 
+const mockProducer = {
+  connectAll: jest.fn(),
+  disconnect: jest.fn()
+}
+
+jest.mock('@mojaloop/central-services-stream', () => ({
+  Util: { Producer: mockProducer }
+}))
+
 let Hapi
 let Logger
-let Database
 
-describe('Server', () => {
+describe('Server Tests', () => {
   beforeEach(() => {
     jest.resetModules()
 
     jest.mock('@hapi/hapi')
     jest.mock('@mojaloop/central-services-logger')
-    jest.mock('../../src/data/cachedDatabase')
 
     Hapi = require('@hapi/hapi')
     Logger = require('@mojaloop/central-services-logger')
-    Database = require('../../src/data/cachedDatabase')
   })
 
   it('runs the server', async () => {
     // Arrange
-    Database.mockImplementationOnce(() => ({
-      connect: jest.fn().mockResolvedValueOnce()
-    }))
     const mockRegister = jest.fn()
     const mockStart = jest.fn()
     const mockRoute = jest.fn()
     const mockLog = jest.fn()
     Hapi.Server.mockImplementationOnce(() => ({
-      app: {
-        database: null
-      },
+      app: {},
       register: mockRegister,
       start: mockStart,
       route: mockRoute,
@@ -79,21 +80,17 @@ describe('Server', () => {
     expect(mockStart).toHaveBeenCalledTimes(1)
     expect(mockRoute).toHaveBeenCalledTimes(1)
     expect(mockLog).toHaveBeenCalledTimes(1)
+    expect(mockProducer.connectAll).toHaveBeenCalledTimes(1)
   })
 
   it('handles exception when starting', async () => {
     // Arrange
-    Database.mockImplementationOnce(() => ({
-      connect: jest.fn().mockResolvedValueOnce()
-    }))
     const mockRegister = jest.fn().mockImplementationOnce(() => { throw new Error('Test Error') })
     const mockStart = jest.fn()
     const mockRoute = jest.fn()
     const mockLog = jest.fn()
     Hapi.Server.mockImplementationOnce(() => ({
-      app: {
-        database: null
-      },
+      app: {},
       register: mockRegister,
       route: mockRoute,
       start: mockStart,

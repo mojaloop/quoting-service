@@ -28,11 +28,12 @@
 
 const { HealthCheck } = require('@mojaloop/central-services-shared').HealthCheck
 const { responseCode, statusEnum, serviceName } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
+const { Producer } = require('@mojaloop/central-services-stream').Util
 const Logger = require('@mojaloop/central-services-logger')
 const Config = require('../lib/config.js')
 const packageJson = require('../../package.json')
 
-const envConfig = new Config()
+const config = new Config()
 
 /**
  * @function getSubServiceHealthDatastore
@@ -62,6 +63,23 @@ const getSubServiceHealthDatastore = async (db) => {
   }
 }
 
+const checkKafkaProducers = async (topicNames) => {
+  const isAllConnected = await Promise.all(
+    topicNames.map(topic => {
+      const producer = Producer.getProducer(topic)
+      return producer.isConnected()
+    })
+  )
+  const status = isAllConnected.every(Boolean)
+    ? statusEnum.OK
+    : statusEnum.DOWN
+
+  return {
+    name: serviceName.broker,
+    status
+  }
+}
+
 /**
  * Operations on /health
  */
@@ -76,14 +94,14 @@ module.exports = {
   get: async (context, request, h) => {
     // Check to see if we are NOT in simpleRoutingMode
     let serviceHealthList = []
-    // console.log('envConfig', envConfig)
-    if (!envConfig.simpleRoutingMode) {
+
+    if (!config.simpleRoutingMode) {
       // assign the db object
       /* istanbul ignore next */
       // ignoring coverage, since we can't test this anonymous function and its tests are covered
       // elsewhere
       serviceHealthList = [
-        async () => getSubServiceHealthDatastore(request.server.app.database)
+        async () => checkKafkaProducers(request.server.app.topicNames)
       ]
     }
 

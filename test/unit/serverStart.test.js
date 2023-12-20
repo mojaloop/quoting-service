@@ -29,10 +29,18 @@
  --------------
  ******/
 
+jest.mock('@mojaloop/central-services-stream', () => ({
+  Util: {
+    Producer: {
+      connectAll: jest.fn(),
+      disconnect: jest.fn(),
+      produceMessage: jest.fn()
+    }
+  }
+}))
 jest.mock('@mojaloop/central-services-logger')
 jest.mock('../../src/model/quotes')
 
-const { Producer } = require('@mojaloop/central-services-stream').Util
 const { mockRequest: Mockgen, defaultHeaders } = require('../util/helper')
 const Server = require('../../src/server')
 const QuotesModel = require('../../src/model/quotes')
@@ -40,29 +48,13 @@ const QuotesModel = require('../../src/model/quotes')
 jest.setTimeout(10000)
 
 describe('Server Start', () => {
-  let Database
   let server
-
-  beforeAll(() => {
-    Producer.produceMessage = jest.fn()
-  })
-
-  beforeEach(() => {
-    jest.resetModules()
-    jest.mock('../../src/data/cachedDatabase')
-    Database = require('../../src/data/cachedDatabase')
-  })
 
   afterEach(async () => {
     await server.stop({ timeout: 100 })
   })
 
   it('runs the server', async () => {
-    // Arrange
-    Database.mockImplementationOnce(() => ({
-      connect: jest.fn().mockResolvedValueOnce()
-    }))
-
     // Act
     server = await Server()
     const requests = Mockgen().requestsAsync('/health', 'get')
@@ -82,11 +74,6 @@ describe('Server Start', () => {
   })
 
   it('post /quotes throws error when missing mandatory header', async () => {
-    // Arrange
-    Database.mockImplementationOnce(() => ({
-      connect: jest.fn().mockResolvedValueOnce()
-    }))
-
     // Act
     server = await Server()
     const requests = Mockgen().requestsAsync('/quotes', 'post')
@@ -126,10 +113,6 @@ describe('Server Start', () => {
 
   it('post /quotes with additional asian (Myanmar) unicode characters', async () => {
     // Arrange
-    Database.mockImplementationOnce(() => ({
-      connect: jest.fn().mockResolvedValueOnce()
-    }))
-
     QuotesModel.mockImplementationOnce(() => ({
       handleQuoteRequest: jest.fn().mockResolvedValueOnce()
     }))
