@@ -105,5 +105,6 @@ module.exports = {
     // return response
     return h.response(healthCheckResponse).code(code)
   },
+
   getSubServiceHealthDatastore
 }

@@ -23,7 +23,7 @@ const createConsumers = async (onMessageFn, handlerList = []) => {
       }
     }
     await Promise.all(creating)
-    logger.info('createConsumers is done', { kafkaConfig })
+    logger.info('createConsumers is done', kafkaConfig.CONSUMER)
 
     // to get reference to all consumers by topic name
     const consumersMap = topics.reduce((acc, topic) => ({

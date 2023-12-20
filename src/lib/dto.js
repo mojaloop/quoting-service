@@ -1,7 +1,21 @@
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 
 const { Headers } = Enum.Http
-const { decodePayload, encodePayload } = Util.StreamingProtocol
+const {
+  decodePayload,
+  encodePayload,
+  createEventState,
+  createEventMetadata,
+  createMetadata
+} = Util.StreamingProtocol
+
+const makeMessageMetadata = (id, type, action) => {
+  const { SUCCESS } = Enum.Events.EventStatus
+  const state = createEventState(SUCCESS.status, SUCCESS.code, SUCCESS.description)
+  const event = createEventMetadata(type, action, state)
+
+  return createMetadata(id, event)
+}
 
 const messageFromRequestDto = (request, type, action) => {
   const { headers, payload = {}, params } = request
@@ -24,7 +38,7 @@ const messageFromRequestDto = (request, type, action) => {
     to: headers[Headers.FSPIOP.DESTINATION],
     id,
     type,
-    metadata: {}
+    metadata: makeMessageMetadata(id, type, action)
   })
 }
 

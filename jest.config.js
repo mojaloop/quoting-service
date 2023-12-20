@@ -8,6 +8,7 @@ module.exports = {
     '!src/api/routes.js',
     '!src/handlers/index.js',
     '!src/handlers/init.js',
+    '!src/handlers/health.js',
     '!src/model/quotes.js',
     '!src/lib/logger/*.js',
     '!src/lib/startingProcess.js'
