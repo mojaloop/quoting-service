@@ -4,7 +4,6 @@ module.exports = {
   verbose: true,
   collectCoverageFrom: [
     '**/src/**/**/*.js',
-    '!src/handlers/index.js',
     '!src/lib/logger/*.js'
   ],
   coverageThreshold: {

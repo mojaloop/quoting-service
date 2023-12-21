@@ -20,10 +20,12 @@ program.command('handler') // sub-command name, required
   .action(async (args) => {
     const handlerList = []
 
+    /* istanbul ignore next */
     if (args.quotes) {
       logger.debug('CLI: Executing --quotes')
       handlerList.push(Functionalities.QUOTE)
     }
+    /* istanbul ignore next */
     if (args.bulk_quotes) {
       logger.debug('CLI: Executing --bulk_quotes')
       handlerList.push(Functionalities.BULK_QUOTE)
@@ -33,6 +35,7 @@ program.command('handler') // sub-command name, required
     startingProcess(() => startFn(handlerList), stopFn)
   })
 
+/* istanbul ignore next */
 if (argv.length > 2) {
   program.parse(argv)
 } else {
