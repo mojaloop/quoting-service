@@ -1,7 +1,7 @@
+const Logger = require('@mojaloop/central-services-logger')
 const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 const { Consumer } = require('@mojaloop/central-services-stream').Util
 
-const { logger } = require('../lib/logger')
 const { ErrorMessages } = require('../lib/enum')
 const Config = require('../lib/config')
 
@@ -23,7 +23,7 @@ const createConsumers = async (onMessageFn, handlerList = []) => {
       }
     }
     await Promise.all(creating)
-    logger.info('createConsumers is done', kafkaConfig.CONSUMER)
+    Logger.isInfoEnabled && Logger.info('createConsumers is done')
 
     // to get reference to all consumers by topic name
     const consumersMap = topics.reduce((acc, topic) => ({
@@ -33,7 +33,7 @@ const createConsumers = async (onMessageFn, handlerList = []) => {
 
     return Object.freeze(consumersMap)
   } catch (err) {
-    logger.error(`error in createConsumers: ${err.message}`)
+    Logger.isErrorEnabled && Logger.error(`error in createConsumers: ${err.message}`)
     throw reformatFSPIOPError(err)
   }
 }

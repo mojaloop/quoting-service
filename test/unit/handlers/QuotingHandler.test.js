@@ -1,6 +1,7 @@
 const { randomUUID } = require('node:crypto')
 const { Cache } = require('memory-cache')
 const { Tracer } = require('@mojaloop/event-sdk')
+const Logger = require('@mojaloop/central-services-logger')
 
 jest.mock('../../../src/model/quotes')
 jest.mock('../../../src/model/bulkQuotes')
@@ -9,7 +10,6 @@ const QuotingHandler = require('../../../src/handlers/QuotingHandler')
 const QuotesModel = require('../../../src/model/quotes')
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')
 const Config = require('../../../src/lib/config')
-const { logger } = require('../../../src/lib/logger')
 
 const dto = require('../../../src/lib/dto')
 const mocks = require('../mocks')
@@ -51,7 +51,7 @@ describe('QuotingHandler Tests -->', () => {
       quotesModelFactory,
       bulkQuotesModelFactory,
       config,
-      logger,
+      logger: Logger,
       cache: new Cache(),
       tracer: Tracer
     })
@@ -223,7 +223,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should skip message processing and log warn on incorrect topic name', async () => {
       const message = createKafkaMessage('wrong-topic')
-      const warnLogSpy = jest.spyOn(logger, 'warn')
+      const warnLogSpy = jest.spyOn(Logger, 'warn')
 
       const result = await handler.defineHandlerByTopic(message)
       expect(result).toBeUndefined()

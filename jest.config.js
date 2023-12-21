@@ -3,8 +3,7 @@ const path = require('path')
 module.exports = {
   verbose: true,
   collectCoverageFrom: [
-    '**/src/**/**/*.js',
-    '!src/lib/logger/*.js'
+    '**/src/**/**/*.js'
   ],
   coverageThreshold: {
     global: {

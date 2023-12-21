@@ -35,7 +35,6 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 
-const { logger } = require('../../../lib/logger')
 const util = require('../../../lib/util')
 const Config = require('../../../lib/config')
 const dto = require('../../../lib/dto')
@@ -63,7 +62,6 @@ module.exports = {
 
     try {
       await util.auditSpan(request)
-      logger.debug('got a PUT /quotes error request: ', request.payload)
 
       const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: topic })

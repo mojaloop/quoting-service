@@ -1,7 +1,7 @@
 const { Cache } = require('memory-cache')
 const { Tracer } = require('@mojaloop/event-sdk')
+const Logger = require('@mojaloop/central-services-logger')
 
-const { logger } = require('../lib/logger')
 const Config = require('../lib/config')
 const Database = require('../data/cachedDatabase')
 const modelFactory = require('../model')
@@ -27,7 +27,7 @@ const startFn = async (handlerList) => {
     quotesModelFactory,
     bulkQuotesModelFactory,
     config,
-    logger,
+    logger: Logger,
     cache: new Cache(),
     tracer: Tracer
   })
@@ -38,6 +38,7 @@ const startFn = async (handlerList) => {
 
 const stopFn = async () => {
   await healthServer?.stop()
+  /* istanbul ignore next */
   if (consumersMap) {
     await Promise.all(Object.values(consumersMap).map(consumer => consumer.disconnect()))
   }

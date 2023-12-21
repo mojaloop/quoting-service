@@ -32,11 +32,10 @@
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { Producer } = require('@mojaloop/central-services-stream').Util
+const Logger = require('@mojaloop/central-services-logger')
 
 const quotesApi = require('../../../../src/api/quotes/{id}')
 const Config = require('../../../../src/lib/config')
-const { logger } = require('../../../../src/lib/logger')
-
 const mocks = require('../../mocks')
 
 const { kafkaConfig } = new Config()
@@ -83,7 +82,7 @@ describe('/quotes/{id} API Tests -->', () => {
 
       const mockRequest = mocks.mockHttpRequest()
       const { handler } = mocks.createMockHapiHandler()
-      const spyErrorLog = jest.spyOn(logger, 'error')
+      const spyErrorLog = jest.spyOn(Logger, 'error')
 
       // Act
       await expect(() => quotesApi.get(mockContext, mockRequest, handler))
@@ -130,7 +129,7 @@ describe('/quotes/{id} API Tests -->', () => {
 
       const mockRequest = mocks.mockHttpRequest()
       const { handler } = mocks.createMockHapiHandler()
-      const spyErrorLog = jest.spyOn(logger, 'error')
+      const spyErrorLog = jest.spyOn(Logger, 'error')
 
       // Act
       await expect(() => quotesApi.put(mockContext, mockRequest, handler))

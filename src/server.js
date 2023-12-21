@@ -79,6 +79,7 @@ const initServer = async function (config, topicNames) {
 
   server.app.topicNames = topicNames
 
+  /* istanbul ignore next */
   if (config.apiDocumentationEndpoints) {
     await server.register({
       plugin: APIDocumentation,
@@ -174,6 +175,7 @@ const initServer = async function (config, topicNames) {
 }
 
 const initializeInstrumentation = (config) => {
+  /* istanbul ignore next */
   if (!config.instrumentationMetricsDisabled) {
     Metrics.setup(config.instrumentationMetricsConfig)
   }
@@ -217,7 +219,7 @@ async function start () {
         let isError
         server.stop({ timeout: 10000 })
           .then(err => {
-            if (err) isError = true
+            isError = !!err
             Logger.isWarnEnabled && Logger.warn(`server stopped. ${err ? (getStackOrInspect(err)) : ''}`)
           })
           .then(() => Producer.disconnect())

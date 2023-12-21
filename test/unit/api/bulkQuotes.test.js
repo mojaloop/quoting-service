@@ -35,11 +35,10 @@
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { Producer } = require('@mojaloop/central-services-stream').Util
+const Logger = require('@mojaloop/central-services-logger')
 
 const bulkQuotesApi = require('../../../src/api/bulkQuotes')
 const Config = require('../../../src/lib/config')
-const { logger } = require('../../../src/lib/logger')
-
 const mocks = require('../mocks')
 
 const { kafkaConfig } = new Config()
@@ -80,7 +79,7 @@ describe('POST /bulkQuotes endpoint Tests -->', () => {
 
     const mockRequest = mocks.mockHttpRequest()
     const { handler } = mocks.createMockHapiHandler()
-    const spyErrorLog = jest.spyOn(logger, 'error')
+    const spyErrorLog = jest.spyOn(Logger, 'error')
 
     // Act
     await expect(() => bulkQuotesApi.post(mockContext, mockRequest, handler))

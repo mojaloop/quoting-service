@@ -41,7 +41,6 @@ const { Enum } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
 
 const Config = require('./config')
-const { logger } = require('./logger')
 
 const failActionHandler = async (request, h, err) => {
   Logger.isErrorEnabled && Logger.error(`validation failure: ${err ? getStackOrInspect(err) : ''}`)
@@ -243,8 +242,7 @@ const auditSpan = async (request) => {
 
 const rethrowFspiopError = (error) => {
   const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
-  logger.error(fspiopError)
-  // todo: fix logging
+  Logger.isErrorEnabled && Logger.error(fspiopError)
   throw fspiopError
 }
 
