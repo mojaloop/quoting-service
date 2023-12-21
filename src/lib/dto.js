@@ -18,7 +18,7 @@ const makeMessageMetadata = (id, type, action) => {
 }
 
 const messageFromRequestDto = (request, type, action) => {
-  const { headers, payload = {}, params } = request
+  const { headers, payload = {}, params = {} } = request
   const { spanContext } = request.span || {}
   const id = params.id || payload.quoteId || payload.bulkQuoteId
   const encodedJson = encodePayload(JSON.stringify(payload), headers[Headers.GENERAL.CONTENT_TYPE.value])

@@ -32,6 +32,7 @@ jest.mock('../../../src/lib/config')
 jest.mock('@mojaloop/central-services-logger')
 
 const { responseCode, statusEnum } = require('@mojaloop/central-services-shared').HealthCheck.HealthCheckEnums
+const { Producer } = require('@mojaloop/central-services-stream').Util
 const HealthHandler = require('../../../src/api/health')
 const { baseMockRequest } = require('../../util/helper')
 
@@ -200,6 +201,31 @@ describe('/health', () => {
 
       // Assert
       expect(code).toHaveBeenCalledWith(responseCode.gatewayTimeout)
+    })
+  })
+
+  describe('checkKafkaProducers Tests', () => {
+    it('should return OK status if all producers are connected', async () => {
+      Producer.getProducer = jest.fn(() => ({
+        isConnected: () => true
+      }))
+      const topicNames = ['topic1', 'topic2']
+      const result = await HealthHandler.checkKafkaProducers(topicNames)
+      expect(result.status).toEqual(statusEnum.OK)
+    })
+
+    it('should return DOWN status if NOT all producers are connected', async () => {
+      Producer.getProducer = jest.fn(() => ({
+        isConnected: () => false
+      }))
+      const result = await HealthHandler.checkKafkaProducers(['topic1'])
+      expect(result.status).toEqual(statusEnum.DOWN)
+    })
+
+    it('should return DOWN status if getProducer throws na error', async () => {
+      Producer.getProducer = jest.fn(() => { throw new Error('Test Error') })
+      const result = await HealthHandler.checkKafkaProducers(['topic1'])
+      expect(result.status).toEqual(statusEnum.DOWN)
     })
   })
 })

@@ -1,5 +1,6 @@
 /* eslint-disable no-process-exit  */
-const v8 = require('v8')
+const process = require('node:process')
+const v8 = require('node:v8')
 const { name, version } = require('../../package.json')
 const { logger } = require('./logger')
 
@@ -35,7 +36,7 @@ const startingProcess = (startFn, stopFn) => {
       })
       .catch((err) => {
         logger.warn(`${processName} was stopped with error: ${err?.message}`)
-        process.exit(1)
+        process.exit(5)
       })
   }))
 
