@@ -19,7 +19,6 @@ program.command('handler') // sub-command name, required
   .option('--bulk_quotes', 'No Handlers Start')
   .action(async (args) => {
     const handlerList = []
-
     /* istanbul ignore next */
     if (args.quotes) {
       Logger.debug('CLI: Executing --quotes')
@@ -30,7 +29,7 @@ program.command('handler') // sub-command name, required
       Logger.debug('CLI: Executing --bulk_quotes')
       handlerList.push(Functionalities.BULK_QUOTE)
     }
-    Logger.info('handlerList:', handlerList)
+    Logger.info(`handlerList: ${handlerList}`)
 
     startingProcess(() => startFn(handlerList), stopFn)
   })

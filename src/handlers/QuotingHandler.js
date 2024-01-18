@@ -6,6 +6,8 @@ const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handli
 const { ErrorMessages } = require('../lib/enum')
 const { getSpanTags } = require('../lib/util')
 const dto = require('../lib/dto')
+const Logger = require('@mojaloop/central-services-logger')
+const LibUtil = require('../lib/util')
 
 const { FSPIOP } = Enum.Http.Headers
 
@@ -27,9 +29,7 @@ class QuotingHandler {
       throw reformatFSPIOPError(error)
     }
 
-    await Promise.allSettled(
-      messages.map(msg => this.defineHandlerByTopic(msg))
-    )
+    messages.map(msg => this.defineHandlerByTopic(msg))
     this.logger.info('handleMessages is done')
 
     return true
@@ -65,16 +65,19 @@ class QuotingHandler {
 
     try {
       span = await this.createSpan(requestData)
-      await model.handleQuoteRequest(headers, payload, span, this.cache)
+      model.handleQuoteRequest(headers, payload, span, this.cache).catch(err => {
+        Logger.isErrorEnabled && Logger.error(`ERROR - handlePostQuotes: ${LibUtil.getStackOrInspect(err)}`)
+      })
       this.logger.debug('handlePostQuotes is done')
     } catch (err) {
       this.logger.error(`error in handlePostQuotes: ${err?.stack}`)
       const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      await model.handleException(fspiopSource, payload.quoteId, fspiopError, headers, span)
+      model.handleException(fspiopSource, payload.quoteId, fspiopError, headers, span)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return true
     }
-
-    return true
   }
 
   async handlePutQuotes(requestData) {
@@ -86,16 +89,21 @@ class QuotingHandler {
     try {
       span = await this.createSpan(requestData)
       const result = isError
-        ? await model.handleQuoteError(headers, quoteId, payload.errorInformation, span)
-        : await model.handleQuoteUpdate(headers, quoteId, payload, span)
+        ? model.handleQuoteError(headers, quoteId, payload.errorInformation, span).catch(err => {
+          Logger.isErrorEnabled && Logger.error(`ERROR - handlePutQuotes: ${LibUtil.getStackOrInspect(err)}`)
+        })
+        : model.handleQuoteUpdate(headers, quoteId, payload, span).catch(err => {
+          Logger.isErrorEnabled && Logger.error(`ERROR - handlePutQuotes: ${LibUtil.getStackOrInspect(err)}`)
+        })
       this.logger.isDebugEnabled && this.logger.debug(`handlePutQuotes is done: ${JSON.stringify(result)}`)
     } catch (err) {
       this.logger.error(`error in handlePutQuotes: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      await model.handleException(fspiopSource, quoteId, err, headers, span)
+      model.handleException(fspiopSource, quoteId, err, headers, span)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return true
     }
-
-    return true
   }
 
   async handleGetQuotes(requestData) {
@@ -105,15 +113,18 @@ class QuotingHandler {
 
     try {
       span = await this.createSpan(requestData)
-      await model.handleQuoteGet(headers, quoteId, span)
+      model.handleQuoteGet(headers, quoteId, span).catch(err => {
+        Logger.isErrorEnabled && Logger.error(`ERROR - handleGetQuotes: ${LibUtil.getStackOrInspect(err)}`)
+      })
       this.logger.debug('handleGetQuotes is done')
     } catch (err) {
       this.logger.error(`error in handleGetQuotes: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      await model.handleException(fspiopSource, quoteId, err, headers, span)
+      model.handleException(fspiopSource, quoteId, err, headers, span)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return true
     }
-
-    return true
   }
 
   async handlePostBulkQuotes(requestData) {
@@ -123,16 +134,19 @@ class QuotingHandler {
 
     try {
       span = await this.createSpan(requestData)
-      await model.handleBulkQuoteRequest(headers, payload, span)
+      model.handleBulkQuoteRequest(headers, payload, span).catch(err => {
+        Logger.isErrorEnabled && Logger.error(`ERROR - handlePostBulkQuotes: ${LibUtil.getStackOrInspect(err)}`)
+      })
       this.logger.debug('handlePostBulkQuotes is done')
     } catch (err) {
       this.logger.error(`error in handlePostBulkQuotes: ${err?.stack}`)
       const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      await model.handleException(fspiopSource, payload.bulkQuoteId, fspiopError, headers, span)
+      model.handleException(fspiopSource, payload.bulkQuoteId, fspiopError, headers, span)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return true
     }
-
-    return true
   }
 
   async handlePutBulkQuotes(requestData) {
@@ -144,16 +158,21 @@ class QuotingHandler {
     try {
       span = await this.createSpan(requestData)
       const result = isError
-        ? await model.handleBulkQuoteError(headers, bulkQuoteId, payload.errorInformation, span)
-        : await model.handleBulkQuoteUpdate(headers, bulkQuoteId, payload, span)
+        ? model.handleBulkQuoteError(headers, bulkQuoteId, payload.errorInformation, span).catch(err => {
+          Logger.isErrorEnabled && Logger.error(`ERROR - handlePutBulkQuotes: ${LibUtil.getStackOrInspect(err)}`)
+        })
+        : model.handleBulkQuoteUpdate(headers, bulkQuoteId, payload, span).catch(err => {
+          Logger.isErrorEnabled && Logger.error(`ERROR - handlePutBulkQuotes: ${LibUtil.getStackOrInspect(err)}`)
+        })
       this.logger.isDebugEnabled && this.logger.debug(`handlePutBulkQuotes is done: ${JSON.stringify(result)}`)
     } catch (err) {
       this.logger.error(`error in handlePutBulkQuotes: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
+      model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return true
     }
-
-    return true
   }
 
   async handleGetBulkQuotes(requestData) {
@@ -163,15 +182,18 @@ class QuotingHandler {
 
     try {
       span = await this.createSpan(requestData)
-      await model.handleBulkQuoteGet(headers, bulkQuoteId, span)
+      model.handleBulkQuoteGet(headers, bulkQuoteId, span).catch(err => {
+        Logger.isErrorEnabled && Logger.error(`ERROR - handleGetBulkQuotes: ${LibUtil.getStackOrInspect(err)}`)
+      })
       this.logger.debug('handleGetBulkQuotes is done')
     } catch (err) {
       this.logger.error(`error in handleGetBulkQuotes: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
+      model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
+    } finally {
+      // eslint-disable-next-line no-unsafe-finally
+      return true
     }
-
-    return true
   }
 
   async createSpan(requestData) {

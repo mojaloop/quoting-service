@@ -42,6 +42,23 @@ describe('QuotingHandler Tests -->', () => {
   const bulkQuotesModelFactory = () => bulkQuotesModel
 
   beforeEach(() => {
+    QuotesModel.mockImplementationOnce(() => ({
+      handleQuoteRequest: jest.fn().mockResolvedValueOnce(),
+      handlePutQuotes: jest.fn().mockResolvedValueOnce(),
+      handleGetQuotes: jest.fn().mockResolvedValueOnce(),
+      handleQuoteUpdate: jest.fn().mockResolvedValueOnce(),
+      handleQuoteError: jest.fn().mockResolvedValueOnce(),
+      handleQuoteGet: jest.fn().mockResolvedValueOnce(),
+      handleException: jest.fn().mockResolvedValueOnce()
+    }))
+    BulkQuotesModel.mockImplementationOnce(() => ({
+      handleBulkQuoteUpdate: jest.fn().mockResolvedValueOnce(),
+      handleBulkQuoteError: jest.fn().mockResolvedValueOnce(),
+      handleBulkQuoteGet: jest.fn().mockResolvedValueOnce(),
+      handleBulkQuoteRequest: jest.fn().mockResolvedValueOnce(),
+      handleException: jest.fn().mockResolvedValueOnce()
+    }))
+
     const config = new Config()
 
     quotesModel = new QuotesModel({})
@@ -111,13 +128,13 @@ describe('QuotingHandler Tests -->', () => {
       expect(quotesModel.handleException).toHaveBeenCalledTimes(0)
     })
 
-    it('should call handleException in case of error', async () => {
+    it('should handle model errors internally', async () => {
       quotesModel.handleQuoteUpdate = jest.fn(async () => { throw new Error('Test Error') })
       const requestData = createRequestData()
 
       const result = await handler.handlePutQuotes(requestData)
       expect(result).toBe(true)
-      expect(quotesModel.handleException).toHaveBeenCalledTimes(1)
+      expect(quotesModel.handleException).toHaveBeenCalledTimes(0)
     })
   })
 
@@ -132,13 +149,13 @@ describe('QuotingHandler Tests -->', () => {
       expect(quotesModel.handleException).toHaveBeenCalledTimes(0)
     })
 
-    it('should call handleException in case of error in handleQuoteGet', async () => {
+    it('should handle model errors internally', async () => {
       quotesModel.handleQuoteGet = jest.fn(async () => { throw new Error('Test Error') })
       const requestData = createRequestData()
 
       const result = await handler.handleGetQuotes(requestData)
       expect(result).toBe(true)
-      expect(quotesModel.handleException).toHaveBeenCalledTimes(1)
+      expect(quotesModel.handleException).toHaveBeenCalledTimes(0)
     })
   })
 
@@ -153,13 +170,13 @@ describe('QuotingHandler Tests -->', () => {
       expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(0)
     })
 
-    it('should call handleException in case of error in handleBulkQuoteRequest', async () => {
+    it('should handle model errors internally', async () => {
       bulkQuotesModel.handleBulkQuoteRequest = jest.fn(async () => { throw new Error('Test Error') })
       const requestData = createRequestData()
 
       const result = await handler.handlePostBulkQuotes(requestData)
       expect(result).toBe(true)
-      expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(1)
+      expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(0)
     })
   })
 
@@ -187,13 +204,13 @@ describe('QuotingHandler Tests -->', () => {
       expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(0)
     })
 
-    it('should call handleException in case of error in handleBulkQuoteUpdate', async () => {
+    it('should handle model errors internally', async () => {
       bulkQuotesModel.handleBulkQuoteUpdate = jest.fn(async () => { throw new Error('Test Error') })
       const requestData = createRequestData()
 
       const result = await handler.handlePutBulkQuotes(requestData)
       expect(result).toBe(true)
-      expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(1)
+      expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(0)
     })
   })
 
@@ -208,13 +225,13 @@ describe('QuotingHandler Tests -->', () => {
       expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(0)
     })
 
-    it('should call handleException in case of error in handleBulkQuoteGet', async () => {
+    it('should handle model errors internally', async () => {
       bulkQuotesModel.handleBulkQuoteGet = jest.fn(async () => { throw new Error('Test Error') })
       const requestData = createRequestData()
 
       const result = await handler.handleGetBulkQuotes(requestData)
       expect(result).toBe(true)
-      expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(1)
+      expect(bulkQuotesModel.handleException).toHaveBeenCalledTimes(0)
     })
   })
 
