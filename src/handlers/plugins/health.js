@@ -71,6 +71,6 @@ module.exports = {
       server.route(routes)
     }
   },
-  createHealthCheck, // exported for testing purposes only
-  handler // exported for testing purposes only
+  createHealthCheck,
+  handler
 }

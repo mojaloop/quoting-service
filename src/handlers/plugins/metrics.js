@@ -42,5 +42,5 @@ module.exports = {
       server.route(routes)
     }
   },
-  handler // exported for testing purposes only
+  handler
 }

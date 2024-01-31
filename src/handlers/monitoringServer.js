@@ -50,5 +50,5 @@ const createMonitoringServer = async (port, consumersMap, db) => {
 
 module.exports = {
   createMonitoringServer,
-  initializeInstrumentation // exported for testing purposes only
+  initializeInstrumentation
 }
