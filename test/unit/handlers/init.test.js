@@ -1,5 +1,5 @@
 jest.mock('../../../src/handlers/createConsumers')
-jest.mock('../../../src/handlers/health')
+jest.mock('../../../src/handlers/monitoringServer')
 
 const init = require('../../../src/handlers/init')
 const Database = require('../../../src/data/cachedDatabase')
