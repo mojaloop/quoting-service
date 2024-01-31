@@ -3,8 +3,8 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Logger = require('@mojaloop/central-services-logger')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../lib/config')
-const { plugin: HealthPlugin } = require('./health')
-const { plugin: MetricsPlugin } = require('./metrics')
+const { plugin: HealthPlugin } = require('./plugins/health')
+const { plugin: MetricsPlugin } = require('./plugins/metrics')
 
 const config = new Config()
 
