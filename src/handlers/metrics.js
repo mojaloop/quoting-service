@@ -26,55 +26,26 @@
 
 'use strict'
 
-const HealthCheck = require('@mojaloop/central-services-shared').HealthCheck.HealthCheck
-const { defaultHealthHandler } = require('@mojaloop/central-services-health')
-const packageJson = require('../../package.json')
-const { getSubServiceHealthDatastore } = require('../api/health')
-const { HealthCheckEnums } = require('@mojaloop/central-services-shared').HealthCheck
+const HTTPENUM = require('@mojaloop/central-services-shared').Enum.Http
+const Metrics = require('@mojaloop/central-services-metrics')
 
-const { statusEnum, serviceName } = HealthCheckEnums
-
-let healthCheck
-
-const createHealthCheck = (consumersMap, db) => {
-  const checkKafkaBroker = async () => {
-    const isAllConnected = await Promise.all(
-      Object.values(consumersMap).map(consumer => consumer.isConnected())
-    )
-    const status = isAllConnected.every(Boolean)
-      ? statusEnum.OK
-      : statusEnum.DOWN
-
-    return {
-      name: serviceName.broker,
-      status
-    }
-  }
-
-  return new HealthCheck(packageJson, [
-    checkKafkaBroker,
-    () => getSubServiceHealthDatastore(db)
-  ])
-}
-
-const healthHandler = {
-  get: (request, reply) => {
-    healthCheck = healthCheck || createHealthCheck(request.server.app.consumersMap, request.server.app.db)
-    return defaultHealthHandler(healthCheck)(request, reply)
+const metricsHandler = {
+  get: async (_request, reply) => {
+    return reply.response(await Metrics.getMetricsForPrometheus()).code(HTTPENUM.ReturnCodes.OK.CODE)
   }
 }
 
 const routes = [
   {
     method: 'GET',
-    path: '/health',
-    handler: healthHandler.get
+    path: '/metrics',
+    handler: metricsHandler.get
   }
 ]
 
 module.exports = {
   plugin: {
-    name: 'Health',
+    name: 'Metrics',
     register (server) {
       server.route(routes)
     }

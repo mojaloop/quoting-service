@@ -7,11 +7,11 @@ const Database = require('../data/cachedDatabase')
 const modelFactory = require('../model')
 const QuotingHandler = require('./QuotingHandler')
 const createConsumers = require('./createConsumers')
-const { startHealthServer } = require('./health')
+const { createMonitoringServer } = require('./monitoringServer')
 
 let db
 let consumersMap
-let healthServer
+let monitoringServer
 
 const startFn = async (handlerList) => {
   const config = new Config()
@@ -31,13 +31,13 @@ const startFn = async (handlerList) => {
     cache: new Cache(),
     tracer: Tracer
   })
-  consumersMap = await createConsumers(handler.handleMessages, handlerList)
 
-  healthServer = await startHealthServer(config.listenPort, consumersMap, db)
+  consumersMap = await createConsumers(handler.handleMessages, handlerList)
+  monitoringServer = await createMonitoringServer(config.listenPort, consumersMap, db)
 }
 
 const stopFn = async () => {
-  await healthServer?.stop()
+  await monitoringServer?.stop()
   /* istanbul ignore next */
   if (consumersMap) {
     await Promise.all(Object.values(consumersMap).map(consumer => consumer.disconnect()))
