@@ -20,7 +20,7 @@ describe('Monitoring Server', () => {
       topic: mockConsumer
     }
     db = mockDb
-    server = await createMonitoringServer(4000, consumersMap, db)
+    server = await createMonitoringServer(0, consumersMap, db)
   })
 
   afterAll(async () => {
