@@ -29,6 +29,14 @@ describe('metrics Tests -->', () => {
     jest.clearAllMocks()
   })
 
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  afterAll(() => {
+    jest.restoreAllMocks()
+  })
+
   describe('plugin', () => {
     it('should return plugin name', () => {
       expect(metrics.plugin.name).toEqual('Metrics')
