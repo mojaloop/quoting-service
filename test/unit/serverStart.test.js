@@ -56,7 +56,7 @@ describe('Server Start', () => {
 
   it('runs the server', async () => {
     // Act
-    server = await Server()
+    server = await Server({ listenPort: 0 })
     const requests = Mockgen().requestsAsync('/health', 'get')
     // Arrange
     const mock = await requests

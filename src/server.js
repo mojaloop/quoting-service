@@ -206,11 +206,11 @@ const config = new Config()
  * @function start
  * @description Starts the web server
  */
-async function start () {
+async function start (configOverride = {}) {
   initializeInstrumentation(config)
 
   return connectAllProducers(config)
-    .then(topicNames => initServer(config, topicNames))
+    .then(topicNames => initServer({ ...config, ...configOverride }, topicNames))
     .then(server => {
       // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
       /* istanbul ignore next */
