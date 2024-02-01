@@ -35,16 +35,18 @@ describe('health Tests -->', () => {
 
   describe('createHealthCheck', () => {
     it('should return HealthCheck instance', async () => {
-      const checker = health.createHealthCheck({ topic: mockConsumer }, mockDb)
+      let checker = health.createHealthCheck({ topic: mockConsumer }, mockDb)
       expect(checker).toBeInstanceOf(HealthCheck)
       const result = await checker.getHealth()
       expect(result.status).toBe(HealthCheckEnums.statusEnum.OK)
+      checker = null
     })
     it('should return DOWN status if consumer is not connected', async () => {
       isKafkaConnected = false
-      const checker = health.createHealthCheck({ topic: mockConsumer }, mockDb)
+      let checker = health.createHealthCheck({ topic: mockConsumer }, mockDb)
       const result = await checker.getHealth()
       expect(result.status).toBe(HealthCheckEnums.statusEnum.DOWN)
+      checker = null
     })
   })
 
