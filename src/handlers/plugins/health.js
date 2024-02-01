@@ -64,13 +64,15 @@ const routes = [
   }
 ]
 
+const plugin = {
+  name: 'Health',
+  register (server) {
+    server.route(routes)
+  }
+}
+
 module.exports = {
-  plugin: {
-    name: 'Health',
-    register (server) {
-      server.route(routes)
-    }
-  },
-  createHealthCheck,
-  handler
+  plugin,
+  handler,
+  createHealthCheck
 }

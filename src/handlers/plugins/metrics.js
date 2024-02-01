@@ -35,12 +35,14 @@ const routes = [
   }
 ]
 
+const plugin = {
+  name: 'Metrics',
+  register (server) {
+    server.route(routes)
+  }
+}
+
 module.exports = {
-  plugin: {
-    name: 'Metrics',
-    register (server) {
-      server.route(routes)
-    }
-  },
+  plugin,
   handler
 }
