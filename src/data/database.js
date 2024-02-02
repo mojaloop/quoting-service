@@ -63,6 +63,10 @@ class Database {
     return this
   }
 
+  async disconnect () {
+    return this.queryBuilder?.destroy()
+  }
+
   /**
      * async utility for getting a transaction object from knex
      *
@@ -893,7 +897,6 @@ class Database {
   /**
      * Writes a formatted log message to the console
      */
-  // eslint-disable-next-line no-unused-vars
   writeLog (message) {
     Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
   }

@@ -29,33 +29,32 @@
  --------------
  ******/
 
+jest.mock('@mojaloop/central-services-stream', () => ({
+  Util: {
+    Producer: {
+      connectAll: jest.fn(),
+      disconnect: jest.fn(),
+      produceMessage: jest.fn()
+    }
+  }
+}))
+jest.mock('@mojaloop/central-services-logger')
+jest.mock('../../src/model/quotes')
+
 const { mockRequest: Mockgen, defaultHeaders } = require('../util/helper')
 const Server = require('../../src/server')
-jest.mock('../../src/model/quotes')
-jest.mock('@mojaloop/central-services-logger')
 const QuotesModel = require('../../src/model/quotes')
-let Database
-let server
 
 jest.setTimeout(10000)
 
 describe('Server Start', () => {
-  beforeEach(() => {
-    jest.resetModules()
-    jest.mock('../../src/data/cachedDatabase')
-    Database = require('../../src/data/cachedDatabase')
-  })
+  let server
 
-  afterEach(() => {
-    server.stop()
+  afterEach(async () => {
+    await server.stop({ timeout: 100 })
   })
 
   it('runs the server', async () => {
-    // Arrange
-    Database.mockImplementationOnce(() => ({
-      connect: jest.fn().mockResolvedValueOnce()
-    }))
-
     // Act
     server = await Server()
     const requests = Mockgen().requestsAsync('/health', 'get')
@@ -70,21 +69,11 @@ describe('Server Start', () => {
     }
 
     // Act
-    try {
-      const response = await server.inject(options)
-      expect(response.statusCode).toBe(200)
-      jest.setTimeout(5000)
-    } catch (error) {
-      console.log(error)
-    }
+    const response = await server.inject(options)
+    expect(response.statusCode).toBe(200)
   })
 
   it('post /quotes throws error when missing mandatory header', async () => {
-    // Arrange
-    Database.mockImplementationOnce(() => ({
-      connect: jest.fn().mockResolvedValueOnce()
-    }))
-
     // Act
     server = await Server()
     const requests = Mockgen().requestsAsync('/quotes', 'post')
@@ -117,21 +106,13 @@ describe('Server Start', () => {
       payload: mock.request.body
     }
     // Act
-    try {
-      const response = await server.inject(options)
-      expect(response.statusCode).toBe(400)
-      expect(response.result).toEqual(expectedResult)
-    } catch (error) {
-      console.log(error)
-    }
+    const response = await server.inject(options)
+    expect(response.statusCode).toBe(400)
+    expect(response.result).toEqual(expectedResult)
   })
 
   it('post /quotes with additional asian (Myanmar) unicode characters', async () => {
     // Arrange
-    Database.mockImplementationOnce(() => ({
-      connect: jest.fn().mockResolvedValueOnce()
-    }))
-
     QuotesModel.mockImplementationOnce(() => ({
       handleQuoteRequest: jest.fn().mockResolvedValueOnce()
     }))
@@ -161,11 +142,7 @@ describe('Server Start', () => {
     }
 
     // Act
-    try {
-      const response = await server.inject(options)
-      expect(response.statusCode).toBe(202)
-    } catch (error) {
-      console.log(error)
-    }
+    const response = await server.inject(options)
+    expect(response.statusCode).toBe(202)
   })
 })

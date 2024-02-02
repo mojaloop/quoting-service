@@ -147,6 +147,7 @@ class Config {
       jwsSigningKeyPath: RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH,
       jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined
     }
+    this.kafkaConfig = RC.KAFKA
     this.apiDocumentationEndpoints = RC.API_DOCUMENTATION_ENDPOINTS || false
     this.protocolVersions = getProtocolVersions(DEFAULT_PROTOCOL_VERSION, RC.PROTOCOL_VERSIONS)
     this.instrumentationMetricsDisabled = (RC.INSTRUMENTATION.METRICS.DISABLED === true || RC.INSTRUMENTATION.METRICS.DISABLED === 'true')

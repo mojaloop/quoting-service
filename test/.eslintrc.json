@@ -1,9 +1,0 @@
-{
-  "env": {
-    "jest": true
-  },
-  "globals": {
-    "__ROOT__": "readonly",
-    "__SRC__": "readonly"
-  }
-}

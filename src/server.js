@@ -40,6 +40,7 @@ const Inert = require('@hapi/inert')
 const Vision = require('@hapi/vision')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
+const { Producer } = require('@mojaloop/central-services-stream').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const CentralServices = require('@mojaloop/central-services-shared')
 const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
@@ -51,29 +52,19 @@ const Metrics = require('@mojaloop/central-services-metrics')
 
 const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 const Config = require('./lib/config.js')
-const Database = require('./data/cachedDatabase')
-const Handlers = require('./handlers')
-const Routes = require('./handlers/routes')
-const { Cache } = require('memory-cache')
+const Handlers = require('./api')
+const Routes = require('./api/routes')
+const dto = require('./lib/dto')
 
 const OpenAPISpecPath = Path.resolve(__dirname, './interface/QuotingService-swagger.yaml')
 
 /**
- * Initializes a database connection pool
- */
-const initDb = function (config, cache) {
-  // try open a db connection pool
-  const database = new Database(config, cache)
-  return database.connect()
-}
-
-/**
  * Initializes a Hapi server
  *
- * @param db - database instance
  * @param config - configuration object
+ * @param topicNames - a list of producers topic names
  */
-const initServer = async function (db, config, cache) {
+const initServer = async function (config, topicNames) {
   // init a server
   const server = new Hapi.Server({
     address: config.listenAddress,
@@ -86,11 +77,9 @@ const initServer = async function (db, config, cache) {
     }
   })
 
-  // put the database pool somewhere handlers can use it
-  server.app.database = db
+  server.app.topicNames = topicNames
 
-  server.app.cache = cache
-
+  /* istanbul ignore next */
   if (config.apiDocumentationEndpoints) {
     await server.register({
       plugin: APIDocumentation,
@@ -186,9 +175,28 @@ const initServer = async function (db, config, cache) {
 }
 
 const initializeInstrumentation = (config) => {
+  /* istanbul ignore next */
   if (!config.instrumentationMetricsDisabled) {
     Metrics.setup(config.instrumentationMetricsConfig)
   }
+}
+
+const connectAllProducers = async (config) => {
+  const producersConfigs = Object.values(config.kafkaConfig.PRODUCER)
+    .reduce((acc, typeConfig) => {
+      Object.values(typeConfig).forEach(({ topic, config }) => {
+        acc.push({
+          topicConfig: dto.topicConfigDto({ topicName: topic }),
+          kafkaConfig: config
+        })
+      })
+      return acc
+    }, [])
+
+  await Producer.connectAll(producersConfigs)
+  Logger.info('kafka producers connected')
+
+  return producersConfigs.map(({ topicConfig }) => topicConfig.topicName)
 }
 
 // load config
@@ -199,22 +207,32 @@ const config = new Config()
  * @description Starts the web server
  */
 async function start () {
-  const cache = new Cache()
   initializeInstrumentation(config)
-  // initialize database connection pool and start the api server
-  return initDb(config)
-    .then(db => initServer(db, config, cache))
+
+  return connectAllProducers(config)
+    .then(topicNames => initServer(config, topicNames))
     .then(server => {
       // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
       /* istanbul ignore next */
-      process.on('SIGTERM', () => {
-        server.log(['info'], 'Received SIGTERM, closing server...')
+      ['SIGINT', 'SIGTERM'].forEach(sig => process.on(sig, () => {
+        Logger.info(`Received ${sig}, closing server...`)
+        let isError
         server.stop({ timeout: 10000 })
           .then(err => {
+            isError = !!err
             Logger.isWarnEnabled && Logger.warn(`server stopped. ${err ? (getStackOrInspect(err)) : ''}`)
-            process.exit((err) ? 1 : 0)
           })
-      })
+          .then(() => Producer.disconnect())
+          .catch(err => {
+            isError = true
+            Logger.warn(`error during exiting process: ${err.message}`)
+          })
+          .finally(() => {
+            const exitCode = (isError) ? 1 : 0
+            Logger.info(`process exit code: ${exitCode}`)
+            process.exit(exitCode)
+          })
+      }))
       server.log(['info'], `Server running on ${server.info.uri}`)
       return server
       // eslint-disable-next-line no-unused-vars
