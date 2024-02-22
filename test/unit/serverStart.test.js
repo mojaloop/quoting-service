@@ -45,7 +45,7 @@ const { mockRequest: Mockgen, defaultHeaders } = require('../util/helper')
 const Server = require('../../src/server')
 const QuotesModel = require('../../src/model/quotes')
 
-jest.setTimeout(10000)
+jest.setTimeout(10_000)
 
 describe('Server Start', () => {
   let server

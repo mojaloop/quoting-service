@@ -7,7 +7,7 @@ const Database = require('../data/cachedDatabase')
 const modelFactory = require('../model')
 const QuotingHandler = require('./QuotingHandler')
 const createConsumers = require('./createConsumers')
-const { createMonitoringServer } = require('./MonitoringServer')
+const { createMonitoringServer } = require('./monitoringServer')
 
 let db
 let consumersMap
