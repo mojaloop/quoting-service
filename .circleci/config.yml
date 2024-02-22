@@ -298,7 +298,7 @@ jobs:
           name: Prepare test environment
           command: |
             pwd
-            chmod +x /test/integration/scripts/start.sh
+            chmod +x ./test/integration/scripts/start.sh
             ./test/integration/scripts/start.sh
       - run:
           name: Run the integration tests
