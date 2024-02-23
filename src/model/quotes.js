@@ -1060,7 +1060,11 @@ class QuotesModel {
       try {
         // If JWS is enabled and the 'fspiop-source' matches the configured jws header value('switch')
         // that means it's a switch generated message and we need to sign it
-        if (envConfig.jws && envConfig.jws.jwsSign && opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
+        const needToSign = !opts.headers['fspiop-signature'] &&
+          envConfig.jws?.jwsSign &&
+          opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign
+
+        if (needToSign) {
           const logger = Logger
           logger.log = logger.info
           this.writeLog('Getting the JWS Signer to sign the switch generated message')

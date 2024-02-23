@@ -1,15 +1,163 @@
 version: "3.7"
+
+x-depends-on: &dependsOnMysqlAndKafka
+  mysql:
+    condition: service_healthy
+  kafka:
+    condition: service_healthy
+  init-kafka:
+    condition: service_completed_successfully
+
+x-quoting-service: &quotingServiceBase
+  build:
+    context: .
+    cache_from:
+      - mojaloop/quoting-service
+      - quoting-service
+  environment:
+    - LOG_LEVEL=debug
+    - CSL_LOG_TRANSPORT=file
+  volumes:
+    - ./docker/quoting-service/default.json:/opt/app/config/default.json
+    #  think, how to use ./config/default.json inside docker-compose
+    - ./secrets/:/opt/app/secrets/
+  depends_on:
+    <<: *dependsOnMysqlAndKafka
+#    central-ledger:
+#      condition: service_healthy # to perform test dfsp onboarding
+
+x-healthcheck-params: &healthcheckParams
+  interval: 30s
+  timeout: 20s
+  retries: 10
+  start_period: 40s
+
+
 services:
   quoting-service:
-      build:
-        context: .
-        cache_from: 
-          - mojaloop/quoting-service
-          - quoting-service
-      container_name: qs_quoting-service
-      ports:
-        - "3002:3002"
-      environment:
-        - CSL_LOG_TRANSPORT=file
-      volumes:
-       - ./docker/quoting-service/default.json:/opt/app/config/default.json
+    <<: *quotingServiceBase
+    ports:
+      - "3002:3002"
+      - "19229:9229"
+    container_name: qs_quoting-service
+
+  quoting-service-handler:
+    <<: *quotingServiceBase
+    command: npm run start:handlers
+    ports:
+      - "3022:3002"
+      - "29229:9229"
+    container_name: qs_quoting-service-handler
+
+
+  central-ledger:
+    image: mojaloop/central-ledger
+    container_name: qs_central-ledger
+    ports:
+      - "3001:3001"
+    volumes:
+       - ./docker/central-ledger/default.json:/opt/app/config/default.json
+    environment:
+      - CLEDG_DATABASE_URI=mysql://central_ledger:password@mysql:3306/central_ledger
+      - CLEDG_SIDECAR__DISABLED=true
+    depends_on: *dependsOnMysqlAndKafka
+    healthcheck:
+      <<: *healthcheckParams
+      test: [ "CMD", "sh", "-c" ,"apk --no-cache add curl", "&&", "curl", "http://localhost:3001/health" ]
+
+  ml-api-adapter:
+    image: mojaloop/ml-api-adapter:latest
+    container_name: qs_ml-api-adapter
+    ports:
+      - "3000:3000"
+    volumes:
+      # override the default values with our own - this is because the KAFKA_HOST env variable is ignored for some reason
+      - ./docker/ml-api-adapter/default.json:/opt/app/config/default.json
+    # TODO: we should be able to remove this - I think the image command is broken
+    command:
+      - "node"
+      - "src/api/index.js"
+
+  mysql:
+    image: mysql/mysql-server
+    container_name: qs_mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      #this fixes the permissions issue, but docker-compose up will fail on first attempt
+      - ./docker/sql-init/:/docker-entrypoint-initdb.d/
+    environment:
+      - MYSQL_USER=${DBUSER:-central_ledger}
+      - MYSQL_PASSWORD=${DBPASS:-password}
+      - MYSQL_DATABASE=${DBUSER:-central_ledger}
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+    healthcheck:
+      <<: *healthcheckParams
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "mysql" ]
+
+#  mockserver:
+#    image: jamesdbloom/mockserver
+#    container_name: qs_mockserver
+#    ports:
+#      - "1080:1080"
+#
+#  temp_curl:
+#    image: byrnedo/alpine-curl
+#    container_name: qs_temp-curl
+#    volumes:
+#      - ./docker/wait-for-mockserver.sh:/opt/wait-for-mockserver.sh
+#    entrypoint: [ "sh", "-c" ]
+#    command:
+#      - /opt/wait-for-mockserver.sh
+#    environment:
+#      - MOCK_HOST=mockserver
+
+  kafka:
+    image: docker.io/bitnami/kafka:3.5
+    container_name: qs_kafka
+    ports:
+      - "9092:9092"
+    environment:
+      # BITNAMI_DEBUG: "yes"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_CFG_LISTENERS: CONTROLLER://:9093,LISTENER_DOCKER://:29092,LISTENER_EXTERN://:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: LISTENER_DOCKER://kafka:29092,LISTENER_EXTERN://localhost:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,LISTENER_DOCKER:PLAINTEXT,LISTENER_EXTERN:PLAINTEXT
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CFG_MESSAGE_MAX_BYTES: 200000000
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@127.0.0.1:9093
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_ENABLE_KRAFT: "true"
+    healthcheck:
+      <<: *healthcheckParams
+      test: ["CMD" ,"/opt/bitnami/kafka/bin/kafka-broker-api-versions.sh","--bootstrap-server","kafka:9092"]
+
+  init-kafka:
+    image: docker.io/bitnami/kafka:3.5
+    volumes:
+      - ./docker/kafka/scripts:/tmp/kafka/scripts
+    command: bash /tmp/kafka/scripts/provision.sh
+    depends_on:
+      - kafka
+
+  kafka-ui:
+    image: docker.redpanda.com/redpandadata/console:latest
+    ports:
+      - "9080:8080"
+    environment:
+      - KAFKA_BROKERS=kafka:29092
+    depends_on:
+      - kafka
+
+  mock-hub:
+    build:
+      context: ./test/integration/mockHttpServer
+    ports:
+      - "7777:7777"
+    container_name: qs_mock-hub
+    command: node ./server.js

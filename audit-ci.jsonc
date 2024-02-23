@@ -22,6 +22,8 @@
     "GHSA-qgmg-gppg-76g5",
     "GHSA-f9xv-q969-pqx4",
     "GHSA-p9pc-299p-vxgp",
-    "GHSA-7fh5-64p2-3v2j" // https://github.com/advisories/GHSA-7fh5-64p2-3v2j
-   ]
+    "GHSA-7fh5-64p2-3v2j", // https://github.com/advisories/GHSA-7fh5-64p2-3v2j
+    "GHSA-c429-5p7v-vgjp", // https://github.com/advisories/GHSA-c429-5p7v-vgjp
+    "GHSA-78xj-cgh5-2h22"  // https://github.com/advisories/GHSA-78xj-cgh5-2h22
+  ]
 }

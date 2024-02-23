@@ -2127,6 +2127,40 @@ describe('QuotesModel', () => {
       jwsSignSpy.mockRestore()
     })
 
+    it('should not JWS resign error callback, if fspiop-signature header already exists', async () => {
+      // Arrange
+      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
+      // expect.assertions(6)
+      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      Util.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+
+      const fspiopSignature = 'mock-fspiop-signature'
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: {
+          spanHeaders: '12345',
+          'fspiop-source': 'switch',
+          'fspiop-destination': 'dfsp2',
+          'fspiop-signature': fspiopSignature
+        },
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {}
+      }))
+      mockSpan.audit = jest.fn()
+      mockConfig.jws.jwsSign = true
+      mockConfig.jws.jwsSigningKey = jwsSigningKey
+      // Act
+      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, true)
+      // Assert
+      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
+      expect(mockSpan.audit).toBeCalledTimes(1)
+      expect(jwsSignSpy).toBeCalledTimes(0)
+      expect(axios.request.mock.calls[0][0].headers['fspiop-signature']).toBe(fspiopSignature)
+      jwsSignSpy.mockRestore()
+    })
+
     it('sends the error callback NOT JWS signed', async () => {
       // Arrange
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')

@@ -19,7 +19,7 @@ Unless required by applicable law or agreed to in writing, the Mojaloop files ar
 
 const { HealthCheckEnums } = require('@mojaloop/central-services-shared').HealthCheck
 const Metrics = require('@mojaloop/central-services-metrics')
-const { createMonitoringServer, initializeInstrumentation } = require('../../../src/handlers/MonitoringServer')
+const { createMonitoringServer, initializeInstrumentation } = require('../../../src/handlers/monitoringServer')
 
 describe('Monitoring Server', () => {
   let server
