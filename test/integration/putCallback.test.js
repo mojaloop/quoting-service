@@ -35,7 +35,7 @@ describe('PUT callback Tests --> ', () => {
     expect(response.data.history.length).toBe(1)
     const { headers, url } = response.data.history[0]
     expect(headers['fspiop-signature']).toBeTruthy()
-    expect(url).toContain(`/${message.id}/error`)
+    expect(url).toBe(`/${message.to}/quotes/${message.id}/error`)
     const { signature, protectedHeader } = JSON.parse(headers['fspiop-signature'])
     expect(signature).toBeTruthy()
     expect(protectedHeader).toBeTruthy()
