@@ -305,8 +305,6 @@ jobs:
           command: |
             npm rebuild
             npm run test:int
-#          environment:
-#            ENDPOINT_URL: http://localhost:4545/notification
 #      - store_artifacts:
 #          path: ./test/results
 #          destination: test
