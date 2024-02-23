@@ -76,15 +76,12 @@ defaults_configure_nvm: &defaults_configure_nvm
     else
       echo "==> NVM_DIR already exists - $NVM_DIR"
     fi
-    
     echo "2. Check/Set NVMRC_VERSION env variable"
     if [ -z "$NVMRC_VERSION" ]; then
       echo "==> Configuring NVMRC_VERSION!"
       export NVMRC_VERSION=$(cat $CIRCLE_WORKING_DIRECTORY/.nvmrc)
       echo "export NVMRC_VERSION=$NVMRC_VERSION" >> $ENV_DOT_PROFILE
     fi
-    echo "NVMRC_VERSION is $NVMRC_VERSION"
-    
     echo "3. Configure NVM"
     ## Lets check if an existing NVM_DIR exists, if it does lets skil
     if [ -e "$NVM_DIR" ]; then
@@ -94,7 +91,7 @@ defaults_configure_nvm: &defaults_configure_nvm
     else
       echo "==> $NVM_DIR does not exists. Executing steps 4-5!"
       echo "4. Installing NVM"
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
       echo "5. Executing $NVM_DIR/nvm.sh"
       [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     fi
