@@ -2,5 +2,5 @@
 reject: [
   "json-rules-engine",
   "eslint",
-  "@mojaloop/sdk-standard-components" # Need to fix https://infitx-technologies.atlassian.net/browse/IPROD-427
+  "@mojaloop/sdk-standard-components" # Version 17.4.0 introduced the bug: this.logger.isDebugEnabled is not a function
 ]
