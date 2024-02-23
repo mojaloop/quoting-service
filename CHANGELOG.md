@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.7.0](https://github.com/mojaloop/quoting-service/compare/v15.6.0...v15.7.0) (2024-02-23)
+
+
+### Features
+
+* **iprod/#379:** added integration tests; updated docker-compose ([#324](https://github.com/mojaloop/quoting-service/issues/324)) ([66b7158](https://github.com/mojaloop/quoting-service/commit/66b7158dbb157cde1b6fdfa0ad4cd9a8a4814ae9)), closes [iprod/#379](https://github.com/iprod/quoting-service/issues/379)
+
 ## [15.6.0](https://github.com/mojaloop/quoting-service/compare/v15.5.0...v15.6.0) (2024-02-02)
 
 
