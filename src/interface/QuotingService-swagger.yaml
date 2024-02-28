@@ -754,24 +754,24 @@ paths:
             schema:
               $ref: '#/components/schemas/FxQuotesPostRequest'
       responses:
-        '202':
-          $ref: '#/components/responses/202'
+        '200':
+          $ref: '#/components/responses/Response200'
         '400':
-          $ref: '#/components/responses/400'
+          $ref: '#/components/responses/ErrorResponse400'
         '401':
-          $ref: '#/components/responses/401'
+          $ref: '#/components/responses/ErrorResponse401'
         '403':
-          $ref: '#/components/responses/403'
+          $ref: '#/components/responses/ErrorResponse403'
         '404':
-          $ref: '#/components/responses/404'
+          $ref: '#/components/responses/ErrorResponse404'
         '405':
-          $ref: '#/components/responses/405'
+          $ref: '#/components/responses/ErrorResponse405'
         '406':
-          $ref: '#/components/responses/406'
+          $ref: '#/components/responses/ErrorResponse406'
         '501':
-          $ref: '#/components/responses/501'
+          $ref: '#/components/responses/ErrorResponse501'
         '503':
-          $ref: '#/components/responses/503'
+          $ref: '#/components/responses/ErrorResponse503'
   /health:
     get:
       tags:
