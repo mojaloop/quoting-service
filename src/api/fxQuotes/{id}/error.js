@@ -8,7 +8,8 @@ The Mojaloop files are made available by the Mojaloop Foundation under the Apach
 
 You may obtain a copy of the License at [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
-Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the [License](http://www.apache.org/licenses/LICENSE-2.0).
+Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and limitations under the [License](http://www.apache.org/licenses/LICENSE-2.0).
 
 Contributors
 --------------
@@ -39,18 +40,18 @@ const dto = require('../../../lib/dto')
 const { kafkaConfig } = new Config()
 
 /**
- * Operations on /fxQuotes/{id}/error
+ * Operations on /fxQuotes/{ID}/error
  */
 module.exports = {
   /**
-     * summary: FXQuotesErrorById
-     * description: If the server is unable to find or create a fx quote, or another processing error occurs, the error callback PUT /fxQuotes/&lt;id&gt;/error is used. The &lt;id&gt; in the URI should contain the fxQuoteId that was used for the creation of the fx quote, or the &lt;id&gt; that was used in the GET /fxQuotes/&lt;id&gt;.
+     * summary: Return FX quote error information
+     * description: If the FXP is unable to find or create a FX quote, or some other processing error occurs, the error callback `PUT /fxQuotes/{ID}/error` is used.
+     *  The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.
      * parameters: id, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
   put: async function FXQuoteErrorById (context, request, h) {
-    // the same as PUT /fxQuotes
     const histTimerEnd = Metrics.getHistogram(
       'fxQuotes_id_put_error',
       'Process HTTP PUT /fxQuotes/{id}/error request',
