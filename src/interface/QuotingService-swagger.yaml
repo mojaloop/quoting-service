@@ -664,41 +664,31 @@ paths:
         - $ref: '#/components/parameters/Content-Length'
       x-examples:
         application/json:
-          individualQuoteResults:
-            - quoteId: b51ec534-ee48-4575-b6a9-ead2955b8069,
-            - receiveAmount:
-               currency: USD
-               amount: 123.45
-            - payeeFspFee:
-               currency: USD
-               amount: 1.45
-            - payeeFspCommission:
-               currency: USD
-               amount: 1.45
-            - ilpPacket: AYIBgQAAAAAAAASwNGxldmVsb25lLmRmc3AxLm1lci45T2RTOF81MDdqUUZERmZlakgyOVc4bXFmNEpLMHlGTFGCAUBQU0svMS4wCk5vbmNlOiB1SXlweUYzY3pYSXBFdzVVc05TYWh3CkVuY3J5cHRpb246IG5vbmUKUGF5bWVudC1JZDogMTMyMzZhM2ItOGZhOC00MTYzLTg0NDctNGMzZWQzZGE5OGE3CgpDb250ZW50LUxlbmd0aDogMTM1CkNvbnRlbnQtVHlwZTogYXBwbGljYXRpb24vanNvbgpTZW5kZXItSWRlbnRpZmllcjogOTI4MDYzOTEKCiJ7XCJmZWVcIjowLFwidHJhbnNmZXJDb2RlXCI6XCJpbnZvaWNlXCIsXCJkZWJpdE5hbWVcIjpcImFsaWNlIGNvb3BlclwiLFwiY3JlZGl0TmFtZVwiOlwibWVyIGNoYW50XCIsXCJkZWJpdElkZW50aWZpZXJcIjpcIjkyODA2MzkxXCJ9IgA,
-            - condition: f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA,
-            - errorInformation:
-                errorCode: 5100
-                errorDescription: This is an error description
-                extensionList:
-                  extension:
-                    - “key”: “errorDescription”
-                      “value”: “This is a more detailed error description”
-                    - “key”: “errorDescription”
-                      “value”: “This is a more detailed error description”
-            - extensionList:
+          condition: f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA
+          conversionTerms:
+              conversionId: 8b2dd9c7-112c-44bd-9502-b019ba90c9cb
+              determiningTransferId: 80fdb3c2-855d-46a7-9dc8-abaa64da4717
+              initiatingFsp: payerfsp
+              counterPartyFsp: fxfsp
+              amountType: SEND
+              sourceAmount:
+                  currency: NGN
+                  amount: 12345
+              targetAmount:
+                  currency: EUR
+                  amount: 12345
+              expiration: "2016-05-24T08:38:08.699-04:00"
+              charges: 
+                  - chargeType: string
+                    sourceAmount: 
+                      currency: NGN
+                      amount: 12345
+              extensionList: 
                 extension:
-                  - “key”: “errorDescription”
-                    “value”: “This is a more detailed error description”
-                  - “key”: “errorDescription”
-                    “value”: “This is a more detailed error description”
-          expiration: “2016-05-24T08:38:08.699-04:00”
-          extensionList:
-            extension:
-              - “key”: “errorDescription”
-                “value”: “This is a more detailed error description”
-              - “key”: “errorDescription”
-                “value”: “This is a more detailed error description”
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
       requestBody:
         description: FX Quote information returned.
         required: true
@@ -746,6 +736,33 @@ paths:
         - $ref: '#/components/parameters/FSPIOP-Signature'
         - $ref: '#/components/parameters/FSPIOP-URI'
         - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          conversionRequestId: e1131ab7-7aed-44e2-9c46-4042c8b5ed67
+          conversionTerms:
+              conversionId: 8b2dd9c7-112c-44bd-9502-b019ba90c9cb
+              determiningTransferId: 80fdb3c2-855d-46a7-9dc8-abaa64da4717
+              initiatingFsp: payerfsp
+              counterPartyFsp: fxfsp
+              amountType: SEND
+              sourceAmount:
+                  currency: NGN
+                  amount: 12345
+              targetAmount:
+                  currency: EUR
+                  amount: 12345
+              expiration: "2016-05-24T08:38:08.699-04:00"
+              charges: 
+                  - chargeType: string
+                    sourceAmount: 
+                      currency: NGN
+                      amount: 12345
+              extensionList: 
+                extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
       requestBody:
         description: Details of the FX quote to be created.
         required: true
