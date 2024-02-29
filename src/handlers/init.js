@@ -21,11 +21,12 @@ const startFn = async (handlerList) => {
   const isDbOk = await db.isConnected()
   if (!isDbOk) throw new Error('DB is not connected')
 
-  const { quotesModelFactory, bulkQuotesModelFactory } = modelFactory(db)
+  const { quotesModelFactory, bulkQuotesModelFactory, fxQuotesModelFactory } = modelFactory(db)
 
   const handler = new QuotingHandler({
     quotesModelFactory,
     bulkQuotesModelFactory,
+    fxQuotesModelFactory,
     config,
     logger: Logger,
     cache: new Cache(),
