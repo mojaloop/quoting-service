@@ -96,9 +96,6 @@ class FxQuotesModel {
       this.writeLog(`Resolved FSPIOP_CALLBACK_URL_FX_QUOTES endpoint for fxQuote ${conversionRequestId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
-        // internal-error
-        // we didnt get an endpoint for the fxp!
-        // make an error callback to the initiator
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES found for fxquote ${conversionRequestId} FXP counterparty`, null, fspiopSource)
       }
 
@@ -124,7 +121,6 @@ class FxQuotesModel {
       this.writeLog(`Forwarding request : ${util.inspect(opts)}`)
       await httpRequest(opts, fspiopSource)
     } catch (err) {
-      // any-error
       this.writeLog(`Error forwarding fxQuote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
@@ -136,7 +132,6 @@ class FxQuotesModel {
    * @returns {undefined}
    */
   async handleFxQuoteUpdate (headers, conversionRequestId, fxQuoteUpdateRequest, span) {
-    // ensure no 'accept' header is present in the request headers.
     if ('accept' in headers) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
         `Update for fx quote ${conversionRequestId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
@@ -168,13 +163,10 @@ class FxQuotesModel {
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
     try {
-      // lookup payer dfsp callback endpoint
       endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_FX_QUOTES')
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_FX_QUOTES endpoint for fx quote ${conversionRequestId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
-        // we didn't get an endpoint for the payee dfsp!
-        // make an error callback to the initiator
         const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES found for quote ${conversionRequestId} PAYER party`, null, fspiopSource)
         return this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, true)
       }
@@ -218,7 +210,7 @@ class FxQuotesModel {
     const childSpan = span.getChild('qs_quote_forwardFxQuoteGet')
     try {
       await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
-      await this.forwardFxQuoteGet(headers, conversionRequestId, childSpan)
+      this.forwardFxQuoteGet(headers, conversionRequestId, childSpan)
     } catch (err) {
       this.writeLog(`Error forwarding fx quote get: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
       await this.handleException(fspiopSource, conversionRequestId, err, headers, childSpan)
@@ -245,8 +237,6 @@ class FxQuotesModel {
       this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_FX_QUOTES endpoint for fx quote GET ${conversionRequestId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
-        // we didnt get an endpoint for the fxp!
-        // make an error callback to the initiator
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES found for fx quote GET ${conversionRequestId}`, null, fspiopSource)
       }
 
@@ -268,7 +258,6 @@ class FxQuotesModel {
 
       await httpRequest(opts, fspiopSource)
     } catch (err) {
-      // any-error
       this.writeLog(`Error forwarding fx quote get request: ${getStackOrInspect(err)}`)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
@@ -303,7 +292,6 @@ class FxQuotesModel {
    * dfsp that initiated the request.
    */
   async handleException (fspiopSource, conversionRequestId, error, headers, span) {
-    // is this exception already wrapped as an API spec compatible type?
     const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
 
     const childSpan = span.getChild('qs_fxQuote_sendErrorCallback')
@@ -330,7 +318,6 @@ class FxQuotesModel {
     const envConfig = new Config()
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
-      // look up the callback base url
       const endpoint = await this.db.getParticipantEndpoint(fspiopSource, ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES)
 
       this.writeLog(`Resolved participant '${fspiopSource}' '${ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES}' to: '${endpoint}'`)
