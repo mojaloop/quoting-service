@@ -738,11 +738,12 @@ workflows:
           filters:
             tags:
               only: /.*/
+              ignore:
+                - /v[0-9]+(\.[0-9]+)*\-snapshot+((\.[0-9]+)?)/
             branches:
               ignore:
                 - /feature*/
                 - /bugfix*/
-                - /v[0-9]+(\.[0-9]+)*\-snapshot+((\.[0-9]+)?)/
       - test-integration:
           context: org-global
           requires:
@@ -793,7 +794,7 @@ workflows:
             - setup
             - test-lint
             - test-unit
-            # - test-coverage
+            - test-coverage
             # - test-integration
             # - test-functional
             - vulnerability-check
