@@ -2,6 +2,7 @@
   "HOSTNAME": "http://quoting-service",
   "LISTEN_ADDRESS": "0.0.0.0",
   "PORT": 3002,
+  "MONITORING_PORT": 3003,
   "AMOUNT": {
     "PRECISION": 18,
     "SCALE": 4
