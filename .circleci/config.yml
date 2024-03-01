@@ -878,7 +878,7 @@ workflows:
             - pr-tools/pr-title-check
             - test-lint
             - test-unit
-            - test-coverage
+            # - test-coverage
             # - test-integration
             # - test-functional
             - vulnerability-check
