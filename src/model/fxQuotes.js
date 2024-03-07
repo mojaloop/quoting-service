@@ -68,7 +68,7 @@ class FxQuotesModel {
       childSpan = span.getChild('qs_fxquote_forwardFxQuoteRequest')
       await childSpan.audit({ headers, payload: fxQuoteRequest }, EventSdk.AuditEventAction.start)
 
-      this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, fxQuoteRequest, childSpan)
+      await this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, fxQuoteRequest, childSpan)
     } catch (err) {
       this.writeLog(`Error forwarding fx quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
       await this.handleException(fspiopSource, fxQuoteRequest.conversionRequestId, err, headers, childSpan)
@@ -210,7 +210,7 @@ class FxQuotesModel {
     const childSpan = span.getChild('qs_quote_forwardFxQuoteGet')
     try {
       await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
-      this.forwardFxQuoteGet(headers, conversionRequestId, childSpan)
+      await this.forwardFxQuoteGet(headers, conversionRequestId, childSpan)
     } catch (err) {
       this.writeLog(`Error forwarding fx quote get: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
       await this.handleException(fspiopSource, conversionRequestId, err, headers, childSpan)

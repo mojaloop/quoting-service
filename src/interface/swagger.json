@@ -1022,15 +1022,15 @@
       }
     },
     "/fxQuotes/{id}/error": {
-			"put": {
-				"description": "If the FXP is unable to find or create a FX quote, or some other processing error occurs, the error callback `PUT /fxQuotes/{ID}/error` is used. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.",
-				"summary": "Return FX quote information error",
-				"tags": [
-					"fxQuotes",
-					"sampled"
-				],
-				"operationId": "FxQuotesByIDAndErrorPut",
-				"parameters": [
+      "put": {
+        "description": "If the FXP is unable to find or create a FX quote, or some other processing error occurs, the error callback `PUT /fxQuotes/{ID}/error` is used. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.",
+        "summary": "Return FX quote information error",
+        "tags": [
+          "fxQuotes",
+          "sampled"
+        ],
+        "operationId": "FxQuotesByIDAndErrorPut",
+        "parameters": [
           {
             "name": "body",
             "in": "body",
@@ -1039,176 +1039,176 @@
               "$ref": "#/definitions/ErrorInformationObject"
             }
           },
-					{
-						"$ref": "#/parameters/id"
-					},
-					{
-						"$ref": "#/parameters/Content-Length"
-					},
-					{
-						"$ref": "#/parameters/Content-Type"
-					},
-					{
-						"$ref": "#/parameters/Date"
-					},
-					{
-						"$ref": "#/parameters/X-Forwarded-For"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-Source"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-Destination"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-Encryption"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-Signature"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-URI"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-HTTP-Method"
-					}
-				],
-				"x-examples": {
-					"application/json": {
-						"errorInformation": {
-							"errorCode": "“5100”",
-							"errorDescription": "“This is an error description”",
-							"extensionList": {
-								"extension": [
-									{
-										"“key”": "“errorDescription”",
-										"“value”": "“This is a more detailed error description”"
-									},
-									{
-										"“key”": "“errorDescription”",
-										"“value”": "“This is a more detailed error description”"
-									}
-								]
-							}
-						}
-					}
-				},
-				"responses": {
-					"200": {
-						"$ref": "#/responses/Response200"
-					},
-					"400": {
-						"$ref": "#/responses/ErrorResponse400"
-					},
-					"401": {
-						"$ref": "#/responses/ErrorResponse401"
-					},
-					"403": {
-						"$ref": "#/responses/ErrorResponse403"
-					},
-					"404": {
-						"$ref": "#/responses/ErrorResponse404"
-					},
-					"405": {
-						"$ref": "#/responses/ErrorResponse405"
-					},
-					"406": {
-						"$ref": "#/responses/ErrorResponse406"
-					},
-					"501": {
-						"$ref": "#/responses/ErrorResponse501"
-					},
-					"503": {
-						"$ref": "#/responses/ErrorResponse503"
-					}
-				}
-			}
-		},
-		"/fxQuotes/{id}": {
-			"parameters": [
-				{
-					"$ref": "#/parameters/id"
-				},
-				{
-					"$ref": "#/parameters/Content-Type"
-				},
-				{
-					"$ref": "#/parameters/Date"
-				},
-				{
-					"$ref": "#/parameters/X-Forwarded-For"
-				},
-				{
-					"$ref": "#/parameters/FSPIOP-Source"
-				},
-				{
-					"$ref": "#/parameters/FSPIOP-Destination"
-				},
-				{
-					"$ref": "#/parameters/FSPIOP-Encryption"
-				},
-				{
-					"$ref": "#/parameters/FSPIOP-Signature"
-				},
-				{
-					"$ref": "#/parameters/FSPIOP-URI"
-				},
-				{
-					"$ref": "#/parameters/FSPIOP-HTTP-Method"
-				}
-			],
-			"get": {
-				"description": "The HTTP request `GET /fxQuotes/{ID}` is used to request information regarding a request for quotation for a  currency conversion which the sender has previously issued. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the quote.",
-				"summary": "Retrieve FX quote information",
-				"tags": [
-					"fxQuotes",
-					"sampled"
-				],
-				"operationId": "FxQuotesByIDGet",
-				"parameters": [
-					{
-						"$ref": "#/parameters/Accept"
-					}
-				],
-				"responses": {
-					"200": {
-						"$ref": "#/responses/Response200"
-					},
-					"400": {
-						"$ref": "#/responses/ErrorResponse400"
-					},
-					"401": {
-						"$ref": "#/responses/ErrorResponse401"
-					},
-					"403": {
-						"$ref": "#/responses/ErrorResponse403"
-					},
-					"404": {
-						"$ref": "#/responses/ErrorResponse404"
-					},
-					"405": {
-						"$ref": "#/responses/ErrorResponse405"
-					},
-					"406": {
-						"$ref": "#/responses/ErrorResponse406"
-					},
-					"501": {
-						"$ref": "#/responses/ErrorResponse501"
-					},
-					"503": {
-						"$ref": "#/responses/ErrorResponse503"
-					}
-				}
-			},
-			"put": {
-				"description": "The callback `PUT /fxQuotes/{ID}` is used to inform the requester about the  outcome of a request for quotation for a currency conversion.  The `{ID}` in the URI should contain the `conversionRequestId` that was used for the  creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.",
-				"summary": "Return FX quote information",
-				"tags": [
-					"fxQuotes",
-					"sampled"
-				],
-				"operationId": "FxQuotesByIdPut",
-				"parameters": [
+          {
+            "$ref": "#/parameters/id"
+          },
+          {
+            "$ref": "#/parameters/Content-Length"
+          },
+          {
+            "$ref": "#/parameters/Content-Type"
+          },
+          {
+            "$ref": "#/parameters/Date"
+          },
+          {
+            "$ref": "#/parameters/X-Forwarded-For"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Source"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Destination"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Encryption"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Signature"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-URI"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-HTTP-Method"
+          }
+        ],
+        "x-examples": {
+          "application/json": {
+            "errorInformation": {
+              "errorCode": "“5100”",
+              "errorDescription": "“This is an error description”",
+              "extensionList": {
+                "extension": [
+                  {
+                    "“key”": "“errorDescription”",
+                    "“value”": "“This is a more detailed error description”"
+                  },
+                  {
+                    "“key”": "“errorDescription”",
+                    "“value”": "“This is a more detailed error description”"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Response200"
+          },
+          "400": {
+            "$ref": "#/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/responses/ErrorResponse401"
+          },
+          "403": {
+            "$ref": "#/responses/ErrorResponse403"
+          },
+          "404": {
+            "$ref": "#/responses/ErrorResponse404"
+          },
+          "405": {
+            "$ref": "#/responses/ErrorResponse405"
+          },
+          "406": {
+            "$ref": "#/responses/ErrorResponse406"
+          },
+          "501": {
+            "$ref": "#/responses/ErrorResponse501"
+          },
+          "503": {
+            "$ref": "#/responses/ErrorResponse503"
+          }
+        }
+      }
+    },
+    "/fxQuotes/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/parameters/id"
+        },
+        {
+          "$ref": "#/parameters/Content-Type"
+        },
+        {
+          "$ref": "#/parameters/Date"
+        },
+        {
+          "$ref": "#/parameters/X-Forwarded-For"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-Source"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-Destination"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-Encryption"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-Signature"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-URI"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-HTTP-Method"
+        }
+      ],
+      "get": {
+        "description": "The HTTP request `GET /fxQuotes/{ID}` is used to request information regarding a request for quotation for a  currency conversion which the sender has previously issued. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the quote.",
+        "summary": "Retrieve FX quote information",
+        "tags": [
+          "fxQuotes",
+          "sampled"
+        ],
+        "operationId": "FxQuotesByIDGet",
+        "parameters": [
+          {
+            "$ref": "#/parameters/Accept"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Response200"
+          },
+          "400": {
+            "$ref": "#/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/responses/ErrorResponse401"
+          },
+          "403": {
+            "$ref": "#/responses/ErrorResponse403"
+          },
+          "404": {
+            "$ref": "#/responses/ErrorResponse404"
+          },
+          "405": {
+            "$ref": "#/responses/ErrorResponse405"
+          },
+          "406": {
+            "$ref": "#/responses/ErrorResponse406"
+          },
+          "501": {
+            "$ref": "#/responses/ErrorResponse501"
+          },
+          "503": {
+            "$ref": "#/responses/ErrorResponse503"
+          }
+        }
+      },
+      "put": {
+        "description": "The callback `PUT /fxQuotes/{ID}` is used to inform the requester about the  outcome of a request for quotation for a currency conversion.  The `{ID}` in the URI should contain the `conversionRequestId` that was used for the  creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.",
+        "summary": "Return FX quote information",
+        "tags": [
+          "fxQuotes",
+          "sampled"
+        ],
+        "operationId": "FxQuotesByIdPut",
+        "parameters": [
           {
             "name": "body",
             "in": "body",
@@ -1217,11 +1217,11 @@
               "$ref": "#/definitions/FxQuotesIDPutResponse"
             }
           },
-					{
-						"$ref": "#/parameters/Content-Length"
-					}
-				],
-				"x-examples": {
+          {
+            "$ref": "#/parameters/Content-Length"
+          }
+        ],
+        "x-examples": {
           "application/json": {
             "condition": "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
             "conversionTerms": {
@@ -1263,46 +1263,46 @@
             }
           }
         },
-				"responses": {
-					"200": {
-						"$ref": "#/responses/Response200"
-					},
-					"400": {
-						"$ref": "#/responses/ErrorResponse400"
-					},
-					"401": {
-						"$ref": "#/responses/ErrorResponse401"
-					},
-					"403": {
-						"$ref": "#/responses/ErrorResponse403"
-					},
-					"404": {
-						"$ref": "#/responses/ErrorResponse404"
-					},
-					"405": {
-						"$ref": "#/responses/ErrorResponse405"
-					},
-					"406": {
-						"$ref": "#/responses/ErrorResponse406"
-					},
-					"501": {
-						"$ref": "#/responses/ErrorResponse501"
-					},
-					"503": {
-						"$ref": "#/responses/ErrorResponse503"
-					}
-				}
-			}
-		},
-		"/fxQuotes": {
-			"post": {
-				"description": "The HTTP request `POST /fxQuotes` is used to ask an FXP to provide a quotation for a currency conversion.",
-				"summary": "Calculate FX quote",
-				"tags": [
-					"fxQuotes"
-				],
-				"operationId": "FxQuotesPost",
-				"parameters": [
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Response200"
+          },
+          "400": {
+            "$ref": "#/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/responses/ErrorResponse401"
+          },
+          "403": {
+            "$ref": "#/responses/ErrorResponse403"
+          },
+          "404": {
+            "$ref": "#/responses/ErrorResponse404"
+          },
+          "405": {
+            "$ref": "#/responses/ErrorResponse405"
+          },
+          "406": {
+            "$ref": "#/responses/ErrorResponse406"
+          },
+          "501": {
+            "$ref": "#/responses/ErrorResponse501"
+          },
+          "503": {
+            "$ref": "#/responses/ErrorResponse503"
+          }
+        }
+      }
+    },
+    "/fxQuotes": {
+      "post": {
+        "description": "The HTTP request `POST /fxQuotes` is used to ask an FXP to provide a quotation for a currency conversion.",
+        "summary": "Calculate FX quote",
+        "tags": [
+          "fxQuotes"
+        ],
+        "operationId": "FxQuotesPost",
+        "parameters": [
           {
             "name": "body",
             "in": "body",
@@ -1311,40 +1311,40 @@
               "$ref": "#/definitions/FxQuotesPostRequest"
             }
           },
-					{
-						"$ref": "#/parameters/Accept"
-					},
-					{
-						"$ref": "#/parameters/Content-Length"
-					},
-					{
-						"$ref": "#/parameters/Content-Type"
-					},
-					{
-						"$ref": "#/parameters/Date"
-					},
-					{
-						"$ref": "#/parameters/X-Forwarded-For"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-Source"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-Destination"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-Encryption"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-Signature"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-URI"
-					},
-					{
-						"$ref": "#/parameters/FSPIOP-HTTP-Method"
-					}
-				],
+          {
+            "$ref": "#/parameters/Accept"
+          },
+          {
+            "$ref": "#/parameters/Content-Length"
+          },
+          {
+            "$ref": "#/parameters/Content-Type"
+          },
+          {
+            "$ref": "#/parameters/Date"
+          },
+          {
+            "$ref": "#/parameters/X-Forwarded-For"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Source"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Destination"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Encryption"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Signature"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-URI"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-HTTP-Method"
+          }
+        ],
         "x-examples": {
           "application/json": {
             "conversionRequestId": "e1131ab7-7aed-44e2-9c46-4042c8b5ed67",
@@ -1387,37 +1387,37 @@
             }
           }
         },
-				"responses": {
-					"200": {
-						"$ref": "#/responses/Response200"
-					},
-					"400": {
-						"$ref": "#/responses/ErrorResponse400"
-					},
-					"401": {
-						"$ref": "#/responses/ErrorResponse401"
-					},
-					"403": {
-						"$ref": "#/responses/ErrorResponse403"
-					},
-					"404": {
-						"$ref": "#/responses/ErrorResponse404"
-					},
-					"405": {
-						"$ref": "#/responses/ErrorResponse405"
-					},
-					"406": {
-						"$ref": "#/responses/ErrorResponse406"
-					},
-					"501": {
-						"$ref": "#/responses/ErrorResponse501"
-					},
-					"503": {
-						"$ref": "#/responses/ErrorResponse503"
-					}
-				}
-			}
-		},
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Response200"
+          },
+          "400": {
+            "$ref": "#/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/responses/ErrorResponse401"
+          },
+          "403": {
+            "$ref": "#/responses/ErrorResponse403"
+          },
+          "404": {
+            "$ref": "#/responses/ErrorResponse404"
+          },
+          "405": {
+            "$ref": "#/responses/ErrorResponse405"
+          },
+          "406": {
+            "$ref": "#/responses/ErrorResponse406"
+          },
+          "501": {
+            "$ref": "#/responses/ErrorResponse501"
+          },
+          "503": {
+            "$ref": "#/responses/ErrorResponse503"
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "description": "The HTTP request GET /health is used to return the current status of the API.",
