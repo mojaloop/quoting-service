@@ -13,6 +13,7 @@ class QuotingHandler {
   constructor (deps) {
     this.quotesModelFactory = deps.quotesModelFactory
     this.bulkQuotesModelFactory = deps.bulkQuotesModelFactory
+    this.fxQuotesModelFactory = deps.fxQuotesModelFactory
     this.logger = deps.logger
     this.config = deps.config
     this.cache = deps.cache
@@ -37,7 +38,7 @@ class QuotingHandler {
 
   async defineHandlerByTopic(message) {
     const { topic, requestData } = dto.requestDataFromMessageDto(message)
-    const { QUOTE, BULK_QUOTE } = this.config.kafkaConfig.CONSUMER
+    const { QUOTE, BULK_QUOTE, FX_QUOTE } = this.config.kafkaConfig.CONSUMER
 
     switch (topic) {
       case QUOTE.POST.topic:
@@ -52,6 +53,12 @@ class QuotingHandler {
         return this.handlePutBulkQuotes(requestData)
       case BULK_QUOTE.GET.topic:
         return this.handleGetBulkQuotes(requestData)
+      case FX_QUOTE.POST.topic:
+        return this.handlePostFxQuotes(requestData)
+      case FX_QUOTE.PUT.topic:
+        return this.handlePutFxQuotes(requestData)
+      case FX_QUOTE.GET.topic:
+        return this.handleGetFxQuotes(requestData)
 
       default:
         this.logger.warn(ErrorMessages.unsupportedKafkaTopic, message)
@@ -169,6 +176,64 @@ class QuotingHandler {
       this.logger.error(`error in handleGetBulkQuotes: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
+    }
+
+    return true
+  }
+
+  async handlePostFxQuotes(requestData) {
+    const { requestId, payload, headers } = requestData
+    const model = this.fxQuotesModelFactory(requestId)
+    let span
+
+    try {
+      span = await this.createSpan(requestData)
+      await model.handleFxQuoteRequest(headers, payload, span)
+      this.logger.debug('handlePostFxQuotes is done')
+    } catch (err) {
+      this.logger.error(`error in handlePostFxQuotes: ${err?.stack}`)
+      const fspiopError = reformatFSPIOPError(err)
+      const fspiopSource = headers[FSPIOP.SOURCE]
+      await model.handleException(fspiopSource, payload.conversionRequestId, fspiopError, headers, span)
+    }
+
+    return true
+  }
+
+  async handlePutFxQuotes(requestData) {
+    const { id: conversionRequestId, requestId, payload, headers } = requestData
+    const model = this.fxQuotesModelFactory(requestId)
+    const isError = !!payload.errorInformation
+    let span
+
+    try {
+      span = await this.createSpan(requestData)
+      const result = isError
+        ? await model.handleFxQuoteError(headers, conversionRequestId, payload.errorInformation, span)
+        : await model.handleFxQuoteUpdate(headers, conversionRequestId, payload, span)
+      this.logger.isDebugEnabled && this.logger.debug(`handlePutFxQuotes is done: ${JSON.stringify(result)}`)
+    } catch (err) {
+      this.logger.error(`error in handlePutFxQuotes: ${err?.stack}`)
+      const fspiopSource = headers[FSPIOP.SOURCE]
+      await model.handleException(fspiopSource, conversionRequestId, err, headers, span)
+    }
+
+    return true
+  }
+
+  async handleGetFxQuotes(requestData) {
+    const { id: conversionRequestId, requestId, headers } = requestData
+    const model = this.fxQuotesModelFactory(requestId)
+    let span
+
+    try {
+      span = await this.createSpan(requestData)
+      await model.handleFxQuoteGet(headers, conversionRequestId, span)
+      this.logger.debug('handleGetBulkQuotes is done')
+    } catch (err) {
+      this.logger.error(`error in handleGetBulkQuotes: ${err?.stack}`)
+      const fspiopSource = headers[FSPIOP.SOURCE]
+      await model.handleException(fspiopSource, conversionRequestId, err, headers, span)
     }
 
     return true
