@@ -168,7 +168,7 @@ class FxQuotesModel {
 
       if (!endpoint) {
         const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for PAYER party FSP '${fspiopDest}' while processing quote ${conversionRequestId}`, null, fspiopSource)
-        return this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, true)
+        return this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, span, true)
       }
 
       const fullCallbackUrl = `${endpoint}/fxQuotes/${conversionRequestId}`
