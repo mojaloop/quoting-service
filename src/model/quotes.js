@@ -720,7 +720,7 @@ class QuotesModel {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
         const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYER party`, null, fspiopSource)
-        return this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, true)
+        return this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, span, true)
       }
 
       const fullCallbackUrl = `${endpoint}/quotes/${quoteId}`
