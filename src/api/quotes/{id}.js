@@ -55,7 +55,7 @@ module.exports = {
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
   get: async function getQuotesById (context, request, h) {
-    const isFX = request.path.includes('/fxQuotes')
+    const isFX = request.headers['content-type'].includes('fxQuotes')
 
     const histTimerEnd = Metrics.getHistogram(
       isFX ? 'fxQuotes_id_get' : 'quotes_id_get',
@@ -95,8 +95,8 @@ module.exports = {
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
   put: async function putQuotesById (context, request, h) {
-    const isFX = request.path.includes('/fxQuotes')
-    const isError = request.path.includes('/error')
+    const isFX = request.headers['content-type'].includes('fxQuotes')
+    const isError = !!request.payload.errorInformation
 
     let metricsId = isFX ? 'fxQuotes_id_put' : 'quotes_id_put'
     metricsId = isError ? `${metricsId}_error` : metricsId
