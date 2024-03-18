@@ -47,25 +47,32 @@ const { kafkaConfig } = new Config()
 module.exports = {
   /**
      * summary: QuotesByIdAndError
-     * description: If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/&lt;id&gt;/error is used. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;.
+     * description:
+     *  - If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/&lt;id&gt;/error is used. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;.
+     *  - If the FXP is unable to find or create a FX quote, or some other processing error occurs, the error callback `PUT /fxQuotes/{ID}/error` is used. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.
      * parameters: id, body, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
      * produces: application/json
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
   put: async function QuotesByIdAndError (context, request, h) {
+    const isFX = request.path.includes('fxQuotes')
+
     // the same as PUT /quotes
     const histTimerEnd = Metrics.getHistogram(
-      'quotes_id_put_error',
-      'Publish HTTP PUT /quotes/{id}/error request',
+      isFX ? 'fxQuotes_id_put_error' : 'quotes_id_put_error',
+      isFX ? 'Process HTTP PUT /fxQuotes/{id}/error request' : 'Publish HTTP PUT /quotes/{id}/error request',
       ['success']
     ).startTimer()
 
     try {
       await util.auditSpan(request)
 
-      const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
+      const eventType = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
+      const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.PUT : kafkaConfig.PRODUCER.QUOTE.PUT
+
+      const { topic, config } = producerConfig
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = dto.messageFromRequestDto(request, Events.Event.Type.QUOTE, Events.Event.Action.PUT)
+      const message = dto.messageFromRequestDto(request, eventType, Events.Event.Action.PUT)
 
       await Producer.produceMessage(message, topicConfig, config)
 

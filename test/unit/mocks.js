@@ -2,6 +2,7 @@ const { randomUUID } = require('node:crypto')
 
 const mockHttpRequest = ({
   requestId = randomUUID(),
+  path = '/',
   payload = {},
   params = {},
   headers = {
@@ -9,6 +10,7 @@ const mockHttpRequest = ({
     'content-type': 'application/vnd.interoperability.quotes+json;version=1.0'
   }
 } = {}) => ({
+  path,
   payload,
   params,
   headers,

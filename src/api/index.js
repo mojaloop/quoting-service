@@ -33,9 +33,6 @@ const health = require('./health')
 const bulkQuotes = require('./bulkQuotes')
 const bulkQuotesById = require('./bulkQuotes/{id}')
 const bulkQuotesErrorById = require('./bulkQuotes/{id}/error')
-const fxQuotes = require('./fxQuotes')
-const fxQuotesById = require('./fxQuotes/{id}')
-const fxQuotesErrorById = require('./fxQuotes/{id}/error')
 const metrics = require('./metrics')
 
 module.exports = {
@@ -45,14 +42,14 @@ module.exports = {
   QuotesByIdGet: quotesById.get,
   QuotesByIdPut: quotesById.put,
   QuotesPost: quotes.post,
+  FxQuotesByIDAndErrorPut: quotesErrorByID.put,
+  FxQuotesByIDGet: quotesById.get,
+  FxQuotesByIdPut: quotesById.put,
+  FxQuotesPost: quotes.post,
   BulkQuotesErrorByIdPut: bulkQuotesErrorById.put,
   BulkQuotesByIdGet: bulkQuotesById.get,
   BulkQuotesByIdPut: bulkQuotesById.put,
   BulkQuotesPost: bulkQuotes.post,
-  FxQuotesByIDAndErrorPut: fxQuotesErrorById.put,
-  FxQuotesByIDGet: fxQuotesById.get,
-  FxQuotesByIdPut: fxQuotesById.put,
-  FxQuotesPost: fxQuotes.post,
   validationFail: OpenapiBackend.validationFail,
   notFound: OpenapiBackend.notFound,
   methodNotAllowed: OpenapiBackend.methodNotAllowed
