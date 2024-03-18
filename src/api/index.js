@@ -28,7 +28,6 @@
 const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
 const quotes = require('./quotes')
 const quotesById = require('./quotes/{id}')
-const quotesErrorByID = require('./quotes/{id}/error')
 const health = require('./health')
 const bulkQuotes = require('./bulkQuotes')
 const bulkQuotesById = require('./bulkQuotes/{id}')
@@ -38,11 +37,11 @@ const metrics = require('./metrics')
 module.exports = {
   HealthGet: health.get,
   MetricsGet: metrics.get,
-  QuotesErrorByIDPut: quotesErrorByID.put,
+  QuotesErrorByIDPut: quotesById.put,
   QuotesByIdGet: quotesById.get,
   QuotesByIdPut: quotesById.put,
   QuotesPost: quotes.post,
-  FxQuotesByIDAndErrorPut: quotesErrorByID.put,
+  FxQuotesByIDAndErrorPut: quotesById.put,
   FxQuotesByIDGet: quotesById.get,
   FxQuotesByIdPut: quotesById.put,
   FxQuotesPost: quotes.post,

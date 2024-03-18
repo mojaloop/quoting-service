@@ -55,7 +55,7 @@ module.exports = {
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
   post: async function Quotes (context, request, h) {
-    const isFX = request.path.includes('fxQuotes')
+    const isFX = request.path.includes('/fxQuotes')
 
     const histTimerEnd = Metrics.getHistogram(
       isFX ? 'fxQuotes_post' : 'quotes_post',
