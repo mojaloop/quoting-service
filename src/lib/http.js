@@ -36,8 +36,11 @@
 const axios = require('axios')
 const util = require('util')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const http = require('http')
 
 const { getStackOrInspect } = require('../lib/util')
+
+axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
 
 // TODO: where httpRequest is called, there's a pretty common pattern of obtaining an endpoint from
 // the database, specialising a template string with that endpoint, then calling httpRequest. Is
