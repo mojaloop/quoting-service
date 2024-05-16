@@ -1065,11 +1065,9 @@ class QuotesModel {
           opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign
 
         if (needToSign) {
-          const logger = Logger
-          logger.log = logger.info
           this.writeLog('Getting the JWS Signer to sign the switch generated message')
           const jwsSigner = new JwsSigner({
-            logger,
+            logger: Logger,
             signingKey: envConfig.jws.jwsSigningKey
           })
           opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
