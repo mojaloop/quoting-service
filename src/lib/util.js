@@ -51,8 +51,8 @@ const getSpanTags = ({ payload, headers, params, spanContext }, transactionType,
   const tags = {
     transactionType,
     transactionAction,
-    transactionId: (payload && payload.transactionId) || (params && params.id) || (spanContext && spanContext.transactionId),
-    quoteId: (payload && payload.quoteId) || (params && params.id) || (spanContext && spanContext.quoteId),
+    transactionId: (payload && payload.transactionId) || (params && params.id) || (spanContext?.tags?.transactionId),
+    quoteId: (payload && payload.quoteId) || (params && params.id) || (spanContext?.tags?.quoteId),
     source: headers[Enum.Http.Headers.FSPIOP.SOURCE],
     destination: headers[Enum.Http.Headers.FSPIOP.DESTINATION]
   }
