@@ -1,5 +1,4 @@
 /* eslint-disable space-before-function-paren */
-const { AuditEventAction } = require('@mojaloop/event-sdk')
 const { Enum } = require('@mojaloop/central-services-shared')
 const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
@@ -175,7 +174,7 @@ class QuotingHandler {
   }
 
   async createSpan(requestData) {
-    const { spanContext, payload, headers, type, action } = requestData
+    const { spanContext, type, action } = requestData
 
     const span = spanContext
       ? this.tracer.createChildSpanFromContext(spanContext.service, spanContext)
@@ -183,7 +182,6 @@ class QuotingHandler {
 
     const spanTags = getSpanTags(requestData, type, action)
     span.setTags(spanTags)
-    await span.audit({ payload, headers }, AuditEventAction.start)
 
     return span
   }

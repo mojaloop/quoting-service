@@ -233,7 +233,8 @@ const fetchParticipantInfo = async (source, destination, cache) => {
 }
 
 const auditSpan = async (request) => {
-  const { span, headers, payload } = request
+  const { span, headers, payload, method } = request
+  span.setTags(getSpanTags(request, 'quote', method))
   await span.audit({
     headers,
     payload

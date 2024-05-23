@@ -34,6 +34,7 @@ const startFn = async (handlerList) => {
 
   consumersMap = await createConsumers(handler.handleMessages, handlerList)
   monitoringServer = await createMonitoringServer(config.listenPort, consumersMap, db)
+  return handler
 }
 
 const stopFn = async () => {
