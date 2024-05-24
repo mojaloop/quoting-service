@@ -649,7 +649,6 @@ class QuotesModel {
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       const childSpan = handleQuoteUpdateSpan.getChild('qs_quote_forwardQuoteUpdate')
       try {
-        await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdateRequest }, EventSdk.AuditEventAction.start)
         histTimer({ success: true, queryName: 'quote_handleQuoteUpdate' })
         await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, childSpan)
       } catch (err) {
@@ -776,6 +775,7 @@ class QuotesModel {
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       const childSpan = span.getChild('qs_quote_forwardQuoteUpdateResend')
       try {
+        await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdate }, EventSdk.AuditEventAction.start)
         histTimer({ success: true, queryName: 'quote_handleQuoteUpdateResend' })
         await this.forwardQuoteUpdate(headers, quoteId, quoteUpdate, childSpan)
       } catch (err) {

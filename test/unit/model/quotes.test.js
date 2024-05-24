@@ -1415,9 +1415,8 @@ describe('QuotesModel', () => {
       const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
 
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: mockData.quoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
+      expect(mockChildSpan.audit).not.toBeCalled()
+      const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(refs).toEqual({})
     })
@@ -1432,9 +1431,8 @@ describe('QuotesModel', () => {
       const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
 
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: mockData.quoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
+      expect(mockChildSpan.audit).not.toBeCalled()
+      let args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       args = [mockData.headers['fspiop-source'], mockData.quoteId, fspiopError, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
@@ -1509,10 +1507,9 @@ describe('QuotesModel', () => {
         mockQuoteResponseId
       )
 
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: localQuoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
+      expect(mockChildSpan.audit).not.toBeCalled()
 
-      args = [mockData.headers, mockData.quoteId, localQuoteUpdate, mockChildSpan]
+      const args = [mockData.headers, mockData.quoteId, localQuoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toMatchObject(expected)
@@ -1540,9 +1537,8 @@ describe('QuotesModel', () => {
       expect(mockTransaction.rollback.mock.calls.length).toBe(0)
       expect(mockTransaction.commit.mock.calls.length).toBe(1)
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: mockData.quoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
+      expect(mockChildSpan.audit).not.toBeCalled()
+      const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toEqual(expected)
@@ -1716,7 +1712,7 @@ describe('QuotesModel', () => {
     })
 
     it('forward quote update', async () => {
-      expect.assertions(4)
+      expect.assertions(5)
 
       mockChildSpan.isFinished = false
 
@@ -1725,12 +1721,13 @@ describe('QuotesModel', () => {
         .toBe(undefined)
 
       expect(mockSpan.getChild).toBeCalled()
+      expect(mockChildSpan.audit).toBeCalled()
       const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(mockChildSpan.finish).toBeCalled()
     })
     it('handle fspiopError when forward quote fails', async () => {
-      expect.assertions(3)
+      expect.assertions(4)
 
       mockChildSpan.isFinished = true
       const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR)
@@ -1740,12 +1737,13 @@ describe('QuotesModel', () => {
         .resolves
         .toBe(undefined)
 
+      expect(mockChildSpan.audit).toBeCalled()
       const args = [mockData.headers['fspiop-source'], mockData.quoteId, fspiopError, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
     })
     it('handle custom error without stack when forward quote fails', async () => {
-      expect.assertions(3)
+      expect.assertions(4)
 
       mockChildSpan.isFinished = true
       const customErrorNoStack = new Error('Custom error')
@@ -1756,6 +1754,7 @@ describe('QuotesModel', () => {
         .resolves
         .toBe(undefined)
 
+      expect(mockChildSpan.audit).toBeCalled()
       const args = [mockData.headers['fspiop-source'], mockData.quoteId, customErrorNoStack, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
