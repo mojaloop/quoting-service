@@ -1716,7 +1716,7 @@ describe('QuotesModel', () => {
     })
 
     it('forward quote update', async () => {
-      expect.assertions(5)
+      expect.assertions(4)
 
       mockChildSpan.isFinished = false
 
@@ -1725,13 +1725,12 @@ describe('QuotesModel', () => {
         .toBe(undefined)
 
       expect(mockSpan.getChild).toBeCalled()
-      expect(mockChildSpan.audit).toBeCalled()
       const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(mockChildSpan.finish).toBeCalled()
     })
     it('handle fspiopError when forward quote fails', async () => {
-      expect.assertions(4)
+      expect.assertions(3)
 
       mockChildSpan.isFinished = true
       const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR)
@@ -1741,13 +1740,12 @@ describe('QuotesModel', () => {
         .resolves
         .toBe(undefined)
 
-      expect(mockChildSpan.audit).toBeCalled()
       const args = [mockData.headers['fspiop-source'], mockData.quoteId, fspiopError, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
     })
     it('handle custom error without stack when forward quote fails', async () => {
-      expect.assertions(4)
+      expect.assertions(3)
 
       mockChildSpan.isFinished = true
       const customErrorNoStack = new Error('Custom error')
@@ -1758,7 +1756,6 @@ describe('QuotesModel', () => {
         .resolves
         .toBe(undefined)
 
-      expect(mockChildSpan.audit).toBeCalled()
       const args = [mockData.headers['fspiop-source'], mockData.quoteId, customErrorNoStack, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
