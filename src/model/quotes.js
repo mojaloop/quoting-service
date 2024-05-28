@@ -455,7 +455,7 @@ class QuotesModel {
         // internal-error
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYEE party`, null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYEE party ${fspiopDest}`, null, fspiopSource)
       }
 
       const fullCallbackUrl = `${endpoint}/quotes`
@@ -568,7 +568,7 @@ class QuotesModel {
         if (dupe.isDuplicateId && (!dupe.isResend)) {
           // internal-error
           // same quoteId but a different request, this is an error!
-          throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, `Update for quote ${quoteUpdateRequest.quoteId} is a duplicate but hashes dont match`, null, fspiopSource)
+          throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST, `Update for quote ${quoteId} is a duplicate but hashes don't match`, null, fspiopSource)
         }
 
         if (dupe.isResend && dupe.isDuplicateId) {
@@ -649,7 +649,6 @@ class QuotesModel {
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       const childSpan = handleQuoteUpdateSpan.getChild('qs_quote_forwardQuoteUpdate')
       try {
-        await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdateRequest }, EventSdk.AuditEventAction.start)
         histTimer({ success: true, queryName: 'quote_handleQuoteUpdate' })
         await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, childSpan)
       } catch (err) {
@@ -1065,11 +1064,9 @@ class QuotesModel {
           opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign
 
         if (needToSign) {
-          const logger = Logger
-          logger.log = logger.info
           this.writeLog('Getting the JWS Signer to sign the switch generated message')
           const jwsSigner = new JwsSigner({
-            logger,
+            logger: Logger,
             signingKey: envConfig.jws.jwsSigningKey
           })
           opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)

@@ -1,5 +1,4 @@
 /* eslint-disable space-before-function-paren */
-const { AuditEventAction } = require('@mojaloop/event-sdk')
 const { Enum } = require('@mojaloop/central-services-shared')
 const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
@@ -75,7 +74,7 @@ class QuotingHandler {
       await model.handleQuoteRequest(headers, payload, span, this.cache)
       this.logger.debug('handlePostQuotes is done')
     } catch (err) {
-      this.logger.error(`error in handlePostQuotes: ${err?.stack}`)
+      this.logger.error(`error in handlePostQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, payload.quoteId, fspiopError, headers, span)
@@ -97,7 +96,7 @@ class QuotingHandler {
         : await model.handleQuoteUpdate(headers, quoteId, payload, span)
       this.logger.isDebugEnabled && this.logger.debug(`handlePutQuotes is done: ${JSON.stringify(result)}`)
     } catch (err) {
-      this.logger.error(`error in handlePutQuotes: ${err?.stack}`)
+      this.logger.error(`error in handlePutQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, quoteId, err, headers, span)
     }
@@ -115,7 +114,7 @@ class QuotingHandler {
       await model.handleQuoteGet(headers, quoteId, span)
       this.logger.debug('handleGetQuotes is done')
     } catch (err) {
-      this.logger.error(`error in handleGetQuotes: ${err?.stack}`)
+      this.logger.error(`error in handleGetQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, quoteId, err, headers, span)
     }
@@ -133,7 +132,7 @@ class QuotingHandler {
       await model.handleBulkQuoteRequest(headers, payload, span)
       this.logger.debug('handlePostBulkQuotes is done')
     } catch (err) {
-      this.logger.error(`error in handlePostBulkQuotes: ${err?.stack}`)
+      this.logger.error(`error in handlePostBulkQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, payload.bulkQuoteId, fspiopError, headers, span)
@@ -155,7 +154,7 @@ class QuotingHandler {
         : await model.handleBulkQuoteUpdate(headers, bulkQuoteId, payload, span)
       this.logger.isDebugEnabled && this.logger.debug(`handlePutBulkQuotes is done: ${JSON.stringify(result)}`)
     } catch (err) {
-      this.logger.error(`error in handlePutBulkQuotes: ${err?.stack}`)
+      this.logger.error(`error in handlePutBulkQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
     }
@@ -173,7 +172,7 @@ class QuotingHandler {
       await model.handleBulkQuoteGet(headers, bulkQuoteId, span)
       this.logger.debug('handleGetBulkQuotes is done')
     } catch (err) {
-      this.logger.error(`error in handleGetBulkQuotes: ${err?.stack}`)
+      this.logger.error(`error in handleGetBulkQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
     }
@@ -240,7 +239,7 @@ class QuotingHandler {
   }
 
   async createSpan(requestData) {
-    const { spanContext, payload, headers, type, action } = requestData
+    const { spanContext, type, action } = requestData
 
     const span = spanContext
       ? this.tracer.createChildSpanFromContext(spanContext.service, spanContext)
@@ -248,7 +247,6 @@ class QuotingHandler {
 
     const spanTags = getSpanTags(requestData, type, action)
     span.setTags(spanTags)
-    await span.audit({ payload, headers }, AuditEventAction.start)
 
     return span
   }

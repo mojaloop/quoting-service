@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.7.1](https://github.com/mojaloop/quoting-service/compare/v15.7.0...v15.7.1) (2024-04-19)
+
+
+### Bug Fixes
+
+* enable keep alive for HTTP requests made by the quoting service ([#330](https://github.com/mojaloop/quoting-service/issues/330)) ([4d393b4](https://github.com/mojaloop/quoting-service/commit/4d393b4b557556cc83fde1bcc314a80cffb91ef3))
+
 ## [15.7.0](https://github.com/mojaloop/quoting-service/compare/v15.6.0...v15.7.0) (2024-02-23)
 
 
