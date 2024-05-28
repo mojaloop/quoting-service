@@ -100,6 +100,7 @@ class Config {
     // load config from environment (or use sensible defaults)
     this.listenAddress = RC.LISTEN_ADDRESS
     this.listenPort = RC.PORT
+    this.monitoringPort = RC.MONITORING_PORT
     this.simpleRoutingMode = RC.SIMPLE_ROUTING_MODE
     this.switchEndpoint = RC.SWITCH_ENDPOINT
     this.amount = {

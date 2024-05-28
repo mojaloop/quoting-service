@@ -42,7 +42,8 @@ const PRINCIPLE_VALUE = 'PRINCIPLE_VALUE'
 
 const Functionalities = Object.freeze({
   QUOTE: 'QUOTE',
-  BULK_QUOTE: 'BULK_QUOTE'
+  BULK_QUOTE: 'BULK_QUOTE',
+  FX_QUOTE: 'FX_QUOTE'
 })
 
 const ErrorMessages = Object.freeze({
