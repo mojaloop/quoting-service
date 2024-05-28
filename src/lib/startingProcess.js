@@ -12,12 +12,12 @@ const startingProcess = (startFn, stopFn) => {
   Logger.verbose(`starting ${processName}...`, { startTime })
 
   process.on('uncaughtExceptionMonitor', (err) => {
-    Logger.error(`uncaughtExceptionMonitor in ${processName}: ${err?.message}`, { err, stack: err?.stack })
+    Logger.error(`uncaughtExceptionMonitor in ${processName}: ${err?.stack}`, { err, stack: err?.stack })
     process.exit(2)
   })
 
   process.on('unhandledRejection', (err) => {
-    Logger.error(`unhandledRejection in ${processName}: ${err?.message}`, { err, stack: err?.stack })
+    Logger.error(`unhandledRejection in ${processName}: ${err?.stack}`, { err, stack: err?.stack })
     process.exit(3)
   })
 
@@ -35,7 +35,7 @@ const startingProcess = (startFn, stopFn) => {
         process.exit(0)
       })
       .catch((err) => {
-        Logger.warn(`${processName} was stopped with error: ${err?.message}`, { err, stack: err?.stack })
+        Logger.warn(`${processName} was stopped with error: ${err?.stack}`, { err, stack: err?.stack })
         process.exit(5)
       })
   }))
@@ -50,7 +50,7 @@ const startingProcess = (startFn, stopFn) => {
       })
     })
     .catch((err) => {
-      Logger.error(`error on ${processName} start: ${err?.message}`, { err, stack: err?.stack })
+      Logger.error(`error on ${processName} start: ${err?.stack}`, { err, stack: err?.stack })
       process.exit(1)
     })
 }
