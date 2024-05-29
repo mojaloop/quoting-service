@@ -43,12 +43,14 @@ const messageFromRequestDto = (request, type, action) => {
 }
 
 const requestDataFromMessageDto = (message) => {
-  const { topic, value } = message
+  const { topic, value, offset, partition } = message
 
   return Object.freeze({
     topic,
     requestData: {
       ...value.content,
+      offset,
+      partition,
       payload: decodePayload(value.content?.payload)
       // see messageFromRequestDto for details of "content" field
     }

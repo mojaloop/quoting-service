@@ -140,4 +140,53 @@ describe('/quotes/{id} API Tests -->', () => {
       expect(spyErrorLog.mock.calls[0][0].message).toContain(error.message)
     })
   })
+
+  describe('PUT /quotes/{id}/error API Tests -->', () => {
+    const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
+    const mockContext = jest.fn()
+
+    it('should publish a message with callback error payload', async () => {
+      // Arrange
+      Producer.produceMessage = jest.fn()
+      const quoteId = randomUUID()
+      const mockRequest = mocks.mockHttpRequest({
+        payload: { errorInformation: {} },
+        params: { id: quoteId }
+      })
+      const { handler, code } = mocks.createMockHapiHandler()
+
+      // Act
+      await quotesApi.put(mockContext, mockRequest, handler)
+
+      // Assert
+      expect(code).toHaveBeenCalledWith(Http.ReturnCodes.OK.CODE)
+      expect(Producer.produceMessage).toHaveBeenCalledTimes(1)
+
+      const [message, topicConfig, producerConfig] = Producer.produceMessage.mock.calls[0]
+      const { id, type, action } = message.content
+      expect(id).toBe(quoteId)
+      expect(type).toBe(Events.Event.Type.QUOTE)
+      expect(action).toBe(Events.Event.Action.PUT)
+      expect(topicConfig.topicName).toBe(topic)
+      expect(producerConfig).toStrictEqual(config)
+    })
+
+    it('should rethrow error case of error during publish a message', async () => {
+      // Arrange
+      const error = new Error('PUT Quote Test Error')
+      Producer.produceMessage = jest.fn(async () => { throw error })
+
+      const mockRequest = mocks.mockHttpRequest()
+      const { handler } = mocks.createMockHapiHandler()
+      const spyErrorLog = jest.spyOn(Logger, 'error')
+
+      // Act
+      await expect(() => quotesApi.put(mockContext, mockRequest, handler))
+        .rejects.toThrowError(error.message)
+
+      // Assert
+      expect(spyErrorLog).toHaveBeenCalledTimes(1)
+      expect(spyErrorLog.mock.calls[0][0].message).toContain(error.message)
+    })
+  })
 })

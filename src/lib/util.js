@@ -47,12 +47,12 @@ const failActionHandler = async (request, h, err) => {
   throw err
 }
 
-const getSpanTags = ({ payload, headers, params }, transactionType, transactionAction) => {
+const getSpanTags = ({ payload, headers, params, spanContext }, transactionType, transactionAction) => {
   const tags = {
     transactionType,
     transactionAction,
-    transactionId: (payload && payload.transactionId) || (params && params.id),
-    quoteId: (payload && payload.quoteId) || (params && params.id),
+    transactionId: (payload && payload.transactionId) || (params && params.id) || (spanContext?.tags?.transactionId),
+    quoteId: (payload && payload.quoteId) || (params && params.id) || (spanContext?.tags?.quoteId),
     source: headers[Enum.Http.Headers.FSPIOP.SOURCE],
     destination: headers[Enum.Http.Headers.FSPIOP.DESTINATION]
   }
@@ -233,7 +233,8 @@ const fetchParticipantInfo = async (source, destination, cache) => {
 }
 
 const auditSpan = async (request) => {
-  const { span, headers, payload } = request
+  const { span, headers, payload, method } = request
+  span.setTags(getSpanTags(request, 'quote', method))
   await span.audit({
     headers,
     payload
