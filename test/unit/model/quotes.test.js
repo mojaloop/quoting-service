@@ -580,7 +580,11 @@ describe('QuotesModel', () => {
       expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
     it('should validate payer and payee fspId and headers for simple routing mode', async () => {
-      expect.assertions(7)
+      if (mockConfig.simpleRoutingMode) {
+        expect.assertions(7)
+      } else {
+        expect.assertions(5)
+      }
 
       const fspiopSource = 'dfsp123'
       const fspiopDestination = 'dfsp234'
@@ -597,8 +601,10 @@ describe('QuotesModel', () => {
       }
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopSource)
       expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(fspiopDestination)
-      expect(quotesModel.db.getParticipant.mock.calls[2][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[3][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+      if (mockConfig.simpleRoutingMode) {
+        expect(quotesModel.db.getParticipant.mock.calls[2][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+        expect(quotesModel.db.getParticipant.mock.calls[3][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+      }
     })
     it('should throw internal error if no quoteRequest was supplied', async () => {
       expect.assertions(4)
@@ -661,8 +667,16 @@ describe('QuotesModel', () => {
     })
 
     it('should validate quote update', async () => {
-      const result = await quotesModel.validateQuoteUpdate()
-      expect(result).toBeNull()
+      quotesModel.db.getParticipant.mockReturnValueOnce(mockData.payer)
+      let promise = quotesModel.validateQuoteUpdate(mockData.headers, mockData.quoteUpdate)
+      await expect(promise).resolves.toBeUndefined()
+      expect(quotesModel.db.getParticipant.mock.calls[0][2]).toBe(mockData.quoteUpdate.payeeReceiveAmount.currency)
+
+      delete mockData.quoteUpdate.payeeReceiveAmount
+      const altCurreny = 'EUR'
+      promise = quotesModel.validateQuoteUpdate(mockData.headers, { ...mockData.quoteUpdate, transferAmount: { amount: '95', currency: altCurreny } })
+      await expect(promise).resolves.toBeUndefined()
+      expect(quotesModel.db.getParticipant.mock.calls[1][2]).toBe(altCurreny)
     })
   })
   describe('handleQuoteRequest', () => {
