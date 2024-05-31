@@ -9,6 +9,7 @@ const kafkaMessagePayloadDto = ({
   type = 'quote',
   action = 'put',
   payloadBase64 = 'eyJlcnJvckluZm9ybWF0aW9uIjp7ImVycm9yQ29kZSI6IjUxMDAiLCJlcnJvckRlc2NyaXB0aW9uIjoiRXJyb3IgZGVzY3JpcHRpb24ifX0=',
+  contentType = CONTENT_TYPE,
   createdAtMs = Date.now()
 } = {}) => Object.freeze({
   from,
@@ -18,8 +19,8 @@ const kafkaMessagePayloadDto = ({
   content: {
     requestId: `${createdAtMs}:4015872a9e16:28:lsunvmzh:10002`,
     headers: {
-      'content-type': CONTENT_TYPE,
-      accept: CONTENT_TYPE,
+      'content-type': contentType,
+      accept: contentType,
       date: new Date(createdAtMs).toUTCString(),
       'fspiop-source': from,
       'fspiop-destination': to,
@@ -29,7 +30,7 @@ const kafkaMessagePayloadDto = ({
       connection: 'keep-alive',
       'content-length': '102'
     },
-    payload: `data:${CONTENT_TYPE};base64,${payloadBase64}`,
+    payload: `data:${contentType};base64,${payloadBase64}`,
     uriParams: { id },
     spanContext: {
       service: 'QuotesErrorByIDPut',

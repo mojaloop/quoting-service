@@ -169,14 +169,13 @@ class QuotesModel {
     }
 
     // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer object.
-    // If `supportedCurrencies` is present, then payer must have accounts for all the currencies they support.
+    // If `supportedCurrencies` is present, then payer FSP must have accounts for all the currencies they support.
     // If it is not passed in, then we validate against the amount currency.
     const payerFspCurrencies = quoteRequest.payer?.supportedCurrencies ? quoteRequest.payer.supportedCurrencies : [quoteRequest.amount.currency]
     await Promise.all(payerFspCurrencies.map(async currency => {
       await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
     }))
-    // For payee, we do not have we can only validate all supported currencies in the PUT /quotes/{ID} endpoint.
-    // So we only validate the amount currency here.
+    // For payee, we can only validate against the amount currency here.
     await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
 
     histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
@@ -205,13 +204,16 @@ class QuotesModel {
   }
 
   /**
-   * Validates the form of a quote update object
+   * Validates the quote update request
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateQuoteUpdate () {
-    // todo: actually do the validation (use joi as per mojaloop)
-    return Promise.resolve(null)
+  async validateQuoteUpdate (headers, quoteUpdateRequest) {
+    // If payeeReceiveAmount is set, validate payee against the payeeReceiveAmount currency
+    // If not, validate payee against the transferAmount currency
+    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    const payeeCurrency = quoteUpdateRequest?.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
+    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
   }
 
   /**
@@ -273,8 +275,6 @@ class QuotesModel {
           return this.handleQuoteRequestResend(handledRuleEvents.headers,
             handledRuleEvents.quoteRequest, handleQuoteRequestSpan, handledRuleEvents.additionalHeaders)
         }
-
-        // todo: validation
 
         // get various enum ids (async, as parallel as possible)
         const payerEnumVals = []
@@ -596,10 +596,10 @@ class QuotesModel {
           }
         }
 
+        await this.validateQuoteUpdate(headers, quoteUpdateRequest)
+
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
-
-        // todo: validation
 
         // create the quote response row in the db
         const newQuoteResponse = await this.db.createQuoteResponse(txn, quoteId, {

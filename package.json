@@ -49,7 +49,9 @@
   "scripts": {
     "start": "npm run start:api",
     "start:api": "node src/index.js",
+    "start:debug": "node --inspect=0.0.0.0 src/index.js",
     "start:handlers": "node src/handlers/index.js h --quotes --bulk_quotes --fx_quotes",
+    "start:handlers:debug": "node --inspect=0.0.0.0 src/handlers/index.js h --quotes --bulk_quotes --fx_quotes",
     "watch:api": "npx nodemon src/index.js",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "lint": "npx standard",
