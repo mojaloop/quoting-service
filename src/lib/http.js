@@ -40,8 +40,10 @@ const http = require('http')
 
 const { getStackOrInspect } = require('../lib/util')
 
-axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
-axios.defaults.httpAgent.toJSON = () => ({})
+// axios.default.httpAgent = new http.Agent({ keepAlive: true })
+// axios.default.httpAgent.toJSON = () => ({})
+const httpAgent = new http.Agent({ keepAlive: true })
+httpAgent.toJSON = () => ({})
 
 // TODO: where httpRequest is called, there's a pretty common pattern of obtaining an endpoint from
 // the database, specialising a template string with that endpoint, then calling httpRequest. Is
@@ -61,6 +63,8 @@ async function httpRequest (opts, fspiopSource) {
   let body
 
   try {
+    opts.httpAgent = httpAgent
+    opts.timeout = 20000
     res = await axios.request(opts)
     body = await res.data
   } catch (e) {
@@ -86,6 +90,8 @@ async function httpRequest (opts, fspiopSource) {
       `${errObj}`,
       fspiopSource)
   }
+
+  return res
 }
 
 module.exports = {

@@ -78,6 +78,10 @@ class QuotingHandler {
       const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, payload.quoteId, fspiopError, headers, span)
+    } finally {
+      if (span && !span.isFinished) {
+        span.finish()
+      }
     }
 
     return true
@@ -99,6 +103,10 @@ class QuotingHandler {
       this.logger.error(`error in handlePutQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, quoteId, err, headers, span)
+    } finally {
+      if (span && !span.isFinished) {
+        span.finish()
+      }
     }
 
     return true
@@ -117,6 +125,10 @@ class QuotingHandler {
       this.logger.error(`error in handleGetQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, quoteId, err, headers, span)
+    } finally {
+      if (span && !span.isFinished) {
+        span.finish()
+      }
     }
 
     return true
@@ -136,6 +148,10 @@ class QuotingHandler {
       const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, payload.bulkQuoteId, fspiopError, headers, span)
+    } finally {
+      if (span && !span.isFinished) {
+        span.finish()
+      }
     }
 
     return true
@@ -157,6 +173,10 @@ class QuotingHandler {
       this.logger.error(`error in handlePutBulkQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
+    } finally {
+      if (span && !span.isFinished) {
+        span.finish()
+      }
     }
 
     return true
@@ -175,6 +195,10 @@ class QuotingHandler {
       this.logger.error(`error in handleGetBulkQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
+    } finally {
+      if (span && !span.isFinished) {
+        span.finish()
+      }
     }
 
     return true
@@ -194,6 +218,10 @@ class QuotingHandler {
       const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, payload.conversionRequestId, fspiopError, headers, span)
+    } finally {
+      if (span && !span.isFinished) {
+        span.finish()
+      }
     }
 
     return true
@@ -215,6 +243,10 @@ class QuotingHandler {
       this.logger.error(`error in handlePutFxQuotes: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, conversionRequestId, err, headers, span)
+    } finally {
+      if (span && !span.isFinished) {
+        span.finish()
+      }
     }
 
     return true
@@ -233,6 +265,10 @@ class QuotingHandler {
       this.logger.error(`error in handleGetBulkQuotes: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, conversionRequestId, err, headers, span)
+    } finally {
+      if (span && !span.isFinished) {
+        span.finish()
+      }
     }
 
     return true

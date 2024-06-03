@@ -46,7 +46,7 @@ services:
 
   quoting-service-handler:
     <<: *quotingServiceBase
-    command: npm run start:handlers
+    command: npm run start:handlers:debug
     ports:
       - "3022:3002"
       - "29229:9229"

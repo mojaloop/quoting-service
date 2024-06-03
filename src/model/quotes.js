@@ -393,13 +393,12 @@ class QuotesModel {
 
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers, handleQuoteRequestSpan)
       if (handleQuoteRequestSpan) {
         await handleQuoteRequestSpan.error(fspiopError, state)
         await handleQuoteRequestSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
-      throw fspiopError // think, if we need to throw error here?
+      throw fspiopError
     }
 
     let forwardQuoteRequestSpan
@@ -692,7 +691,6 @@ class QuotesModel {
       }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      await this.handleException(fspiopSource, quoteId, err, headers, handleQuoteUpdateSpan)
       if (handleQuoteUpdateSpan) {
         await handleQuoteUpdateSpan.error(fspiopError, state)
         await handleQuoteUpdateSpan.finish(fspiopError.message, state)

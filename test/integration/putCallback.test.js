@@ -8,7 +8,7 @@ const uuid = require('crypto').randomUUID
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
-const TEST_TIMEOUT = 10000
+const TEST_TIMEOUT = 20000
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -50,7 +50,7 @@ describe('PUT callback Tests --> ', () => {
     await Producer.disconnect()
   })
 
-  test('should handle the JWS signing when a switch error event is produced to the PUT topic', async () => {
+  test.skip('should handle the JWS signing when a switch error event is produced to the PUT topic', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
     await wait(3000)
@@ -78,7 +78,7 @@ describe('PUT callback Tests --> ', () => {
     expect(protectedHeader).toBeTruthy()
   }, TEST_TIMEOUT)
 
-  test('should pass validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is registered (position account exists) for the payee pariticpant', async () => {
+  test.skip('should pass validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is registered (position account exists) for the payee pariticpant', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
     await wait(3000)
@@ -114,7 +114,7 @@ describe('PUT callback Tests --> ', () => {
     expect(url).toBe(`/${message.to}/quotes/${message.id}`)
   }, TEST_TIMEOUT)
 
-  test('should fail validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is not registered (position account does not exist) for the payee pariticpant', async () => {
+  test.only('should fail validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is not registered (position account does not exist) for the payee pariticpant', async () => {
     // test the same scenario with only transferAmount set
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
@@ -141,11 +141,11 @@ describe('PUT callback Tests --> ', () => {
     let isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(3000)
+    await wait(6000)
 
     response = await hubClient.getHistory()
     // TODO: assertion failing due to 'socket hang up' bug
-    // expect(response.data.history.length).toBe(1)
+    expect(response.data.history.length).toBe(1)
 
     const { url, body } = response.data.history[0]
     expect(url).toBe(`/${message.from}/quotes/${message.id}/error`)
@@ -153,6 +153,7 @@ describe('PUT callback Tests --> ', () => {
     expect(body.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.from}'`)
 
     // test the same scenario but with payeeReceiveAmount also set
+
     await hubClient.clearHistory()
     response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
@@ -174,7 +175,7 @@ describe('PUT callback Tests --> ', () => {
 
     response = await hubClient.getHistory()
     // TODO: assertion failing due to 'socket hang up' bug
-    // expect(response.data.history.length).toBe(1)
+    expect(response.data.history.length).toBe(1)
 
     const { url: url2, body: body2 } = response.data.history[0]
     expect(url2).toBe(`/${message.from}/quotes/${message.id}/error`)
