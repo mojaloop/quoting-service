@@ -10,6 +10,8 @@ const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
 const TEST_TIMEOUT = 10000
 
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
 /**
  * Publishes a test 'POST quote' message to the Kafka topic
  */
@@ -51,7 +53,7 @@ describe('PUT callback Tests --> ', () => {
   test('should handle the JWS signing when a switch error event is produced to the PUT topic', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await wait(3000)
     await hubClient.clearHistory()
 
     let response = await hubClient.getHistory()
@@ -64,7 +66,7 @@ describe('PUT callback Tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await wait(3000)
 
     response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(1)
@@ -76,10 +78,10 @@ describe('PUT callback Tests --> ', () => {
     expect(protectedHeader).toBeTruthy()
   }, TEST_TIMEOUT)
 
-  test('should pass PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is registered (position account exists) for the payee pariticpant', async () => {
+  test('should pass validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is registered (position account exists) for the payee pariticpant', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await wait(3000)
     await hubClient.clearHistory()
 
     let response = await hubClient.getHistory()
@@ -89,6 +91,7 @@ describe('PUT callback Tests --> ', () => {
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const payload = {
       transferAmount: { amount: '100', currency: 'USD' },
+      payeeReceiveAmount: { amount: '100', currency: 'USD' },
       ilpPacket: 'test',
       condition: 'test'
     }
@@ -102,7 +105,7 @@ describe('PUT callback Tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await wait(3000)
 
     response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(1)
@@ -111,10 +114,11 @@ describe('PUT callback Tests --> ', () => {
     expect(url).toBe(`/${message.to}/quotes/${message.id}`)
   }, TEST_TIMEOUT)
 
-  test('should fail PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is not registered (position account does not exist) for the payee pariticpant', async () => {
+  test('should fail validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is not registered (position account does not exist) for the payee pariticpant', async () => {
+    // test the same scenario with only transferAmount set
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await wait(3000)
     await hubClient.clearHistory()
 
     let response = await hubClient.getHistory()
@@ -127,17 +131,17 @@ describe('PUT callback Tests --> ', () => {
       ilpPacket: 'test',
       condition: 'test'
     }
-    const message = mocks.kafkaMessagePayloadDto({
+    let message = mocks.kafkaMessagePayloadDto({
       from: 'greenbank',
       to: 'pinkbank',
       id: quoteCreated.quoteId,
       payloadBase64: base64Encode(JSON.stringify(payload))
     })
     delete message.content.headers.accept
-    const isOk = await Producer.produceMessage(message, topicConfig, config)
+    let isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await wait(3000)
 
     response = await hubClient.getHistory()
 
@@ -145,5 +149,32 @@ describe('PUT callback Tests --> ', () => {
     expect(url).toBe(`/${message.from}/quotes/${message.id}/error`)
     expect(body.errorInformation.errorCode).toBe('3201')
     expect(body.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.from}'`)
+
+    // test the same scenario but with payeeReceiveAmount also set
+    await hubClient.clearHistory()
+    response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+
+    payload.transferAmount = { amount: '100', currency: 'USD' }
+    payload.payeeReceiveAmount = { amount: '100', currency: 'ZKW' }
+
+    message = mocks.kafkaMessagePayloadDto({
+      from: 'greenbank',
+      to: 'pinkbank',
+      id: quoteCreated.quoteId,
+      payloadBase64: base64Encode(JSON.stringify(payload))
+    })
+    delete message.content.headers.accept
+    isOk = await Producer.produceMessage(message, topicConfig, config)
+    expect(isOk).toBe(true)
+
+    await wait(3000)
+
+    response = await hubClient.getHistory()
+
+    const { url: url2, body: body2 } = response.data.history[1]
+    expect(url2).toBe(`/${message.from}/quotes/${message.id}/error`)
+    expect(body2.errorInformation.errorCode).toBe('3201')
+    expect(body2.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.from}'`)
   }, TEST_TIMEOUT)
 })

@@ -671,12 +671,13 @@ describe('QuotesModel', () => {
       let promise = quotesModel.validateQuoteUpdate(mockData.headers, mockData.quoteUpdate)
       await expect(promise).resolves.toBeUndefined()
       expect(quotesModel.db.getParticipant.mock.calls[0][2]).toBe(mockData.quoteUpdate.payeeReceiveAmount.currency)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(mockData.headers['fspiop-source'], 'PAYEE_DFSP', mockData.quoteUpdate.payeeReceiveAmount.currency, Enum.Accounts.LedgerAccountType.POSITION)
 
       delete mockData.quoteUpdate.payeeReceiveAmount
       const altCurreny = 'EUR'
       promise = quotesModel.validateQuoteUpdate(mockData.headers, { ...mockData.quoteUpdate, transferAmount: { amount: '95', currency: altCurreny } })
       await expect(promise).resolves.toBeUndefined()
-      expect(quotesModel.db.getParticipant.mock.calls[1][2]).toBe(altCurreny)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(mockData.headers['fspiop-source'], 'PAYEE_DFSP', altCurreny, Enum.Accounts.LedgerAccountType.POSITION)
     })
   })
   describe('handleQuoteRequest', () => {

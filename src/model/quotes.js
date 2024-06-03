@@ -168,14 +168,15 @@ class QuotesModel {
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
 
-    // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer object.
-    // If `supportedCurrencies` is present, then payer FSP must have accounts for all the currencies they support.
-    // If it is not passed in, then we validate against the amount currency.
+    // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
+    // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
+    // If it is not passed in, then we validate against the `amount` currency.
     const payerFspCurrencies = quoteRequest.payer?.supportedCurrencies ? quoteRequest.payer.supportedCurrencies : [quoteRequest.amount.currency]
     await Promise.all(payerFspCurrencies.map(async currency => {
       await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
     }))
     // For payee, we can only validate against the amount currency here.
+    // However, during the PUT callback, we will validate against the `payeeReceiveAmount` currency as well.
     await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
 
     histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
@@ -209,11 +210,15 @@ class QuotesModel {
    * @returns {promise} - promise will reject if request is not valid
    */
   async validateQuoteUpdate (headers, quoteUpdateRequest) {
-    // If payeeReceiveAmount is set, validate payee against the payeeReceiveAmount currency
-    // If not, validate payee against the transferAmount currency
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const payeeCurrency = quoteUpdateRequest?.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
+    const payeeCurrencies = []
+    if (quoteUpdateRequest.payeeReceiveAmount) {
+      payeeCurrencies.push(quoteUpdateRequest.payeeReceiveAmount.currency)
+    }
+    payeeCurrencies.push(quoteUpdateRequest.transferAmount.currency)
+    await Promise.all(payeeCurrencies.map(async currency => {
+      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    }))
   }
 
   /**
