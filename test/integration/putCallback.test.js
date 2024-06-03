@@ -144,7 +144,6 @@ describe('PUT callback Tests --> ', () => {
     await wait(6000)
 
     response = await hubClient.getHistory()
-    // TODO: assertion failing due to 'socket hang up' bug
     expect(response.data.history.length).toBe(1)
 
     const { url, body } = response.data.history[0]
@@ -153,7 +152,6 @@ describe('PUT callback Tests --> ', () => {
     expect(body.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.from}'`)
 
     // test the same scenario but with payeeReceiveAmount also set
-
     await hubClient.clearHistory()
     response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
@@ -174,7 +172,6 @@ describe('PUT callback Tests --> ', () => {
     await wait(3000)
 
     response = await hubClient.getHistory()
-    // TODO: assertion failing due to 'socket hang up' bug
     expect(response.data.history.length).toBe(1)
 
     const { url: url2, body: body2 } = response.data.history[0]
