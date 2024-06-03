@@ -50,7 +50,7 @@ describe('PUT callback Tests --> ', () => {
     await Producer.disconnect()
   })
 
-  test.skip('should handle the JWS signing when a switch error event is produced to the PUT topic', async () => {
+  test('should handle the JWS signing when a switch error event is produced to the PUT topic', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
     await wait(3000)
@@ -78,7 +78,7 @@ describe('PUT callback Tests --> ', () => {
     expect(protectedHeader).toBeTruthy()
   }, TEST_TIMEOUT)
 
-  test.skip('should pass validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is registered (position account exists) for the payee pariticpant', async () => {
+  test('should pass validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is registered (position account exists) for the payee pariticpant', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
     await wait(3000)
@@ -114,7 +114,7 @@ describe('PUT callback Tests --> ', () => {
     expect(url).toBe(`/${message.to}/quotes/${message.id}`)
   }, TEST_TIMEOUT)
 
-  test.only('should fail validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is not registered (position account does not exist) for the payee pariticpant', async () => {
+  test('should fail validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is not registered (position account does not exist) for the payee pariticpant', async () => {
     // test the same scenario with only transferAmount set
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
