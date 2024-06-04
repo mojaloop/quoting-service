@@ -58,15 +58,14 @@ class FxQuotesModel {
    */
   async handleFxQuoteRequest (headers, fxQuoteRequest, span) {
     let fspiopSource
-    let childSpan
+    const childSpan = span.getChild('qs_fxquote_forwardFxQuoteRequest')
     try {
+      await childSpan.audit({ headers, payload: fxQuoteRequest }, EventSdk.AuditEventAction.start)
+
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
       await this.validateFxQuoteRequest(fspiopSource, fspiopDestination, fxQuoteRequest)
-
-      childSpan = span.getChild('qs_fxquote_forwardFxQuoteRequest')
-      await childSpan.audit({ headers, payload: fxQuoteRequest }, EventSdk.AuditEventAction.start)
 
       await this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, fxQuoteRequest, childSpan)
     } catch (err) {
