@@ -33,7 +33,7 @@ const createQuote = async ({
     payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
     payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } }
   }
-  const message = mocks.kafkaMessagePayloadPostDto({ from, to, payloadBase64: base64Encode(JSON.stringify(payload)) })
+  const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
   const isOk = await Producer.produceMessage(message, topicConfig, config)
   expect(isOk).toBe(true)
   return payload
