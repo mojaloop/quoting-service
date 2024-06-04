@@ -49,6 +49,7 @@ class FxQuotesModel {
   async validateFxQuoteRequest (fspiopSource, fspiopDestination, fxQuoteRequest) {
     await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, fxQuoteRequest.conversionTerms.sourceAmount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
     await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, fxQuoteRequest.conversionTerms.sourceAmount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    // Should we be validating participant against the targetCurrency too?
   }
 
   /**
@@ -139,6 +140,7 @@ class FxQuotesModel {
     const childSpan = span.getChild('qs_quote_forwardFxQuoteUpdate')
     try {
       await childSpan.audit({ headers, params: { conversionRequestId }, payload: fxQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
+      // Should we be validating participant against the sourceCurrency/targetCurrency here too?
       await this.forwardFxQuoteUpdate(headers, conversionRequestId, fxQuoteUpdateRequest, childSpan)
     } catch (err) {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
