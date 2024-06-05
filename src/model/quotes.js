@@ -171,18 +171,10 @@ class QuotesModel {
     // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
     // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
     // If it is not passed in, then we validate against the `amount` currency only.
-    const payerFspCurrencies = []
-    if (quoteRequest.payer?.supportedCurrencies) {
-      payerFspCurrencies.push(...quoteRequest.payer.supportedCurrencies)
-    }
-    payerFspCurrencies.push(quoteRequest.amount.currency)
-
+    const payerFspCurrencies = quoteRequest.payer.supportedCurrencies || [quoteRequest.amount.currency]
     await Promise.all(payerFspCurrencies.map(async currency => {
       await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
     }))
-    // For payee, we can only validate against the amount currency here.
-    // However, during the PUT callback, we will validate against the `payeeReceiveAmount` currency as well.
-    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
 
     histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
 
@@ -216,14 +208,8 @@ class QuotesModel {
    */
   async validateQuoteUpdate (headers, quoteUpdateRequest) {
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const payeeCurrencies = []
-    if (quoteUpdateRequest.payeeReceiveAmount) {
-      payeeCurrencies.push(quoteUpdateRequest.payeeReceiveAmount.currency)
-    }
-    payeeCurrencies.push(quoteUpdateRequest.transferAmount.currency)
-    await Promise.all(payeeCurrencies.map(async currency => {
-      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    }))
+    const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
+    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
   }
 
   /**
@@ -575,6 +561,8 @@ class QuotesModel {
           `Update for quote ${quoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
       }
 
+      await this.validateQuoteUpdate(headers, quoteUpdateRequest)
+
       // accumulate enum ids
       const refs = {}
       if (!envConfig.simpleRoutingMode) {
@@ -604,8 +592,6 @@ class QuotesModel {
             throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `Unable to find payee party for quote ${quoteId}`, null, fspiopSource)
           }
         }
-
-        await this.validateQuoteUpdate(headers, quoteUpdateRequest)
 
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()

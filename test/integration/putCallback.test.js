@@ -61,7 +61,7 @@ describe('PUT callback Tests --> ', () => {
 
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
     const topicConfig = dto.topicConfigDto({ topicName: topic })
-    const message = mocks.kafkaMessagePayloadDto({ id: quoteCreated.quoteId })
+    const message = mocks.kafkaMessagePayloadDto({ id: quoteCreated.quoteId, operationId: 'QuotesByIDAndError' })
 
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
