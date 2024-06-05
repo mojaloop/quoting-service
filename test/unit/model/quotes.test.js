@@ -628,25 +628,6 @@ describe('QuotesModel', () => {
 
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
     })
-    // it.only('should throw DESTINATION_FSP_ERROR error if payee is not active or does not have active account', async () => {
-    //   expect.assertions(6)
-
-    //   const fspiopSource = 'dfsp1'
-    //   const fspiopDestination = 'dfsp2'
-    //   quotesModel.db.getParticipant.mockReturnValueOnce(mockData.payer)
-
-    //   quotesModel.db.getParticipant.mockRejectedValue(ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${fspiopDestination}'`))
-    //   expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
-
-    //   await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest))
-    //     .rejects
-    //     .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
-
-    //   expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-    //   expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
-    //   expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-    //   expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
-    // })
   })
   describe('validateQuoteUpdate', () => {
     beforeEach(() => {
