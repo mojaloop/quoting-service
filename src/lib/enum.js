@@ -31,13 +31,11 @@
 'use strict'
 
 const PAYER = 'PAYER'
-
 const PAYEE = 'PAYEE'
-
 const PAYER_DFSP = 'PAYER_DFSP'
-
 const PAYEE_DFSP = 'PAYEE_DFSP'
-
+const INITIATING_FSP = 'INITIATING_FSP'
+const COUNTERPARTY_FSP = 'COUNTERPARTY_FSP'
 const PRINCIPLE_VALUE = 'PRINCIPLE_VALUE'
 
 const Functionalities = Object.freeze({
@@ -57,6 +55,8 @@ module.exports = {
   PAYER,
   PAYER_DFSP,
   PAYEE_DFSP,
+  INITIATING_FSP,
+  COUNTERPARTY_FSP,
   PRINCIPLE_VALUE,
   Functionalities,
   ErrorMessages

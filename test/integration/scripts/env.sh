@@ -3,7 +3,7 @@
 export MOCKSERVER_HOST=mock-hub
 export MOCKSERVER_PORT=7777
 
-export FSPList=("greenbank")
+export FSPList=("greenbank" "pinkbank")
 export DEFAULT_NET_DEBIT_CAP=1000
 export CENTRAL_LEDGER_ADMIN_URI_PREFIX=http
 export CENTRAL_LEDGER_ADMIN_HOST=127.0.0.1

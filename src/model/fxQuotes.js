@@ -46,9 +46,11 @@ class FxQuotesModel {
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateFxQuoteRequest (fspiopSource, fspiopDestination, fxQuoteRequest) {
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, fxQuoteRequest.conversionTerms.sourceAmount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, fxQuoteRequest.conversionTerms.sourceAmount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+  async validateFxQuoteRequest (fspiopDestination, fxQuoteRequest) {
+    const currencies = [fxQuoteRequest.conversionTerms.sourceAmount.currency, fxQuoteRequest.conversionTerms.targetAmount.currency]
+    await Promise.all(currencies.map(async (currency) => {
+      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    }))
   }
 
   /**
@@ -58,15 +60,14 @@ class FxQuotesModel {
    */
   async handleFxQuoteRequest (headers, fxQuoteRequest, span) {
     let fspiopSource
-    let childSpan
+    const childSpan = span.getChild('qs_fxquote_forwardFxQuoteRequest')
     try {
+      await childSpan.audit({ headers, payload: fxQuoteRequest }, EventSdk.AuditEventAction.start)
+
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
-      await this.validateFxQuoteRequest(fspiopSource, fspiopDestination, fxQuoteRequest)
-
-      childSpan = span.getChild('qs_fxquote_forwardFxQuoteRequest')
-      await childSpan.audit({ headers, payload: fxQuoteRequest }, EventSdk.AuditEventAction.start)
+      await this.validateFxQuoteRequest(fspiopDestination, fxQuoteRequest)
 
       await this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, fxQuoteRequest, childSpan)
     } catch (err) {
