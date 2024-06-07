@@ -141,7 +141,7 @@ describe('/health', () => {
       // Assert
       expect(code).toHaveBeenCalledWith(responseCode.success)
       // Ensure there was one item in the `serviceHealthList`
-      expect(HealthCheck.mock.calls.pop()[1].length).toEqual(1)
+      expect(HealthCheck.mock.calls.pop()[1].length).toEqual(2)
     })
   })
 

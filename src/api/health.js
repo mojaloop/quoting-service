@@ -106,7 +106,8 @@ module.exports = {
       // ignoring coverage, since we can't test this anonymous function and its tests are covered
       // elsewhere
       serviceHealthList = [
-        async () => checkKafkaProducers(request.server.app.topicNames)
+        async () => checkKafkaProducers(request.server.app.topicNames),
+        async () => getSubServiceHealthDatastore(request.server.app.database)
       ]
     }
 
