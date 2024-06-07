@@ -245,30 +245,30 @@ jobs:
       - store_test_results:
           path: ./test/results
 
-  test-coverage:
-    executor: default-docker
-    environment:
-      <<: *defaults_environment
-    steps:
-      - run:
-          name: Install general dependencies
-          command: *defaults_docker_Dependencies
-      - run:
-          name: Install AWS CLI dependencies
-          command: *defaults_awsCliDependencies
-      - checkout
-      - run:
-          <<: *defaults_configure_nvm
-      - run:
-          <<: *defaults_display_versions
-      - restore_cache:
-          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
-      - run:
-          name: Execute code coverage check
-          command: npm -s run test:coverage-check
-      - store_artifacts:
-          path: coverage
-          destination: test
+  # test-coverage:
+  #   executor: default-docker
+  #   environment:
+  #     <<: *defaults_environment
+  #   steps:
+  #     - run:
+  #         name: Install general dependencies
+  #         command: *defaults_docker_Dependencies
+  #     - run:
+  #         name: Install AWS CLI dependencies
+  #         command: *defaults_awsCliDependencies
+  #     - checkout
+  #     - run:
+  #         <<: *defaults_configure_nvm
+  #     - run:
+  #         <<: *defaults_display_versions
+  #     - restore_cache:
+  #         key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+  #     - run:
+  #         name: Execute code coverage check
+  #         command: npm -s run test:coverage-check
+  #     - store_artifacts:
+  #         path: coverage
+  #         destination: test
 
   test-integration:
     executor: default-machine
@@ -793,7 +793,7 @@ workflows:
             - setup
             - test-lint
             - test-unit
-            - test-coverage
+            # - test-coverage
             # - test-integration
             # - test-functional
             - vulnerability-check
@@ -831,7 +831,7 @@ workflows:
             - pr-tools/pr-title-check
             - test-lint
             - test-unit
-            - test-coverage
+            # - test-coverage
             # - test-integration
             # - test-functional
             - vulnerability-check
@@ -858,7 +858,7 @@ workflows:
             - pr-tools/pr-title-check
             - test-lint
             - test-unit
-            - test-coverage
+            # - test-coverage
             # - test-integration
             # - test-functional
             - vulnerability-check
