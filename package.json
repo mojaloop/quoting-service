@@ -99,7 +99,7 @@
     "commander": "12.1.0",
     "event-stream": "4.0.1",
     "fast-safe-stringify": "^2.1.1",
-    "joi": "17.13.1",
+    "joi": "17.13.2",
     "json-rules-engine": "5.0.2",
     "knex": "3.1.0",
     "memory-cache": "0.2.0",
