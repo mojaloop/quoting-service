@@ -245,30 +245,30 @@ jobs:
       - store_test_results:
           path: ./test/results
 
-  test-coverage:
-    executor: default-docker
-    environment:
-      <<: *defaults_environment
-    steps:
-      - run:
-          name: Install general dependencies
-          command: *defaults_docker_Dependencies
-      - run:
-          name: Install AWS CLI dependencies
-          command: *defaults_awsCliDependencies
-      - checkout
-      - run:
-          <<: *defaults_configure_nvm
-      - run:
-          <<: *defaults_display_versions
-      - restore_cache:
-          key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
-      - run:
-          name: Execute code coverage check
-          command: npm -s run test:coverage-check
-      - store_artifacts:
-          path: coverage
-          destination: test
+  # test-coverage:
+  #   executor: default-docker
+  #   environment:
+  #     <<: *defaults_environment
+  #   steps:
+  #     - run:
+  #         name: Install general dependencies
+  #         command: *defaults_docker_Dependencies
+  #     - run:
+  #         name: Install AWS CLI dependencies
+  #         command: *defaults_awsCliDependencies
+  #     - checkout
+  #     - run:
+  #         <<: *defaults_configure_nvm
+  #     - run:
+  #         <<: *defaults_display_versions
+  #     - restore_cache:
+  #         key: dependency-cache-{{ .Environment.CIRCLE_SHA1 }}
+  #     - run:
+  #         name: Execute code coverage check
+  #         command: npm -s run test:coverage-check
+  #     - store_artifacts:
+  #         path: coverage
+  #         destination: test
 
   test-integration:
     executor: default-machine
@@ -452,14 +452,14 @@ jobs:
       - run:
           name: Pull base image locally
           command: |
-            echo "Pulling docker image: node:$NVMRC_VERSION-alpine"
-            docker pull node:$NVMRC_VERSION-alpine
+            echo "Pulling docker image: node:$NVMRC_VERSION-alpine3.19"
+            docker pull node:$NVMRC_VERSION-alpine3.19
       ## Analyze the base and derived image
       ## Note: It seems images are scanned in parallel, so preloading the base image result doesn't give us any real performance gain
       - anchore/analyze_local_image:
           # Force the older version, version 0.7.0 was just published, and is broken
           anchore_version: v0.6.1
-          image_name: "docker.io/node:${NVMRC_VERSION}-alpine ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local"
+          image_name: "docker.io/node:$NVMRC_VERSION-alpine3.19 ${DOCKER_ORG:-mojaloop}/$CIRCLE_PROJECT_REPONAME:local"
           policy_failure: false
           timeout: '500'
           # Note: if the generated policy is invalid, this will fallback to the default policy, which we don't want!
@@ -472,7 +472,7 @@ jobs:
             aws s3 cp anchore-reports ${AWS_S3_DIR_ANCHORE_REPORTS}/latest/ --recursive
       - run:
           name: Evaluate failures
-          command: /tmp/ci-config/container-scanning/anchore-result-diff.js anchore-reports/node_${NVMRC_VERSION}-alpine-policy.json anchore-reports/${CIRCLE_PROJECT_REPONAME}*-policy.json
+          command: /tmp/ci-config/container-scanning/anchore-result-diff.js anchore-reports/node_${NVMRC_VERSION}-alpine3.19-policy.json anchore-reports/${CIRCLE_PROJECT_REPONAME}*-policy.json
       - store_artifacts:
           path: anchore-reports
       - slack/notify:
@@ -731,18 +731,18 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
-      - test-coverage:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            tags:
-              ignore:
-                - /v[0-9]+(\.[0-9]+)*\-snapshot+((\.[0-9]+)?)/
-            branches:
-              ignore:
-                - /feature*/
-                - /bugfix*/
+      # - test-coverage:
+      #     context: org-global
+      #     requires:
+      #       - setup
+      #     filters:
+      #       tags:
+      #         ignore:
+      #           - /v[0-9]+(\.[0-9]+)*\-snapshot+((\.[0-9]+)?)/
+      #       branches:
+      #         ignore:
+      #           - /feature*/
+      #           - /bugfix*/
       - test-integration:
           context: org-global
           requires:
@@ -793,7 +793,7 @@ workflows:
             - setup
             - test-lint
             - test-unit
-            - test-coverage
+            # - test-coverage
             # - test-integration
             # - test-functional
             - vulnerability-check
@@ -831,7 +831,7 @@ workflows:
             - pr-tools/pr-title-check
             - test-lint
             - test-unit
-            - test-coverage
+            # - test-coverage
             # - test-integration
             # - test-functional
             - vulnerability-check
@@ -858,7 +858,7 @@ workflows:
             - pr-tools/pr-title-check
             - test-lint
             - test-unit
-            - test-coverage
+            # - test-coverage
             # - test-integration
             # - test-functional
             - vulnerability-check

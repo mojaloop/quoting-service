@@ -23,8 +23,8 @@ RUN apk add --no-cache -t build-dependencies make gcc g++ python3 libtool openss
 COPY package.json package-lock.json* /opt/app/
 
 RUN npm ci
-
 RUN apk del build-dependencies
+RUN npm prune --omit=dev
 
 COPY src /opt/app/src
 COPY config /opt/app/config
@@ -43,7 +43,6 @@ RUN adduser -D app-user
 USER app-user
 
 COPY --chown=app-user --from=builder /opt/app .
-RUN npm prune --production
 
 EXPOSE 3002
 CMD ["npm", "start"]

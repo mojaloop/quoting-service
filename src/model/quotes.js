@@ -168,8 +168,14 @@ class QuotesModel {
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
 
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
+    // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
+    // If it is not passed in, then we validate against the `amount` currency only.
+    const payerFspCurrencies = quoteRequest.payer.supportedCurrencies || [quoteRequest.amount.currency]
+    await Promise.all(payerFspCurrencies.map(async currency => {
+      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    }))
+
     histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
 
     // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
@@ -196,13 +202,14 @@ class QuotesModel {
   }
 
   /**
-   * Validates the form of a quote update object
+   * Validates the quote update request
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateQuoteUpdate () {
-    // todo: actually do the validation (use joi as per mojaloop)
-    return Promise.resolve(null)
+  async validateQuoteUpdate (headers, quoteUpdateRequest) {
+    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
+    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
   }
 
   /**
@@ -264,8 +271,6 @@ class QuotesModel {
           return this.handleQuoteRequestResend(handledRuleEvents.headers,
             handledRuleEvents.quoteRequest, handleQuoteRequestSpan, handledRuleEvents.additionalHeaders)
         }
-
-        // todo: validation
 
         // get various enum ids (async, as parallel as possible)
         const payerEnumVals = []
@@ -379,13 +384,12 @@ class QuotesModel {
 
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers, handleQuoteRequestSpan)
       if (handleQuoteRequestSpan) {
         await handleQuoteRequestSpan.error(fspiopError, state)
         await handleQuoteRequestSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
-      throw fspiopError // think, if we need to throw error here?
+      throw fspiopError
     }
 
     let forwardQuoteRequestSpan
@@ -557,6 +561,8 @@ class QuotesModel {
           `Update for quote ${quoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
       }
 
+      await this.validateQuoteUpdate(headers, quoteUpdateRequest)
+
       // accumulate enum ids
       const refs = {}
       if (!envConfig.simpleRoutingMode) {
@@ -589,8 +595,6 @@ class QuotesModel {
 
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
-
-        // todo: validation
 
         // create the quote response row in the db
         const newQuoteResponse = await this.db.createQuoteResponse(txn, quoteId, {
@@ -678,7 +682,6 @@ class QuotesModel {
       }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
-      await this.handleException(fspiopSource, quoteId, err, headers, handleQuoteUpdateSpan)
       if (handleQuoteUpdateSpan) {
         await handleQuoteUpdateSpan.error(fspiopError, state)
         await handleQuoteUpdateSpan.finish(fspiopError.message, state)

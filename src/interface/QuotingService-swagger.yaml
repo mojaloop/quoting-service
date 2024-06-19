@@ -678,12 +678,12 @@ paths:
                   currency: EUR
                   amount: 12345
               expiration: "2016-05-24T08:38:08.699-04:00"
-              charges: 
+              charges:
                   - chargeType: string
-                    sourceAmount: 
+                    sourceAmount:
                       currency: NGN
                       amount: 12345
-              extensionList: 
+              extensionList:
                 extension:
                 - key: errorDescription
                   value: This is a more detailed error description
@@ -752,12 +752,12 @@ paths:
                   currency: EUR
                   amount: 12345
               expiration: "2016-05-24T08:38:08.699-04:00"
-              charges: 
+              charges:
                   - chargeType: string
-                    sourceAmount: 
+                    sourceAmount:
                       currency: NGN
                       amount: 12345
-              extensionList: 
+              extensionList:
                 extension:
                 - key: errorDescription
                   value: This is a more detailed error description
@@ -1243,10 +1243,10 @@ components:
     QuoteId:
       title: QuoteId
       minLength: 1
-      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
       description: Quote Identifier. The API data type UUID (Universally Unique Identifier)
-        is a JSON String in canonical format, conforming to RFC 4122, that is restricted
+        is a JSON String in canonical format, conforming to RFC 9562, that is restricted
         by a regular expression for interoperability reasons. An UUID is always 36
         characters long, 32 hexadecimal symbols and 4 dashes (‘-‘). A minLength of
         1 has been specified due to the regex not being validated on empty strings,
@@ -1260,10 +1260,10 @@ components:
     TransactionId:
       title: TransactionId
       minLength: 1
-      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
       description: Transaction Identifier. The API data type UUID (Universally Unique
-        Identifier) is a JSON String in canonical format, conforming to RFC 4122,
+        Identifier) is a JSON String in canonical format, conforming to RFC 9562,
         that is restricted by a regular expression for interoperability reasons. An
         UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘).
         A minLength of 1 has been specified due to the regex not being validated on
@@ -2084,7 +2084,7 @@ components:
         the Payer FSP. The ID should be reused for resends of the same request for
         a transaction. A new ID should be generated for each new request for a transaction.
       schema:
-        pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+        pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
         type: string
     Type:
       name: Type
