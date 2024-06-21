@@ -42,6 +42,15 @@ const { AuditEventAction } = require('@mojaloop/event-sdk')
 
 const Config = require('./config')
 
+let hubNameRegex = null
+
+const getHubNameRegex = () => {
+  if (!hubNameRegex) {
+    hubNameRegex = new RegExp(`^${new Config().hubName}$`, 'i')
+  }
+  return hubNameRegex
+}
+
 const failActionHandler = async (request, h, err) => {
   Logger.isErrorEnabled && Logger.error(`validation failure: ${err ? getStackOrInspect(err) : ''}`)
   throw err
@@ -127,7 +136,7 @@ function removeEmptyKeys (originalObject) {
 function applyResourceVersionHeaders (headers, protocolVersions) {
   let contentTypeHeader = headers['content-type'] || headers['Content-Type']
   let acceptHeader = headers.accept || headers.Accept
-  if (Enum.Http.Headers.FSPIOP.SWITCH.regex.test(headers['fspiop-source'])) {
+  if (getHubNameRegex().test(headers['fspiop-source'])) {
     if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
       contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.CONTENT.DEFAULT}`
     }

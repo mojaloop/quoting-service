@@ -64,7 +64,7 @@ describe('util', () => {
     switchHeaders: {
       Accept: 'application/vnd.interoperability.transfers+json;version=1.1',
       'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.1',
-      'fspiop-source': 'switch',
+      'fspiop-source': config.hubName,
       'fspiop-destination': 'dfsp2'
     },
     initiatorType: 'fakeInitiatorType',
@@ -237,7 +237,7 @@ describe('util', () => {
         transactionId: '12345',
         quoteId: 'ABCDE',
         source: 'fsp1',
-        destination: 'switch'
+        destination: config.hubName
       }
       const mockRequest = {
         params: {
@@ -248,7 +248,7 @@ describe('util', () => {
         },
         headers: {
           'fspiop-source': 'fsp1',
-          'fspiop-destination': 'switch'
+          'fspiop-destination': config.hubName
         }
       }
 
@@ -267,7 +267,7 @@ describe('util', () => {
         transactionId: '12345',
         quoteId: 'ABCDE',
         source: 'fsp1',
-        destination: 'switch',
+        destination: config.hubName,
         payeeFsp: 'fsp1',
         payerFsp: 'fsp2'
       }
@@ -290,7 +290,7 @@ describe('util', () => {
         },
         headers: {
           'fspiop-source': 'fsp1',
-          'fspiop-destination': 'switch'
+          'fspiop-destination': config.hubName
         }
       }
 
@@ -461,7 +461,7 @@ describe('util', () => {
         Accept: 'application/vnd.interoperability.quotes+json;version=1',
         'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'FSPIOP-Destination': 'dfsp2',
-        'FSPIOP-Source': 'switch'
+        'FSPIOP-Source': config.hubName
       }
 
       // Act

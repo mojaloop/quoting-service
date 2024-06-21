@@ -405,7 +405,7 @@ class BulkQuotesModel {
         delete headers['fspiop-signature']
         fromSwitchHeaders = Object.assign({}, headers, {
           'fspiop-destination': fspiopSource,
-          'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
+          'fspiop-source': envConfig.hubName,
           'fspiop-http-method': ENUM.Http.RestMethods.PUT,
           'fspiop-uri': fspiopUri
         })
@@ -436,7 +436,7 @@ class BulkQuotesModel {
 
       let res
       try {
-        // If JWS is enabled and the 'fspiop-source' matches the configured jws header value('switch')
+        // If JWS is enabled and the 'fspiop-source' matches the configured jws header value(i.e the hub name)
         // that means it's a switch generated message and we need to sign it
         if (envConfig.jws && envConfig.jws.jwsSign && opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
           this.writeLog('Getting the JWS Signer to sign the switch generated message')
