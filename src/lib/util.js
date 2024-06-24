@@ -37,24 +37,11 @@ const crypto = require('crypto')
 const axios = require('axios')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { Enum } = require('@mojaloop/central-services-shared')
+const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
 const Config = require('./config')
 
 const config = new Config()
-
-// todo: move to cs-shared
-let hubNameRegex
-const escapeRegexInput = (str) => {
-  return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&')
-}
-const getHubNameRegex = (hubName) => {
-  if (!hubNameRegex) {
-    const regexStr = String.raw`^${escapeRegexInput(hubName)}$`
-    hubNameRegex = new RegExp(regexStr, 'i')
-  }
-  return hubNameRegex
-}
 
 const failActionHandler = async (request, h, err) => {
   Logger.isErrorEnabled && Logger.error(`validation failure: ${err ? getStackOrInspect(err) : ''}`)
@@ -141,7 +128,7 @@ function removeEmptyKeys (originalObject) {
 function applyResourceVersionHeaders (headers, protocolVersions) {
   let contentTypeHeader = headers['content-type'] || headers['Content-Type']
   let acceptHeader = headers.accept || headers.Accept
-  if (getHubNameRegex(config.hubName).test(headers['fspiop-source'])) {
+  if (Util.HeaderValidation.getHubNameRegex(config.hubName).test(headers['fspiop-source'])) {
     if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
       contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.CONTENT.DEFAULT}`
     }
