@@ -39,14 +39,15 @@ const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
-
 const Config = require('./config')
 
-let hubNameRegex = null
+const config = new Config()
 
-const getHubNameRegex = () => {
+// todo: move to cs-shared
+let hubNameRegex = null
+const getHubNameRegex = (hubName) => {
   if (!hubNameRegex) {
-    hubNameRegex = new RegExp(`^${new Config().hubName}$`, 'i')
+    hubNameRegex = new RegExp(`^${hubName}$`, 'i')
   }
   return hubNameRegex
 }
@@ -136,7 +137,7 @@ function removeEmptyKeys (originalObject) {
 function applyResourceVersionHeaders (headers, protocolVersions) {
   let contentTypeHeader = headers['content-type'] || headers['Content-Type']
   let acceptHeader = headers.accept || headers.Accept
-  if (getHubNameRegex().test(headers['fspiop-source'])) {
+  if (getHubNameRegex(config.hubName).test(headers['fspiop-source'])) {
     if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
       contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.CONTENT.DEFAULT}`
     }
@@ -215,7 +216,7 @@ function calculateRequestHash (request) {
 // Add caching to the participant endpoint
 const fetchParticipantInfo = async (source, destination, cache) => {
   // Get quote participants from central ledger admin
-  const { switchEndpoint } = new Config()
+  const { switchEndpoint } = config
   const url = `${switchEndpoint}/participants`
   let requestPayer
   let requestPayee
