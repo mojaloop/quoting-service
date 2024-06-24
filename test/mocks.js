@@ -1,9 +1,8 @@
-const { HeaderResources } = require('@mojaloop/central-services-shared').Enum.Http
-
+const Config = new (require('../src/lib/config'))()
 const CONTENT_TYPE = 'application/vnd.interoperability.quotes+json;version=1.0'
 
 const kafkaMessagePayloadDto = ({
-  from = HeaderResources.SWITCH,
+  from = Config.hubName,
   to = 'greenbank',
   id = 'aaab9c4d-2aac-42ef-8aad-2e76f2fac95a',
   type = 'quote',
