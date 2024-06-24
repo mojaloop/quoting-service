@@ -44,10 +44,14 @@ const Config = require('./config')
 const config = new Config()
 
 // todo: move to cs-shared
-let hubNameRegex = null
+let hubNameRegex
+const escapeRegexInput = (str) => {
+  return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&')
+}
 const getHubNameRegex = (hubName) => {
   if (!hubNameRegex) {
-    hubNameRegex = new RegExp(`^${hubName}$`, 'i')
+    const regexStr = String.raw`^${escapeRegexInput(hubName)}$`
+    hubNameRegex = new RegExp(regexStr, 'i')
   }
   return hubNameRegex
 }
