@@ -76,7 +76,7 @@
             "rdkafkaConf": {
               "client.id": "ml-con-notification-event",
               "group.id": "ml-group-notification-event",
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "allow.auto.create.topics": true,
               "socket.keepalive.enable": true
             },
@@ -95,7 +95,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "client.id": "ml-prod-transfer-prepare",
               "event_cb": true,
               "dr_cb": true,
@@ -114,7 +114,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "client.id": "ml-prod-transfer-fulfil",
               "event_cb": true,
               "dr_cb": true,
@@ -133,7 +133,7 @@
               "messageCharset": "utf8"
             },
             "rdkafkaConf": {
-              "metadata.broker.list": "kafka:9092",
+              "metadata.broker.list": "kafka:29092",
               "client.id": "ml-prod-transfer-get",
               "event_cb": true,
               "dr_cb": true,

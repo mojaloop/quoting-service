@@ -6,7 +6,7 @@ info:
     - The API supports a maximum size of 65536 bytes (64 Kilobytes) in the HTTP header.
   license:
     name: Open API for FSP Interoperability (FSPIOP) (Implementation Friendly Version)
-  version: "1.1"
+  version: '1.1'
 servers:
   - url: /
 paths:
@@ -542,6 +542,253 @@ paths:
           $ref: '#/components/responses/ErrorResponse501'
         '503':
           $ref: '#/components/responses/ErrorResponse503'
+  /fxQuotes/{id}/error:
+    put:
+      description: >-
+        If the FXP is unable to find or create a FX quote, or some other
+        processing error occurs, the error callback `PUT /fxQuotes/{ID}/error`
+        is used. The `{ID}` in the URI should contain the `conversionRequestId`
+        that was used for the creation of the FX quote, or the `{ID}` that was
+        used in the `GET /fxQuotes/{ID}` request.
+      summary: Return FX quote information error
+      tags:
+        - fxQuotes
+        - sampled
+      operationId: FxQuotesByIDAndErrorPut
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          errorInformation:
+            errorCode: “5100”
+            errorDescription: “This is an error description”
+            extensionList:
+              extension:
+                - “key”: “errorDescription”
+                  “value”: “This is a more detailed error description”
+                - “key”: “errorDescription”
+                  “value”: “This is a more detailed error description”
+      requestBody:
+        description: Details of the error returned.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErrorInformationObject'
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+  /fxQuotes/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ID'
+      - $ref: '#/components/parameters/Content-Type'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/X-Forwarded-For'
+      - $ref: '#/components/parameters/FSPIOP-Source'
+      - $ref: '#/components/parameters/FSPIOP-Destination'
+      - $ref: '#/components/parameters/FSPIOP-Encryption'
+      - $ref: '#/components/parameters/FSPIOP-Signature'
+      - $ref: '#/components/parameters/FSPIOP-URI'
+      - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+    get:
+      description: >-
+        The HTTP request `GET /fxQuotes/{ID}` is used to request information
+        regarding a request for quotation for a  currency conversion which the
+        sender has previously issued. The `{ID}` in the URI should contain the
+        `conversionRequestId` that was used for the creation of the quote.
+      summary: Retrieve FX quote information
+      tags:
+        - fxQuotes
+        - sampled
+      operationId: FxQuotesByIDGet
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+    put:
+      description: >-
+        The callback `PUT /fxQuotes/{ID}` is used to inform the requester about
+        the  outcome of a request for quotation for a currency conversion.  The
+        `{ID}` in the URI should contain the `conversionRequestId` that was used
+        for the  creation of the FX quote, or the `{ID}` that was used in the
+        `GET /fxQuotes/{ID}` request.
+      summary: Return FX quote information
+      tags:
+        - fxQuotes
+        - sampled
+      operationId: FxQuotesByIdPut
+      parameters:
+        - $ref: '#/components/parameters/Content-Length'
+      x-examples:
+        application/json:
+          condition: f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA
+          conversionTerms:
+              conversionId: 8b2dd9c7-112c-44bd-9502-b019ba90c9cb
+              determiningTransferId: 80fdb3c2-855d-46a7-9dc8-abaa64da4717
+              initiatingFsp: payerfsp
+              counterPartyFsp: fxfsp
+              amountType: SEND
+              sourceAmount:
+                  currency: NGN
+                  amount: 12345
+              targetAmount:
+                  currency: EUR
+                  amount: 12345
+              expiration: "2016-05-24T08:38:08.699-04:00"
+              charges:
+                  - chargeType: string
+                    sourceAmount:
+                      currency: NGN
+                      amount: 12345
+              extensionList:
+                extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      requestBody:
+        description: FX Quote information returned.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FxQuotesIDPutResponse'
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
+  /fxQuotes:
+    post:
+      description: >-
+        The HTTP request `POST /fxQuotes` is used to ask an FXP to provide a
+        quotation for a currency conversion.
+      summary: Calculate FX quote
+      tags:
+        - fxQuotes
+      operationId: FxQuotesPost
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/X-Forwarded-For'
+        - $ref: '#/components/parameters/FSPIOP-Source'
+        - $ref: '#/components/parameters/FSPIOP-Destination'
+        - $ref: '#/components/parameters/FSPIOP-Encryption'
+        - $ref: '#/components/parameters/FSPIOP-Signature'
+        - $ref: '#/components/parameters/FSPIOP-URI'
+        - $ref: '#/components/parameters/FSPIOP-HTTP-Method'
+      x-examples:
+        application/json:
+          conversionRequestId: e1131ab7-7aed-44e2-9c46-4042c8b5ed67
+          conversionTerms:
+              conversionId: 8b2dd9c7-112c-44bd-9502-b019ba90c9cb
+              determiningTransferId: 80fdb3c2-855d-46a7-9dc8-abaa64da4717
+              initiatingFsp: payerfsp
+              counterPartyFsp: fxfsp
+              amountType: SEND
+              sourceAmount:
+                  currency: NGN
+                  amount: 12345
+              targetAmount:
+                  currency: EUR
+                  amount: 12345
+              expiration: "2016-05-24T08:38:08.699-04:00"
+              charges:
+                  - chargeType: string
+                    sourceAmount:
+                      currency: NGN
+                      amount: 12345
+              extensionList:
+                extension:
+                - key: errorDescription
+                  value: This is a more detailed error description
+                - key: errorDescription
+                  value: This is a more detailed error description
+      requestBody:
+        description: Details of the FX quote to be created.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FxQuotesPostRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Response200'
+        '400':
+          $ref: '#/components/responses/ErrorResponse400'
+        '401':
+          $ref: '#/components/responses/ErrorResponse401'
+        '403':
+          $ref: '#/components/responses/ErrorResponse403'
+        '404':
+          $ref: '#/components/responses/ErrorResponse404'
+        '405':
+          $ref: '#/components/responses/ErrorResponse405'
+        '406':
+          $ref: '#/components/responses/ErrorResponse406'
+        '501':
+          $ref: '#/components/responses/ErrorResponse501'
+        '503':
+          $ref: '#/components/responses/ErrorResponse503'
   /health:
     get:
       tags:
@@ -787,7 +1034,7 @@ components:
       description: The API data type Date is a JSON String in a lexical format that
         is restricted by a regular expression for interoperability reasons. This format,
         as specified in ISO 8601, contains a date only. A more readable version of
-        the format is yyyy-MM-dd. Examples - "1982-05-23", "1987-08-05”
+        the format is yyyy-MM-dd. Examples - '1982-05-23', '1987-08-05”
     DateOfBirth:
       title: DateofBirth (type Date)
       pattern: ^(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)$
@@ -801,7 +1048,7 @@ components:
         that is restricted by a regular expression for interoperability reasons. The
         format is according to ISO 8601, expressed in a combined date, time and time
         zone format. A more readable version of the format is yyyy-MM-ddTHH:mm:ss.SSS[-HH:MM].
-        Examples -  "2016-05-24T08:38:08.699-04:00", "2016-05-24T08:38:08.699Z" (where
+        Examples -  '2016-05-24T08:38:08.699-04:00', '2016-05-24T08:38:08.699Z' (where
         Z indicates Zulu time zone, same as UTC).
     ErrorCode:
       title: ErrorCode
@@ -996,10 +1243,10 @@ components:
     QuoteId:
       title: QuoteId
       minLength: 1
-      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
       description: Quote Identifier. The API data type UUID (Universally Unique Identifier)
-        is a JSON String in canonical format, conforming to RFC 4122, that is restricted
+        is a JSON String in canonical format, conforming to RFC 9562, that is restricted
         by a regular expression for interoperability reasons. An UUID is always 36
         characters long, 32 hexadecimal symbols and 4 dashes (‘-‘). A minLength of
         1 has been specified due to the regex not being validated on empty strings,
@@ -1013,10 +1260,10 @@ components:
     TransactionId:
       title: TransactionId
       minLength: 1
-      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
       type: string
       description: Transaction Identifier. The API data type UUID (Universally Unique
-        Identifier) is a JSON String in canonical format, conforming to RFC 4122,
+        Identifier) is a JSON String in canonical format, conforming to RFC 9562,
         that is restricted by a regular expression for interoperability reasons. An
         UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘).
         A minLength of 1 has been specified due to the regex not being validated on
@@ -1184,6 +1431,154 @@ components:
           items:
             $ref: '#/components/schemas/Extension'
       description: Data model for the complex type ExtensionList
+    FxCharge:
+      title: FxCharge
+      type: object
+      description: >-
+        An FXP will be able to specify a charge which it proposes to levy on the
+        currency conversion operation using a FxCharge object.
+      properties:
+        chargeType:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: A description of the charge which is being levied.
+        sourceAmount:
+          allOf:
+            - $ref: "#/components/schemas/Money"
+            - description: >-
+                The amount of the charge which is being levied, expressed in the
+                source currency.
+        targetAmount:
+          allOf:
+            - $ref: "#/components/schemas/Money"
+            - description: >-
+                The amount of the charge which is being levied, expressed in the
+                target currency.
+      required:
+        - chargeType
+    FxConversion:
+      title: FxConversion
+      type: object
+      description: >-
+        A DFSP will be able to request a currency conversion, and an FX provider
+        will be able to describe its involvement in a proposed transfer, using a
+        FxConversion object.
+      properties:
+        conversionId:
+          allOf:
+            - $ref: "#/components/schemas/CorrelationId"
+            - description: An end-to-end identifier for the conversion request.
+        determiningTransferId:
+          allOf:
+            - $ref: "#/components/schemas/CorrelationId"
+            - description: >-
+                The transaction ID of the transfer on whose success this
+                currency conversion depends.
+        initiatingFsp:
+          allOf:
+            - $ref: "#/components/schemas/FspId"
+            - description: >-
+                The id of the participant who is requesting a currency
+                conversion.
+        counterPartyFsp:
+          allOf:
+            - $ref: "#/components/schemas/FspId"
+            - description: The ID of the FXP performing the conversion.
+        amountType:
+          allOf:
+            - $ref: "#/components/schemas/AmountType"
+            - description: >-
+                This is the AmountType for the base transaction - If SEND - then
+                any charges levied by the FXP as part of the transaction will be
+                deducted by the FXP from the amount shown for the target party
+                in the conversion. If RECEIVE - then any charges levied by the
+                FXP as part of the transaction will be added by the FXP to the
+                amount shown for the source party in the conversion.
+        sourceAmount:
+          allOf:
+            - $ref: "#/components/schemas/FxMoney"
+            - description: The amount to be converted, expressed in the source currency.
+        targetAmount:
+          allOf:
+            - $ref: "#/components/schemas/FxMoney"
+            - description: The converted amount, expressed in the target currency.
+        expiration:
+          allOf:
+            - $ref: "#/components/schemas/DateTime"
+            - description: >-
+                The end of the period for which the currency conversion is
+                required to remain valid.
+        charges:
+          type: array
+          description: >-
+            One or more charges which the FXP intends to levy as part of the
+            currency conversion, or which the payee DFSP intends to add to the
+            amount transferred.
+          items:
+            $ref: "#/components/schemas/FxCharge"
+          minItems: 0
+          maxItems: 16
+        extensionList:
+          allOf:
+            - $ref: "#/components/schemas/ExtensionList"
+            - description: The extension list for the currency conversion request.
+      required:
+        - conversionId
+        - initiatingFsp
+        - counterPartyFsp
+        - amountType
+        - sourceAmount
+        - targetAmount
+        - expiration
+    FxMoney:
+      title: FxMoney
+      type: object
+      description: >-
+        Data model for the complex type FxMoney; This is based on the type Money
+        but allows the amount to be optional to support FX quotations.
+      properties:
+        currency:
+          $ref: "#/components/schemas/Currency"
+        amount:
+          $ref: "#/components/schemas/Amount"
+      required:
+        - currency
+    FxQuotesIDPutResponse:
+      title: FxQuotesIDPutResponse
+      type: object
+      description: The object sent in the PUT /fxQuotes/{ID} callback.
+      properties:
+        condition:
+          allOf:
+            - $ref: "#/components/schemas/IlpCondition"
+            - description: The ILP condition for the conversion.
+        conversionTerms:
+          allOf:
+            - $ref: "#/components/schemas/FxConversion"
+            - description: >-
+                The terms under which the FXP will undertake the currency
+                conversion proposed by the requester.
+      required:
+        - conversionTerms
+    FxQuotesPostRequest:
+      title: FxQuotesPostRequest
+      type: object
+      description: The object sent in the POST /fxQuotes request.
+      properties:
+        conversionRequestId:
+          allOf:
+            - $ref: "#/components/schemas/CorrelationId"
+            - description: An end-to-end identifier for the conversion quotation request.
+        conversionTerms:
+          allOf:
+            - $ref: "#/components/schemas/FxConversion"
+            - description: >-
+                The terms of the currency conversion for which a quotation is
+                sought.
+      required:
+        - conversionRequestId
+        - conversionTerms
     GeoCode:
       title: GeoCode
       required:
@@ -1405,7 +1800,7 @@ components:
       properties:
         status:
           type: string
-          description: The return status, usually "OK"
+          description: The return status, usually 'OK'
       description: Data model for the api status.
     TransactionType:
       title: TransactionType
@@ -1689,7 +2084,7 @@ components:
         the Payer FSP. The ID should be reused for resends of the same request for
         a transaction. A new ID should be generated for each new request for a transaction.
       schema:
-        pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+        pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
         type: string
     Type:
       name: Type

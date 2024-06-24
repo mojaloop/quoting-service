@@ -564,7 +564,7 @@ describe('QuotesModel', () => {
     })
 
     it('should validate payer and payee fspId for simple routing mode', async () => {
-      expect.assertions(5)
+      expect.assertions(4)
 
       const fspiopSource = 'dfsp1'
       const fspiopDestination = 'dfsp2'
@@ -574,13 +574,12 @@ describe('QuotesModel', () => {
       await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest)
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(1)
 
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
     it('should validate payer and payee fspId and headers for simple routing mode', async () => {
-      expect.assertions(7)
+      expect.assertions(6)
 
       const fspiopSource = 'dfsp123'
       const fspiopDestination = 'dfsp234'
@@ -590,15 +589,10 @@ describe('QuotesModel', () => {
       await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest)
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-      if (mockConfig.simpleRoutingMode) {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(4)
-      } else {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
-      }
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(3)
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopSource)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(fspiopDestination)
-      expect(quotesModel.db.getParticipant.mock.calls[2][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[3][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[2][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
     it('should throw internal error if no quoteRequest was supplied', async () => {
       expect.assertions(4)
@@ -634,25 +628,6 @@ describe('QuotesModel', () => {
 
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
     })
-    it('should throw DESTINATION_FSP_ERROR error if payee is not active or does not have active account', async () => {
-      expect.assertions(6)
-
-      const fspiopSource = 'dfsp1'
-      const fspiopDestination = 'dfsp2'
-      quotesModel.db.getParticipant.mockReturnValueOnce(mockData.payer)
-
-      quotesModel.db.getParticipant.mockRejectedValue(ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${fspiopDestination}'`))
-      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
-
-      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
-
-      expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
-    })
   })
   describe('validateQuoteUpdate', () => {
     beforeEach(() => {
@@ -661,8 +636,17 @@ describe('QuotesModel', () => {
     })
 
     it('should validate quote update', async () => {
-      const result = await quotesModel.validateQuoteUpdate()
-      expect(result).toBeNull()
+      quotesModel.db.getParticipant.mockReturnValueOnce(mockData.payer)
+      let promise = quotesModel.validateQuoteUpdate(mockData.headers, mockData.quoteUpdate)
+      await expect(promise).resolves.toBeUndefined()
+      expect(quotesModel.db.getParticipant.mock.calls[0][2]).toBe(mockData.quoteUpdate.payeeReceiveAmount.currency)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(mockData.headers['fspiop-source'], 'PAYEE_DFSP', mockData.quoteUpdate.payeeReceiveAmount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+
+      delete mockData.quoteUpdate.payeeReceiveAmount
+      const altCurreny = 'EUR'
+      promise = quotesModel.validateQuoteUpdate(mockData.headers, { ...mockData.quoteUpdate, transferAmount: { amount: '95', currency: altCurreny } })
+      await expect(promise).resolves.toBeUndefined()
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(mockData.headers['fspiop-source'], 'PAYEE_DFSP', altCurreny, Enum.Accounts.LedgerAccountType.POSITION)
     })
   })
   describe('handleQuoteRequest', () => {
@@ -1415,9 +1399,8 @@ describe('QuotesModel', () => {
       const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
 
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: mockData.quoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
+      expect(mockChildSpan.audit).not.toBeCalled()
+      const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(refs).toEqual({})
     })
@@ -1432,9 +1415,8 @@ describe('QuotesModel', () => {
       const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
 
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: mockData.quoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
+      expect(mockChildSpan.audit).not.toBeCalled()
+      let args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       args = [mockData.headers['fspiop-source'], mockData.quoteId, fspiopError, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
@@ -1509,10 +1491,9 @@ describe('QuotesModel', () => {
         mockQuoteResponseId
       )
 
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: localQuoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
+      expect(mockChildSpan.audit).not.toBeCalled()
 
-      args = [mockData.headers, mockData.quoteId, localQuoteUpdate, mockChildSpan]
+      const args = [mockData.headers, mockData.quoteId, localQuoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toMatchObject(expected)
@@ -1540,9 +1521,8 @@ describe('QuotesModel', () => {
       expect(mockTransaction.rollback.mock.calls.length).toBe(0)
       expect(mockTransaction.commit.mock.calls.length).toBe(1)
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: mockData.quoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
+      expect(mockChildSpan.audit).not.toBeCalled()
+      const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toEqual(expected)

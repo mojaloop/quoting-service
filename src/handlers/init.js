@@ -21,11 +21,12 @@ const startFn = async (handlerList) => {
   const isDbOk = await db.isConnected()
   if (!isDbOk) throw new Error('DB is not connected')
 
-  const { quotesModelFactory, bulkQuotesModelFactory } = modelFactory(db)
+  const { quotesModelFactory, bulkQuotesModelFactory, fxQuotesModelFactory } = modelFactory(db)
 
   const handler = new QuotingHandler({
     quotesModelFactory,
     bulkQuotesModelFactory,
+    fxQuotesModelFactory,
     config,
     logger: Logger,
     cache: new Cache(),
@@ -33,7 +34,8 @@ const startFn = async (handlerList) => {
   })
 
   consumersMap = await createConsumers(handler.handleMessages, handlerList)
-  monitoringServer = await createMonitoringServer(config.listenPort, consumersMap, db)
+  monitoringServer = await createMonitoringServer(config.monitoringPort, consumersMap, db)
+  return handler
 }
 
 const stopFn = async () => {

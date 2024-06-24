@@ -23,7 +23,7 @@ describe('init Tests -->', () => {
   test('should execute startFn without error if DB is connected', async () => {
     isDbOk = true
     await expect(init.startFn(handlerList))
-      .resolves.toBeUndefined()
+      .resolves.toBeTruthy()
     expect(mockIsConnected).toHaveBeenCalled()
   })
 

@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "15.8.0-snapshot.17",
+  "version": "15.8.0-snapshot.21",
   "author": "ModusBox",
   "contributors": [
     "Georgi Georgiev <georgi.georgiev@modusbox.com>",
@@ -49,7 +49,9 @@
   "scripts": {
     "start": "npm run start:api",
     "start:api": "node src/index.js",
-    "start:handlers": "node src/handlers/index.js h --quotes --bulk_quotes",
+    "start:debug": "node --inspect=0.0.0.0 src/index.js",
+    "start:handlers": "node src/handlers/index.js h --quotes --bulk_quotes --fx_quotes",
+    "start:handlers:debug": "node --inspect=0.0.0.0 src/handlers/index.js h --quotes --bulk_quotes --fx_quotes",
     "watch:api": "npx nodemon src/index.js",
     "dev": "npm run docker:stop && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d",
     "lint": "npx standard",
@@ -59,7 +61,7 @@
     "test:coverage": "jest --coverage --coverageThreshold='{}' --testMatch '**/test/unit/**/*.test.js'",
     "test:coverage-check": "jest --runInBand --forceExit --coverage --testMatch '**/test/unit/**/*.test.js'",
     "test:junit": "jest --runInBand --forceExit --reporters=default --reporters=jest-junit --testMatch '**/test/unit/**/*.test.js'",
-    "test:int": "jest --testMatch '**/test/integration/**/*.test.js'",
+    "test:int": "jest --runInBand --testMatch '**/test/integration/**/*.test.js'",
     "regenerate": "yo swaggerize:test --framework hapi --apiPath './src/interface/swagger.json'",
     "package-lock": "docker run --rm -it quoting-service:local cat package-lock.json > package-lock.json",
     "run": "docker run -p 3002:3002 --rm --link db:mysql quoting-service:local",
@@ -77,6 +79,23 @@
     "release": "npx standard-version --no-verify --releaseCommitMessageFormat 'chore(release): {{currentTag}} [skip ci]'",
     "snapshot": "npx standard-version --no-verify --skip.changelog --prerelease snapshot --releaseCommitMessageFormat 'chore(snapshot): {{currentTag}}'",
     "wait-4-docker": "node ./scripts/_wait4_all.js"
+  },
+  "overrides": {
+    "shins": {
+      "ajv": "6.12.3",
+      "ejs": "3.1.10",
+      "sanitize-html": "2.12.1",
+      "yargs-parser": "18.1.1",
+      "markdown-it": "12.3.2",
+      "postcss": "8.4.31"
+    },
+    "widdershins": {
+      "swagger2openapi": "7.0.8",
+      "yargs-parser": "13.1.2",
+      "markdown-it": "12.3.2"
+    },
+    "jsonwebtoken": "9.0.0",
+    "jsonpointer": "5.0.0"
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
@@ -99,6 +118,8 @@
     "commander": "12.1.0",
     "event-stream": "4.0.1",
     "fast-safe-stringify": "^2.1.1",
+    "good-console": "8.0.0",
+    "good-squeeze": "5.1.0",
     "joi": "17.13.3",
     "json-rules-engine": "5.0.2",
     "knex": "3.1.0",
@@ -108,22 +129,6 @@
     "node-fetch": "3.3.2",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8"
-  },
-  "overrides": {
-    "shins": {
-      "ajv": "6.12.3",
-      "ejs": "3.1.10",
-      "sanitize-html": "2.12.1",
-      "yargs-parser": "18.1.1",
-      "markdown-it": "12.3.2"
-    },
-    "widdershins": {
-      "swagger2openapi": "7.0.8",
-      "yargs-parser": "13.1.2",
-      "markdown-it": "12.3.2"
-    },
-    "jsonwebtoken": "9.0.0",
-    "jsonpointer": "5.0.0"
   },
   "devDependencies": {
     "audit-ci": "^7.0.1",

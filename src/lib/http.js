@@ -41,6 +41,7 @@ const http = require('http')
 const { getStackOrInspect } = require('../lib/util')
 
 axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
+axios.defaults.httpAgent.toJSON = () => ({})
 
 // TODO: where httpRequest is called, there's a pretty common pattern of obtaining an endpoint from
 // the database, specialising a template string with that endpoint, then calling httpRequest. Is

@@ -101,6 +101,7 @@ class Config {
     this.hubName = RC.HUB_PARTICIPANT.NAME
     this.listenAddress = RC.LISTEN_ADDRESS
     this.listenPort = RC.PORT
+    this.monitoringPort = RC.MONITORING_PORT
     this.simpleRoutingMode = RC.SIMPLE_ROUTING_MODE
     this.switchEndpoint = RC.SWITCH_ENDPOINT
     this.amount = {

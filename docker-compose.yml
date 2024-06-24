@@ -38,6 +38,7 @@ x-healthcheck-params: &healthcheckParams
 services:
   quoting-service:
     <<: *quotingServiceBase
+    command: npm run start
     ports:
       - "3002:3002"
       - "19229:9229"
@@ -47,7 +48,7 @@ services:
     <<: *quotingServiceBase
     command: npm run start:handlers
     ports:
-      - "3022:3002"
+      - "3003:3003"
       - "29229:9229"
     container_name: qs_quoting-service-handler
 

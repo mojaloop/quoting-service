@@ -1021,6 +1021,403 @@
         }
       }
     },
+    "/fxQuotes/{id}/error": {
+      "put": {
+        "description": "If the FXP is unable to find or create a FX quote, or some other processing error occurs, the error callback `PUT /fxQuotes/{ID}/error` is used. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.",
+        "summary": "Return FX quote information error",
+        "tags": [
+          "fxQuotes",
+          "sampled"
+        ],
+        "operationId": "FxQuotesByIDAndErrorPut",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ErrorInformationObject"
+            }
+          },
+          {
+            "$ref": "#/parameters/id"
+          },
+          {
+            "$ref": "#/parameters/Content-Length"
+          },
+          {
+            "$ref": "#/parameters/Content-Type"
+          },
+          {
+            "$ref": "#/parameters/Date"
+          },
+          {
+            "$ref": "#/parameters/X-Forwarded-For"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Source"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Destination"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Encryption"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Signature"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-URI"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-HTTP-Method"
+          }
+        ],
+        "x-examples": {
+          "application/json": {
+            "errorInformation": {
+              "errorCode": "“5100”",
+              "errorDescription": "“This is an error description”",
+              "extensionList": {
+                "extension": [
+                  {
+                    "“key”": "“errorDescription”",
+                    "“value”": "“This is a more detailed error description”"
+                  },
+                  {
+                    "“key”": "“errorDescription”",
+                    "“value”": "“This is a more detailed error description”"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Response200"
+          },
+          "400": {
+            "$ref": "#/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/responses/ErrorResponse401"
+          },
+          "403": {
+            "$ref": "#/responses/ErrorResponse403"
+          },
+          "404": {
+            "$ref": "#/responses/ErrorResponse404"
+          },
+          "405": {
+            "$ref": "#/responses/ErrorResponse405"
+          },
+          "406": {
+            "$ref": "#/responses/ErrorResponse406"
+          },
+          "501": {
+            "$ref": "#/responses/ErrorResponse501"
+          },
+          "503": {
+            "$ref": "#/responses/ErrorResponse503"
+          }
+        }
+      }
+    },
+    "/fxQuotes/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/parameters/id"
+        },
+        {
+          "$ref": "#/parameters/Content-Type"
+        },
+        {
+          "$ref": "#/parameters/Date"
+        },
+        {
+          "$ref": "#/parameters/X-Forwarded-For"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-Source"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-Destination"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-Encryption"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-Signature"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-URI"
+        },
+        {
+          "$ref": "#/parameters/FSPIOP-HTTP-Method"
+        }
+      ],
+      "get": {
+        "description": "The HTTP request `GET /fxQuotes/{ID}` is used to request information regarding a request for quotation for a  currency conversion which the sender has previously issued. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the quote.",
+        "summary": "Retrieve FX quote information",
+        "tags": [
+          "fxQuotes",
+          "sampled"
+        ],
+        "operationId": "FxQuotesByIDGet",
+        "parameters": [
+          {
+            "$ref": "#/parameters/Accept"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Response200"
+          },
+          "400": {
+            "$ref": "#/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/responses/ErrorResponse401"
+          },
+          "403": {
+            "$ref": "#/responses/ErrorResponse403"
+          },
+          "404": {
+            "$ref": "#/responses/ErrorResponse404"
+          },
+          "405": {
+            "$ref": "#/responses/ErrorResponse405"
+          },
+          "406": {
+            "$ref": "#/responses/ErrorResponse406"
+          },
+          "501": {
+            "$ref": "#/responses/ErrorResponse501"
+          },
+          "503": {
+            "$ref": "#/responses/ErrorResponse503"
+          }
+        }
+      },
+      "put": {
+        "description": "The callback `PUT /fxQuotes/{ID}` is used to inform the requester about the  outcome of a request for quotation for a currency conversion.  The `{ID}` in the URI should contain the `conversionRequestId` that was used for the  creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.",
+        "summary": "Return FX quote information",
+        "tags": [
+          "fxQuotes",
+          "sampled"
+        ],
+        "operationId": "FxQuotesByIdPut",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FxQuotesIDPutResponse"
+            }
+          },
+          {
+            "$ref": "#/parameters/Content-Length"
+          }
+        ],
+        "x-examples": {
+          "application/json": {
+            "condition": "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+            "conversionTerms": {
+              "conversionId": "8b2dd9c7-112c-44bd-9502-b019ba90c9cb",
+              "determiningTransferId": "80fdb3c2-855d-46a7-9dc8-abaa64da4717",
+              "initiatingFsp": "payerfsp",
+              "counterPartyFsp": "fxfsp",
+              "amountType": "SEND",
+              "sourceAmount": {
+                "currency": "NGN",
+                "amount": 12345
+              },
+              "targetAmount": {
+                "currency": "EUR",
+                "amount": 12345
+              },
+              "expiration": "2016-05-24T08:38:08.699-04:00",
+              "charges": [
+                {
+                  "chargeType": "string",
+                  "sourceAmount": {
+                    "currency": "NGN",
+                    "amount": 12345
+                  }
+                }
+              ],
+              "extensionList": {
+                "extension": [
+                  {
+                    "key": "errorDescription",
+                    "value": "This is a more detailed error description"
+                  },
+                  {
+                    "key": "errorDescription",
+                    "value": "This is a more detailed error description"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Response200"
+          },
+          "400": {
+            "$ref": "#/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/responses/ErrorResponse401"
+          },
+          "403": {
+            "$ref": "#/responses/ErrorResponse403"
+          },
+          "404": {
+            "$ref": "#/responses/ErrorResponse404"
+          },
+          "405": {
+            "$ref": "#/responses/ErrorResponse405"
+          },
+          "406": {
+            "$ref": "#/responses/ErrorResponse406"
+          },
+          "501": {
+            "$ref": "#/responses/ErrorResponse501"
+          },
+          "503": {
+            "$ref": "#/responses/ErrorResponse503"
+          }
+        }
+      }
+    },
+    "/fxQuotes": {
+      "post": {
+        "description": "The HTTP request `POST /fxQuotes` is used to ask an FXP to provide a quotation for a currency conversion.",
+        "summary": "Calculate FX quote",
+        "tags": [
+          "fxQuotes"
+        ],
+        "operationId": "FxQuotesPost",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FxQuotesPostRequest"
+            }
+          },
+          {
+            "$ref": "#/parameters/Accept"
+          },
+          {
+            "$ref": "#/parameters/Content-Length"
+          },
+          {
+            "$ref": "#/parameters/Content-Type"
+          },
+          {
+            "$ref": "#/parameters/Date"
+          },
+          {
+            "$ref": "#/parameters/X-Forwarded-For"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Source"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Destination"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Encryption"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-Signature"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-URI"
+          },
+          {
+            "$ref": "#/parameters/FSPIOP-HTTP-Method"
+          }
+        ],
+        "x-examples": {
+          "application/json": {
+            "conversionRequestId": "e1131ab7-7aed-44e2-9c46-4042c8b5ed67",
+            "conversionTerms": {
+              "conversionId": "8b2dd9c7-112c-44bd-9502-b019ba90c9cb",
+              "determiningTransferId": "80fdb3c2-855d-46a7-9dc8-abaa64da4717",
+              "initiatingFsp": "payerfsp",
+              "counterPartyFsp": "fxfsp",
+              "amountType": "SEND",
+              "sourceAmount": {
+                "currency": "NGN",
+                "amount": 12345
+              },
+              "targetAmount": {
+                "currency": "EUR",
+                "amount": 12345
+              },
+              "expiration": "2016-05-24T08:38:08.699-04:00",
+              "charges": [
+                {
+                  "chargeType": "string",
+                  "sourceAmount": {
+                    "currency": "NGN",
+                    "amount": 12345
+                  }
+                }
+              ],
+              "extensionList": {
+                "extension": [
+                  {
+                    "key": "errorDescription",
+                    "value": "This is a more detailed error description"
+                  },
+                  {
+                    "key": "errorDescription",
+                    "value": "This is a more detailed error description"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Response200"
+          },
+          "400": {
+            "$ref": "#/responses/ErrorResponse400"
+          },
+          "401": {
+            "$ref": "#/responses/ErrorResponse401"
+          },
+          "403": {
+            "$ref": "#/responses/ErrorResponse403"
+          },
+          "404": {
+            "$ref": "#/responses/ErrorResponse404"
+          },
+          "405": {
+            "$ref": "#/responses/ErrorResponse405"
+          },
+          "406": {
+            "$ref": "#/responses/ErrorResponse406"
+          },
+          "501": {
+            "$ref": "#/responses/ErrorResponse501"
+          },
+          "503": {
+            "$ref": "#/responses/ErrorResponse503"
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "description": "The HTTP request GET /health is used to return the current status of the API.",
@@ -1890,6 +2287,234 @@
       },
       "required": [
         "extension"
+      ]
+    },
+    "FxCharge": {
+      "title": "FxCharge",
+      "type": "object",
+      "description": "An FXP will be able to specify a charge which it proposes to levy on the currency conversion operation using a FxCharge object.",
+      "properties": {
+        "chargeType": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "description": "A description of the charge which is being levied."
+        },
+        "sourceAmount": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Money"
+            },
+            {
+              "description": "The amount of the charge which is being levied, expressed in the source currency."
+            }
+          ]
+        },
+        "targetAmount": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Money"
+            },
+            {
+              "description": "The amount of the charge which is being levied, expressed in the target currency."
+            }
+          ]
+        }
+      },
+      "required": [
+        "chargeType"
+      ]
+    },
+    "FxConversion": {
+      "title": "FxConversion",
+      "type": "object",
+      "description": "A DFSP will be able to request a currency conversion, and an FX provider will be able to describe its involvement in a proposed transfer, using a FxConversion object.",
+      "properties": {
+        "conversionId": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/CorrelationId"
+            },
+            {
+              "description": "An end-to-end identifier for the conversion request."
+            }
+          ]
+        },
+        "determiningTransferId": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/CorrelationId"
+            },
+            {
+              "description": "The transaction ID of the transfer on whose success this currency conversion depends."
+            }
+          ]
+        },
+        "initiatingFsp": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/FspId"
+            },
+            {
+              "description": "The id of the participant who is requesting a currency conversion."
+            }
+          ]
+        },
+        "counterPartyFsp": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/FspId"
+            },
+            {
+              "description": "The ID of the FXP performing the conversion."
+            }
+          ]
+        },
+        "amountType": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/AmountType"
+            },
+            {
+              "description": "This is the AmountType for the base transaction - If SEND - then any charges levied by the FXP as part of the transaction will be deducted by the FXP from the amount shown for the target party in the conversion. If RECEIVE - then any charges levied by the FXP as part of the transaction will be added by the FXP to the amount shown for the source party in the conversion."
+            }
+          ]
+        },
+        "sourceAmount": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/FxMoney"
+            },
+            {
+              "description": "The amount to be converted, expressed in the source currency."
+            }
+          ]
+        },
+        "targetAmount": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/FxMoney"
+            },
+            {
+              "description": "The converted amount, expressed in the target currency."
+            }
+          ]
+        },
+        "expiration": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/DateTime"
+            },
+            {
+              "description": "The end of the period for which the currency conversion is required to remain valid."
+            }
+          ]
+        },
+        "charges": {
+          "type": "array",
+          "description": "One or more charges which the FXP intends to levy as part of the currency conversion, or which the payee DFSP intends to add to the amount transferred.",
+          "items": {
+            "$ref": "#/definitions/FxCharge"
+          },
+          "minItems": 0,
+          "maxItems": 16
+        },
+        "extensionList": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExtensionList"
+            },
+            {
+              "description": "The extension list for the currency conversion request."
+            }
+          ]
+        }
+      },
+      "required": [
+        "conversionId",
+        "initiatingFsp",
+        "counterPartyFsp",
+        "amountType",
+        "sourceAmount",
+        "targetAmount",
+        "expiration"
+      ]
+    },
+    "FxMoney": {
+      "title": "FxMoney",
+      "type": "object",
+      "description": "Data model for the complex type FxMoney; This is based on the type Money but allows the amount to be optional to support FX quotations.",
+      "properties": {
+        "currency": {
+          "$ref": "#/definitions/Currency"
+        },
+        "amount": {
+          "$ref": "#/definitions/Amount"
+        }
+      },
+      "required": [
+        "currency"
+      ]
+    },
+    "FxQuotesIDPutResponse": {
+      "title": "FxQuotesIDPutResponse",
+      "type": "object",
+      "description": "The object sent in the PUT /fxQuotes/{ID} callback.",
+      "properties": {
+        "condition": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/IlpCondition"
+            },
+            {
+              "description": "The ILP condition for the conversion."
+            }
+          ]
+        },
+        "conversionTerms": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/FxConversion"
+            },
+            {
+              "description": "The terms under which the FXP will undertake the currency conversion proposed by the requester."
+            }
+          ]
+        }
+      },
+      "required": [
+        "conversionTerms"
+      ]
+    },
+    "FxQuotesPostRequest": {
+      "title": "FxQuotesPostRequest",
+      "type": "object",
+      "description": "The object sent in the POST /fxQuotes request.",
+      "properties": {
+        "conversionRequestId": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/CorrelationId"
+            },
+            {
+              "description": "An end-to-end identifier for the conversion quotation request."
+            }
+          ]
+        },
+        "conversionTerms": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/FxConversion"
+            },
+            {
+              "description": "The terms of the currency conversion for which a quotation is sought."
+            }
+          ]
+        }
+      },
+      "required": [
+        "conversionRequestId",
+        "conversionTerms"
       ]
     },
     "GeoCode": {
