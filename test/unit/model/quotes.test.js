@@ -2085,7 +2085,7 @@ describe('QuotesModel', () => {
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -2120,7 +2120,7 @@ describe('QuotesModel', () => {
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2',
           'fspiop-signature': fspiopSignature
         },
@@ -2152,7 +2152,7 @@ describe('QuotesModel', () => {
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -2166,7 +2166,7 @@ describe('QuotesModel', () => {
         data: {},
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         }
       }
@@ -2193,7 +2193,7 @@ describe('QuotesModel', () => {
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -2207,7 +2207,7 @@ describe('QuotesModel', () => {
         data: {},
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         }
       }

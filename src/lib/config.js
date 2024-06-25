@@ -98,6 +98,7 @@ class Config {
 
   constructor () {
     // load config from environment (or use sensible defaults)
+    this.hubName = RC.HUB_PARTICIPANT.NAME
     this.listenAddress = RC.LISTEN_ADDRESS
     this.listenPort = RC.PORT
     this.monitoringPort = RC.MONITORING_PORT
@@ -144,7 +145,7 @@ class Config {
     this.errorHandling = RC.ERROR_HANDLING
     this.jws = {
       jwsSign: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN,
-      fspiopSourceToSign: RC.ENDPOINT_SECURITY.JWS.FSPIOP_SOURCE_TO_SIGN,
+      fspiopSourceToSign: this.hubName,
       jwsSigningKeyPath: RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH,
       jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined
     }
