@@ -4,23 +4,7 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [
-<<<<<<< HEAD
-    "GHSA-qgmg-gppg-76g5" //https://github.com/advisories/GHSA-qgmg-gppg-76g5 Mock data generator for swagger api, not a security concern at this time.
-=======
-    "GHSA-v88g-cgmw-v5xw", // widdershins>swagger2openapi>oas-validator>ajv
-    "GHSA-phwq-j96m-2c2q", // @mojaloop/central-services-shared>shins>ejs
-    "GHSA-c429-5p7v-vgjp", // good-console>hoek
-    "GHSA-c429-5p7v-vgjp", // good-squeeze>hoek
-    "GHSA-c429-5p7v-vgjp", // joi>hoek>
-    "GHSA-c429-5p7v-vgjp", // topo>hoek>
-    "GHSA-282f-qqgm-c34q", // widdershins>swagger2openapi>better-ajv-errors>jsonpointer
-    "GHSA-6vfc-qv3f-vr6c", // widdershins>markdown-it
-    "GHSA-7fh5-64p2-3v2j", // @mojaloop/central-services-shared>shins>sanitize-html>postcss
-    "GHSA-mjxr-4v3x-q3m4", // @mojaloop/central-services-shared>shins>sanitize-html
-    "GHSA-rjqq-98f6-6j3r", // @mojaloop/central-services-shared>shins>sanitize-html
-    "GHSA-rm97-x556-q36h", // @mojaloop/central-services-shared>shins>sanitize-html
-    "GHSA-qgmg-gppg-76g5", // swagmock>swagger-parser>z-schema>validator
-    "GHSA-p9pc-299p-vxgp"  // widdershins>yargs>yargs-parser
->>>>>>> 4bae7f71e7f35415508b6b5726e654b00c943b10
+    "GHSA-qgmg-gppg-76g5",  //https://github.com/advisories/GHSA-qgmg-gppg-76g5 Mock data generator for swagger api, not a security concern at this time.
+     "GHSA-c429-5p7v-vgjp" // https://github.com/advisories/GHSA-c429-5p7v-vgjp
   ]
 }
