@@ -576,7 +576,7 @@ describe('QuotesModel', () => {
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
       expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(1)
 
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
     it('should validate payer and payee fspId and headers for simple routing mode', async () => {
       expect.assertions(6)
@@ -590,7 +590,7 @@ describe('QuotesModel', () => {
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
       expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(3)
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopSource)
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopDestination)
       expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
       expect(quotesModel.db.getParticipant.mock.calls[2][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
@@ -626,7 +626,7 @@ describe('QuotesModel', () => {
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
       expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(1)
 
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
   })
   describe('validateQuoteUpdate', () => {
