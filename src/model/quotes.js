@@ -171,8 +171,8 @@ class QuotesModel {
     // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
     // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
     if (quoteRequest.payer.supportedCurrencies && quoteRequest.payer.supportedCurrencies.length > 0) {
-      await Promise.all(quoteRequest.payer.supportedCurrencies.map(async currency => {
-        await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      await Promise.all(quoteRequest.payer.supportedCurrencies.map(currency => {
+        this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
       }))
     } else {
       // If it is not passed in, then we validate payee against the `amount` currency.
