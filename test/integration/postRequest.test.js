@@ -81,8 +81,8 @@ describe('POST request tests --> ', () => {
 
     const { url, body } = response.data.history[0]
     expect(url).toBe(`/${message.from}/quotes/${message.id}/error`)
-    expect(body.errorInformation.errorCode).toBe('3202')
-    expect(body.errorInformation.errorDescription).toBe(`Payer FSP ID not found - Unsupported participant '${message.from}'`)
+    expect(body.errorInformation.errorCode).toBe('3201')
+    expect(body.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.to}'`)
   }, TEST_TIMEOUT)
 
   test('should pass validation for POST /quotes request if all request "supportedCurrencies" are registered (position account exists) for the payer pariticpant', async () => {

@@ -174,9 +174,10 @@ class QuotesModel {
       await Promise.all(quoteRequest.payer.supportedCurrencies.map(async currency => {
         await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
       }))
+    } else {
+      // If it is not passed in, then we validate payee against the `amount` currency.
+      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
     }
-    // If it is not passed in, then we validate payee against the `amount` currency.
-    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
 
     histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
 
