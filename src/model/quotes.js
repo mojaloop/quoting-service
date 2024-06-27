@@ -170,11 +170,14 @@ class QuotesModel {
 
     // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
     // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
-    // If it is not passed in, then we validate against the `amount` currency only.
-    const payerFspCurrencies = quoteRequest.payer.supportedCurrencies || [quoteRequest.amount.currency]
-    await Promise.all(payerFspCurrencies.map(async currency => {
-      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    }))
+    if (quoteRequest.payer.supportedCurrencies && quoteRequest.payer.supportedCurrencies.length > 0) {
+      await Promise.all(quoteRequest.payer.supportedCurrencies.map(currency =>
+        this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      ))
+    } else {
+      // If it is not passed in, then we validate payee against the `amount` currency.
+      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    }
 
     histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
 
@@ -1029,7 +1032,7 @@ class QuotesModel {
         delete headers['fspiop-signature']
         fromSwitchHeaders = Object.assign({}, headers, {
           'fspiop-destination': fspiopSource,
-          'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
+          'fspiop-source': envConfig.hubName,
           'fspiop-http-method': ENUM.Http.RestMethods.PUT,
           'fspiop-uri': fspiopUri
         })
@@ -1060,7 +1063,7 @@ class QuotesModel {
 
       let res
       try {
-        // If JWS is enabled and the 'fspiop-source' matches the configured jws header value('switch')
+        // If JWS is enabled and the 'fspiop-source' matches the configured jws header value(i.e the hub name)
         // that means it's a switch generated message and we need to sign it
         const needToSign = !opts.headers['fspiop-signature'] &&
           envConfig.jws?.jwsSign &&

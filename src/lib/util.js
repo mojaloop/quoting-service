@@ -37,10 +37,11 @@ const crypto = require('crypto')
 const axios = require('axios')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { Enum } = require('@mojaloop/central-services-shared')
+const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
-
 const Config = require('./config')
+
+const config = new Config()
 
 const failActionHandler = async (request, h, err) => {
   Logger.isErrorEnabled && Logger.error(`validation failure: ${err ? getStackOrInspect(err) : ''}`)
@@ -127,7 +128,7 @@ function removeEmptyKeys (originalObject) {
 function applyResourceVersionHeaders (headers, protocolVersions) {
   let contentTypeHeader = headers['content-type'] || headers['Content-Type']
   let acceptHeader = headers.accept || headers.Accept
-  if (Enum.Http.Headers.FSPIOP.SWITCH.regex.test(headers['fspiop-source'])) {
+  if (Util.HeaderValidation.getHubNameRegex(config.hubName).test(headers['fspiop-source'])) {
     if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
       contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.CONTENT.DEFAULT}`
     }
@@ -206,7 +207,7 @@ function calculateRequestHash (request) {
 // Add caching to the participant endpoint
 const fetchParticipantInfo = async (source, destination, cache) => {
   // Get quote participants from central ledger admin
-  const { switchEndpoint } = new Config()
+  const { switchEndpoint } = config
   const url = `${switchEndpoint}/participants`
   let requestPayer
   let requestPayee

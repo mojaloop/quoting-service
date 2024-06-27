@@ -23,7 +23,7 @@ echo "---------------------------------------------------------------------"
 echo "---------------------------------------------------------------------"
 echo "Creating Hub Reconciliation account for the Scheme so that participant accounts in that currency can be created."
 echo "---------------------------------------------------------------------"
-curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/Hub/accounts" \
+curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/{$HUB_NAME}/accounts" \
   --header 'Cache-Control: no-cache' \
   --header 'Content-Type: application/json' \
   --header 'FSPIOP-Source: populateTestData.sh' \
@@ -45,7 +45,7 @@ echo
 echo "---------------------------------------------------------------------"
 echo "Creating Hub Multilateral Net Settlement account for the Scheme so that participant accounts in that currency can be created."
 echo "---------------------------------------------------------------------"
-curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/Hub/accounts" \
+curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/{$HUB_NAME}/accounts" \
   --header 'Cache-Control: no-cache' \
   --header 'Content-Type: application/json' \
   --header 'FSPIOP-Source: populateTestData.sh' \
