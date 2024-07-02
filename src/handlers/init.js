@@ -1,7 +1,6 @@
 const { Cache } = require('memory-cache')
 const { Tracer } = require('@mojaloop/event-sdk')
 const Logger = require('@mojaloop/central-services-logger')
-const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 
 const Config = require('../lib/config')
 const Database = require('../data/cachedDatabase')
@@ -9,6 +8,7 @@ const modelFactory = require('../model')
 const QuotingHandler = require('./QuotingHandler')
 const createConsumers = require('./createConsumers')
 const { createMonitoringServer } = require('./monitoringServer')
+const { createProxyClient } = require('../lib/proxy')
 
 let db
 let proxyClient
@@ -23,20 +23,8 @@ const startFn = async (handlerList) => {
   const isDbOk = await db.isConnected()
   if (!isDbOk) throw new Error('DB is not connected')
 
-  // initialize proxy client
   if (config.proxyCache.enabled) {
-    proxyClient = createProxyCache(config.proxyCache.type, config.proxyCache.proxyConfig)
-
-    const retryInterval = Number(config.proxyCache.retryInterval)
-
-    const timer = setTimeout(() => {
-      Logger.error('Unable to connect to proxy cache. Exiting...')
-      process.exit(1)
-    }, Number(config.proxyCache.timeout))
-
-    while (!proxyClient.isConnected) await new Promise(resolve => setTimeout(resolve, retryInterval))
-
-    clearTimeout(timer)
+    proxyClient = await createProxyClient(config.proxyCache)
   }
 
   const { quotesModelFactory, bulkQuotesModelFactory, fxQuotesModelFactory } = modelFactory(db, proxyClient)
