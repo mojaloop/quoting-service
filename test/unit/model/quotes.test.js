@@ -356,6 +356,7 @@ describe('QuotesModel', () => {
       }
     }))
   })
+
   afterEach(() => {
     // Clears the mock.calls and mock.instances properties of all mocks.
     // Equivalent to calling .mockClear() on every mocked function.
@@ -1292,6 +1293,15 @@ describe('QuotesModel', () => {
 
       expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
       expect(mockChildSpan.audit).not.toHaveBeenCalled()
+    })
+    it('should throw when participant endpoint is not found in db and proxy cache', async () => {
+      expect.assertions(1)
+      mockConfig.simpleRoutingMode = false
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(null)
+
+      await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
     })
     it('should inspect and throw custom error as FSPIOPerror', async () => {
       expect.assertions(3)

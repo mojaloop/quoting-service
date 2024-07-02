@@ -724,13 +724,6 @@ class QuotesModel {
 
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
 
-      // if endpoint is not found, check the proxy cache (this might be an inter-scheme request)
-      if (!endpoint && this.proxyClient) {
-        const proxyResult = await this.getProxyEndpoint({ dfspId: fspiopDest, endpointType: ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_QUOTES })
-        endpoint = proxyResult.endpoint
-        this.writeLog(`Proxy participant FSPIOP_CALLBACK_URL_QUOTES endpoint resolved for quote ${quoteId}: fspiop-destination: ${fspiopDest}, proxyId: ${proxyResult.proxyId}, proxy endpoint: ${proxyResult.endpoint}`)
-      }
-
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
@@ -929,6 +922,7 @@ class QuotesModel {
       // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+
       endpoint = await this._getParticipantEndpoint(fspiopDest)
 
       this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_QUOTES endpoint for quote GET ${quoteId} to: ${util.inspect(endpoint)}`)
