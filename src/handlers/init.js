@@ -25,9 +25,18 @@ const startFn = async (handlerList) => {
 
   // initialize proxy client
   if (config.proxyCache.enabled) {
-    proxyClient = createProxyCache(config.proxyCache)
-    const isProxyOk = await proxyClient.connect()
-    if (!isProxyOk) throw new Error('Proxy cache is not connected')
+    proxyClient = createProxyCache(config.proxyCache.type, config.proxyCache.proxyConfig)
+
+    const retryInterval = Number(config.proxyCache.retryInterval)
+
+    const timer = setTimeout(() => {
+      Logger.error('Unable to connect to proxy cache. Exiting...')
+      process.exit(1)
+    }, Number(config.proxyCache.timeout))
+
+    while (!proxyClient.isConnected) await new Promise(resolve => setTimeout(resolve, retryInterval))
+
+    clearTimeout(timer)
   }
 
   const { quotesModelFactory, bulkQuotesModelFactory, fxQuotesModelFactory } = modelFactory(db, proxyClient)

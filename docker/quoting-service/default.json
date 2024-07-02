@@ -77,6 +77,16 @@
     "ENUM_DATA_EXPIRES_IN_MS": 4170000,
     "PARTICIPANT_DATA_EXPIRES_IN_MS": 60000
   },
+  "PROXY_CACHE": {
+    "enabled": false,
+    "type": "redis",
+    "timeout": 5000,
+    "retryInterval": 200,
+    "proxyConfig": {
+      "host": "redis",
+      "port": 6379
+    }
+  },
   "KAFKA": {
     "CONSUMER": {
       "QUOTE": {
