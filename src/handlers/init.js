@@ -1,6 +1,7 @@
 const { Cache } = require('memory-cache')
 const { Tracer } = require('@mojaloop/event-sdk')
 const Logger = require('@mojaloop/central-services-logger')
+const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 
 const Config = require('../lib/config')
 const Database = require('../data/cachedDatabase')
@@ -10,6 +11,7 @@ const createConsumers = require('./createConsumers')
 const { createMonitoringServer } = require('./monitoringServer')
 
 let db
+let proxyClient
 let consumersMap
 let monitoringServer
 
@@ -21,7 +23,14 @@ const startFn = async (handlerList) => {
   const isDbOk = await db.isConnected()
   if (!isDbOk) throw new Error('DB is not connected')
 
-  const { quotesModelFactory, bulkQuotesModelFactory, fxQuotesModelFactory } = modelFactory(db)
+  // initialize proxy client
+  if (config.proxyCache.enabled) {
+    proxyClient = createProxyCache(config.proxyCache)
+    const isProxyOk = await proxyClient.connect()
+    if (!isProxyOk) throw new Error('Proxy cache is not connected')
+  }
+
+  const { quotesModelFactory, bulkQuotesModelFactory, fxQuotesModelFactory } = modelFactory(db, proxyClient)
 
   const handler = new QuotingHandler({
     quotesModelFactory,
