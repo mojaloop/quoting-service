@@ -233,6 +233,25 @@ const fetchParticipantInfo = async (source, destination, cache) => {
   return { payer, payee }
 }
 
+const getParticipantEndpoint = async ({ fspId, db, loggerFn, endpointType, proxyClient = null }) => {
+  let endpoint = await db.getParticipantEndpoint(fspId, endpointType)
+
+  loggerFn(`Resolved participant '${fspId}' ${endpointType} to: '${endpoint}'`)
+
+  // if endpoint is not found in db, check the proxy cache (this might be an inter-scheme request)
+  if (!endpoint && proxyClient) {
+    if (!proxyClient.isConnected) await proxyClient.connect()
+    const proxyId = await proxyClient.lookupProxyByDfspId(fspId)
+    if (proxyId) {
+      endpoint = await db.getParticipantEndpoint(proxyId, endpointType)
+    }
+
+    loggerFn(`Proxy participant ${endpointType} endpoint resolved: fspid: ${fspId}, proxyId: ${proxyId}, proxy endpoint: ${endpoint}`)
+  }
+
+  return endpoint
+}
+
 const auditSpan = async (request) => {
   const { span, headers, payload, method } = request
   span.setTags(getSpanTags(request, 'quote', method))
@@ -259,5 +278,6 @@ module.exports = {
   calculateRequestHash,
   removeEmptyKeys,
   rethrowFspiopError,
-  fetchParticipantInfo
+  fetchParticipantInfo,
+  getParticipantEndpoint
 }
