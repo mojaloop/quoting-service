@@ -46,6 +46,9 @@ const startFn = async (handlerList) => {
 
 const stopFn = async () => {
   await monitoringServer?.stop()
+
+  proxyClient?.isConnected && await proxyClient.disconnect()
+
   /* istanbul ignore next */
   if (consumersMap) {
     await Promise.all(Object.values(consumersMap).map(consumer => consumer.disconnect()))

@@ -46,7 +46,7 @@ services:
 
   quoting-service-handler:
     <<: *quotingServiceBase
-    command: npm run start:handlers:debug
+    command: npm run start:handlers
     ports:
       - "3003:3003"
       - "29229:9229"
@@ -101,8 +101,8 @@ services:
   redis:
     image: "redis:6.2.4-alpine"
     container_name: redis
-    ports:
-      - "6379:6379"
+    # ports:
+    #   - "6379:6379"
 
 #  mockserver:
 #    image: jamesdbloom/mockserver

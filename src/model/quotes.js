@@ -169,6 +169,8 @@ class QuotesModel {
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
 
+    if (this.proxyClient && !this.proxyClient.isConnected) await this.proxyClient.connect()
+
     // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
     // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
     if (quoteRequest.payer.supportedCurrencies && quoteRequest.payer.supportedCurrencies.length > 0) {
