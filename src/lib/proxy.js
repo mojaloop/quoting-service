@@ -8,10 +8,11 @@ const createProxyClient = async ({ proxyCacheConfig, logger }) => {
 
   const proxyClient = createProxyCache(proxyCacheConfig.type, proxyCacheConfig.proxyConfig)
 
+  // If lazyConnect is false, wait for the connection to be established
   if (Object.prototype.hasOwnProperty.call(proxyCacheConfig.proxyConfig, 'lazyConnect') && !proxyCacheConfig.proxyConfig.lazyConnect) {
     const timer = setTimeout(() => {
       timedOut = true
-      logger.isErrorEnabled && logger.error('Unable to connect to proxy cache. Exiting...', { proxyCacheConfig })
+      logger.error('Unable to connect to proxy cache. Exiting...', { proxyCacheConfig })
     }, timeout)
 
     while (!proxyClient.isConnected) {
@@ -20,7 +21,6 @@ const createProxyClient = async ({ proxyCacheConfig, logger }) => {
     }
 
     clearTimeout(timer)
-
     if (timedOut) process.exit(1)
   }
 

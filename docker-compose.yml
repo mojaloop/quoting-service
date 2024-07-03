@@ -97,6 +97,12 @@ services:
     healthcheck:
       <<: *healthcheckParams
       test: [ "CMD", "mysqladmin" ,"ping", "-h", "mysql" ]
+  
+  redis:
+    image: "redis:6.2.4-alpine"
+    container_name: redis
+    ports:
+      - "6379:6379"
 
 #  mockserver:
 #    image: jamesdbloom/mockserver

@@ -1,6 +1,7 @@
 jest.mock('@mojaloop/inter-scheme-proxy-cache-lib', () => ({
   createProxyCache: jest.fn()
 }))
+
 const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 const { createProxyClient } = require('../../../src/lib/proxy')
 
@@ -46,8 +47,10 @@ describe('createProxyClient', () => {
 
   it('should log an error and exit if unable to connect to proxy cache', async () => {
     const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => { })
+
     mockProxyClient.isConnected = false
-    const modifiedConfig = { ...proxyCacheConfig, proxyConfig: { ...proxyCacheConfig.proxyConfig, lazyConnect: false } }
+    const modifiedConfig = { ...proxyCacheConfig }
+    modifiedConfig.proxyConfig.lazyConnect = false
 
     await createProxyClient({ proxyCacheConfig: modifiedConfig, logger })
 

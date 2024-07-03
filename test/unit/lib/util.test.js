@@ -583,9 +583,6 @@ describe('util', () => {
   })
 
   describe('getParticipantEndpoint', () => {
-    beforeEach(() => {
-    })
-
     it('throws an error if required arguments are missing', async () => {
       // Arrange
       const fspId = 'fsp1'
@@ -603,7 +600,7 @@ describe('util', () => {
       // Act
       const action = async () => getParticipantEndpoint(params)
       // Assert
-      await expect(action()).rejects.toThrowError('Missing required arguments for getParticipantEndpoint')
+      await expect(action()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
 
       // Arrange
       params.fspId = fspId
@@ -611,7 +608,7 @@ describe('util', () => {
       // Act
       const action2 = async () => getParticipantEndpoint(params)
       // Assert
-      await expect(action2()).rejects.toThrowError('Missing required arguments for getParticipantEndpoint')
+      await expect(action2()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
 
       // Arrange
       params.db = db
@@ -619,7 +616,7 @@ describe('util', () => {
       // Act
       const action3 = async () => getParticipantEndpoint(params)
       // Assert
-      await expect(action3()).rejects.toThrowError('Missing required arguments for getParticipantEndpoint')
+      await expect(action3()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
 
       // Arrange
       params.loggerFn = loggerFn
@@ -627,7 +624,7 @@ describe('util', () => {
       // Act
       const action4 = async () => getParticipantEndpoint(params)
       // Assert
-      await expect(action4()).rejects.toThrowError('Missing required arguments for getParticipantEndpoint')
+      await expect(action4()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
 
       // Arrange
       params.endpointType = endpointType
