@@ -119,7 +119,6 @@
     "ajv-keywords": "5.1.0",
     "axios": "1.7.2",
     "blipp": "4.0.2",
-    "cd": "^0.3.3",
     "commander": "12.1.0",
     "event-stream": "4.0.1",
     "fast-safe-stringify": "^2.1.1",
