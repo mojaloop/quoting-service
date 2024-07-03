@@ -19,9 +19,7 @@ const createProxyClient = async ({ proxyCacheConfig, logger }) => {
 
     clearTimeout(timer)
 
-    if (timedOut) {
-      process.exit(1)
-    }
+    if (timedOut) process.exit(1)
   }
 
   return proxyClient
