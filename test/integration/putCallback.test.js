@@ -1,4 +1,35 @@
+/*****
+ License
+ --------------
+ Copyright © 2020 Mojaloop Foundation
+
+ The Mojaloop files are made available by the Mojaloop Foundation under the Apache License, Version 2.0
+ (the "License") and you may not use these files except in compliance with the [License](http://www.apache.org/licenses/LICENSE-2.0).
+
+ You may obtain a copy of the License at [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+
+ Unless required by applicable law or agreed to in writing, the Mojaloop files are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the [License](http://www.apache.org/licenses/LICENSE-2.0).
+
+ Contributors
+ --------------
+ This is the official list of the Mojaloop project contributors for this file.
+ Names of the original copyright holders (individuals or organizations)
+ should be listed with a '*' in the first column. People who have
+ contributed from an organization can be listed under the organization
+ that actually holds the copyright for their contributions (see the
+ Gates Foundation organization for an example). Those individuals should have
+ their names indented and be marked with a '-'. Email address can be added
+ optionally within square brackets <email>.
+ * Gates Foundation
+ - Name Surname <name.surname@gatesfoundation.com>
+
+ * Eugen Klymniuk <eugen.klymniuk@infitx.com>
+ * Steven Oderayi <steven.oderayi@infitx.com>
+ --------------
+ ******/
+
 const { Producer } = require('@mojaloop/central-services-stream').Util
+const { createProxyClient } = require('../../src/lib/proxy')
 
 const Config = require('../../src/lib/config')
 const dto = require('../../src/lib/dto')
@@ -8,7 +39,8 @@ const uuid = require('crypto').randomUUID
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
-const TEST_TIMEOUT = 20000
+const TEST_TIMEOUT = 20_000
+const WAIT_TIMEOUT = 3_000
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -40,7 +72,7 @@ const createQuote = async ({
 }
 
 describe('PUT callback Tests --> ', () => {
-  const { kafkaConfig } = new Config()
+  const { kafkaConfig, proxyCache } = new Config()
 
   beforeEach(async () => {
     await hubClient.clearHistory()
@@ -53,7 +85,7 @@ describe('PUT callback Tests --> ', () => {
   test('should handle the JWS signing when a switch error event is produced to the PUT topic', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
-    await wait(3000)
+    await wait(WAIT_TIMEOUT)
     await hubClient.clearHistory()
 
     let response = await hubClient.getHistory()
@@ -66,7 +98,7 @@ describe('PUT callback Tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(3000)
+    await wait(WAIT_TIMEOUT)
 
     response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(1)
@@ -81,7 +113,7 @@ describe('PUT callback Tests --> ', () => {
   test('should pass validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is registered (position account exists) for the payee pariticpant', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
-    await wait(3000)
+    await wait(WAIT_TIMEOUT)
     await hubClient.clearHistory()
 
     let response = await hubClient.getHistory()
@@ -105,7 +137,7 @@ describe('PUT callback Tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(3000)
+    await wait(WAIT_TIMEOUT)
 
     response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(1)
@@ -118,7 +150,7 @@ describe('PUT callback Tests --> ', () => {
     // test the same scenario with only transferAmount set
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
-    await wait(3000)
+    await wait(WAIT_TIMEOUT)
     await hubClient.clearHistory()
 
     let response = await hubClient.getHistory()
@@ -169,7 +201,7 @@ describe('PUT callback Tests --> ', () => {
     isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(3000)
+    await wait(WAIT_TIMEOUT)
 
     response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(1)
@@ -179,4 +211,50 @@ describe('PUT callback Tests --> ', () => {
     expect(body2.errorInformation.errorCode).toBe('3201')
     expect(body2.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.from}'`)
   }, TEST_TIMEOUT)
+
+  test('should forward PUT /quotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
+    let response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+
+    const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
+    const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const from = 'greenbank'
+    // redbank not in the hub db
+    const to = 'redbank'
+
+    // register proxy representative for redbank
+    const proxyId = 'redbankproxy'
+    const proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+    const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
+
+    // assert that the proxy representative is mapped in the cache
+    const key = `dfsp:${to}`
+    const representative = await proxyClient.redisClient.get(key)
+
+    expect(isAdded).toBe(true)
+    expect(representative).toBe(proxyId)
+
+    const payload = {
+      transferAmount: { amount: '100', currency: 'USD' },
+      ilpPacket: 'test',
+      condition: 'test'
+    }
+    const message = mocks.kafkaMessagePayloadDto({ from, to, id: uuid(), payloadBase64: base64Encode(JSON.stringify(payload)) })
+    delete message.content.headers.accept
+    const isOk = await Producer.produceMessage(message, topicConfig, config)
+    expect(isOk).toBe(true)
+
+    await wait(WAIT_TIMEOUT)
+
+    response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(1)
+
+    const request = response.data.history[0]
+    expect(request.url).toBe(`/${proxyId}/quotes/${message.id}`)
+    expect(request.body).toEqual(payload)
+    expect(request.headers['fspiop-source']).toBe(from)
+    expect(request.headers['fspiop-destination']).toBe(to)
+
+    await proxyClient.disconnect()
+  })
 })

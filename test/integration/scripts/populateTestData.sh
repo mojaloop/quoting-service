@@ -12,6 +12,10 @@ then
     CWD="."
 fi
 
+function isProxy() {
+    [[ "$1" =~ proxy$ ]]
+}
+
 echo "Loading env vars..."
 source $CWD/env.sh
 
@@ -133,6 +137,8 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
       \"currency\":\"ZMW\"
     }"
 
+if ! isProxy $FSP; then
+
   echo
   echo "Setting limits and initial position for '$FSP'"
   echo "---------------------------------------------------------------------"
@@ -161,7 +167,6 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
     },
     \"initialPosition\": 0
   }"
-
 
   echo
   echo "Get accounts list for '$FSP' and filter by ledgerAccountType='SETTLEMENT'"
@@ -220,6 +225,8 @@ curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOS
   echo "Retrieving limits for '$FSP'"
   echo "---------------------------------------------------------------------"
   curl -X GET "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/limits" -H 'Cache-Control: no-cache'
+
+fi
 
   echo
   echo "Set callback URIs for each FSP '$FSP'"

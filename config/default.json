@@ -84,9 +84,11 @@
     "retryInterval": 200,
     "proxyConfig": {
       "host": "localhost",
-      "port": 6379
+      "port": 6379,
+      "lazyConnect": false
     }
   },
+  "LOG_LEVEL": "info",
   "KAFKA": {
     "CONSUMER": {
       "QUOTE": {
