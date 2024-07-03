@@ -2,6 +2,7 @@ const process = require('node:process')
 const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 
 const createProxyClient = async ({ proxyCacheConfig, logger }) => {
+  const timeout = Number(proxyCacheConfig.timeout)
   const retryInterval = Number(proxyCacheConfig.retryInterval)
   const proxyClient = createProxyCache(proxyCacheConfig.type, proxyCacheConfig.proxyConfig)
   let timedOut = false
@@ -10,7 +11,7 @@ const createProxyClient = async ({ proxyCacheConfig, logger }) => {
     const timer = setTimeout(() => {
       timedOut = true
       logger.isErrorEnabled && logger.error('Unable to connect to proxy cache. Exiting...', { proxyCacheConfig })
-    }, Number(proxyCacheConfig.timeout))
+    }, timeout)
 
     while (!proxyClient.isConnected) {
       if (timedOut) break
