@@ -234,6 +234,10 @@ const fetchParticipantInfo = async (source, destination, cache) => {
 }
 
 const getParticipantEndpoint = async ({ fspId, db, loggerFn, endpointType, proxyClient = null }) => {
+  if (!fspId || !db || !loggerFn || !endpointType) {
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Missing required arguments for getParticipantEndpoint')
+  }
+
   let endpoint = await db.getParticipantEndpoint(fspId, endpointType)
 
   loggerFn(`Resolved participant '${fspId}' ${endpointType} to: '${endpoint}'`)

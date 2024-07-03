@@ -1,5 +1,6 @@
 jest.mock('../../../src/handlers/createConsumers')
 jest.mock('../../../src/handlers/monitoringServer')
+jest.mock('../../../src/lib/proxy')
 
 const init = require('../../../src/handlers/init')
 const Database = require('../../../src/data/cachedDatabase')

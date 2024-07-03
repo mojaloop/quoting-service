@@ -586,6 +586,58 @@ describe('util', () => {
     beforeEach(() => {
     })
 
+    it('throws an error if required arguments are missing', async () => {
+      // Arrange
+      const fspId = 'fsp1'
+      const db = {
+        getParticipantEndpoint: jest.fn()
+      }
+      const endpointType = 'TEST_ENDPOINT_TYPE'
+      const proxyClient = {
+        connect: jest.fn(),
+        lookupProxyByDfspId: jest.fn()
+      }
+      const loggerFn = Logger.info
+      const params = { db, loggerFn, endpointType, proxyClient }
+
+      // Act
+      const action = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action()).rejects.toThrowError('Missing required arguments for getParticipantEndpoint')
+
+      // Arrange
+      params.fspId = fspId
+      params.db = null
+      // Act
+      const action2 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action2()).rejects.toThrowError('Missing required arguments for getParticipantEndpoint')
+
+      // Arrange
+      params.db = db
+      params.loggerFn = null
+      // Act
+      const action3 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action3()).rejects.toThrowError('Missing required arguments for getParticipantEndpoint')
+
+      // Arrange
+      params.loggerFn = loggerFn
+      params.endpointType = null
+      // Act
+      const action4 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action4()).rejects.toThrowError('Missing required arguments for getParticipantEndpoint')
+
+      // Arrange
+      params.endpointType = endpointType
+      params.proxyClient = null
+      // Act
+      const action5 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action5()).resolves.not.toThrow()
+    })
+
     it('returns the participant endpoint by calling db.getParticipantEndpoint', async () => {
       // Arrange
       const expected = 'http://localhost:8444/payerfsp'

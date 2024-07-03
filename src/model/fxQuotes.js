@@ -422,6 +422,7 @@ class FxQuotesModel {
     }
   }
 
+  // wrapping this dependency here to allow for easier use and testing
   async _getParticipantEndpoint (fspId, endpointType = ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES) {
     return getParticipantEndpoint({ fspId, db: this.db, loggerFn: this.writeLog.bind(this), endpointType, proxyClient: this.proxyClient })
   }
