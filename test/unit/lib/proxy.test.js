@@ -57,5 +57,5 @@ describe('createProxyClient', () => {
     expect(mockExit).toHaveBeenCalledWith(1)
 
     mockExit.mockRestore()
-  }, 10000)
+  }, 10_000)
 })
