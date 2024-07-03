@@ -83,9 +83,7 @@ describe('createProxyClient', () => {
 
     await createProxyClient({ proxyCacheConfig: modifiedConfig, logger })
 
-    expect(logger.error).toHaveBeenCalledWith('Unable to connect to proxy cache. Exiting...', {
-      proxyCacheConfig: modifiedConfig
-    })
+    expect(logger.error).toHaveBeenCalledWith('Unable to connect to proxy cache. Exiting...')
     expect(mockExit).toHaveBeenCalledWith(1)
 
     mockExit.mockRestore()
