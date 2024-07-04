@@ -84,6 +84,7 @@
     "proxyConfig": {
       "host": "redis",
       "port": 6379,
+      "db": 0,
       "lazyConnect": false
     }
   },
