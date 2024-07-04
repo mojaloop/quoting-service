@@ -229,6 +229,7 @@ describe('POST request tests --> ', () => {
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
     } finally {
+      console.log(JSON.stringify(response.data.history, null, 2))
       await proxyClient.disconnect()
     }
   })
