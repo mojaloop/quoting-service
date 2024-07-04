@@ -26,8 +26,6 @@
  * Steven Oderayi <steven.oderayi@infitx.com>
  --------------
  ******/
-
-const process = require('node:process')
 const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 
 const createProxyClient = async ({ proxyCacheConfig, logger }) => {
@@ -57,6 +55,7 @@ const waitForConnection = async ({ proxyClient, timeout, retryInterval, logger }
   }
 
   clearTimeout(timer)
+
   if (timedOut) process.exit(1)
 
   logger.isInfoEnabled && logger.info('Connected to proxy cache')
