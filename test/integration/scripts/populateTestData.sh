@@ -345,7 +345,7 @@ fi
     --header 'FSPIOP-Source: populateTestData.sh' \
     --data-raw "{
         \"type\": \"FSPIOP_CALLBACK_URL_BULK_QUOTES\",
-        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}\"
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}\"
       }"
 
   echo
