@@ -59,6 +59,7 @@ class BulkQuotesModel {
     this.config = config
     this.db = config.db
     this.requestId = config.requestId
+    this.proxyClient = config.proxyClient
   }
 
   /**
@@ -68,7 +69,13 @@ class BulkQuotesModel {
    */
   async validateBulkQuoteRequest (fspiopSource, fspiopDestination, bulkQuoteRequest) {
     await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+
+    // Ensure the proxy client is connected
+    if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
+    // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
+    if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
+      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    }
   }
 
   /**

@@ -46,7 +46,7 @@ services:
 
   quoting-service-handler:
     <<: *quotingServiceBase
-    command: npm run start:handlers
+    command: npm run start:handlers:debug
     ports:
       - "3003:3003"
       - "29229:9229"
@@ -54,7 +54,7 @@ services:
 
 
   central-ledger:
-    image: mojaloop/central-ledger
+    image: mojaloop/central-ledger:v17.7.0-snapshot.20
     container_name: qs_central-ledger
     ports:
       - "3001:3001"

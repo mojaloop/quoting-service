@@ -49,9 +49,15 @@ class FxQuotesModel {
    */
   async validateFxQuoteRequest (fspiopDestination, fxQuoteRequest) {
     const currencies = [fxQuoteRequest.conversionTerms.sourceAmount.currency, fxQuoteRequest.conversionTerms.targetAmount.currency]
-    await Promise.all(currencies.map(async (currency) => {
-      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    }))
+
+    // Ensure the proxy client is connected
+    if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
+    // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
+    if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
+      await Promise.all(currencies.map(async (currency) => {
+        await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      }))
+    }
   }
 
   /**

@@ -311,6 +311,15 @@ fi
         \"type\": \"FSPIOP_CALLBACK_URL_QUOTES\",
         \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}\"
       }"
+  
+  curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
+    --header 'Cache-Control: no-cache' \
+    --header 'Content-Type: application/json' \
+    --header 'FSPIOP-Source: populateTestData.sh' \
+    --data-raw "{
+        \"type\": \"FSPIOP_CALLBACK_URL_FX_QUOTES\",
+        \"value\": \"http://${MOCKSERVER_HOST}:${MOCKSERVER_PORT}/${FSP}\"
+      }"
 
   curl -i -X POST "${CENTRAL_LEDGER_ADMIN_URI_PREFIX}://${CENTRAL_LEDGER_ADMIN_HOST}:${CENTRAL_LEDGER_ADMIN_PORT}${CENTRAL_LEDGER_ADMIN_BASE}participants/${FSP}/endpoints" \
     --header 'Cache-Control: no-cache' \

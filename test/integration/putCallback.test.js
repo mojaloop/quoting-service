@@ -258,7 +258,63 @@ describe('PUT callback Tests --> ', () => {
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
     } finally {
-      console.log(JSON.stringify(response.data.history, null, 2))
+      await proxyClient.disconnect()
+    }
+  })
+
+  test('should forward PUT /fxQuotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
+    let response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+
+    const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.PUT
+    const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const from = 'greenbank'
+    // redbank not in the hub db
+    const to = 'redbank'
+
+    // register proxy representative for redbank
+    const proxyId = 'redbankproxy'
+    let proxyClient
+
+    try {
+      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
+
+      // assert that the proxy representative is mapped in the cache
+      const key = `dfsp:${to}`
+      const representative = await proxyClient.redisClient.get(key)
+
+      expect(isAdded).toBe(true)
+      expect(representative).toBe(proxyId)
+
+      const payload = {
+        condition: 'test',
+        conversionTerms: {
+          conversionId: uuid(),
+          initiatingFsp: from,
+          counterPartyFsp: to,
+          amountType: 'SEND',
+          sourceAmount: { amount: '100', currency: 'USD' },
+          targetAmount: { amount: '100', currency: 'ZWS' },
+          expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString()
+        }
+      }
+      const message = mocks.kafkaMessagePayloadDto({ from, to, id: uuid(), payloadBase64: base64Encode(JSON.stringify(payload)) })
+      delete message.content.headers.accept
+      const isOk = await Producer.produceMessage(message, topicConfig, config)
+      expect(isOk).toBe(true)
+
+      await wait(WAIT_TIMEOUT)
+
+      response = await hubClient.getHistory()
+      expect(response.data.history.length).toBe(1)
+
+      const request = response.data.history[0]
+      expect(request.url).toBe(`/${proxyId}/fxQuotes/${message.id}`)
+      expect(request.body).toEqual(payload)
+      expect(request.headers['fspiop-source']).toBe(from)
+      expect(request.headers['fspiop-destination']).toBe(to)
+    } finally {
       await proxyClient.disconnect()
     }
   })
