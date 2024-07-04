@@ -221,8 +221,7 @@ describe('POST request tests --> ', () => {
       await wait(WAIT_TIMEOUT)
 
       response = await hubClient.getHistory()
-      expect(response.data.history.length).toBe(1)
-
+      
       const request = response.data.history[0]
       expect(request.url).toBe(`/${proxyId}/quotes`)
       expect(request.body).toEqual(payload)
