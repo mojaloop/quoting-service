@@ -250,7 +250,7 @@ describe('PUT callback Tests --> ', () => {
       await wait(WAIT_TIMEOUT)
 
       response = await hubClient.getHistory()
-      expect(response.data.history.length).toBeLessThanOrEqual(2)
+      expect([1, 2]).toContain(response.data.history.length)
 
       const request = response.data.history[0]
       expect(request.url).toBe(`/${proxyId}/quotes/${message.id}`)
