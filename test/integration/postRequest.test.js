@@ -192,40 +192,44 @@ describe('POST request tests --> ', () => {
 
     // register proxy representative for redbank
     const proxyId = 'redbankproxy'
-    const proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
-    const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
+    let proxyClient
 
-    // assert that the proxy representative is mapped in the cache
-    const key = `dfsp:${to}`
-    const representative = await proxyClient.redisClient.get(key)
+    try {
+      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
 
-    expect(isAdded).toBe(true)
-    expect(representative).toBe(proxyId)
+      // assert that the proxy representative is mapped in the cache
+      const key = `dfsp:${to}`
+      const representative = await proxyClient.redisClient.get(key)
 
-    const payload = {
-      quoteId: uuid(),
-      transactionId: uuid(),
-      amountType: 'SEND',
-      amount: { amount: '100', currency: 'USD' },
-      transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
-      payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
-      payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
+      expect(isAdded).toBe(true)
+      expect(representative).toBe(proxyId)
+
+      const payload = {
+        quoteId: uuid(),
+        transactionId: uuid(),
+        amountType: 'SEND',
+        amount: { amount: '100', currency: 'USD' },
+        transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
+        payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
+        payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
+      }
+      const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
+      const isOk = await Producer.produceMessage(message, topicConfig, config)
+      expect(isOk).toBe(true)
+
+      await wait(WAIT_TIMEOUT)
+
+      response = await hubClient.getHistory()
+      expect(response.data.history.length).toBe(1)
+
+      const request = response.data.history[0]
+      expect(request.url).toBe(`/${proxyId}/quotes`)
+      expect(request.body).toEqual(payload)
+      expect(request.headers['fspiop-source']).toBe(from)
+      expect(request.headers['fspiop-destination']).toBe(to)
+    } finally {
+      await proxyClient.disconnect()
     }
-    const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
-    const isOk = await Producer.produceMessage(message, topicConfig, config)
-    expect(isOk).toBe(true)
-
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
-    expect(response.data.history.length).toBe(1)
-
-    const request = response.data.history[0]
-    expect(request.url).toBe(`/${proxyId}/quotes`)
-    expect(request.body).toEqual(payload)
-    expect(request.headers['fspiop-source']).toBe(from)
-    expect(request.headers['fspiop-destination']).toBe(to)
-
-    await proxyClient.disconnect()
   })
 })
