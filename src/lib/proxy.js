@@ -30,7 +30,7 @@ const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 
 const createProxyClient = async ({ proxyCacheConfig, logger }) => {
   const timeout = Number(proxyCacheConfig.timeout)
-  const retryInterval = Number(proxyCacheConfig.retryInterval)
+  const retryInterval = 200
 
   const proxyClient = createProxyCache(proxyCacheConfig.type, proxyCacheConfig.proxyConfig)
 

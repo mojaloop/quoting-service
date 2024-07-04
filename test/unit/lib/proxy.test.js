@@ -41,7 +41,6 @@ describe('createProxyClient', () => {
 
   beforeEach(() => {
     proxyCacheConfig = {
-      retryInterval: 200,
       timeout: 5000,
       type: 'redis',
       proxyConfig: {
