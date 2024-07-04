@@ -339,7 +339,7 @@ describe('POST request tests --> ', () => {
       await wait(WAIT_TIMEOUT)
 
       response = await hubClient.getHistory()
-      expect([1, 2]).toContain(response.data.history.length)
+      expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]
       expect(request.url).toBe(`/${proxyId}/bulkQuotes`)
