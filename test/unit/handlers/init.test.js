@@ -1,6 +1,11 @@
 jest.mock('../../../src/handlers/createConsumers')
 jest.mock('../../../src/handlers/monitoringServer')
-jest.mock('../../../src/lib/proxy')
+jest.mock('../../../src/lib/proxy', () => ({
+  createProxyClient: () => ({
+    connect: jest.fn(),
+    isConnected: false
+  })
+}))
 
 const init = require('../../../src/handlers/init')
 const Database = require('../../../src/data/cachedDatabase')

@@ -28,15 +28,12 @@
  ******/
 const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 
-const createProxyClient = async ({ proxyCacheConfig }) => {
+const createProxyClient = ({ proxyCacheConfig }) => {
   // Ensure lazyConnect is set to true
   if (!proxyCacheConfig.proxyConfig.lazyConnect) {
     proxyCacheConfig.proxyConfig.lazyConnect = true
   }
-  const proxyClient = createProxyCache(proxyCacheConfig.type, proxyCacheConfig.proxyConfig)
-  await proxyClient.connect()
-
-  return proxyClient
+  return createProxyCache(proxyCacheConfig.type, proxyCacheConfig.proxyConfig)
 }
 
 module.exports = { createProxyClient }
