@@ -78,7 +78,7 @@
     "PARTICIPANT_DATA_EXPIRES_IN_MS": 60000
   },
   "PROXY_CACHE": {
-    "enabled": true,
+    "enabled": false,
     "type": "redis",
     "proxyConfig": {
       "host": "localhost",
