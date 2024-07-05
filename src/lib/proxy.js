@@ -44,9 +44,7 @@ const createProxyClient = async ({ proxyCacheConfig, logger }) => {
 const waitForConnection = async ({ proxyClient, timeout, retryInterval, logger }) => {
   let timedOut = false
 
-  const timer = setTimeout(() => {
-    timedOut = true
-  }, timeout)
+  const timer = setTimeout(() => (timedOut = true), timeout)
 
   while (!proxyClient.isConnected) {
     if (timedOut) break
