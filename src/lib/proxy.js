@@ -28,37 +28,15 @@
  ******/
 const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 
-const createProxyClient = async ({ proxyCacheConfig, logger }) => {
-  const timeout = Number(proxyCacheConfig.timeout)
-  const retryInterval = 200
-
-  const proxyClient = createProxyCache(proxyCacheConfig.type, proxyCacheConfig.proxyConfig)
-
+const createProxyClient = async ({ proxyCacheConfig }) => {
+  // Ensure lazyConnect is set to true
   if (!proxyCacheConfig.proxyConfig.lazyConnect) {
-    await waitForConnection({ proxyClient, timeout, retryInterval, logger })
+    proxyCacheConfig.proxyConfig.lazyConnect = true
   }
+  const proxyClient = createProxyCache(proxyCacheConfig.type, proxyCacheConfig.proxyConfig)
+  await proxyClient.connect()
 
   return proxyClient
-}
-
-const waitForConnection = async ({ proxyClient, timeout, retryInterval, logger }) => {
-  let timedOut = false
-
-  const timer = setTimeout(() => (timedOut = true), timeout)
-
-  while (!proxyClient.isConnected) {
-    if (timedOut) break
-    await new Promise(resolve => setTimeout(resolve, retryInterval))
-  }
-
-  clearTimeout(timer)
-
-  if (timedOut) {
-    logger.error('Unable to connect to proxy cache. Exiting...')
-    process.exit(1)
-  }
-
-  logger.isInfoEnabled && logger.info('Connected to proxy cache')
 }
 
 module.exports = { createProxyClient }

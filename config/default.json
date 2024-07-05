@@ -80,12 +80,10 @@
   "PROXY_CACHE": {
     "enabled": true,
     "type": "redis",
-    "timeout": 5000,
     "proxyConfig": {
       "host": "localhost",
       "port": 6379,
-      "db": 0,
-      "lazyConnect": false
+      "db": 0
     }
   },
   "LOG_LEVEL": "info",

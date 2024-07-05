@@ -37,7 +37,6 @@ const { createProxyClient } = require('../../../src/lib/proxy')
 describe('createProxyClient', () => {
   let mockProxyClient
   let proxyCacheConfig
-  let logger
 
   beforeEach(() => {
     proxyCacheConfig = {
@@ -45,18 +44,13 @@ describe('createProxyClient', () => {
       type: 'redis',
       proxyConfig: {
         host: 'localhost',
-        port: 6379,
-        lazyConnect: true
+        port: 6379
       }
     }
 
-    logger = {
-      isErrorEnabled: true,
-      error: jest.fn()
-    }
-
     mockProxyClient = {
-      isConnected: true
+      isConnected: true,
+      connect: jest.fn()
     }
 
     createProxyCache.mockReturnValue(mockProxyClient)
@@ -67,24 +61,9 @@ describe('createProxyClient', () => {
   })
 
   it('should create a proxy client and return it', async () => {
-    const proxyClient = await createProxyClient({ proxyCacheConfig, logger })
+    const proxyClient = await createProxyClient({ proxyCacheConfig })
 
     expect(proxyClient).toBeDefined()
     expect(proxyClient.isConnected).toBe(true)
   })
-
-  it('should log an error and exit if unable to connect to proxy cache', async () => {
-    const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => { })
-
-    mockProxyClient.isConnected = false
-    const modifiedConfig = { ...proxyCacheConfig }
-    modifiedConfig.proxyConfig.lazyConnect = false
-
-    await createProxyClient({ proxyCacheConfig: modifiedConfig, logger })
-
-    expect(logger.error).toHaveBeenCalledWith('Unable to connect to proxy cache. Exiting...')
-    expect(mockExit).toHaveBeenCalledWith(1)
-
-    mockExit.mockRestore()
-  }, 10_000)
 })
