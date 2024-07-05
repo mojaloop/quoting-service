@@ -46,7 +46,6 @@ const waitForConnection = async ({ proxyClient, timeout, retryInterval, logger }
 
   const timer = setTimeout(() => {
     timedOut = true
-    logger.error('Unable to connect to proxy cache. Exiting...')
   }, timeout)
 
   while (!proxyClient.isConnected) {
@@ -56,7 +55,10 @@ const waitForConnection = async ({ proxyClient, timeout, retryInterval, logger }
 
   clearTimeout(timer)
 
-  if (timedOut) process.exit(1)
+  if (timedOut) {
+    logger.error('Unable to connect to proxy cache. Exiting...')
+    process.exit(1)
+  }
 
   logger.isInfoEnabled && logger.info('Connected to proxy cache')
 }
