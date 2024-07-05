@@ -24,9 +24,10 @@ const startFn = async (handlerList) => {
   if (!isDbOk) throw new Error('DB is not connected')
 
   if (config.proxyCache.enabled) {
-    const isProxyOk = proxyClient = createProxyClient({ proxyCacheConfig: config.proxyCache, logger: Logger })
+    const isProxyOk = proxyClient = createProxyClient({ proxyCacheConfig: config.proxyCache })
     await proxyClient.connect()
     if (!isProxyOk) throw new Error('Proxy is not connected')
+    Logger.isInfoEnabled && Logger.info('Proxy cache is connected')
   }
 
   const { quotesModelFactory, bulkQuotesModelFactory, fxQuotesModelFactory } = modelFactory(db, proxyClient)
