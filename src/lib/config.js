@@ -157,6 +157,7 @@ class Config {
     this.instrumentationMetricsConfig = RC.INSTRUMENTATION.METRICS.config
     this.enumDataCacheExpiresInMs = RC.CACHE.ENUM_DATA_EXPIRES_IN_MS || 4170000
     this.participantDataCacheExpiresInMs = RC.CACHE.PARTICIPANT_DATA_EXPIRES_IN_MS || 60000
+    this.proxyCache = RC.PROXY_CACHE
   }
 }
 

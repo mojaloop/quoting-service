@@ -48,7 +48,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
-const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
+const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash, fetchParticipantInfo, getParticipantEndpoint } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 const rules = require('../../config/rules.json')
 const RulesEngine = require('./rules.js')
@@ -66,6 +66,7 @@ class QuotesModel {
     this.config = config
     this.db = config.db
     this.requestId = config.requestId
+    this.proxyClient = config.proxyClient
   }
 
   async executeRules (headers, quoteRequest, payer, payee) {
@@ -168,6 +169,9 @@ class QuotesModel {
       throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
     }
 
+    // Ensure the proxy client is connected if we need to use it down the road
+    if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
+
     // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
     // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
     if (quoteRequest.payer.supportedCurrencies && quoteRequest.payer.supportedCurrencies.length > 0) {
@@ -176,7 +180,10 @@ class QuotesModel {
       ))
     } else {
       // If it is not passed in, then we validate payee against the `amount` currency.
-      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
+      if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
+        await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      }
     }
 
     histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
@@ -185,19 +192,17 @@ class QuotesModel {
     if (envConfig.simpleRoutingMode) {
       // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
       if (
-        quoteRequest.payer &&
-        quoteRequest.payer.partyIdInfo &&
-        quoteRequest.payer.partyIdInfo.fspId &&
+        quoteRequest.payer?.partyIdInfo?.fspId &&
         quoteRequest.payer.partyIdInfo.fspId !== fspiopSource
       ) {
         await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
       }
       // Lets make sure the optional fspId exists in the payee's partyIdInfo before we validate it
       if (
-        quoteRequest.payee &&
-        quoteRequest.payee.partyIdInfo &&
-        quoteRequest.payee.partyIdInfo.fspId &&
-        quoteRequest.payee.partyIdInfo.fspId !== fspiopDestination
+        quoteRequest.payee?.partyIdInfo?.fspId &&
+        quoteRequest.payee.partyIdInfo.fspId !== fspiopDestination &&
+        // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
+        !(await this.proxyClient?.lookupProxyByDfspId(quoteRequest.payee.partyIdInfo.fspId))
       ) {
         await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
       }
@@ -454,10 +459,11 @@ class QuotesModel {
       // lookup payee dfsp callback endpoint
       // TODO: for MVP we assume initiator is always payer dfsp! this may not always be the
       // case if a xfer is requested by payee
-      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
+      endpoint = await this._getParticipantEndpoint(fspiopDest)
 
       this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${endpoint}, destination: ${fspiopDest}`)
 
+      // if the endpoint is also not found in the proxy cache, throw an error
       if (!endpoint) {
         // internal-error
         // we didnt get an endpoint for the payee dfsp!
@@ -717,7 +723,7 @@ class QuotesModel {
       }
 
       // lookup payer dfsp callback endpoint
-      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
+      endpoint = await this._getParticipantEndpoint(fspiopDest)
 
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${util.inspect(endpoint)}`)
 
@@ -919,7 +925,8 @@ class QuotesModel {
       // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_QUOTES')
+
+      endpoint = await this._getParticipantEndpoint(fspiopDest)
 
       this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_QUOTES endpoint for quote GET ${quoteId} to: ${util.inspect(endpoint)}`)
 
@@ -1003,7 +1010,7 @@ class QuotesModel {
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       // look up the callback base url
-      const endpoint = await this.db.getParticipantEndpoint(fspiopSource, 'FSPIOP_CALLBACK_URL_QUOTES')
+      const endpoint = await this._getParticipantEndpoint(fspiopSource)
 
       this.writeLog(`Resolved participant '${fspiopSource}' FSPIOP_CALLBACK_URL_QUOTES to: '${endpoint}'`)
 
@@ -1221,6 +1228,11 @@ class QuotesModel {
       histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteResponse', duplicateResult: 'error' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
+  }
+
+  // wrapping this dependency here to allow for easier use and testing
+  async _getParticipantEndpoint (fspId, endpointType = ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_QUOTES) {
+    return getParticipantEndpoint({ fspId, db: this.db, loggerFn: this.writeLog.bind(this), endpointType, proxyClient: this.proxyClient })
   }
 
   /**

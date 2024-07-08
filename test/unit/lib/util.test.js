@@ -34,7 +34,7 @@ const Logger = require('@mojaloop/central-services-logger')
 Logger.isDebugEnabled = jest.fn(() => true)
 Logger.isErrorEnabled = jest.fn(() => true)
 Logger.isInfoEnabled = jest.fn(() => true)
-const { failActionHandler, getStackOrInspect, getSpanTags, generateRequestHeaders, generateRequestHeadersForJWS, removeEmptyKeys, fetchParticipantInfo } = require('../../../src/lib/util')
+const { failActionHandler, getStackOrInspect, getSpanTags, generateRequestHeaders, generateRequestHeadersForJWS, removeEmptyKeys, fetchParticipantInfo, getParticipantEndpoint } = require('../../../src/lib/util')
 
 const Config = require('../../../src/lib/config.js')
 const { Cache } = require('memory-cache')
@@ -215,6 +215,7 @@ describe('util', () => {
     subScenario: 'fakeSubScenario',
     transactionReference: 'fakeTxRef'
   }
+
   describe('failActionHandler', () => {
     it('throws the reformatted error', async () => {
       // Arrange
@@ -503,6 +504,7 @@ describe('util', () => {
       expect(result).toStrictEqual(expected)
     })
   })
+
   describe('fetchParticipantInfo', () => {
     beforeEach(() => {
       // restore the current method in test to its original implementation
@@ -577,6 +579,117 @@ describe('util', () => {
       expect(axios.request.mock.calls.length).toBe(2)
       expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
       expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+  })
+
+  describe('getParticipantEndpoint', () => {
+    it('throws an error if required arguments are missing', async () => {
+      // Arrange
+      const fspId = 'fsp1'
+      const db = {
+        getParticipantEndpoint: jest.fn()
+      }
+      const endpointType = 'TEST_ENDPOINT_TYPE'
+      const proxyClient = {
+        connect: jest.fn(),
+        lookupProxyByDfspId: jest.fn()
+      }
+      const loggerFn = Logger.info
+      const params = { db, loggerFn, endpointType, proxyClient }
+
+      // Act
+      const action = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
+
+      // Arrange
+      params.fspId = fspId
+      params.db = null
+      // Act
+      const action2 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action2()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
+
+      // Arrange
+      params.db = db
+      params.loggerFn = null
+      // Act
+      const action3 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action3()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
+
+      // Arrange
+      params.loggerFn = loggerFn
+      params.endpointType = null
+      // Act
+      const action4 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action4()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
+
+      // Arrange
+      params.endpointType = endpointType
+      params.proxyClient = null
+      // Act
+      const action5 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action5()).resolves.not.toThrow()
+    })
+
+    it('returns the participant endpoint by calling db.getParticipantEndpoint', async () => {
+      // Arrange
+      const expected = 'http://localhost:8444/payerfsp'
+      const params = {
+        fspId: 'fsp1',
+        db: {
+          getParticipantEndpoint: jest.fn().mockResolvedValue(expected)
+        },
+        loggerFn: Logger.info,
+        endpointType: 'TEST_ENDPOINT_TYPE',
+        proxyClient: {
+          connect: jest.fn(),
+          lookupProxyByDfspId: jest.fn()
+        }
+      }
+      // Act
+      const result = await getParticipantEndpoint(params)
+      // Assert
+      expect(result).toEqual(expected)
+      expect(params.db.getParticipantEndpoint).toBeCalledTimes(1)
+      expect(params.db.getParticipantEndpoint).toBeCalledWith(params.fspId, params.endpointType)
+      expect(params.proxyClient.connect).toBeCalledTimes(0)
+      expect(params.proxyClient.lookupProxyByDfspId).toBeCalledTimes(0)
+    })
+
+    it('returns the participant endpoint using proxy client if participant not found in db', async () => {
+      // Arrange
+      const expected = 'http://localhost:8444/payerfsp'
+      const proxyId = 'proxy1'
+      const params = {
+        fspId: 'fsp1',
+        db: {
+          getParticipantEndpoint: jest.fn().mockImplementation((fspId, endpointType) => {
+            if (fspId === proxyId && endpointType === 'TEST_ENDPOINT_TYPE') {
+              return Promise.resolve(expected)
+            }
+            return Promise.resolve(null)
+          })
+        },
+        loggerFn: Logger.info,
+        endpointType: 'TEST_ENDPOINT_TYPE',
+        proxyClient: {
+          isConnecected: false,
+          connect: jest.fn().mockResolvedValue(true),
+          lookupProxyByDfspId: jest.fn().mockResolvedValue(proxyId)
+        }
+      }
+      // Act
+      const result = await getParticipantEndpoint(params)
+      // Assert
+      expect(result).toEqual(expected)
+      expect(params.db.getParticipantEndpoint).toBeCalledTimes(2)
+      expect(params.db.getParticipantEndpoint).toBeCalledWith(proxyId, params.endpointType)
+      expect(params.proxyClient.connect).toBeCalledTimes(1)
+      expect(params.proxyClient.lookupProxyByDfspId).toBeCalledTimes(1)
     })
   })
 })

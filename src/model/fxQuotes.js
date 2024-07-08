@@ -28,7 +28,7 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
-const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders } = require('../lib/util')
+const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 
 delete axios.defaults.headers.common.Accept
@@ -39,6 +39,7 @@ class FxQuotesModel {
     this.config = config
     this.db = config.db
     this.requestId = config.requestId
+    this.proxyClient = config.proxyClient
   }
 
   /**
@@ -48,9 +49,15 @@ class FxQuotesModel {
    */
   async validateFxQuoteRequest (fspiopDestination, fxQuoteRequest) {
     const currencies = [fxQuoteRequest.conversionTerms.sourceAmount.currency, fxQuoteRequest.conversionTerms.targetAmount.currency]
-    await Promise.all(currencies.map(async (currency) => {
-      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    }))
+
+    // Ensure the proxy client is connected
+    if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
+    // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
+    if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
+      await Promise.all(currencies.map(async (currency) => {
+        await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      }))
+    }
   }
 
   /**
@@ -92,7 +99,7 @@ class FxQuotesModel {
 
     try {
       // lookup the fxp callback endpoint
-      endpoint = await this.db.getParticipantEndpoint(fspiopDest, ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES)
+      endpoint = await this._getParticipantEndpoint(fspiopDest)
 
       this.writeLog(`Resolved FSPIOP_CALLBACK_URL_FX_QUOTES endpoint for fxQuote ${conversionRequestId} to: ${util.inspect(endpoint)}`)
 
@@ -164,7 +171,7 @@ class FxQuotesModel {
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
     try {
-      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_FX_QUOTES')
+      endpoint = await this._getParticipantEndpoint(fspiopDest)
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_FX_QUOTES endpoint for fx quote ${conversionRequestId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
@@ -233,7 +240,7 @@ class FxQuotesModel {
       // lookup fxp callback endpoint
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_FX_QUOTES')
+      endpoint = await this._getParticipantEndpoint(fspiopDest)
 
       this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_FX_QUOTES endpoint for fx quote GET ${conversionRequestId} to: ${util.inspect(endpoint)}`)
 
@@ -319,7 +326,7 @@ class FxQuotesModel {
     const envConfig = new Config()
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
-      const endpoint = await this.db.getParticipantEndpoint(fspiopSource, ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES)
+      const endpoint = await this._getParticipantEndpoint(fspiopSource)
 
       this.writeLog(`Resolved participant '${fspiopSource}' '${ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES}' to: '${endpoint}'`)
 
@@ -419,6 +426,11 @@ class FxQuotesModel {
       }
       throw fspiopError
     }
+  }
+
+  // wrapping this dependency here to allow for easier use and testing
+  async _getParticipantEndpoint (fspId, endpointType = ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES) {
+    return getParticipantEndpoint({ fspId, db: this.db, loggerFn: this.writeLog.bind(this), endpointType, proxyClient: this.proxyClient })
   }
 
   /**
