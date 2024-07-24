@@ -81,9 +81,9 @@
     "enabled": false,
     "type": "redis",
     "proxyConfig": {
-      "host": "localhost",
-      "port": 6379,
-      "db": 0
+      "cluster": [
+        { "host": "localhost", "port": 6379 }
+      ]
     }
   },
   "LOG_LEVEL": "info",
