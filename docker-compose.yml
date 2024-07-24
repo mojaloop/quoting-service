@@ -28,6 +28,15 @@ x-quoting-service: &quotingServiceBase
 #    central-ledger:
 #      condition: service_healthy # to perform test dfsp onboarding
 
+x-redis-node: &REDIS_NODE
+  image: docker.io/bitnami/redis-cluster:6.2.14
+  environment: &REDIS_ENVS
+    ALLOW_EMPTY_PASSWORD: yes
+    REDIS_NODES: redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5
+  healthcheck:
+    test: [ "CMD", "redis-cli", "ping" ]
+    timeout: 2s
+
 x-healthcheck-params: &healthcheckParams
   interval: 30s
   timeout: 20s
@@ -97,17 +106,31 @@ services:
     healthcheck:
       <<: *healthcheckParams
       test: [ "CMD", "mysqladmin" ,"ping", "-h", "mysql" ]
-  
-  redis:
-    image: "redis:6.2.4-alpine"
-    container_name: redis
+
+  redis-node-0:
+    <<: *REDIS_NODE
+    environment:
+      <<: *REDIS_ENVS
+      REDIS_CLUSTER_CREATOR: yes
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+      - redis-node-5
     ports:
       - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+
+  redis-node-1:
+    <<: *REDIS_NODE
+  redis-node-2:
+    <<: *REDIS_NODE
+  redis-node-3:
+    <<: *REDIS_NODE
+  redis-node-4:
+    <<: *REDIS_NODE
+  redis-node-5:
+    <<: *REDIS_NODE
 
 #  mockserver:
 #    image: jamesdbloom/mockserver
