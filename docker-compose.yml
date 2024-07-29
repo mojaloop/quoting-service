@@ -107,6 +107,7 @@ services:
       <<: *healthcheckParams
       test: [ "CMD", "mysqladmin" ,"ping", "-h", "mysql" ]
 
+#  To use with proxyCache.type === 'redis-cluster'
   redis-node-0:
     <<: *REDIS_NODE
     environment:
@@ -132,22 +133,17 @@ services:
   redis-node-5:
     <<: *REDIS_NODE
 
-#  mockserver:
-#    image: jamesdbloom/mockserver
-#    container_name: qs_mockserver
-#    ports:
-#      - "1080:1080"
-#
-#  temp_curl:
-#    image: byrnedo/alpine-curl
-#    container_name: qs_temp-curl
-#    volumes:
-#      - ./docker/wait-for-mockserver.sh:/opt/wait-for-mockserver.sh
-#    entrypoint: [ "sh", "-c" ]
-#    command:
-#      - /opt/wait-for-mockserver.sh
+##  To use with proxyCache.type === 'redis'
+#  redis:
+#    image: redis:6.2.4-alpine
+#    restart: "unless-stopped"
 #    environment:
-#      - MOCK_HOST=mockserver
+#      - ALLOW_EMPTY_PASSWORD=yes
+#      - REDIS_PORT=6379
+#      - REDIS_REPLICATION_MODE=master
+#    ports:
+#      - "${REDIS_STANDALONE_PORT}:6379"
+
 
   kafka:
     image: docker.io/bitnami/kafka:3.5

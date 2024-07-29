@@ -76,7 +76,23 @@ const kafkaMessagePayloadPostDto = (params = {}) => kafkaMessagePayloadDto({
   operationId: 'Quotes'
 })
 
+const proxyCacheConfigDto = ({
+  type = 'redis'
+} = {}) => Object.freeze({
+  type,
+  proxyConfig: {
+    ...(type === 'redis' && {
+      host: 'localhost', port: 6379
+    }),
+    ...(type === 'redis-cluster' && {
+      cluster: [{ host: 'localhost', port: 6379 }]
+    })
+  },
+  timeout: 5000 // is it used anywhere?
+})
+
 module.exports = {
   kafkaMessagePayloadDto,
-  kafkaMessagePayloadPostDto
+  kafkaMessagePayloadPostDto,
+  proxyCacheConfigDto
 }
