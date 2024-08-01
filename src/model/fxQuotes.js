@@ -27,19 +27,20 @@ const Logger = require('@mojaloop/central-services-logger')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 
 const Config = require('../lib/config')
+const { loggerFactory } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 
-delete axios.defaults.headers.common.Accept
-delete axios.defaults.headers.common['Content-Type']
+axios.defaults.headers.common = {}
 
 class FxQuotesModel {
-  constructor (config) {
-    this.config = config
-    this.db = config.db
-    this.requestId = config.requestId
-    this.proxyClient = config.proxyClient
+  constructor (deps) {
+    this.db = deps.db
+    this.requestId = deps.requestId
+    this.proxyClient = deps.proxyClient
+    this.envConfig = deps.envConfig || new Config()
+    this.log = deps.log || loggerFactory(this.constructor.name)
   }
 
   /**
@@ -53,9 +54,10 @@ class FxQuotesModel {
     // Ensure the proxy client is connected
     if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
     // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
-    if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
-      await Promise.all(currencies.map(async (currency) => {
-        await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    const proxy = await this.proxyClient?.lookupProxyByDfspId(fspiopDestination)
+    if (!proxy) {
+      await Promise.all(currencies.map((currency) => {
+        return this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
       }))
     }
   }
@@ -307,7 +309,7 @@ class FxQuotesModel {
       await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
       return await this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, childSpan, true)
     } catch (err) {
-      this.writeLog(`Error occurred while handling error. Check service logs as this error may not have been propagated successfully to any other party: ${getStackOrInspect(err)}`)
+      this.log.error('error in handleException, stop request processing!', err)
     } finally {
       if (!childSpan.isFinished) {
         await childSpan.finish()
@@ -323,13 +325,11 @@ class FxQuotesModel {
    * @returns {promise}
    */
   async sendErrorCallback (fspiopSource, fspiopError, conversionRequestId, headers, span, modifyHeaders = true) {
-    const envConfig = new Config()
+    const { envConfig, log } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+
     try {
       const endpoint = await this._getParticipantEndpoint(fspiopSource)
-
-      this.writeLog(`Resolved participant '${fspiopSource}' '${ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES}' to: '${endpoint}'`)
-
       if (!endpoint) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FSP '${fspiopSource}', unable to make error callback`, null, fspiopSource)
       }
@@ -337,8 +337,7 @@ class FxQuotesModel {
       const fspiopUri = `/fxQuotes/${conversionRequestId}/error`
       const fullCallbackUrl = `${endpoint}${fspiopUri}`
 
-      // log the original error
-      this.writeLog(`Making error callback to participant '${fspiopSource}' for conversionRequestId '${conversionRequestId}' to ${fullCallbackUrl} for error: ${util.inspect(fspiopError.toFullErrorObject())}`)
+      log.info('Making error callback to participant...', { fspiopSource, conversionRequestId, fspiopError, fullCallbackUrl })
 
       // make an error callback
       let fromSwitchHeaders
@@ -352,7 +351,7 @@ class FxQuotesModel {
         delete headers['fspiop-signature']
         fromSwitchHeaders = Object.assign({}, headers, {
           'fspiop-destination': fspiopSource,
-          'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
+          'fspiop-source': envConfig.hubName,
           'fspiop-http-method': ENUM.Http.RestMethods.PUT,
           'fspiop-uri': fspiopUri
         })
@@ -393,7 +392,7 @@ class FxQuotesModel {
           opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
         }
 
-        res = await axios.request(opts)
+        res = await this.sendHttpRequest(opts)
       } catch (err) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, {
           error: err,
@@ -417,7 +416,7 @@ class FxQuotesModel {
         }, fspiopSource)
       }
     } catch (err) {
-      this.writeLog(`Error in sendErrorCallback: ${getStackOrInspect(err)}`)
+      this.log.error('Error in sendErrorCallback', err)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
@@ -430,7 +429,10 @@ class FxQuotesModel {
 
   // wrapping this dependency here to allow for easier use and testing
   async _getParticipantEndpoint (fspId, endpointType = ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES) {
-    return getParticipantEndpoint({ fspId, db: this.db, loggerFn: this.writeLog.bind(this), endpointType, proxyClient: this.proxyClient })
+    const { db, proxyClient, log } = this
+    const endpoint = await getParticipantEndpoint({ fspId, db, loggerFn: this.writeLog.bind(this), endpointType, proxyClient })
+    log.debug('Resolved participant endpoint:', { fspId, endpoint, endpointType })
+    return endpoint
   }
 
   /**
@@ -438,9 +440,17 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  // eslint-disable-next-line no-unused-vars
   writeLog (message) {
     Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, (${this.requestId}) [fxQuotesModel]: ${message}`)
+  }
+
+  /**
+   * Writes a formatted message to the console
+   * @param {AxiosRequestConfig} options
+   * @returns {AxiosResponse}
+   */
+  async sendHttpRequest (options) {
+    return axios.request(options)
   }
 }
 
