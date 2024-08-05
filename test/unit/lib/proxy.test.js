@@ -33,21 +33,13 @@ jest.mock('@mojaloop/inter-scheme-proxy-cache-lib', () => ({
 
 const { createProxyCache } = require('@mojaloop/inter-scheme-proxy-cache-lib')
 const { createProxyClient } = require('../../../src/lib/proxy')
+const mocks = require('../../mocks')
 
 describe('createProxyClient', () => {
+  const proxyCacheConfig = mocks.proxyCacheConfigDto()
   let mockProxyClient
-  let proxyCacheConfig
 
   beforeEach(() => {
-    proxyCacheConfig = {
-      timeout: 5000,
-      type: 'redis',
-      proxyConfig: {
-        host: 'localhost',
-        port: 6379
-      }
-    }
-
     mockProxyClient = {
       isConnected: true,
       connect: jest.fn()

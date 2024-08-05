@@ -149,6 +149,7 @@ function generateRequestHeaders (headers, protocolVersions, noAccept = false, ad
   let ret = {
     'Content-Type': contentTypeHeader,
     Date: headers.date,
+    // todo: use Enum.Http.Headers.FSPIOP....
     'FSPIOP-Source': headers['fspiop-source'],
     'FSPIOP-Destination': headers['fspiop-destination'],
     'FSPIOP-HTTP-Method': headers['fspiop-http-method'],

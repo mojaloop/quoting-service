@@ -62,11 +62,10 @@ delete axios.defaults.headers.common['Content-Type']
  * @returns {undefined}
  */
 class QuotesModel {
-  constructor (config) {
-    this.config = config
-    this.db = config.db
-    this.requestId = config.requestId
-    this.proxyClient = config.proxyClient
+  constructor (deps) {
+    this.db = deps.db
+    this.requestId = deps.requestId
+    this.proxyClient = deps.proxyClient
   }
 
   async executeRules (headers, quoteRequest, payer, payee) {
