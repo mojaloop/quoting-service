@@ -162,50 +162,53 @@ class QuotesModel {
     //   throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Only PAYER initiated transactions are supported', null, fspiopSource)
     // }
 
-    // Any quoteRequest specific validations to be added here
-    if (!quoteRequest) {
-      // internal-error
-      histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
-      throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
-    }
-
-    // Ensure the proxy client is connected if we need to use it down the road
-    if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
-
-    // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
-    // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
-    if (quoteRequest.payer.supportedCurrencies && quoteRequest.payer.supportedCurrencies.length > 0) {
-      await Promise.all(quoteRequest.payer.supportedCurrencies.map(currency =>
-        this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
-      ))
-    } else {
-      // If it is not passed in, then we validate payee against the `amount` currency.
-      // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
-      if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
-        await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    try {
+      // Any quoteRequest specific validations to be added here
+      if (!quoteRequest) {
+        // internal-error
+        throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
       }
-    }
 
-    histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
+      // Ensure the proxy client is connected if we need to use it down the road
+      if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
 
-    // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
-    if (envConfig.simpleRoutingMode) {
-      // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
-      if (
-        quoteRequest.payer?.partyIdInfo?.fspId &&
-        quoteRequest.payer.partyIdInfo.fspId !== fspiopSource
-      ) {
-        await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-      }
-      // Lets make sure the optional fspId exists in the payee's partyIdInfo before we validate it
-      if (
-        quoteRequest.payee?.partyIdInfo?.fspId &&
-        quoteRequest.payee.partyIdInfo.fspId !== fspiopDestination &&
+      // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
+      // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
+      if (quoteRequest.payer.supportedCurrencies && quoteRequest.payer.supportedCurrencies.length > 0) {
+        await Promise.all(quoteRequest.payer.supportedCurrencies.map(currency =>
+          this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+        ))
+      } else {
+        // If it is not passed in, then we validate payee against the `amount` currency.
         // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
-        !(await this.proxyClient?.lookupProxyByDfspId(quoteRequest.payee.partyIdInfo.fspId))
-      ) {
-        await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+        if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
+          await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+        }
       }
+
+      // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
+      if (envConfig.simpleRoutingMode) {
+        // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
+        if (
+          quoteRequest.payer?.partyIdInfo?.fspId &&
+          quoteRequest.payer.partyIdInfo.fspId !== fspiopSource
+        ) {
+          await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+        }
+        // Lets make sure the optional fspId exists in the payee's partyIdInfo before we validate it
+        if (
+          quoteRequest.payee?.partyIdInfo?.fspId &&
+          quoteRequest.payee.partyIdInfo.fspId !== fspiopDestination &&
+          // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
+          !(await this.proxyClient?.lookupProxyByDfspId(quoteRequest.payee.partyIdInfo.fspId))
+        ) {
+          await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+        }
+      }
+      histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
+    } catch (err) {
+      histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
+      throw err
     }
   }
 
