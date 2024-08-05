@@ -220,12 +220,32 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
     const proxyIdSource = await proxyClient.lookupProxyByDfspId(source)
     const proxyIdDestination = await proxyClient.lookupProxyByDfspId(destination)
     if (proxyIdSource) {
-      // return proxy info or null?
-      requestPayer = { data: {} }
+      // construct participant adjacent data structure that uses the original
+      // participant when they are proxied and out of scheme
+      requestPayer = {
+        data: {
+          name: source,
+          id: '',
+          // assume source is active
+          isActive: 1,
+          links: { self: '' },
+          accounts: []
+        }
+      }
     }
     if (proxyIdDestination) {
-      // return proxy info or null?
-      requestPayee = { data: {} }
+      // construct participant adjacent data structure that uses the original
+      // participant when they are proxied and out of scheme
+      requestPayee = {
+        data: {
+          name: destination,
+          id: '',
+          // assume destination is active
+          isActive: 1,
+          links: { self: '' },
+          accounts: []
+        }
+      }
     }
   }
 
