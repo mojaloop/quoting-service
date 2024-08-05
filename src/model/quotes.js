@@ -213,10 +213,17 @@ class QuotesModel {
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateQuoteUpdate (headers, quoteUpdateRequest) {
+  async validateQuoteUpdate (headers, quoteUpdateRequest, proxyClient) {
+    if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
+    let proxyIdSource
+    if (proxyClient) {
+      proxyIdSource = await proxyClient.lookupProxyByDfspId(fspiopSource)
+    }
+    if (!proxyIdSource) {
+      const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
+      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
+    }
   }
 
   /**
@@ -569,7 +576,7 @@ class QuotesModel {
           `Update for quote ${quoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
       }
 
-      await this.validateQuoteUpdate(headers, quoteUpdateRequest)
+      await this.validateQuoteUpdate(headers, quoteUpdateRequest, this.proxyClient)
 
       // accumulate enum ids
       const refs = {}

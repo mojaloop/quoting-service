@@ -215,20 +215,26 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
   const cachedPayer = cache && cache.get(`fetchParticipantInfo_${source}`)
   const cachedPayee = cache && cache.get(`fetchParticipantInfo_${destination}`)
 
-  if (!cachedPayer) {
+  if (proxyClient) {
+    if (!proxyClient.isConnected) await proxyClient.connect()
+    const proxyIdSource = await proxyClient.lookupProxyByDfspId(source)
+    const proxyIdDestination = await proxyClient.lookupProxyByDfspId(destination)
+    if (proxyIdSource) {
+      // return proxy info or null?
+      requestPayer = { data: {} }
+    }
+    if (proxyIdDestination) {
+      // return proxy info or null?
+      requestPayee = { data: {} }
+    }
+  }
+
+  if (!cachedPayer && !requestPayer) {
     requestPayer = await axios.request({ url: `${url}/${source}` })
     cache && cache.put(`fetchParticipantInfo_${source}`, requestPayer, Config.participantDataCacheExpiresInMs)
     Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
   } else {
     Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payer ${source}`)
-  }
-  if (proxyClient) {
-    if (!proxyClient.isConnected) await proxyClient.connect()
-    const proxyId = await proxyClient.lookupProxyByDfspId(destination)
-    if (proxyId) {
-      // return proxy info or null?
-      requestPayee = { data: {} }
-    }
   }
   if (!cachedPayee && !requestPayee) {
     requestPayee = await axios.request({ url: `${url}/${destination}` })
