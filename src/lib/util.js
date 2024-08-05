@@ -206,7 +206,7 @@ function calculateRequestHash (request) {
 }
 
 // Add caching to the participant endpoint
-const fetchParticipantInfo = async (source, destination, cache) => {
+const fetchParticipantInfo = async (source, destination, cache, proxyClient) => {
   // Get quote participants from central ledger admin
   const { switchEndpoint } = config
   const url = `${switchEndpoint}/participants`
@@ -222,13 +222,22 @@ const fetchParticipantInfo = async (source, destination, cache) => {
   } else {
     Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payer ${source}`)
   }
-  if (!cachedPayee) {
+  if (proxyClient) {
+    if (!proxyClient.isConnected) await proxyClient.connect()
+    const proxyId = await proxyClient.lookupProxyByDfspId(destination)
+    if (proxyId) {
+      // return proxy info or null?
+      requestPayee = { data: {} }
+    }
+  }
+  if (!cachedPayee && !requestPayee) {
     requestPayee = await axios.request({ url: `${url}/${destination}` })
     cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
     Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
   } else {
     Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payee ${destination}`)
   }
+
   const payer = cachedPayer || requestPayer.data
   const payee = cachedPayee || requestPayee.data
   return { payer, payee }

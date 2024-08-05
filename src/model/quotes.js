@@ -245,7 +245,7 @@ class QuotesModel {
       // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
-      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination, cache)
+      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination, cache, this.proxyClient)
       this.writeLog(`Got payer ${payer} and payee ${payee}`)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
