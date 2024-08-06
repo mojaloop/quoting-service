@@ -188,6 +188,7 @@ describe('PUT callback Tests --> ', () => {
       const { url } = response.data.history[0]
       expect(url).toBe(`/${message.to}/quotes/${message.id}`)
     } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(from)
       proxyClient.disconnect()
     }
   }, TEST_TIMEOUT)
