@@ -7,7 +7,7 @@ then
 fi
 
 echo "Starting docker-compose..."
-docker-compose up -d
+npm run docker:up
 
 echo "Services started. Checking status..."
 docker-compose ps

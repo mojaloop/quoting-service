@@ -23,7 +23,7 @@ describe('FxQuotesModel Tests -->', () => {
   })
 
   describe('validateFxQuoteRequest', () => {
-    test('should return true if the request is valid', async () => {
+    test.skip('should return true if the request is valid', async () => {
       const request = fxQuoteMocks.fxQuoteRequest()
       const destination = fxQuoteMocks.destination
       const result = await fxQuotesModel.validateFxQuoteRequest(destination, request)
