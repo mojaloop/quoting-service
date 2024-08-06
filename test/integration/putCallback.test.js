@@ -146,6 +146,52 @@ describe('PUT callback Tests --> ', () => {
     expect(url).toBe(`/${message.to}/quotes/${message.id}`)
   }, TEST_TIMEOUT)
 
+  test('should pass validation for PUT /quotes/{ID} request if source is proxied participant', async () => {
+    // create test quote to prevent db (row reference) error on PUT request
+    const quoteCreated = await createQuote()
+    await wait(WAIT_TIMEOUT)
+    await hubClient.clearHistory()
+
+    let response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+
+    const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
+    const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const from = 'greenbank'
+    const proxyId = 'greenbankproxy'
+    let proxyClient
+    try {
+      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      const isAdded = await proxyClient.addDfspIdToProxyMapping(from, proxyId)
+      expect(isAdded).toBe(true)
+      const payload = {
+        transferAmount: { amount: '100', currency: 'USD' },
+        payeeReceiveAmount: { amount: '100', currency: 'USD' },
+        ilpPacket: 'test',
+        condition: 'test'
+      }
+      const message = mocks.kafkaMessagePayloadDto({
+        from: 'greenbank',
+        to: 'pinkbank',
+        id: quoteCreated.quoteId,
+        payloadBase64: base64Encode(JSON.stringify(payload))
+      })
+      delete message.content.headers.accept
+      const isOk = await Producer.produceMessage(message, topicConfig, config)
+      expect(isOk).toBe(true)
+
+      await wait(WAIT_TIMEOUT)
+
+      response = await hubClient.getHistory()
+      expect(response.data.history.length).toBe(1)
+
+      const { url } = response.data.history[0]
+      expect(url).toBe(`/${message.to}/quotes/${message.id}`)
+    } finally {
+      proxyClient.disconnect()
+    }
+  }, TEST_TIMEOUT)
+
   test('should fail validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is not registered (position account does not exist) for the payee pariticpant', async () => {
     // test the same scenario with only transferAmount set
     // create test quote to prevent db (row reference) error on PUT request

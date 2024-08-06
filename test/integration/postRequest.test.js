@@ -56,7 +56,7 @@ describe('POST request tests --> ', () => {
     await Producer.disconnect()
   })
 
-  test('should pass validation for POST /quotes request if request amount currency is registered (position account exists) for the payer pariticpant', async () => {
+  test('should pass validation for POST /quotes request if request amount currency is registered (position account exists) for the payer participant', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
@@ -86,7 +86,49 @@ describe('POST request tests --> ', () => {
     expect(url).toBe(`/${message.to}/quotes`)
   })
 
-  test('should fail validation for POST /quotes request if request amount currency is not registered (position account doesn not exist) for the payer pariticpant', async () => {
+  test('should pass validation for POST /quotes request if source and/or destination are proxied', async () => {
+    let response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+    const from = 'pinkbank'
+    const to = 'greenbank'
+    let proxyClient
+    try {
+      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
+      const topicConfig = dto.topicConfigDto({ topicName: topic })
+
+      const proxyId1 = 'proxyAR'
+      const proxyId2 = 'proxyRB'
+      await proxyClient.addDfspIdToProxyMapping(to, proxyId1)
+      await proxyClient.addDfspIdToProxyMapping(from, proxyId2)
+      const payload = {
+        quoteId: uuid(),
+        transactionId: uuid(),
+        amountType: 'SEND',
+        amount: { amount: '100', currency: 'USD' },
+        transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
+        payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
+        payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
+      }
+      const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
+      const isOk = await Producer.produceMessage(message, topicConfig, config)
+      expect(isOk).toBe(true)
+
+      await wait(WAIT_TIMEOUT)
+
+      response = await hubClient.getHistory()
+      expect(response.data.history.length).toBe(1)
+
+      const { url } = response.data.history[0]
+      expect(url).toBe(`/${message.to}/quotes`)
+    } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(to)
+      await proxyClient.removeDfspIdFromProxyMapping(from)
+      await proxyClient.disconnect()
+    }
+  })
+
+  test.only('should fail validation for POST /quotes request if request amount currency is not registered (position account doesnt not exist) for the payer participant', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
@@ -118,7 +160,7 @@ describe('POST request tests --> ', () => {
     expect(body.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.to}'`)
   })
 
-  test('should pass validation for POST /quotes request if all request "supportedCurrencies" are registered (position account exists) for the payer pariticpant', async () => {
+  test('should pass validation for POST /quotes request if all request "supportedCurrencies" are registered (position account exists) for the payer participant', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
@@ -148,7 +190,7 @@ describe('POST request tests --> ', () => {
     expect(url).toBe(`/${message.to}/quotes`)
   })
 
-  test('should fail validation for POST /quotes request if any of request "supportedCurrencies" is not registered (no position account exists) for the payer pariticpant', async () => {
+  test('should fail validation for POST /quotes request if any of request "supportedCurrencies" is not registered (no position account exists) for the payer participant', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
