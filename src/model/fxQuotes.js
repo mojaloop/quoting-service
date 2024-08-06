@@ -406,6 +406,9 @@ class FxQuotesModel {
 
     try {
       const endpoint = await this._getParticipantEndpoint(fspiopSource)
+
+      log.debug(`Resolved participant '${fspiopSource}' FSPIOP_CALLBACK_URL_FX_QUOTES to: '${endpoint}'`)
+
       if (!endpoint) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FSP '${fspiopSource}', unable to make error callback`, null, fspiopSource)
       }
@@ -457,12 +460,11 @@ class FxQuotesModel {
       try {
         // If JWS is enabled and the 'fspiop-source' matches the configured jws header value('switch')
         // that means it's a switch generated message and we need to sign it
-        if (envConfig.jws?.jwsSign && opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-          const logger = Logger
-          logger.log = logger.info
+        const needToSign = !opts.headers['fspiop-signature'] && envConfig.jws?.jwsSign && opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign
+        if (needToSign) {
           this.writeLog('Getting the JWS Signer to sign the switch generated message')
           const jwsSigner = new JwsSigner({
-            logger,
+            logger: this.log,
             signingKey: envConfig.jws.jwsSigningKey
           })
           opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
@@ -476,7 +478,7 @@ class FxQuotesModel {
           url: fullCallbackUrl,
           sourceFsp: fspiopSource,
           destinationFsp: fspiopDest,
-          method: opts && opts.method,
+          method: opts?.method,
           request: JSON.stringify(opts, LibUtil.getCircularReplacer())
         }, fspiopSource)
       }
@@ -487,7 +489,7 @@ class FxQuotesModel {
           url: fullCallbackUrl,
           sourceFsp: fspiopSource,
           destinationFsp: fspiopDest,
-          method: opts && opts.method,
+          method: opts?.method,
           request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
           response: JSON.stringify(res, LibUtil.getCircularReplacer())
         }, fspiopSource)
@@ -523,7 +525,8 @@ class FxQuotesModel {
   }
 
   /**
-   * Writes a formatted message to the console
+   * Sends HTTP request
+   *
    * @param {AxiosRequestConfig} options
    * @returns {AxiosResponse}
    */
