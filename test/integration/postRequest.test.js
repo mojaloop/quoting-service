@@ -39,7 +39,7 @@ const uuid = require('crypto').randomUUID
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
 const TEST_TIMEOUT = 20_000
-const WAIT_TIMEOUT = 3_000
+const WAIT_TIMEOUT = 5_000
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -128,7 +128,7 @@ describe('POST request tests --> ', () => {
     }
   })
 
-  test.only('should fail validation for POST /quotes request if request amount currency is not registered (position account doesnt not exist) for the payer participant', async () => {
+  test('should fail validation for POST /quotes request if request amount currency is not registered (position account doesnt not exist) for the payer participant', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
