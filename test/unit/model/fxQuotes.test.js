@@ -2,6 +2,7 @@ const { randomUUID } = require('node:crypto')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const FxQuotesModel = require('../../../src/model/fxQuotes')
 const Config = require('../../../src/lib/config')
+const { fxQuoteMocks } = require('../mocks')
 
 const config = new Config()
 
@@ -19,6 +20,33 @@ describe('FxQuotesModel Tests -->', () => {
 
   afterEach(() => {
     jest.restoreAllMocks()
+  })
+
+  describe('validateFxQuoteRequest', () => {
+    test('should return true if the request is valid', async () => {
+      const request = fxQuoteMocks.fxQuoteRequest()
+      const destination = fxQuoteMocks.destination
+      const result = await fxQuotesModel.validateFxQuoteRequest(destination, request)
+      expect(result).toBe(true)
+    })
+
+    test('should throw an error if the request is invalid', async () => {
+      const request = {
+        quoteId: 'quoteId',
+        amount: {
+          currency: 'USD',
+          amount: '100'
+        },
+        payee: {
+          partyIdInfo: {
+            partyIdType: 'MSISDN',
+            partyIdentifier: '1234567890',
+            fspId: 'fspId'
+          }
+        }
+      }
+      await expect(fxQuotesModel.validateFxQuoteRequest(request)).rejects.toThrow()
+    })
   })
 
   describe('sendErrorCallback method Tests', () => {

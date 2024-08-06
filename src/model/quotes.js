@@ -66,6 +66,7 @@ class QuotesModel {
     this.db = deps.db
     this.requestId = deps.requestId
     this.proxyClient = deps.proxyClient
+    this.envConfig = deps.config || new Config()
   }
 
   async executeRules (headers, quoteRequest, payer, payee) {
@@ -151,7 +152,7 @@ class QuotesModel {
       'validateQuoteRequest - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
-    const envConfig = new Config()
+    const { envConfig } = this
     // note that the framework should validate the form of the request
     // here we can do some hard-coded rule validations to ensure requests
     // do not lead to unsupported scenarios or use-cases.
@@ -233,7 +234,7 @@ class QuotesModel {
       'handleQuoteRequest - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
-    const envConfig = new Config()
+    const { envConfig } = this
     // accumulate enum ids
     const refs = {}
 
@@ -474,7 +475,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions, false, additionalHeaders)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, false, additionalHeaders)
 
       this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)
@@ -562,7 +563,7 @@ class QuotesModel {
     let txn = null
     let payeeParty = null
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const envConfig = new Config()
+    const { envConfig } = this
     const handleQuoteUpdateSpan = span.getChild('qs_quote_handleQuoteUpdate')
     try {
       // ensure no 'accept' header is present in the request headers.
@@ -740,7 +741,7 @@ class QuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions, true)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, true)
 
       this.writeLog(`Forwarding quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote response headers: ${JSON.stringify(newHeaders)}`)
@@ -824,7 +825,7 @@ class QuotesModel {
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     let txn = null
-    const envConfig = new Config()
+    const { envConfig } = this
     let newError
     const childSpan = span.getChild('qs_quote_handleQuoteError')
     try {
@@ -940,7 +941,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes/${quoteId}`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
 
       this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
 
@@ -1008,7 +1009,7 @@ class QuotesModel {
       'sendErrorCallback - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
-    const envConfig = new Config()
+    const { envConfig } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       // look up the callback base url
@@ -1051,9 +1052,9 @@ class QuotesModel {
 
       // JWS Signer expects headers in lowercase
       if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, this.db.config.protocolVersions, true)
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true)
       } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, this.db.config.protocolVersions, true)
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true)
       }
 
       let opts = {

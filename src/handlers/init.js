@@ -24,8 +24,8 @@ const startFn = async (handlerList) => {
   if (!isDbOk) throw new Error('DB is not connected')
 
   if (config.proxyCache.enabled) {
-    const isProxyOk = proxyClient = createProxyClient({ proxyCacheConfig: config.proxyCache })
-    await proxyClient.connect()
+    proxyClient = createProxyClient({ proxyCacheConfig: config.proxyCache })
+    const isProxyOk = await proxyClient.connect()
     if (!isProxyOk) throw new Error('Proxy is not connected')
     Logger.isInfoEnabled && Logger.info('Proxy cache is connected')
   }

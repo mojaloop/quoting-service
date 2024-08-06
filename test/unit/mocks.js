@@ -36,7 +36,74 @@ const createMockHapiHandler = () => {
   return { handler, code }
 }
 
+const fxQuoteMocks = {
+  fxQuoteRequest: ({ conversionRequestId = randomUUID() }) => ({
+    conversionRequestId,
+    conversionTerms: {
+      conversionId: randomUUID(),
+      determiningTransferId: randomUUID(),
+      initiatingFsp: 'mockInitiator',
+      counterPartyFsp: 'mockCounterParty',
+      amountType: 'SEND',
+      sourceAmount: {
+        currency: 'ZMW',
+        amount: '100'
+      },
+      targetAmount: {
+        currency: 'TZS',
+        amount: '10395'
+      },
+      expiration: new Date(Date.now() + 10_000).toISOString(),
+      charges: [
+        {
+          chargeType: 'TRANSACTION FEE',
+          sourceAmount: {
+            currency: 'ZMW',
+            amount: '1'
+          },
+          targetAmount: {
+            currency: 'TZS',
+            amount: '103'
+          }
+        }
+      ],
+      extensionList: {
+        extension: [
+          {
+            key: 'key1',
+            value: 'value1'
+          }
+        ]
+      }
+    }
+  }),
+  headers: () => ({
+    Accept: 'application/vnd.interoperability.fxquotes+json;version=1.0',
+    'Content-Type': 'application/vnd.interoperability.fxquotes+json;version=1.0',
+    'Content-Length': '100',
+    Date: new Date().toISOString(),
+    'fspiop-source': 'mockSource',
+    'fspiop-destination': 'mockDestination'
+  }),
+  span: jest.fn(),
+  source: 'mockSource',
+  destination: 'mockcDestination',
+  initiatingFsp: 'mockInitiator',
+  counterPartyFsp: 'mockcCounterParty',
+  conversionRequestId: randomUUID(),
+  error: () => ({
+    code: 2001,
+    message: 'Generic server error'
+  }),
+  httpRequestOptions: () => ({
+  }),
+  db: () => ({
+    getParticipant: jest.fn().mockResolvedValue({})
+  })
+}
+
 module.exports = {
   mockHttpRequest,
-  createMockHapiHandler
+  createMockHapiHandler,
+  fxQuoteMocks
 }

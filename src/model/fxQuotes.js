@@ -55,10 +55,8 @@ class FxQuotesModel {
       'validateFxQuoteRequest - Metrics for fx quote model',
       ['success', 'queryName']
     ).startTimer()
-    const appConfig = new Config()
     try {
       const currencies = [fxQuoteRequest.conversionTerms.sourceAmount.currency, fxQuoteRequest.conversionTerms.targetAmount.currency]
-
       // Ensure the proxy client is connected
       if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
       // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
@@ -67,10 +65,6 @@ class FxQuotesModel {
         await Promise.all(currencies.map((currency) => {
           return this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
         }))
-      }
-      if (appConfig.simpleRoutingMode) {
-        // TODO: should we validate initiatingFsp (if not source) and counterPartyFsp (if not destination) here?
-        // also check proxy mapping before validing the fsp
       }
       histTimer({ success: true, queryName: 'validateFxQuoteRequest' })
     } catch (error) {
@@ -138,7 +132,7 @@ class FxQuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.FX_QUOTES_POST}`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions) // TODO ???
 
       this.writeLog(`Forwarding fx quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding fx quote request headers: ${JSON.stringify(newHeaders)}`)
@@ -229,7 +223,7 @@ class FxQuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions, true)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, true)
 
       this.writeLog(`Forwarding fx quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding fx quote response headers: ${JSON.stringify(newHeaders)}`)
@@ -308,7 +302,7 @@ class FxQuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/fxQuotes/${conversionRequestId}`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
 
       this.writeLog(`Forwarding fx quote get request to endpoint: ${fullCallbackUrl}`)
 
@@ -441,8 +435,8 @@ class FxQuotesModel {
       // JWS Signer expects headers in lowercase
       const formattedHeaders =
         envConfig.jws?.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign
-          ? generateRequestHeadersForJWS(fromSwitchHeaders, this.db.config.protocolVersions, true)
-          : generateRequestHeaders(fromSwitchHeaders, this.db.config.protocolVersions, true)
+          ? generateRequestHeadersForJWS(fromSwitchHeaders, this.envConfig.protocolVersions, true)
+          : generateRequestHeaders(fromSwitchHeaders, this.envConfig.protocolVersions, true)
 
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
