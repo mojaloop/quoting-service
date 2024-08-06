@@ -173,7 +173,11 @@ class QuotesModel {
 
     // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
     // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
-    if (quoteRequest.payer.supportedCurrencies && quoteRequest.payer.supportedCurrencies.length > 0) {
+    if (quoteRequest.payer.supportedCurrencies &&
+      quoteRequest.payer.supportedCurrencies.length > 0 &&
+      // if the payer dfsp has a proxy cache entry, we do not validate the dfsp here
+      !(await this.proxyClient?.lookupProxyByDfspId(fspiopSource))
+    ) {
       await Promise.all(quoteRequest.payer.supportedCurrencies.map(currency =>
         this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
       ))
@@ -192,7 +196,9 @@ class QuotesModel {
       // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
       if (
         quoteRequest.payer?.partyIdInfo?.fspId &&
-        quoteRequest.payer.partyIdInfo.fspId !== fspiopSource
+        quoteRequest.payer.partyIdInfo.fspId !== fspiopSource &&
+        // if the payer dfsp has a proxy cache entry, we do not validate the dfsp here
+        !(await this.proxyClient?.lookupProxyByDfspId(quoteRequest.payer.partyIdInfo.fspId))
       ) {
         await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
       }
