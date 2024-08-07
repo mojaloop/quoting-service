@@ -36,8 +36,16 @@ const createMockHapiHandler = () => {
   return { handler, code }
 }
 
+const mockSpan = () => ({
+  setTags: jest.fn(),
+  audit: jest.fn(),
+  finish: jest.fn(),
+  getChild: jest.fn(),
+  injectContextToHttpRequest: jest.fn().mockImplementation(param => param)
+})
+
 const fxQuoteMocks = {
-  fxQuoteRequest: ({ conversionRequestId = randomUUID() }) => ({
+  fxQuoteRequest: ({ conversionRequestId = randomUUID() } = {}) => ({
     conversionRequestId,
     conversionTerms: {
       conversionId: randomUUID(),
@@ -81,11 +89,13 @@ const fxQuoteMocks = {
     Accept: 'application/vnd.interoperability.fxquotes+json;version=1.0',
     'Content-Type': 'application/vnd.interoperability.fxquotes+json;version=1.0',
     'Content-Length': '100',
-    Date: new Date().toISOString(),
+    date: new Date().toISOString(),
     'fspiop-source': 'mockSource',
     'fspiop-destination': 'mockDestination'
   }),
-  span: jest.fn(),
+  span: () => ({
+    getChild: jest.fn().mockReturnValue(mockSpan())
+  }),
   source: 'mockSource',
   destination: 'mockcDestination',
   initiatingFsp: 'mockInitiator',
@@ -97,13 +107,28 @@ const fxQuoteMocks = {
   }),
   httpRequestOptions: () => ({
   }),
-  db: () => ({
-    getParticipant: jest.fn().mockResolvedValue({})
+  db: ({ getParticipant = jest.fn().mockResolvedValue({}) } = {}) => ({
+    getParticipant
+  }),
+  proxyClient: ({
+    isConnected = jest.fn().mockReturnValue(true),
+    connect = jest.fn().mockResolvedValue(true),
+    lookupProxyByDfspId = jest.fn().mockResolvedValue('mockProxy')
+  } = {}) => ({
+    isConnected,
+    connect,
+    lookupProxyByDfspId
+  }),
+  logger: () => ({
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn()
   })
 }
 
 module.exports = {
   mockHttpRequest,
   createMockHapiHandler,
-  fxQuoteMocks
+  fxQuoteMocks,
+  mockSpan
 }

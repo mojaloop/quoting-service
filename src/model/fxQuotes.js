@@ -132,7 +132,7 @@ class FxQuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.FX_QUOTES_POST}`
-      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions) // TODO ???
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
 
       this.writeLog(`Forwarding fx quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding fx quote request headers: ${JSON.stringify(newHeaders)}`)
