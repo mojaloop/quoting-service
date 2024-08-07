@@ -1,7 +1,9 @@
 #!/bin/bash
 
+pwd 
 BASE_DIR=$(dirname "$0")
-DEFAULT_CONFIG_FILE="$BASE_DIR/../../../docker/central-ledger/default.json"
+# DEFAULT_CONFIG_FILE="$BASE_DIR/../../../docker/central-ledger/default.json"
+DEFAULT_CONFIG_FILE="./docker/central-ledger/default.json"
 
 export HUB_NAME=$(cat "$DEFAULT_CONFIG_FILE" | jq -r '.HUB_PARTICIPANT.NAME')
 
@@ -17,4 +19,4 @@ export CENTRAL_LEDGER_ADMIN_BASE=/
 
 export MIGRATION_TIMEOUT=60
 
-source $BASE_DIR/env.sh
+source ./scripts/env.sh

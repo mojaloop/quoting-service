@@ -10,6 +10,7 @@ pwd
 SCRIPTS_FOLDER=./test/integration/scripts
 
 echo "Loading env vars..."
+chmod +x $SCRIPTS_FOLDER/env.sh
 source $SCRIPTS_FOLDER/env.sh
 
 echo "Starting docker-compose..."
