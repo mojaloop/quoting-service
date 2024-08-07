@@ -6,17 +6,17 @@ then
     exit 1
 fi
 
-echo "Starting docker-compose..."
-npm run docker:up
-
-echo "Services started. Checking status..."
-docker-compose ps
-
 pwd
 SCRIPTS_FOLDER=./test/integration/scripts
 
 echo "Loading env vars..."
 source $SCRIPTS_FOLDER/env.sh
+
+echo "Starting docker-compose..."
+docker-compose up -d
+
+echo "Services started. Checking status..."
+docker-compose ps
 
 echo "Waiting central-leger migrations for $MIGRATION_TIMEOUT sec..."
 sleep $MIGRATION_TIMEOUT
