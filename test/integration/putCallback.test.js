@@ -36,6 +36,7 @@ const dto = require('../../src/lib/dto')
 const mocks = require('../mocks')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
 const uuid = require('crypto').randomUUID
+const { wrapWithRetries } = require('../util/helper')
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
@@ -43,6 +44,17 @@ const TEST_TIMEOUT = 20_000
 const WAIT_TIMEOUT = 3_000
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
+const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
+const retryOpts = {
+  retries: retryCount,
+  minTimeout: retryDelay,
+  maxTimeout: retryDelay
+}
+const wrapWithRetriesConf = {
+  remainingRetries: retryOpts?.retries || 10, // default 10
+  timeout: retryOpts?.maxTimeout || 2 // default 2
+}
 
 /**
  * Publishes a test 'POST quote' message to the Kafka topic
@@ -98,9 +110,12 @@ describe('PUT callback Tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
 
-    response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(1)
     const { headers, url } = response.data.history[0]
     expect(headers['fspiop-signature']).toBeTruthy()
@@ -137,9 +152,11 @@ describe('PUT callback Tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     const { url } = response.data.history[0]
@@ -180,9 +197,11 @@ describe('PUT callback Tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       const { url } = response.data.history[0]
@@ -220,9 +239,11 @@ describe('PUT callback Tests --> ', () => {
     let isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(6000)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     const { url, body } = response.data.history[0]
@@ -248,9 +269,11 @@ describe('PUT callback Tests --> ', () => {
     isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     const { url: url2, body: body2 } = response.data.history[0]
@@ -294,9 +317,11 @@ describe('PUT callback Tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect([1, 2]).toContain(response.data.history.length)
 
       const request = response.data.history[0]
@@ -351,9 +376,11 @@ describe('PUT callback Tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]
@@ -411,9 +438,11 @@ describe('PUT callback Tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]
