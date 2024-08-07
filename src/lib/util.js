@@ -212,8 +212,6 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
   const url = `${switchEndpoint}/participants`
   let requestPayer
   let requestPayee
-  const cachedPayer = cache && cache.get(`fetchParticipantInfo_${source}`)
-  const cachedPayee = cache && cache.get(`fetchParticipantInfo_${destination}`)
 
   if (proxyClient) {
     if (!proxyClient.isConnected) await proxyClient.connect()
@@ -229,7 +227,8 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
           // assume source is active
           isActive: 1,
           links: { self: '' },
-          accounts: []
+          accounts: [],
+          proxiedParticipant: true
         }
       }
     }
@@ -243,11 +242,15 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
           // assume destination is active
           isActive: 1,
           links: { self: '' },
-          accounts: []
+          accounts: [],
+          proxiedParticipant: true
         }
       }
     }
   }
+
+  const cachedPayer = cache && !requestPayer && cache.get(`fetchParticipantInfo_${source}`)
+  const cachedPayee = cache && !requestPayee && cache.get(`fetchParticipantInfo_${destination}`)
 
   if (!cachedPayer && !requestPayer) {
     requestPayer = await axios.request({ url: `${url}/${source}` })

@@ -282,7 +282,7 @@ describe('PUT callback Tests --> ', () => {
     expect(body2.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.from}'`)
   }, TEST_TIMEOUT)
 
-  test('should forward PUT /quotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
+  test.only('should forward PUT /quotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 

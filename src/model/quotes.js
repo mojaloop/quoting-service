@@ -219,12 +219,12 @@ class QuotesModel {
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateQuoteUpdate (headers, quoteUpdateRequest, proxyClient) {
+  async validateQuoteUpdate (headers, quoteUpdateRequest) {
     if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     let proxyIdSource
-    if (proxyClient) {
-      proxyIdSource = await proxyClient.lookupProxyByDfspId(fspiopSource)
+    if (this.proxyClient) {
+      proxyIdSource = await this.proxyClient.lookupProxyByDfspId(fspiopSource)
     }
     // skip fulfil validation if the source is a proxy
     if (!proxyIdSource) {
@@ -318,12 +318,12 @@ class QuotesModel {
           this.db.getAmountType(quoteRequest.amountType),
           this.db.getPartyType(LOCAL_ENUM.PAYER),
           this.db.getPartyIdentifierType(quoteRequest.payer.partyIdInfo.partyIdType),
-          this.db.getParticipantByName(quoteRequest.payer.partyIdInfo.fspId),
+          payer.proxiedParticipant ? null : this.db.getParticipantByName(quoteRequest.payer.partyIdInfo.fspId),
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYER_DFSP),
           this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE),
           this.db.getPartyType(LOCAL_ENUM.PAYEE),
           this.db.getPartyIdentifierType(quoteRequest.payee.partyIdInfo.partyIdType),
-          this.db.getParticipantByName(quoteRequest.payee.partyIdInfo.fspId),
+          payee.proxiedParticipant ? null : this.db.getParticipantByName(quoteRequest.payee.partyIdInfo.fspId),
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYEE_DFSP),
           this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE)
         ])
@@ -342,8 +342,11 @@ class QuotesModel {
 
         // create a txn reference
         this.writeLog(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
-        refs.transactionReferenceId = await this.db.createTransactionReference(txn,
-          quoteRequest.quoteId, quoteRequest.transactionId)
+        refs.transactionReferenceId = await this.db.createTransactionReference(
+          txn,
+          quoteRequest.quoteId,
+          quoteRequest.transactionId
+        )
         this.writeLog(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
 
         // create the quote row itself
@@ -583,7 +586,7 @@ class QuotesModel {
           `Update for quote ${quoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
       }
 
-      await this.validateQuoteUpdate(headers, quoteUpdateRequest, this.proxyClient)
+      await this.validateQuoteUpdate(headers, quoteUpdateRequest)
 
       // accumulate enum ids
       const refs = {}
