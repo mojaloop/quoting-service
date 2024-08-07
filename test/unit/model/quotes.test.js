@@ -652,6 +652,11 @@ describe('QuotesModel', () => {
 
     it('should skip validating quote update if source is proxied participant', async () => {
       const proxyId = 'proxyId'
+      quotesModel.proxyClient = {
+        isConnected: false,
+        connect: jest.fn().mockResolvedValue(true),
+        lookupProxyByDfspId: jest.fn().mockResolvedValueOnce(proxyId)
+      }
       const promise = quotesModel.validateQuoteUpdate(
         mockData.headers,
         mockData.quoteUpdate,

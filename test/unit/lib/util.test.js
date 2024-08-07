@@ -550,14 +550,16 @@ describe('util', () => {
           id: '',
           isActive: 1,
           links: { self: '' },
-          accounts: []
+          accounts: [],
+          proxiedParticipant: true
         },
         payee: {
           name: mockData.headers['fspiop-destination'],
           id: '',
           isActive: 1,
           links: { self: '' },
-          accounts: []
+          accounts: [],
+          proxiedParticipant: true
         }
       })
       expect(axios.request.mock.calls.length).toBe(0)
