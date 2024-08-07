@@ -282,12 +282,15 @@ describe('PUT callback Tests --> ', () => {
     expect(body2.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.from}'`)
   }, TEST_TIMEOUT)
 
-  test.only('should forward PUT /quotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
+  test('should forward PUT /quotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
+
     const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const postTopicConfig = dto.topicConfigDto({ topicName: kafkaConfig.PRODUCER.QUOTE.POST.topic })
+
     const from = 'greenbank'
     // redbank not in the hub db
     const to = 'redbank'
@@ -307,12 +310,39 @@ describe('PUT callback Tests --> ', () => {
       expect(isAdded).toBe(true)
       expect(representative).toBe(proxyId)
 
+      const quoteId = uuid()
+      const postPayload = {
+        quoteId,
+        transactionId: uuid(),
+        amountType: 'SEND',
+        amount: { amount: '100', currency: 'USD' },
+        transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
+        payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
+        payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
+      }
+      const postMessage = mocks.kafkaMessagePayloadPostDto({
+        from,
+        to,
+        id: postPayload.quoteId,
+        payloadBase64: base64Encode(JSON.stringify(postPayload))
+      })
+      const postIsOk = await Producer.produceMessage(postMessage, postTopicConfig, kafkaConfig.PRODUCER.QUOTE.POST.config)
+      expect(postIsOk).toBe(true)
+
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
+      expect([1, 2]).toContain(response.data.history.length)
+      hubClient.clearHistory()
+
       const payload = {
         transferAmount: { amount: '100', currency: 'USD' },
         ilpPacket: 'test',
         condition: 'test'
       }
-      const message = mocks.kafkaMessagePayloadDto({ from, to, id: uuid(), payloadBase64: base64Encode(JSON.stringify(payload)) })
+      const message = mocks.kafkaMessagePayloadDto({ from, to, id: quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
       delete message.content.headers.accept
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
@@ -332,7 +362,7 @@ describe('PUT callback Tests --> ', () => {
     } finally {
       await proxyClient.disconnect()
     }
-  })
+  }, TEST_TIMEOUT)
 
   test('should forward PUT /fxQuotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
     let response = await hubClient.getHistory()
@@ -340,6 +370,8 @@ describe('PUT callback Tests --> ', () => {
 
     const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.PUT
     const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const postTopicConfig = dto.topicConfigDto({ topicName: kafkaConfig.PRODUCER.FX_QUOTE.POST.topic })
+
     const from = 'greenbank'
     // redbank not in the hub db
     const to = 'redbank'
@@ -358,6 +390,35 @@ describe('PUT callback Tests --> ', () => {
 
       expect(isAdded).toBe(true)
       expect(representative).toBe(proxyId)
+      const conversionRequestId = uuid()
+      const postPayload = {
+        conversionRequestId,
+        conversionTerms: {
+          conversionId: uuid(),
+          initiatingFsp: from,
+          counterPartyFsp: to,
+          amountType: 'SEND',
+          sourceAmount: {
+            currency: 'USD',
+            amount: 300
+          },
+          targetAmount: {
+            currency: 'TZS'
+          }
+        }
+      }
+      const postMessage = mocks.kafkaMessagePayloadPostDto({ from, to, id: conversionRequestId, payloadBase64: base64Encode(JSON.stringify(postPayload)) })
+      const postIsOk = await Producer.produceMessage(postMessage, postTopicConfig, kafkaConfig.PRODUCER.FX_QUOTE.POST.config)
+
+      expect(postIsOk).toBe(true)
+
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
+      expect(response.data.history.length).toBe(1)
+      hubClient.clearHistory()
 
       const payload = {
         condition: 'test',
@@ -391,7 +452,7 @@ describe('PUT callback Tests --> ', () => {
     } finally {
       await proxyClient.disconnect()
     }
-  })
+  }, TEST_TIMEOUT)
 
   test('should forward PUT /bulkQuotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
     let response = await hubClient.getHistory()
@@ -399,6 +460,8 @@ describe('PUT callback Tests --> ', () => {
 
     const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
     const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const postTopicConfig = dto.topicConfigDto({ topicName: kafkaConfig.PRODUCER.BULK_QUOTE.POST.topic })
+
     const from = 'greenbank'
     // redbank not in the hub db
     const to = 'redbank'
@@ -418,10 +481,38 @@ describe('PUT callback Tests --> ', () => {
       expect(isAdded).toBe(true)
       expect(representative).toBe(proxyId)
 
+      const bulkQuoteId = uuid()
+      const quoteId = uuid()
+      const postPayload = {
+        bulkQuoteId,
+        payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
+        individualQuotes: [
+          {
+            quoteId,
+            transactionId: uuid(),
+            payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
+            amountType: 'SEND',
+            amount: { amount: '100', currency: 'USD' },
+            transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' }
+          }
+        ]
+      }
+      const postMessage = mocks.kafkaMessagePayloadPostDto({ from, to, id: null, payloadBase64: base64Encode(JSON.stringify(postPayload)) })
+      const postIsOk = await Producer.produceMessage(postMessage, postTopicConfig, kafkaConfig.PRODUCER.BULK_QUOTE.POST.config)
+      expect(postIsOk).toBe(true)
+
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
+      expect(response.data.history.length).toBe(1)
+      hubClient.clearHistory()
+
       const payload = {
         individualQuoteResults: [
           {
-            quoteId: uuid(),
+            quoteId,
             payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
             transferAmount: { amount: '100', currency: 'USD' },
             payeeReceiveAmount: { amount: '100', currency: 'USD' },
@@ -453,5 +544,5 @@ describe('PUT callback Tests --> ', () => {
     } finally {
       await proxyClient.disconnect()
     }
-  })
+  }, TEST_TIMEOUT)
 })
