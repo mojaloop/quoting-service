@@ -41,6 +41,8 @@ const mockSpan = () => ({
   audit: jest.fn(),
   finish: jest.fn(),
   getChild: jest.fn(),
+  error: jest.fn(),
+  isFinished: false,
   injectContextToHttpRequest: jest.fn().mockImplementation(param => param)
 })
 

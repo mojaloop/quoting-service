@@ -32,6 +32,7 @@ const { loggerFactory } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
+const { ERROR_MESSAGES } = require('../lib/constants')
 
 axios.defaults.headers.common = {}
 
@@ -42,6 +43,7 @@ class FxQuotesModel {
     this.proxyClient = deps.proxyClient
     this.envConfig = deps.envConfig || new Config()
     this.log = deps.log || loggerFactory(this.constructor.name)
+    this.httpRequest = deps.httpRequest || httpRequest
   }
 
   /**
@@ -128,7 +130,7 @@ class FxQuotesModel {
       this.writeLog(`Resolved FSPIOP_CALLBACK_URL_FX_QUOTES endpoint for fxQuote ${conversionRequestId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FXP '${fspiopDest}' while processing fxquote ${conversionRequestId}`, null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, ERROR_MESSAGES.NO_FX_CALLBACK_ENDPOINT(fspiopDest, conversionRequestId), null, fspiopSource)
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.FX_QUOTES_POST}`
@@ -151,7 +153,7 @@ class FxQuotesModel {
       }
 
       this.writeLog(`Forwarding request : ${util.inspect(opts)}`)
-      await httpRequest(opts, fspiopSource)
+      await this.httpRequest(opts, fspiopSource)
       histTimer({ success: true, queryName: 'forwardFxQuoteRequest' })
     } catch (err) {
       this.writeLog(`Error forwarding fxQuote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
@@ -214,7 +216,7 @@ class FxQuotesModel {
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_FX_QUOTES endpoint for fx quote ${conversionRequestId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
-        const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for PAYER party FSP '${fspiopDest}' while processing quote ${conversionRequestId}`, null, fspiopSource)
+        const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, '', null, fspiopSource)
         return this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, span, true)
       }
 
@@ -240,7 +242,7 @@ class FxQuotesModel {
         span.audit(opts, EventSdk.AuditEventAction.egress)
       }
 
-      await httpRequest(opts, fspiopSource)
+      await this.httpRequest(opts, fspiopSource)
       histTimer({ success: true, queryName: 'forwardFxQuoteUpdate' })
     } catch (err) {
       this.writeLog(`Error forwarding fx quote callback to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
@@ -297,7 +299,7 @@ class FxQuotesModel {
       this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_FX_QUOTES endpoint for fx quote GET ${conversionRequestId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FXP '${fspiopDest}' while processing fxquote GET ${conversionRequestId}`, null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, ERROR_MESSAGES.NO_FX_CALLBACK_ENDPOINT(fspiopDest, conversionRequestId), null, fspiopSource)
       }
 
       const fullCallbackUrl = `${endpoint}/fxQuotes/${conversionRequestId}`
@@ -316,7 +318,7 @@ class FxQuotesModel {
         span.audit(opts, EventSdk.AuditEventAction.egress)
       }
 
-      await httpRequest(opts, fspiopSource)
+      await this.httpRequest(opts, fspiopSource)
       histTimer({ success: true, queryName: 'forwardFxQuoteGet' })
     } catch (err) {
       this.writeLog(`Error forwarding fx quote get request: ${getStackOrInspect(err)}`)
@@ -339,8 +341,8 @@ class FxQuotesModel {
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const childSpan = span.getChild('qs_quote_forwardFxQuoteError')
     try {
-      const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
       await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
+      const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
       await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, conversionRequestId, headers, childSpan, false)
       histTimer({ success: true, queryName: 'handleFxQuoteError' })
     } catch (err) {
@@ -365,7 +367,6 @@ class FxQuotesModel {
       ['success', 'queryName']
     ).startTimer()
     const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-
     const childSpan = span.getChild('qs_fxQuote_sendErrorCallback')
     try {
       await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
@@ -403,7 +404,7 @@ class FxQuotesModel {
       log.debug(`Resolved participant '${fspiopSource}' FSPIOP_CALLBACK_URL_FX_QUOTES to: '${endpoint}'`)
 
       if (!endpoint) {
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FSP '${fspiopSource}', unable to make error callback`, null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, ERROR_MESSAGES.NO_FX_CALLBACK_ENDPOINT(fspiopSource, conversionRequestId), null, fspiopSource)
       }
 
       const fspiopUri = `/fxQuotes/${conversionRequestId}/error`
@@ -466,7 +467,7 @@ class FxQuotesModel {
         res = await this.sendHttpRequest(opts)
         histTimer({ success: true, queryName: 'sendErrorCallback' })
       } catch (err) {
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, {
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `${ERROR_MESSAGES.CALLBACK_NETWORK_ERROR}: ${err.message}`, {
           error: err,
           url: fullCallbackUrl,
           sourceFsp: fspiopSource,
@@ -478,7 +479,7 @@ class FxQuotesModel {
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
       if (res.status !== ENUM.Http.ReturnCodes.OK.CODE) {
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response sending error callback', {
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, ERROR_MESSAGES.CALLBACK_UNSUCCESSFUL_HTTP_RESPONSE, {
           url: fullCallbackUrl,
           sourceFsp: fspiopSource,
           destinationFsp: fspiopDest,
