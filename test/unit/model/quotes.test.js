@@ -1068,6 +1068,21 @@ describe('QuotesModel', () => {
             expect(quotesModel.handleException.mock.calls.length).toBe(1)
             expect(result).toEqual(expectedResult)
           })
+
+          it('calls handleQuoteRequestResend if request is duplicate and should resend', async () => {
+            expect.assertions(1)
+
+            quotesModel.checkDuplicateQuoteRequest = jest.fn(() => {
+              return {
+                isDuplicateId: true,
+                isResend: true
+              }
+            })
+
+            await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+
+            expect(quotesModel.handleQuoteRequestResend).toHaveBeenCalledTimes(1)
+          })
         })
       })
     })

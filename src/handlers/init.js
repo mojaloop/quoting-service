@@ -15,8 +15,8 @@ let proxyClient
 let consumersMap
 let monitoringServer
 
-const startFn = async (handlerList) => {
-  const config = new Config()
+const startFn = async (handlerList, appConfig = undefined) => {
+  const config = appConfig || new Config()
 
   db = new Database(config)
   await db.connect()
