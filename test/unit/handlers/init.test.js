@@ -1,11 +1,5 @@
 jest.mock('../../../src/handlers/createConsumers')
 jest.mock('../../../src/handlers/monitoringServer')
-// jest.mock('../../../src/lib/proxy', () => ({
-//   createProxyClient: () => ({
-//     connect: jest.fn().mockResolvedValue(true),
-//     isConnected: false
-//   })
-// }))
 jest.mock('../../../src/lib/proxy')
 
 const init = require('../../../src/handlers/init')
