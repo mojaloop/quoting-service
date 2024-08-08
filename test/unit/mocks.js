@@ -85,10 +85,17 @@ const fxQuoteMocks = {
       }
     }
   }),
+  fxQuoteUpdateRequest: ({
+    condition = randomUUID(),
+    conversionTerms = fxQuoteMocks.fxQuoteRequest().conversionTerms
+  } = {}) => ({
+    condition,
+    conversionTerms
+  }),
   headers: () => ({
-    Accept: 'application/vnd.interoperability.fxquotes+json;version=1.0',
-    'Content-Type': 'application/vnd.interoperability.fxquotes+json;version=1.0',
-    'Content-Length': '100',
+    accept: 'application/vnd.interoperability.fxquotes+json;version=1.0',
+    'content-type': 'application/vnd.interoperability.fxquotes+json;version=1.0',
+    'content-length': '100',
     date: new Date().toISOString(),
     'fspiop-source': 'mockSource',
     'fspiop-destination': 'mockDestination'
@@ -97,7 +104,7 @@ const fxQuoteMocks = {
     getChild: jest.fn().mockReturnValue(mockSpan())
   }),
   source: 'mockSource',
-  destination: 'mockcDestination',
+  destination: 'mockDestination',
   initiatingFsp: 'mockInitiator',
   counterPartyFsp: 'mockcCounterParty',
   conversionRequestId: randomUUID(),
@@ -107,8 +114,12 @@ const fxQuoteMocks = {
   }),
   httpRequestOptions: () => ({
   }),
-  db: ({ getParticipant = jest.fn().mockResolvedValue({}) } = {}) => ({
-    getParticipant
+  db: ({
+    getParticipant = jest.fn().mockResolvedValue({}),
+    getParticipantEndpoint = jest.fn().mockResolvedValue(undefined)
+  } = {}) => ({
+    getParticipant,
+    getParticipantEndpoint
   }),
   proxyClient: ({
     isConnected = jest.fn().mockReturnValue(true),

@@ -172,14 +172,13 @@ class FxQuotesModel {
       ['success', 'queryName']
     ).startTimer()
 
-    if ('accept' in headers) {
-      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        `Update for fx quote ${conversionRequestId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
-    }
-
     const childSpan = span.getChild('qs_quote_forwardFxQuoteUpdate')
     try {
       await childSpan.audit({ headers, params: { conversionRequestId }, payload: fxQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
+      if ('accept' in headers) {
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+          `Update for fx quote ${conversionRequestId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
+      }
       await this.forwardFxQuoteUpdate(headers, conversionRequestId, fxQuoteUpdateRequest, childSpan)
       histTimer({ success: true, queryName: 'handleFxQuoteUpdate' })
     } catch (err) {
