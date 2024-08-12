@@ -173,7 +173,11 @@ class QuotesModel {
 
     // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
     // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
-    if (quoteRequest.payer.supportedCurrencies && quoteRequest.payer.supportedCurrencies.length > 0) {
+    if (quoteRequest.payer.supportedCurrencies &&
+      quoteRequest.payer.supportedCurrencies.length > 0 &&
+      // if the payer dfsp has a proxy cache entry, we do not validate the dfsp here
+      !(await this.proxyClient?.lookupProxyByDfspId(fspiopSource))
+    ) {
       await Promise.all(quoteRequest.payer.supportedCurrencies.map(currency =>
         this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
       ))
@@ -192,7 +196,9 @@ class QuotesModel {
       // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
       if (
         quoteRequest.payer?.partyIdInfo?.fspId &&
-        quoteRequest.payer.partyIdInfo.fspId !== fspiopSource
+        quoteRequest.payer.partyIdInfo.fspId !== fspiopSource &&
+        // if the payer dfsp has a proxy cache entry, we do not validate the dfsp here
+        !(await this.proxyClient?.lookupProxyByDfspId(quoteRequest.payer.partyIdInfo.fspId))
       ) {
         await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
       }
@@ -214,9 +220,17 @@ class QuotesModel {
    * @returns {promise} - promise will reject if request is not valid
    */
   async validateQuoteUpdate (headers, quoteUpdateRequest) {
+    if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
+    let proxyIdSource
+    if (this.proxyClient) {
+      proxyIdSource = await this.proxyClient.lookupProxyByDfspId(fspiopSource)
+    }
+    // skip fulfil validation if the source is a proxy
+    if (!proxyIdSource) {
+      const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
+      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
+    }
   }
 
   /**
@@ -245,7 +259,7 @@ class QuotesModel {
       // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
-      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination, cache)
+      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination, cache, this.proxyClient)
       this.writeLog(`Got payer ${payer} and payee ${payee}`)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
@@ -304,12 +318,12 @@ class QuotesModel {
           this.db.getAmountType(quoteRequest.amountType),
           this.db.getPartyType(LOCAL_ENUM.PAYER),
           this.db.getPartyIdentifierType(quoteRequest.payer.partyIdInfo.partyIdType),
-          this.db.getParticipantByName(quoteRequest.payer.partyIdInfo.fspId),
+          payer.proxiedParticipant ? null : this.db.getParticipantByName(quoteRequest.payer.partyIdInfo.fspId),
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYER_DFSP),
           this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE),
           this.db.getPartyType(LOCAL_ENUM.PAYEE),
           this.db.getPartyIdentifierType(quoteRequest.payee.partyIdInfo.partyIdType),
-          this.db.getParticipantByName(quoteRequest.payee.partyIdInfo.fspId),
+          payee.proxiedParticipant ? null : this.db.getParticipantByName(quoteRequest.payee.partyIdInfo.fspId),
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYEE_DFSP),
           this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE)
         ])
@@ -328,8 +342,11 @@ class QuotesModel {
 
         // create a txn reference
         this.writeLog(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
-        refs.transactionReferenceId = await this.db.createTransactionReference(txn,
-          quoteRequest.quoteId, quoteRequest.transactionId)
+        refs.transactionReferenceId = await this.db.createTransactionReference(
+          txn,
+          quoteRequest.quoteId,
+          quoteRequest.transactionId
+        )
         this.writeLog(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
 
         // create the quote row itself

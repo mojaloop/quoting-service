@@ -36,6 +36,7 @@ const dto = require('../../src/lib/dto')
 const mocks = require('../mocks')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
 const uuid = require('crypto').randomUUID
+const { wrapWithRetries } = require('../util/helper')
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
@@ -43,6 +44,17 @@ const TEST_TIMEOUT = 20_000
 const WAIT_TIMEOUT = 3_000
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
+const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
+const retryOpts = {
+  retries: retryCount,
+  minTimeout: retryDelay,
+  maxTimeout: retryDelay
+}
+const wrapWithRetriesConf = {
+  remainingRetries: retryOpts?.retries || 10, // default 10
+  timeout: retryOpts?.maxTimeout || 2 // default 2
+}
 
 /**
  * Publishes a test 'POST quote' message to the Kafka topic
@@ -98,9 +110,12 @@ describe('PUT callback Tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
 
-    response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(1)
     const { headers, url } = response.data.history[0]
     expect(headers['fspiop-signature']).toBeTruthy()
@@ -137,13 +152,64 @@ describe('PUT callback Tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     const { url } = response.data.history[0]
     expect(url).toBe(`/${message.to}/quotes/${message.id}`)
+  }, TEST_TIMEOUT)
+
+  test('should pass validation for PUT /quotes/{ID} request if source is proxied participant', async () => {
+    // create test quote to prevent db (row reference) error on PUT request
+    const quoteCreated = await createQuote()
+    await wait(WAIT_TIMEOUT)
+    await hubClient.clearHistory()
+
+    let response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+
+    const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
+    const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const from = 'greenbank'
+    const proxyId = 'greenbankproxy'
+    let proxyClient
+    try {
+      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      const isAdded = await proxyClient.addDfspIdToProxyMapping(from, proxyId)
+      expect(isAdded).toBe(true)
+      const payload = {
+        transferAmount: { amount: '100', currency: 'USD' },
+        payeeReceiveAmount: { amount: '100', currency: 'USD' },
+        ilpPacket: 'test',
+        condition: 'test'
+      }
+      const message = mocks.kafkaMessagePayloadDto({
+        from: 'greenbank',
+        to: 'pinkbank',
+        id: quoteCreated.quoteId,
+        payloadBase64: base64Encode(JSON.stringify(payload))
+      })
+      delete message.content.headers.accept
+      const isOk = await Producer.produceMessage(message, topicConfig, config)
+      expect(isOk).toBe(true)
+
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
+      expect(response.data.history.length).toBe(1)
+
+      const { url } = response.data.history[0]
+      expect(url).toBe(`/${message.to}/quotes/${message.id}`)
+    } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(from)
+      proxyClient.disconnect()
+    }
   }, TEST_TIMEOUT)
 
   test('should fail validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is not registered (position account does not exist) for the payee pariticpant', async () => {
@@ -173,9 +239,11 @@ describe('PUT callback Tests --> ', () => {
     let isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(6000)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     const { url, body } = response.data.history[0]
@@ -201,9 +269,11 @@ describe('PUT callback Tests --> ', () => {
     isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     const { url: url2, body: body2 } = response.data.history[0]
@@ -217,7 +287,10 @@ describe('PUT callback Tests --> ', () => {
     expect(response.data.history.length).toBe(0)
 
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
+
     const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const postTopicConfig = dto.topicConfigDto({ topicName: kafkaConfig.PRODUCER.QUOTE.POST.topic })
+
     const from = 'greenbank'
     // redbank not in the hub db
     const to = 'redbank'
@@ -237,19 +310,48 @@ describe('PUT callback Tests --> ', () => {
       expect(isAdded).toBe(true)
       expect(representative).toBe(proxyId)
 
+      const quoteId = uuid()
+      const postPayload = {
+        quoteId,
+        transactionId: uuid(),
+        amountType: 'SEND',
+        amount: { amount: '100', currency: 'USD' },
+        transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
+        payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
+        payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
+      }
+      const postMessage = mocks.kafkaMessagePayloadPostDto({
+        from,
+        to,
+        id: postPayload.quoteId,
+        payloadBase64: base64Encode(JSON.stringify(postPayload))
+      })
+      const postIsOk = await Producer.produceMessage(postMessage, postTopicConfig, kafkaConfig.PRODUCER.QUOTE.POST.config)
+      expect(postIsOk).toBe(true)
+
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
+      expect([1, 2]).toContain(response.data.history.length)
+      hubClient.clearHistory()
+
       const payload = {
         transferAmount: { amount: '100', currency: 'USD' },
         ilpPacket: 'test',
         condition: 'test'
       }
-      const message = mocks.kafkaMessagePayloadDto({ from, to, id: uuid(), payloadBase64: base64Encode(JSON.stringify(payload)) })
+      const message = mocks.kafkaMessagePayloadDto({ from, to, id: quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
       delete message.content.headers.accept
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect([1, 2]).toContain(response.data.history.length)
 
       const request = response.data.history[0]
@@ -260,7 +362,7 @@ describe('PUT callback Tests --> ', () => {
     } finally {
       await proxyClient.disconnect()
     }
-  })
+  }, TEST_TIMEOUT)
 
   test('should forward PUT /fxQuotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
     let response = await hubClient.getHistory()
@@ -268,6 +370,8 @@ describe('PUT callback Tests --> ', () => {
 
     const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.PUT
     const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const postTopicConfig = dto.topicConfigDto({ topicName: kafkaConfig.PRODUCER.FX_QUOTE.POST.topic })
+
     const from = 'greenbank'
     // redbank not in the hub db
     const to = 'redbank'
@@ -286,6 +390,35 @@ describe('PUT callback Tests --> ', () => {
 
       expect(isAdded).toBe(true)
       expect(representative).toBe(proxyId)
+      const conversionRequestId = uuid()
+      const postPayload = {
+        conversionRequestId,
+        conversionTerms: {
+          conversionId: uuid(),
+          initiatingFsp: from,
+          counterPartyFsp: to,
+          amountType: 'SEND',
+          sourceAmount: {
+            currency: 'USD',
+            amount: 300
+          },
+          targetAmount: {
+            currency: 'TZS'
+          }
+        }
+      }
+      const postMessage = mocks.kafkaMessagePayloadPostDto({ from, to, id: conversionRequestId, payloadBase64: base64Encode(JSON.stringify(postPayload)) })
+      const postIsOk = await Producer.produceMessage(postMessage, postTopicConfig, kafkaConfig.PRODUCER.FX_QUOTE.POST.config)
+
+      expect(postIsOk).toBe(true)
+
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
+      expect(response.data.history.length).toBe(1)
+      hubClient.clearHistory()
 
       const payload = {
         condition: 'test',
@@ -304,9 +437,11 @@ describe('PUT callback Tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]
@@ -317,7 +452,7 @@ describe('PUT callback Tests --> ', () => {
     } finally {
       await proxyClient.disconnect()
     }
-  })
+  }, TEST_TIMEOUT)
 
   test('should forward PUT /bulkQuotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
     let response = await hubClient.getHistory()
@@ -325,6 +460,8 @@ describe('PUT callback Tests --> ', () => {
 
     const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
     const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const postTopicConfig = dto.topicConfigDto({ topicName: kafkaConfig.PRODUCER.BULK_QUOTE.POST.topic })
+
     const from = 'greenbank'
     // redbank not in the hub db
     const to = 'redbank'
@@ -344,10 +481,38 @@ describe('PUT callback Tests --> ', () => {
       expect(isAdded).toBe(true)
       expect(representative).toBe(proxyId)
 
+      const bulkQuoteId = uuid()
+      const quoteId = uuid()
+      const postPayload = {
+        bulkQuoteId,
+        payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
+        individualQuotes: [
+          {
+            quoteId,
+            transactionId: uuid(),
+            payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
+            amountType: 'SEND',
+            amount: { amount: '100', currency: 'USD' },
+            transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' }
+          }
+        ]
+      }
+      const postMessage = mocks.kafkaMessagePayloadPostDto({ from, to, id: null, payloadBase64: base64Encode(JSON.stringify(postPayload)) })
+      const postIsOk = await Producer.produceMessage(postMessage, postTopicConfig, kafkaConfig.PRODUCER.BULK_QUOTE.POST.config)
+      expect(postIsOk).toBe(true)
+
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
+      expect(response.data.history.length).toBe(1)
+      hubClient.clearHistory()
+
       const payload = {
         individualQuoteResults: [
           {
-            quoteId: uuid(),
+            quoteId,
             payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
             transferAmount: { amount: '100', currency: 'USD' },
             payeeReceiveAmount: { amount: '100', currency: 'USD' },
@@ -364,9 +529,11 @@ describe('PUT callback Tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]
@@ -377,5 +544,5 @@ describe('PUT callback Tests --> ', () => {
     } finally {
       await proxyClient.disconnect()
     }
-  })
+  }, TEST_TIMEOUT)
 })

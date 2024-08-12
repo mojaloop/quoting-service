@@ -527,6 +527,44 @@ describe('util', () => {
       expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
     })
 
+    it('returns original payer and original payee data structure when they are proxied', async () => {
+      // Arrange
+      const cache = new Cache()
+      const proxyId1 = 'proxy1'
+      const proxyId2 = 'proxy2'
+      // Act
+      const result = await fetchParticipantInfo(
+        mockData.headers['fspiop-source'],
+        mockData.headers['fspiop-destination'],
+        cache,
+        {
+          isConnected: false,
+          connect: jest.fn().mockResolvedValue(true),
+          lookupProxyByDfspId: jest.fn().mockResolvedValueOnce(proxyId1).mockResolvedValueOnce(proxyId2)
+        }
+      )
+      // Assert
+      expect(result).toEqual({
+        payer: {
+          name: mockData.headers['fspiop-source'],
+          id: '',
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        },
+        payee: {
+          name: mockData.headers['fspiop-destination'],
+          id: '',
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        }
+      })
+      expect(axios.request.mock.calls.length).toBe(0)
+    })
+
     it('caches payer and payee when cache is provided', async () => {
       const cache = new Cache()
       // Arrange

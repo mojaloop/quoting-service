@@ -35,13 +35,23 @@ const dto = require('../../src/lib/dto')
 const mocks = require('../mocks')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
 const uuid = require('crypto').randomUUID
+const { wrapWithRetries } = require('../util/helper')
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
 const TEST_TIMEOUT = 20_000
-const WAIT_TIMEOUT = 3_000
 
-const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
+const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
+const retryOpts = {
+  retries: retryCount,
+  minTimeout: retryDelay,
+  maxTimeout: retryDelay
+}
+const wrapWithRetriesConf = {
+  remainingRetries: retryOpts?.retries || 10, // default 10
+  timeout: retryOpts?.maxTimeout || 2 // default 2
+}
 
 describe('POST request tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
@@ -56,7 +66,7 @@ describe('POST request tests --> ', () => {
     await Producer.disconnect()
   })
 
-  test('should pass validation for POST /quotes request if request amount currency is registered (position account exists) for the payer pariticpant', async () => {
+  test('should pass validation for POST /quotes request if request amount currency is registered (position account exists) for the payer participant', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
@@ -77,16 +87,62 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     const { url } = response.data.history[0]
     expect(url).toBe(`/${message.to}/quotes`)
   })
 
-  test('should fail validation for POST /quotes request if request amount currency is not registered (position account doesn not exist) for the payer pariticpant', async () => {
+  test('should pass validation for POST /quotes request if source and/or destination are proxied', async () => {
+    let response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+    const from = 'pinkbank'
+    const to = 'greenbank'
+    let proxyClient
+    try {
+      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
+      const topicConfig = dto.topicConfigDto({ topicName: topic })
+
+      const proxyId1 = 'proxyAR'
+      const proxyId2 = 'proxyRB'
+      await proxyClient.addDfspIdToProxyMapping(to, proxyId1)
+      await proxyClient.addDfspIdToProxyMapping(from, proxyId2)
+      const payload = {
+        quoteId: uuid(),
+        transactionId: uuid(),
+        amountType: 'SEND',
+        amount: { amount: '100', currency: 'USD' },
+        transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
+        payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
+        payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
+      }
+      const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
+      const isOk = await Producer.produceMessage(message, topicConfig, config)
+      expect(isOk).toBe(true)
+
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
+      expect(response.data.history.length).toBe(1)
+
+      const { url } = response.data.history[0]
+      expect(url).toBe(`/${message.to}/quotes`)
+    } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(to)
+      await proxyClient.removeDfspIdFromProxyMapping(from)
+      await proxyClient.disconnect()
+    }
+  })
+
+  test('should fail validation for POST /quotes request if request amount currency is not registered (position account doesnt not exist) for the payer participant', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
@@ -107,9 +163,11 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     const { url, body } = response.data.history[0]
@@ -118,7 +176,7 @@ describe('POST request tests --> ', () => {
     expect(body.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.to}'`)
   })
 
-  test('should pass validation for POST /quotes request if all request "supportedCurrencies" are registered (position account exists) for the payer pariticpant', async () => {
+  test('should pass validation for POST /quotes request if all request "supportedCurrencies" are registered (position account exists) for the payer participant', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
@@ -139,16 +197,18 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(3000)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     const { url } = response.data.history[0]
     expect(url).toBe(`/${message.to}/quotes`)
   })
 
-  test('should fail validation for POST /quotes request if any of request "supportedCurrencies" is not registered (no position account exists) for the payer pariticpant', async () => {
+  test('should fail validation for POST /quotes request if any of request "supportedCurrencies" is not registered (no position account exists) for the payer participant', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
@@ -169,9 +229,11 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     const { url, body } = response.data.history[0]
@@ -218,9 +280,11 @@ describe('POST request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect([1, 2]).toContain(response.data.history.length)
 
       const request = response.data.history[0]
@@ -229,6 +293,8 @@ describe('POST request tests --> ', () => {
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
     } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(to)
+      await proxyClient.removeDfspIdFromProxyMapping(from)
       await proxyClient.disconnect()
     }
   })
@@ -278,9 +344,11 @@ describe('POST request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]
@@ -289,6 +357,8 @@ describe('POST request tests --> ', () => {
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
     } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(to)
+      await proxyClient.removeDfspIdFromProxyMapping(from)
       await proxyClient.disconnect()
     }
   })
@@ -336,9 +406,11 @@ describe('POST request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]
@@ -347,6 +419,8 @@ describe('POST request tests --> ', () => {
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
     } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(to)
+      await proxyClient.removeDfspIdFromProxyMapping(from)
       await proxyClient.disconnect()
     }
   })
