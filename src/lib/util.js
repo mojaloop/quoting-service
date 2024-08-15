@@ -260,16 +260,16 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
   if (!cachedPayer && !requestPayer) {
     requestPayer = await axios.request({ url: `${url}/${source}` })
     cache && cache.put(`fetchParticipantInfo_${source}`, requestPayer, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
   } else {
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payer ${source}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payer ${source}`)
   }
   if (!cachedPayee && !requestPayee) {
     requestPayee = await axios.request({ url: `${url}/${destination}` })
     cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
   } else {
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payee ${destination}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payee ${destination}`)
   }
 
   const payer = cachedPayer || requestPayer.data
