@@ -880,6 +880,211 @@ class Database {
     }
   }
 
+  async createFxQuote (txn, conversionRequestId) {
+    try {
+      const newFxQuote = {
+        conversionRequestId
+      }
+
+      const res = await this.queryBuilder('fxQuote')
+        .transacting(txn)
+        .insert(newFxQuote)
+
+      newFxQuote.fxQuoteId = res[0]
+
+      this.writeLog(`inserted new fxQuote in db: ${util.inspect(newFxQuote)}`)
+      return newFxQuote
+    } catch (err) {
+      this.writeLog(`Error in createFxQuote: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async createFxQuoteResponse (txn, conversionRequestId, fxQuoteResponse) {
+    try {
+      const newFxQuoteResponse = {
+        conversionRequestId,
+        ilpCondition: fxQuoteResponse.conversionTerms.condition
+      }
+
+      const res = await this.queryBuilder('fxQuoteResponse')
+        .transacting(txn)
+        .insert(newFxQuoteResponse)
+
+      newFxQuoteResponse.fxQuoteResponseId = res[0]
+
+      this.writeLog(`inserted new fxQuoteResponse in db: ${util.inspect(newFxQuoteResponse)}`)
+      return newFxQuoteResponse
+    } catch (err) {
+      this.writeLog(`Error in createFxQuoteResponse: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async createFxQuoteError (txn, conversionRequestId, error) {
+    try {
+      const newFxQuoteError = {
+        conversionRequestId,
+        errorCode: error.errorCode,
+        errorDescription: error.errorDescription
+      }
+
+      const res = await this.queryBuilder('fxQuoteError')
+        .transacting(txn)
+        .insert(newFxQuoteError)
+
+      newFxQuoteError.fxQuoteErrorId = res[0]
+
+      this.writeLog(`inserted new fxQuoteError in db: ${util.inspect(newFxQuoteError)}`)
+      return newFxQuoteError
+    } catch (err) {
+      this.writeLog(`Error in createFxQuoteError: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async createFxQuoteDuplicateCheck (txn, conversionRequestId, hash) {
+    try {
+      const newFxQuoteDuplicateCheck = {
+        conversionRequestId,
+        hash
+      }
+
+      const res = await this.queryBuilder('fxQuoteDuplicateCheck')
+        .transacting(txn)
+        .insert(newFxQuoteDuplicateCheck)
+
+      newFxQuoteDuplicateCheck.fxQuoteDuplicateCheckId = res[0]
+
+      this.writeLog(`inserted new fxQuoteDuplicateCheck in db: ${util.inspect(newFxQuoteDuplicateCheck)}`)
+      return newFxQuoteDuplicateCheck
+    } catch (err) {
+      this.writeLog(`Error in createFxQuoteDuplicateCheck: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async createFxQuoteResponseDuplicateCheck (txn, conversionRequestId, hash) {
+    try {
+      const newFxQuoteResponseDuplicateCheck = {
+        conversionRequestId,
+        hash
+      }
+
+      const res = await this.queryBuilder('fxQuoteResponseDuplicateCheck')
+        .transacting(txn)
+        .insert(newFxQuoteResponseDuplicateCheck)
+
+      newFxQuoteResponseDuplicateCheck.fxQuoteResponseDuplicateCheckId = res[0]
+
+      this.writeLog(`inserted new fxQuoteResponseDuplicateCheck in db: ${util.inspect(newFxQuoteResponseDuplicateCheck)}`)
+      return newFxQuoteResponseDuplicateCheck
+    } catch (err) {
+      this.writeLog(`Error in createFxQuoteResponseDuplicateCheck: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async createFxQuoteConversionTerms (txn, conversionRequestId, conversionTerms) {
+    try {
+      const newFxQuoteConversionTerms = {
+        conversionRequestId,
+        conversionId: conversionTerms.conversionId,
+        determiningTransferId: conversionTerms.determiningTransferId,
+        initiatingFsp: conversionTerms.initiatingFsp,
+        counterPartyFsp: conversionTerms.counterPartyFsp,
+        amountType: conversionTerms.amountType,
+        sourceAmount: conversionTerms.sourceAmount.amount,
+        sourceCurrency: conversionTerms.sourceAmount.currency,
+        targetAmount: conversionTerms.targetAmount.amount,
+        targetCurrency: conversionTerms.targetAmount.currency,
+        expiration: conversionTerms.expiration
+      }
+
+      const res = await this.queryBuilder('fxQuoteConversionTerms')
+        .transacting(txn)
+        .insert(newFxQuoteConversionTerms)
+
+      newFxQuoteConversionTerms.conversionId = res[0]
+
+      this.writeLog(`inserted new fxQuoteConversionTerms in db: ${util.inspect(newFxQuoteConversionTerms)}`)
+      return newFxQuoteConversionTerms
+    } catch (err) {
+      this.writeLog(`Error in createFxQuoteConversionTerms: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async createFxQuoteConversionTermsExtension (txn, conversionRequestId, conversionTermsExtension) {
+    try {
+      const newFxQuoteConversionTermsExtension = conversionTermsExtension.map(extension => ({
+        conversionRequestId,
+        extensionKey: extension.key,
+        extensionValue: extension.value
+      }))
+
+      const res = await this.queryBuilder('fxQuoteConversionTermsExtension')
+        .transacting(txn)
+        .insert(newFxQuoteConversionTermsExtension)
+
+      this.writeLog(`inserted new fxQuoteConversionTermsExtension in db: ${util.inspect(newFxQuoteConversionTermsExtension)}`)
+      return res
+    } catch (err) {
+      this.writeLog(`Error in createFxQuoteConversionTermsExtension: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async createFxQuoteResponseConversionTerms (txn, conversionRequestId, conversionTerms) {
+    try {
+      const newFxQuoteResponseConversionTerms = {
+        conversionRequestId,
+        conversionId: conversionTerms.conversionId,
+        determiningTransferId: conversionTerms.determiningTransferId,
+        initiatingFsp: conversionTerms.initiatingFsp,
+        counterPartyFsp: conversionTerms.counterPartyFsp,
+        amountType: conversionTerms.amountType,
+        sourceAmount: conversionTerms.sourceAmount.amount,
+        sourceCurrency: conversionTerms.sourceAmount.currency,
+        targetAmount: conversionTerms.targetAmount.amount,
+        targetCurrency: conversionTerms.targetAmount.currency,
+        expiration: conversionTerms.expiration
+      }
+
+      const res = await this.queryBuilder('fxQuoteResponseConversionTerms')
+        .transacting(txn)
+        .insert(newFxQuoteResponseConversionTerms)
+
+      newFxQuoteResponseConversionTerms.fxQuoteResponseConversionTermsId = res[0]
+
+      this.writeLog(`inserted new fxQuoteResponseConversionTerms in db: ${util.inspect(newFxQuoteResponseConversionTerms)}`)
+      return newFxQuoteResponseConversionTerms
+    } catch (err) {
+      this.writeLog(`Error in createFxQuoteResponseConversionTerms: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async createFxQuoteResponseConversionTermsExtension (txn, conversionRequestId, conversionTermsExtension) {
+    try {
+      const newFxQuoteResponseConversionTermsExtension = conversionTermsExtension.map(extension => ({
+        conversionRequestId,
+        extensionKey: extension.key,
+        extensionValue: extension.value
+      }))
+
+      const res = await this.queryBuilder('fxQuoteResponseConversionTermsExtension')
+        .transacting(txn)
+        .insert(newFxQuoteResponseConversionTermsExtension)
+
+      this.writeLog(`inserted new fxQuoteResponseConversionTermsExtension in db: ${util.inspect(newFxQuoteResponseConversionTermsExtension)}`)
+      return res
+    } catch (err) {
+      this.writeLog(`Error in createFxQuoteResponseConversionTermsExtension: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
   /**
    * @function getIsMigrationLocked
    *
