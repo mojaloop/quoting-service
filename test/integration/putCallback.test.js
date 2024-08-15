@@ -335,7 +335,7 @@ describe('PUT callback Tests --> ', () => {
         (result) => result.data.history.length > 0
       )
       expect([1, 2]).toContain(response.data.history.length)
-      hubClient.clearHistory()
+      await hubClient.clearHistory()
 
       const payload = {
         transferAmount: { amount: '100', currency: 'USD' },
@@ -418,7 +418,7 @@ describe('PUT callback Tests --> ', () => {
         (result) => result.data.history.length > 0
       )
       expect(response.data.history.length).toBe(1)
-      hubClient.clearHistory()
+      await hubClient.clearHistory()
 
       const payload = {
         condition: 'test',
@@ -507,7 +507,7 @@ describe('PUT callback Tests --> ', () => {
         (result) => result.data.history.length > 0
       )
       expect(response.data.history.length).toBe(1)
-      hubClient.clearHistory()
+      await hubClient.clearHistory()
 
       const payload = {
         individualQuoteResults: [
