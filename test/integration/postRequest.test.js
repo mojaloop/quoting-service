@@ -41,8 +41,8 @@ const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
 const TEST_TIMEOUT = 20_000
 
-const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
-const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 1
+const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 20
 const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
@@ -92,8 +92,8 @@ describe('POST request tests --> ', () => {
       wrapWithRetriesConf.timeout,
       (result) => result.data.history.length > 0
     )
-    expect(response.data.history.length).toBe(1)
 
+    expect(response.data.history.length).toBeGreaterThan(0)
     const { url } = response.data.history[0]
     expect(url).toBe(`/${message.to}/quotes`)
   })

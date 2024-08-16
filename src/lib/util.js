@@ -39,6 +39,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
+const { RESOURCES, HEADERS } = require('../constants')
 const Config = require('./config')
 
 const config = new Config()
@@ -125,18 +126,34 @@ function removeEmptyKeys (originalObject) {
   return obj
 }
 
-function applyResourceVersionHeaders (headers, protocolVersions) {
+const makeAppInteroperabilityHeader = (resource, version) => `application/vnd.interoperability.${resource}+json;version=${version}`
+
+function applyResourceVersionHeaders (headers, protocolVersions, resource) {
   let contentTypeHeader = headers['content-type'] || headers['Content-Type']
   let acceptHeader = headers.accept || headers.Accept
   if (Util.HeaderValidation.getHubNameRegex(config.hubName).test(headers['fspiop-source'])) {
     if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
-      contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.CONTENT.DEFAULT}`
+      contentTypeHeader = makeAppInteroperabilityHeader(resource, protocolVersions.CONTENT.DEFAULT)
     }
     if (Enum.Http.Headers.GENERAL.ACCEPT.regex.test(acceptHeader) && !!protocolVersions.ACCEPT.DEFAULT) {
-      acceptHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.ACCEPT.DEFAULT}`
+      acceptHeader = makeAppInteroperabilityHeader(resource, protocolVersions.ACCEPT.DEFAULT)
     }
   }
   return { contentTypeHeader, acceptHeader }
+}
+
+const headersMappingDto = (headers, protocolVersions, noAccept, resource) => {
+  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions, resource)
+  return {
+    [HEADERS.accept]: noAccept ? null : acceptHeader,
+    [HEADERS.contentType]: contentTypeHeader,
+    [HEADERS.date]: headers.date,
+    [HEADERS.fspiopSource]: headers['fspiop-source'],
+    [HEADERS.fspiopDestination]: headers['fspiop-destination'],
+    [HEADERS.fspiopHttpMethod]: headers['fspiop-http-method'],
+    [HEADERS.fspiopSignature]: headers['fspiop-signature'],
+    [HEADERS.fspiopUri]: headers['fspiop-uri']
+  }
 }
 
 /**
@@ -144,23 +161,15 @@ function applyResourceVersionHeaders (headers, protocolVersions) {
  *
  * @returns {object}
  */
-function generateRequestHeaders (headers, protocolVersions, noAccept = false, additionalHeaders) {
-  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions)
-  let ret = {
-    'Content-Type': contentTypeHeader,
-    Date: headers.date,
-    // todo: use Enum.Http.Headers.FSPIOP....
-    'FSPIOP-Source': headers['fspiop-source'],
-    'FSPIOP-Destination': headers['fspiop-destination'],
-    'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
-    'FSPIOP-Signature': headers['fspiop-signature'],
-    'FSPIOP-URI': headers['fspiop-uri'],
-    Accept: null
-  }
+function generateRequestHeaders (
+  headers,
+  protocolVersions,
+  noAccept = false,
+  resource = RESOURCES.quotes,
+  additionalHeaders = null
+) {
+  let ret = headersMappingDto(headers, protocolVersions, noAccept, resource)
 
-  if (!noAccept) {
-    ret.Accept = acceptHeader
-  }
   // below are the non-standard headers added by the rules
   if (additionalHeaders) {
     ret = { ...ret, ...additionalHeaders }
@@ -174,22 +183,18 @@ function generateRequestHeaders (headers, protocolVersions, noAccept = false, ad
  *
  * @returns {object}
  */
-function generateRequestHeadersForJWS (headers, protocolVersions, noAccept = false) {
-  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions)
-  const ret = {
-    'Content-Type': contentTypeHeader,
-    date: headers.date,
-    'fspiop-source': headers['fspiop-source'],
-    'fspiop-destination': headers['fspiop-destination'],
-    'fspiop-http-method': headers['fspiop-http-method'],
-    'fspiop-signature': headers['fspiop-signature'],
-    'fspiop-uri': headers['fspiop-uri'],
-    Accept: null
-  }
-
-  if (!noAccept) {
-    ret.Accept = acceptHeader
-  }
+function generateRequestHeadersForJWS (
+  headers,
+  protocolVersions,
+  noAccept = false,
+  resource = RESOURCES.quotes
+) {
+  const mappedHeaders = headersMappingDto(headers, protocolVersions, noAccept, resource)
+  // JWS Signer expects headers in lowercase
+  const ret = Object.fromEntries(
+    Object.entries(mappedHeaders).map(([key, value]) => [key.toLowerCase(), value])
+  )
+  // todo: clarify if we need additionalHeaders here (see generateRequestHeaders fn)
 
   return removeEmptyKeys(ret)
 }
@@ -255,16 +260,16 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
   if (!cachedPayer && !requestPayer) {
     requestPayer = await axios.request({ url: `${url}/${source}` })
     cache && cache.put(`fetchParticipantInfo_${source}`, requestPayer, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
   } else {
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payer ${source}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payer ${source}`)
   }
   if (!cachedPayee && !requestPayee) {
     requestPayee = await axios.request({ url: `${url}/${destination}` })
     cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
   } else {
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payee ${destination}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payee ${destination}`)
   }
 
   const payer = cachedPayer || requestPayer.data
@@ -322,5 +327,6 @@ module.exports = {
   removeEmptyKeys,
   rethrowFspiopError,
   fetchParticipantInfo,
-  getParticipantEndpoint
+  getParticipantEndpoint,
+  makeAppInteroperabilityHeader
 }
