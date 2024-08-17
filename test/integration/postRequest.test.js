@@ -337,6 +337,15 @@ describe('POST request tests --> ', () => {
           },
           targetAmount: {
             currency: 'TZS'
+          },
+          expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          extensionList: {
+            extension: [
+              {
+                key: 'Test',
+                value: 'Data'
+              }
+            ]
           }
         }
       }

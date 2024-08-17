@@ -403,7 +403,17 @@ describe('PUT callback Tests --> ', () => {
             amount: 300
           },
           targetAmount: {
-            currency: 'TZS'
+            currency: 'TZS',
+            amount: 300
+          },
+          expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          extensionList: {
+            extension: [
+              {
+                key: 'Test',
+                value: 'Data'
+              }
+            ]
           }
         }
       }
@@ -428,11 +438,32 @@ describe('PUT callback Tests --> ', () => {
           counterPartyFsp: to,
           amountType: 'SEND',
           sourceAmount: { amount: '100', currency: 'USD' },
-          targetAmount: { amount: '100', currency: 'ZWS' },
-          expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString()
+          targetAmount: { amount: '100', currency: 'TZS' },
+          expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          charges: [
+            {
+              chargeType: 'TEST',
+              sourceAmount: {
+                currency: 'USD',
+                amount: 1
+              },
+              targetAmount: {
+                currency: 'TZS',
+                amount: 1
+              }
+            }
+          ],
+          extensionList: {
+            extension: [
+              {
+                key: 'Test',
+                value: 'Data'
+              }
+            ]
+          }
         }
       }
-      const message = mocks.kafkaMessagePayloadDto({ from, to, id: uuid(), payloadBase64: base64Encode(JSON.stringify(payload)) })
+      const message = mocks.kafkaMessagePayloadDto({ from, to, id: conversionRequestId, payloadBase64: base64Encode(JSON.stringify(payload)) })
       delete message.content.headers.accept
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)

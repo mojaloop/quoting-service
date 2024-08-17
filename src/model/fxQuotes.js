@@ -62,6 +62,80 @@ class FxQuotesModel {
     }
   }
 
+  async checkDuplicateFxQuoteRequest (fxQuoteRequest) {
+    try {
+      // calculate a SHA-256 of the request
+      const hash = calculateRequestHash(fxQuoteRequest)
+      this.writeLog(`Calculated sha256 hash of quote request with id ${fxQuoteRequest.conversionRequestId} as: ${hash}`)
+
+      const dupchk = await this.db.getFxQuoteDuplicateCheck(fxQuoteRequest.conversionRequestId)
+      this.writeLog(`DB query for quote duplicate check with id ${fxQuoteRequest.conversionRequestId} returned: ${util.inspect(dupchk)}`)
+
+      if (!dupchk) {
+        // no existing record for this quoteId found
+        return {
+          isResend: false,
+          isDuplicateId: false
+        }
+      }
+
+      if (dupchk.hash === hash) {
+        // hash matches, this is a resend
+        return {
+          isResend: true,
+          isDuplicateId: true
+        }
+      }
+
+      // if we get here then this is a duplicate id but not a resend e.g. hashes dont match.
+      return {
+        isResend: false,
+        isDuplicateId: true
+      }
+    } catch (err) {
+      // internal-error
+      this.writeLog(`Error in checkDuplicateFxQuoteRequest: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.ReformatFSPIOPError(err)
+    }
+  }
+
+  async checkDuplicateFxQuoteResponse (conversionRequestId, fxQuoteResponse) {
+    try {
+      // calculate a SHA-256 of the request
+      const hash = calculateRequestHash(fxQuoteResponse)
+      this.writeLog(`Calculated sha256 hash of quote response with id ${conversionRequestId} as: ${hash}`)
+
+      const dupchk = await this.db.getFxQuoteResponseDuplicateCheck(conversionRequestId)
+      this.writeLog(`DB query for quote response duplicate check with id ${conversionRequestId} returned: ${util.inspect(dupchk)}`)
+
+      if (!dupchk) {
+        // no existing record for this conversionRequestId found
+        return {
+          isResend: false,
+          isDuplicateId: false
+        }
+      }
+
+      if (dupchk.hash === hash) {
+        // hash matches, this is a resend
+        return {
+          isResend: true,
+          isDuplicateId: true
+        }
+      }
+
+      // if we get here then this is a duplicate id but not a resend e.g. hashes dont match.
+      return {
+        isResend: false,
+        isDuplicateId: true
+      }
+    } catch (err) {
+      // internal-error
+      this.writeLog(`Error in checkDuplicateFxQuoteResponse: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.ReformatFSPIOPError(err)
+    }
+  }
+
   /**
    * Logic for creating and handling fx quote requests
    *
@@ -108,20 +182,19 @@ class FxQuotesModel {
         txn = await this.db.newTransaction()
         await this.db.createFxQuoteDuplicateCheck(txn, fxQuoteRequest.conversionRequestId, hash)
 
-        const newFxQuote = await this.db.createFxQuote(txn, fxQuoteRequest.conversionRequestId)
+        await this.db.createFxQuote(txn, fxQuoteRequest.conversionRequestId)
 
-        const newFxQuoteConversionTerms = await this.db.createFxQuoteConversionTerms(
+        await this.db.createFxQuoteConversionTerms(
           txn,
-          newFxQuote.conversionRequestId,
+          fxQuoteRequest.conversionRequestId,
           fxQuoteRequest.conversionTerms
         )
-
         if (fxQuoteRequest.conversionTerms.extensionList &&
           Array.isArray(fxQuoteRequest.conversionTerms.extensionList.extension)) {
           await this.db.createFxQuoteConversionTermsExtension(
             txn,
-            fxQuoteRequest.conversionTerms.extensionList.extension,
-            newFxQuoteConversionTerms.conversionId
+            fxQuoteRequest.conversionTerms.conversionId,
+            fxQuoteRequest.conversionTerms.extensionList.extension
           )
         }
 
@@ -130,10 +203,10 @@ class FxQuotesModel {
 
       await this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, fxQuoteRequest, childSpan)
     } catch (err) {
+      this.writeLog(`Error forwarding fx quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
       if (txn) {
         txn.rollback(err)
       }
-      this.writeLog(`Error forwarding fx quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
       await this.handleException(fspiopSource, fxQuoteRequest.conversionRequestId, err, headers, childSpan)
     } finally {
       if (childSpan && !childSpan.isFinished) {
@@ -241,8 +314,9 @@ class FxQuotesModel {
           fxQuoteUpdateRequest
         )
 
-        const newFxQuoteResponseConversionTerms = await this.db.createFxQuoteResponseConversionTerms(
+        await this.db.createFxQuoteResponseConversionTerms(
           txn,
+          conversionRequestId,
           newFxQuoteResponse.fxQuoteResponseId,
           fxQuoteUpdateRequest.conversionTerms
         )
@@ -251,7 +325,7 @@ class FxQuotesModel {
           Array.isArray(fxQuoteUpdateRequest.conversionTerms.charges)) {
           await this.db.createFxQuoteResponseFxCharge(
             txn,
-            newFxQuoteResponseConversionTerms.conversionId,
+            fxQuoteUpdateRequest.conversionTerms.conversionId,
             fxQuoteUpdateRequest.conversionTerms.charges)
         }
 
@@ -259,14 +333,14 @@ class FxQuotesModel {
           Array.isArray(fxQuoteUpdateRequest.conversionTerms.extensionList.extension)) {
           await this.db.createFxQuoteResponseConversionTermsExtension(
             txn,
-            fxQuoteUpdateRequest.conversionTerms.extensionList.extension,
-            newFxQuoteResponseConversionTerms.conversionId
+            fxQuoteUpdateRequest.conversionTerms.conversionId,
+            fxQuoteUpdateRequest.conversionTerms.extensionList.extension
           )
         }
 
         // if we get here we need to create a duplicate check row
         const hash = calculateRequestHash(fxQuoteUpdateRequest)
-        await this.db.createQuoteUpdateDuplicateCheck(txn, conversionRequestId, newFxQuoteResponse.quoteResponseId, hash)
+        await this.db.createFxQuoteResponseDuplicateCheck(txn, newFxQuoteResponse.fxQuoteResponseId, conversionRequestId, hash)
 
         await txn.commit()
       }
