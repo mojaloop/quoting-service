@@ -37,6 +37,8 @@ const mocks = require('../mocks')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
 const uuid = require('crypto').randomUUID
 const { wrapWithRetries } = require('../util/helper')
+const Database = require('../../src/data/cachedDatabase')
+const { count } = require('console')
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
@@ -84,13 +86,23 @@ const createQuote = async ({
 }
 
 describe('PUT callback Tests --> ', () => {
-  const { kafkaConfig, proxyCache } = new Config()
+  const config = new Config()
+  const { kafkaConfig, proxyCache } = config
+  let db
 
   beforeEach(async () => {
     await hubClient.clearHistory()
   })
 
+  beforeAll(async () => {
+    db = new Database(config)
+    await db.connect()
+    const isDbOk = await db.isConnected()
+    if (!isDbOk) throw new Error('DB is not connected')
+  })
+
   afterAll(async () => {
+    await db?.disconnect()
     await Producer.disconnect()
   })
 
@@ -403,8 +415,7 @@ describe('PUT callback Tests --> ', () => {
             amount: 300
           },
           targetAmount: {
-            currency: 'TZS',
-            amount: 300
+            currency: 'TZS'
           },
           expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
           extensionList: {
@@ -428,6 +439,25 @@ describe('PUT callback Tests --> ', () => {
         (result) => result.data.history.length > 0
       )
       expect(response.data.history.length).toBe(1)
+
+      // check fx quote details were saved to db
+      const fxQuoteDetails = await db._getFxQuoteDetails(postPayload.conversionRequestId)
+      expect(fxQuoteDetails).toEqual({
+        conversionRequestId: postPayload.conversionRequestId,
+        conversionId: postPayload.conversionTerms.conversionId,
+        determiningTransferId: null,
+        amountTypeId: 1,
+        initiatingFsp: postPayload.conversionTerms.initiatingFsp,
+        counterPartyFsp: postPayload.conversionTerms.counterPartyFsp,
+        sourceAmount: postPayload.conversionTerms.sourceAmount.amount,
+        sourceCurrency: postPayload.conversionTerms.sourceAmount.currency,
+        targetAmount: null,
+        targetCurrency: postPayload.conversionTerms.targetAmount.currency,
+        extensions: expect.anything(),
+        expirationDate: expect.anything(),
+        createdDate: expect.anything()
+      })
+      expect(JSON.parse(fxQuoteDetails.extensions)).toEqual(postPayload.conversionTerms.extensionList.extension)
       hubClient.clearHistory()
 
       const payload = {
@@ -437,8 +467,8 @@ describe('PUT callback Tests --> ', () => {
           initiatingFsp: from,
           counterPartyFsp: to,
           amountType: 'SEND',
-          sourceAmount: { amount: '100', currency: 'USD' },
-          targetAmount: { amount: '100', currency: 'TZS' },
+          sourceAmount: { amount: 100, currency: 'USD' },
+          targetAmount: { amount: 100, currency: 'TZS' },
           expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
           charges: [
             {
@@ -480,6 +510,40 @@ describe('PUT callback Tests --> ', () => {
       expect(request.body).toEqual(payload)
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
+
+      const fxQuoteResponseDetails = await db._getFxQuoteResponseDetails(conversionRequestId)
+      expect(fxQuoteResponseDetails).toEqual({
+        conversionRequestId,
+        fxQuoteResponseId: expect.anything(),
+        ilpCondition: payload.condition,
+        conversionId: payload.conversionTerms.conversionId,
+        amountTypeId: 1,
+        determiningTransferId: null,
+        counterPartyFsp: payload.conversionTerms.counterPartyFsp,
+        initiatingFsp: payload.conversionTerms.initiatingFsp,
+        sourceAmount: payload.conversionTerms.sourceAmount.amount,
+        sourceCurrency: payload.conversionTerms.sourceAmount.currency,
+        targetAmount: payload.conversionTerms.targetAmount.amount,
+        targetCurrency: payload.conversionTerms.targetAmount.currency,
+        expirationDate: expect.anything(),
+        createdDate: expect.anything(),
+        charges: expect.anything(),
+        extensions: expect.anything()
+      })
+      expect(JSON.parse(fxQuoteResponseDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
+      const charges = JSON.parse(fxQuoteResponseDetails.charges)
+      const expectedCharges = charges.map(charge => ({
+        chargeType: charge.chargeType,
+        sourceAmount: {
+          currency: charge.sourceCurrency,
+          amount: charge.sourceAmount
+        },
+        targetAmount: {
+          currency: charge.targetCurrency,
+          amount: charge.targetAmount
+        }
+      }))
+      expect(expectedCharges).toEqual(payload.conversionTerms.charges)
     } finally {
       await proxyClient.disconnect()
     }

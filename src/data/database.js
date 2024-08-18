@@ -35,6 +35,7 @@
 'use strict'
 
 const Knex = require('knex')
+const { knex } = require('knex')
 const util = require('util')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -1041,7 +1042,6 @@ class Database {
 
   async createFxQuoteConversionTermsExtension (txn, conversionId, conversionTermsExtension) {
     try {
-      this.writeLog(JSON.stringify(conversionTermsExtension))
       const newFxQuoteConversionTermsExtension = conversionTermsExtension.map(({ key, value }) => ({
         conversionId,
         key,
@@ -1133,6 +1133,60 @@ class Database {
       return result
     } catch (err) {
       this.writeLog(`Error in getFxQuoteResponseDuplicateCheck: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async _getFxQuoteDetails (conversionRequestId) {
+    try {
+      const result = await this.queryBuilder('fxQuote')
+        .join('fxQuoteConversionTerms', 'fxQuote.conversionRequestId', 'fxQuoteConversionTerms.conversionRequestId')
+        .where('fxQuote.conversionRequestId', conversionRequestId)
+        .select([
+          'fxQuote.*',
+          'fxQuoteConversionTerms.*',
+          // eslint-disable-next-line no-multi-str
+          this.queryBuilder.raw('(SELECT JSON_ARRAYAGG(\
+            JSON_OBJECT(\
+              "key", fxQuoteConversionTermsExtension.key, \
+              "value", fxQuoteConversionTermsExtension.value\
+            )) \
+            FROM fxQuoteConversionTermsExtension \
+            WHERE fxQuoteConversionTermsExtension.conversionId=fxQuoteConversionTerms.conversionId) AS extensions')
+        ])
+        .first()
+      return result
+    } catch (err) {
+      this.writeLog(`Error in _getFxQuoteDetails: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
+  async _getFxQuoteResponseDetails (conversionRequestId) {
+    try {
+      const result = await this.queryBuilder('fxQuoteResponse')
+        .join('fxQuoteResponseConversionTerms', 'fxQuoteResponse.conversionRequestId', 'fxQuoteResponseConversionTerms.conversionRequestId')
+        .where('fxQuoteResponse.conversionRequestId', conversionRequestId)
+        .select([
+          'fxQuoteResponse.*',
+          'fxQuoteResponseConversionTerms.*',
+          this.queryBuilder.raw('(SELECT JSON_ARRAYAGG(JSON_OBJECT("key", fxQuoteResponseConversionTermsExtension.key, "value", fxQuoteResponseConversionTermsExtension.value)) FROM fxQuoteResponseConversionTermsExtension WHERE fxQuoteResponseConversionTermsExtension.conversionId=fxQuoteResponseConversionTerms.conversionId) AS extensions'),
+          // eslint-disable-next-line no-multi-str
+          this.queryBuilder.raw('(SELECT JSON_ARRAYAGG(\
+            JSON_OBJECT(\
+              "chargeType", fxCharge.chargeType, \
+              "sourceAmount", fxCharge.sourceAmount, \
+              "sourceCurrency", fxCharge.sourceCurrency, \
+              "targetAmount", fxCharge.targetAmount, \
+              "targetCurrency", fxCharge.targetCurrency \
+            )) \
+            FROM fxCharge \
+            WHERE fxCharge.conversionId=fxQuoteResponseConversionTerms.conversionId) AS charges')
+        ])
+        .first()
+      return result
+    } catch (err) {
+      this.writeLog(`Error in _getFxQuoteDetails: ${getStackOrInspect(err)}`)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
