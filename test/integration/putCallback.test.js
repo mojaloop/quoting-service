@@ -38,8 +38,6 @@ const MockServerClient = require('./mockHttpServer/MockServerClient')
 const uuid = require('crypto').randomUUID
 const { wrapWithRetries } = require('../util/helper')
 const Database = require('../../src/data/cachedDatabase')
-const { error } = require('console')
-const exp = require('constants')
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
