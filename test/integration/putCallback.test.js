@@ -45,8 +45,8 @@ const TEST_TIMEOUT = 20_000
 const WAIT_TIMEOUT = 3_000
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 2
-const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 40
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 1
+const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 20
 const retryOpts = {
   retries: retryCount,
   minTimeout: retryDelay,
@@ -219,7 +219,7 @@ describe('PUT callback Tests --> ', () => {
       expect(url).toBe(`/${message.to}/quotes/${message.id}`)
     } finally {
       await proxyClient.removeDfspIdFromProxyMapping(from)
-      proxyClient.disconnect()
+      await proxyClient.disconnect()
     }
   }, TEST_TIMEOUT)
 
@@ -346,7 +346,7 @@ describe('PUT callback Tests --> ', () => {
         (result) => result.data.history.length > 0
       )
       expect([1, 2]).toContain(response.data.history.length)
-      hubClient.clearHistory()
+      await hubClient.clearHistory()
 
       const payload = {
         transferAmount: { amount: '100', currency: 'USD' },
@@ -457,7 +457,7 @@ describe('PUT callback Tests --> ', () => {
         createdDate: expect.anything()
       })
       expect(JSON.parse(fxQuoteDetails.extensions)).toEqual(postPayload.conversionTerms.extensionList.extension)
-      hubClient.clearHistory()
+      await hubClient.clearHistory()
 
       const payload = {
         condition: 'test',
@@ -601,7 +601,7 @@ describe('PUT callback Tests --> ', () => {
         (result) => result.data.history.length > 0
       )
       expect(response.data.history.length).toBe(1)
-      hubClient.clearHistory()
+      await hubClient.clearHistory()
 
       const payload = {
         individualQuoteResults: [
