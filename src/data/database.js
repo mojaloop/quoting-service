@@ -35,7 +35,6 @@
 'use strict'
 
 const Knex = require('knex')
-const { knex } = require('knex')
 const util = require('util')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
