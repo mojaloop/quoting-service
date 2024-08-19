@@ -254,9 +254,9 @@ class FxQuotesModel {
       await this.forwardFxQuoteGet(headers, conversionRequestId, childSpan)
       histTimer({ success: true, queryName: 'handleFxQuoteGet' })
     } catch (err) {
+      histTimer({ success: false, queryName: 'handleFxQuoteGet' })
       this.log.error('error in handleFxQuoteGet', err)
       await this.handleException(fspiopSource, conversionRequestId, err, headers, childSpan)
-      histTimer({ success: false, queryName: 'handleFxQuoteGet' })
     } finally {
       if (childSpan && !childSpan.isFinished) {
         await childSpan.finish()
@@ -325,9 +325,9 @@ class FxQuotesModel {
       await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, conversionRequestId, headers, childSpan, false)
       histTimer({ success: true, queryName: 'handleFxQuoteError' })
     } catch (err) {
+      histTimer({ success: false, queryName: 'handleFxQuoteError' })
       this.log.error('error in handleFxQuoteError', err)
       await this.handleException(fspiopSource, conversionRequestId, err, headers, childSpan)
-      histTimer({ success: false, queryName: 'handleFxQuoteError' })
     } finally {
       if (childSpan && !childSpan.isFinished) {
         await childSpan.finish()
@@ -353,8 +353,8 @@ class FxQuotesModel {
       await this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, childSpan, true)
       histTimer({ success: true, queryName: 'handleException' })
     } catch (err) {
-      this.log.error('error in handleException, stop request processing!', err)
       histTimer({ success: false, queryName: 'handleException' })
+      this.log.error('error in handleException, stop request processing!', err)
     } finally {
       if (!childSpan.isFinished) {
         await childSpan.finish()
