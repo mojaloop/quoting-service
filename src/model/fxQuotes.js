@@ -17,7 +17,6 @@
 ******/
 
 const axios = require('axios')
-const util = require('util')
 
 const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -48,7 +47,7 @@ class FxQuotesModel {
   }
 
   /**
-   * Validates the fx quote request object
+   * Validates the fxQuote request object
    *
    * @returns {promise} - promise will reject if request is not valid
    */
@@ -145,14 +144,14 @@ class FxQuotesModel {
   }
 
   /**
-   * Logic for creating and handling fx quote requests
+   * Logic for creating and handling fxQuote requests
    *
    * @returns {undefined}
    */
   async handleFxQuoteRequest (headers, fxQuoteRequest, span) {
     let fspiopSource
     let txn
-    const childSpan = span.getChild('qs_fxquote_forwardFxQuoteRequest')
+    const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteRequest')
     try {
       await childSpan.audit({ headers, payload: fxQuoteRequest }, EventSdk.AuditEventAction.start)
 
@@ -168,7 +167,7 @@ class FxQuotesModel {
 
         // fail fast on duplicate
         if (dupe.isDuplicateId && (!dupe.isResend)) {
-          // same quoteId but a different request, this is an error!
+          // same conversionRequestId but a different request, this is an error!
           // internal-error
           throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
             `Quote ${fxQuoteRequest.conversionRequestId} is a duplicate but hashes dont match`, null, fspiopSource)
@@ -225,7 +224,7 @@ class FxQuotesModel {
   }
 
   /**
-   * Forwards an fx quote request to the destination fxp for processing
+   * Forwards an fxQuote request to the destination fxp for processing
    *
    * @returns {undefined}
    */
@@ -238,7 +237,7 @@ class FxQuotesModel {
       // lookup the fxp callback endpoint
       const endpoint = await this._getParticipantEndpoint(fspiopDest)
       if (!endpoint) {
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FXP '${fspiopDest}' while processing fxquote ${conversionRequestId}`, null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FXP '${fspiopDest}' while processing fxQuote ${conversionRequestId}`, null, fspiopSource)
       }
 
       let opts = {
@@ -262,7 +261,7 @@ class FxQuotesModel {
   }
 
   /**
-   * Logic for handling fx quote update requests e.g. PUT /fxQuotes/{id} requests
+   * Logic for handling fxQuote update requests e.g. PUT /fxQuotes/{id} requests
    *
    * @returns {undefined}
    */
@@ -271,10 +270,10 @@ class FxQuotesModel {
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     if ('accept' in headers) {
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-        `Update for fx quote ${conversionRequestId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
+        `Update for fxQuote ${conversionRequestId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
     }
 
-    const childSpan = span.getChild('qs_quote_forwardFxQuoteUpdate')
+    const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteUpdate')
     try {
       await childSpan.audit({ headers, params: { conversionRequestId }, payload: fxQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
 
@@ -286,7 +285,7 @@ class FxQuotesModel {
         // fail fast on duplicate
         if (dupe.isDuplicateId && (!dupe.isResend)) {
           // internal-error
-          // same quoteId but a different request, this is an error!
+          // same conversionRequestId but a different request, this is an error!
           throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
             `Update for fxQuote ${conversionRequestId} is a duplicate but hashes don't match`, null, fspiopSource)
         }
@@ -294,7 +293,6 @@ class FxQuotesModel {
         if (dupe.isResend && dupe.isDuplicateId) {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-          // return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest, handleQuoteUpdateSpan)
           return this.handleFxQuoteUpdateResend(
             headers,
             conversionRequestId,
@@ -306,7 +304,7 @@ class FxQuotesModel {
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
 
-        // create the quote response row in the db
+        // create the fxQuote response row in the db
         const newFxQuoteResponse = await this.db.createFxQuoteResponse(
           txn,
           conversionRequestId,
@@ -360,7 +358,7 @@ class FxQuotesModel {
   }
 
   /**
-   * Forwards an fx quote response to a payer DFSP for processing
+   * Forwards an fxQuote response to a payer DFSP for processing
    *
    * @returns {undefined}
    */
@@ -372,7 +370,7 @@ class FxQuotesModel {
 
       const endpoint = await this._getParticipantEndpoint(fspiopDest)
       if (!endpoint) {
-        const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for PAYER party FSP '${fspiopDest}' while processing quote ${conversionRequestId}`, null, fspiopSource)
+        const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for PAYER party FSP '${fspiopDest}' while processing fxQuote ${conversionRequestId}`, null, fspiopSource)
         return this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, span, true)
       }
 
@@ -400,13 +398,13 @@ class FxQuotesModel {
   }
 
   /**
-   * Attempts to handle an fx quote GET request by forwarding it to the destination FXP
+   * Attempts to handle an fxQuote GET request by forwarding it to the destination FXP
    *
    * @returns {undefined}
    */
   async handleFxQuoteGet (headers, conversionRequestId, span) {
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const childSpan = span.getChild('qs_quote_forwardFxQuoteGet')
+    const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteGet')
     try {
       await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
       await this.forwardFxQuoteGet(headers, conversionRequestId, childSpan)
@@ -421,7 +419,7 @@ class FxQuotesModel {
   }
 
   /**
-   * Attempts to forward an fx quote GET request
+   * Attempts to forward an fxQuote GET request
    *
    * @returns {undefined}
    */
@@ -433,7 +431,7 @@ class FxQuotesModel {
       // lookup fxp callback endpoint
       const endpoint = await this._getParticipantEndpoint(fspiopDest)
       if (!endpoint) {
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FXP '${fspiopDest}' while processing fxquote GET ${conversionRequestId}`, null, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FXP '${fspiopDest}' while processing fxQuote GET ${conversionRequestId}`, null, fspiopSource)
       }
 
       let opts = {
@@ -456,14 +454,14 @@ class FxQuotesModel {
   }
 
   /**
-   * Handles fx quote error callback e.g. PUT fxQuotes/{id}/error
+   * Handles fxQuote error callback e.g. PUT fxQuotes/{id}/error
    *
    * @returns {undefined}
    */
   async handleFxQuoteError (headers, conversionRequestId, error, span) {
     let txn
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const childSpan = span.getChild('qs_quote_forwardFxQuoteError')
+    const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteError')
     try {
       const envConfig = new Config()
       if (!envConfig.simpleRoutingMode) {
@@ -497,20 +495,21 @@ class FxQuotesModel {
   }
 
   /**
-   * Deals with resends of quote requests (POST) under the API spec:
+   * Deals with resends of fxQuote requests (POST) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
   async handleFxQuoteRequestResend (headers, fxQuoteRequest, span, additionalHeaders) {
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-      this.writeLog(`Handling resend of fxQuoteRequest: ${util.inspect(fxQuoteRequest)} from ${fspiopSource} to ${headers[ENUM.Http.Headers.FSPIOP.DESTINATION]}`)
+      const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+      this.log.debug(`Handling resend of fxQuoteRequest from ${fspiopSource} to ${fspiopDestination}: `, fxQuoteRequest)
 
-      // we are ok to assume the quoteRequest object passed to us is the same as the original...
+      // we are ok to assume the fxQuoteRequest object passed to us is the same as the original...
       // as it passed a hash duplicate check...so go ahead and use it to resend rather than
       // hit the db again
 
-      // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-      const childSpan = span.getChild('qs_quote_forwardQuoteRequestResend')
+      // if we got here rules passed, so we can forward the fxQuote on to the recipient dfsp
+      const childSpan = span.getChild('qs_fxQuote_forwardQuoteRequestResend')
       try {
         await childSpan.audit({ headers, payload: fxQuoteRequest }, EventSdk.AuditEventAction.start)
         await this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, fxQuoteRequest, childSpan, additionalHeaders)
@@ -534,21 +533,21 @@ class FxQuotesModel {
   }
 
   /**
-   * Deals with resends of quote responses (PUT) under the API spec:
+   * Deals with resends of fxQuote responses (PUT) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
   async handleFxQuoteUpdateResend (headers, conversionRequestId, fxQuoteUpdate, span) {
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-      this.writeLog(`Handling resend of quoteUpdate: ${util.inspect(fxQuoteUpdate)} from ${fspiopSource} to ${fspiopDest}`)
+      this.log.debug(`Handling resend of fxQuoteUpdate from ${fspiopSource} to ${fspiopDest}: `, fxQuoteUpdate)
 
       // we are ok to assume the fxQuoteUpdate object passed to us is the same as the original...
       // as it passed a hash duplicate check...so go ahead and use it to resend rather than
       // hit the db again
 
-      // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-      const childSpan = span.getChild('qs_quote_forwardFxQuoteUpdateResend')
+      // if we got here rules passed, so we can forward the fxQuote on to the recipient dfsp
+      const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteUpdateResend')
       try {
         await childSpan.audit({ headers, params: { conversionRequestId }, payload: fxQuoteUpdate }, EventSdk.AuditEventAction.start)
         await this.forwardFxQuoteUpdate(headers, conversionRequestId, fxQuoteUpdate, childSpan)
