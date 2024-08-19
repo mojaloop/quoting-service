@@ -34,13 +34,24 @@ const Config = require('../../src/lib/config')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
 const dto = require('../../src/lib/dto')
 const mocks = require('../mocks')
+const { wrapWithRetries } = require('../util/helper')
 
 const TEST_TIMEOUT = 20_000
-const WAIT_TIMEOUT = 3_000
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
-const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 1
+const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 20
+const retryOpts = {
+  retries: retryCount,
+  minTimeout: retryDelay,
+  maxTimeout: retryDelay
+}
+const wrapWithRetriesConf = {
+  remainingRetries: retryOpts?.retries || 10, // default 10
+  timeout: retryOpts?.maxTimeout || 2 // default 2
+}
 
 describe('POST /fxQuotes request tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
@@ -88,9 +99,11 @@ describe('POST /fxQuotes request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       // assert that the request was received by the proxy
@@ -101,6 +114,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
     } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(to)
       await proxyClient.disconnect()
     }
   })
@@ -140,9 +154,11 @@ describe('POST /fxQuotes request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       // assert that the callback was received by the payer dfsp
@@ -153,6 +169,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
     } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(from)
       await proxyClient.disconnect()
     }
   })
@@ -178,9 +195,11 @@ describe('POST /fxQuotes request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     // assert that the request was received by the payee dfsp
@@ -212,9 +231,11 @@ describe('POST /fxQuotes request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     // assert that the callback was received by the payee dfsp
@@ -247,9 +268,11 @@ describe('POST /fxQuotes request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     // assert that error callback was received by the payer dfsp
@@ -286,9 +309,11 @@ describe('POST /fxQuotes request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     // assert that the error callback was received by the payer dfsp
@@ -340,9 +365,11 @@ describe('POST /fxQuotes request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       // assert that the error callback was received by the proxy
@@ -354,6 +381,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
     } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(to)
       await proxyClient.disconnect()
     }
   })
@@ -376,9 +404,11 @@ describe('POST /fxQuotes request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    await wait(WAIT_TIMEOUT)
-
-    response = await hubClient.getHistory()
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      wrapWithRetriesConf.remainingRetries,
+      wrapWithRetriesConf.timeout,
+      (result) => result.data.history.length > 0
+    )
     expect(response.data.history.length).toBe(1)
 
     // assert that the callback was received by the destination dfsp's endpoint
@@ -423,9 +453,11 @@ describe('POST /fxQuotes request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      await wait(WAIT_TIMEOUT)
-
-      response = await hubClient.getHistory()
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
       expect(response.data.history.length).toBe(1)
 
       // assert that the callback was received by the proxy
@@ -436,6 +468,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
     } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(to)
       await proxyClient.disconnect()
     }
   })

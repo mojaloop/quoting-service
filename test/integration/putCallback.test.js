@@ -178,7 +178,7 @@ describe('PUT callback Tests --> ', () => {
     const proxyId = 'greenbankproxy'
     let proxyClient
     try {
-      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
       const isAdded = await proxyClient.addDfspIdToProxyMapping(from, proxyId)
       expect(isAdded).toBe(true)
       const payload = {
@@ -300,7 +300,7 @@ describe('PUT callback Tests --> ', () => {
     let proxyClient
 
     try {
-      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
       const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
 
       // assert that the proxy representative is mapped in the cache
@@ -381,7 +381,7 @@ describe('PUT callback Tests --> ', () => {
     let proxyClient
 
     try {
-      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
       const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
 
       // assert that the proxy representative is mapped in the cache
@@ -471,7 +471,7 @@ describe('PUT callback Tests --> ', () => {
     let proxyClient
 
     try {
-      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
       const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
 
       // assert that the proxy representative is mapped in the cache

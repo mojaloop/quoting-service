@@ -53,7 +53,7 @@ describe('createProxyClient', () => {
   })
 
   it('should create a proxy client and return it', async () => {
-    const proxyClient = await createProxyClient({ proxyCacheConfig })
+    const proxyClient = createProxyClient({ proxyCacheConfig })
 
     expect(proxyClient).toBeDefined()
     expect(proxyClient.isConnected).toBe(true)

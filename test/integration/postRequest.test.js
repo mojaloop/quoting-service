@@ -105,7 +105,7 @@ describe('POST request tests --> ', () => {
     const to = 'greenbank'
     let proxyClient
     try {
-      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
       const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
       const topicConfig = dto.topicConfigDto({ topicName: topic })
 
@@ -257,7 +257,7 @@ describe('POST request tests --> ', () => {
     let proxyClient
 
     try {
-      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
       const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
 
       // assert that the proxy representative is mapped in the cache
@@ -314,7 +314,7 @@ describe('POST request tests --> ', () => {
     let proxyClient
 
     try {
-      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
       const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
 
       // assert that the proxy representative is mapped in the cache
