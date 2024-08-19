@@ -41,16 +41,9 @@ const TEST_TIMEOUT = 20_000
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
 
-const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 1
-const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 20
-const retryOpts = {
-  retries: retryCount,
-  minTimeout: retryDelay,
-  maxTimeout: retryDelay
-}
 const wrapWithRetriesConf = {
-  remainingRetries: retryOpts?.retries || 10, // default 10
-  timeout: retryOpts?.maxTimeout || 2 // default 2
+  remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
+  timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
 }
 
 describe('POST /fxQuotes request tests --> ', () => {
