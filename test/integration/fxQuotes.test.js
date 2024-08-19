@@ -30,20 +30,18 @@
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { createProxyClient } = require('../../src/lib/proxy')
 const Config = require('../../src/lib/config')
+const MockServerClient = require('./mockHttpServer/MockServerClient')
 const dto = require('../../src/lib/dto')
 const mocks = require('../mocks')
-const MockServerClient = require('./mockHttpServer/MockServerClient')
-const uuid = require('crypto').randomUUID
 
 const TEST_TIMEOUT = 20_000
 const WAIT_TIMEOUT = 3_000
 
 const hubClient = new MockServerClient()
-
 const base64Encode = (data) => Buffer.from(data).toString('base64')
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
-describe('POST request tests --> ', () => {
+describe('POST /fxQuotes request tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
 
   const { kafkaConfig, proxyCache } = new Config()
@@ -68,33 +66,21 @@ describe('POST request tests --> ', () => {
     let proxyClient
 
     try {
-      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
 
       // register proxy representative for redbank
       const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
 
       // assert that the proxy representative is mapped in the cache
       const key = `dfsp:${to}`
-      const representative = await proxyClient.redisClient.get(key)
+      const proxy = await proxyClient.redisClient.get(key)
       expect(isAdded).toBe(true)
-      expect(representative).toBe(proxyId)
+      expect(proxy).toBe(proxyId)
 
-      const payload = {
-        conversionRequestId: uuid(),
-        conversionTerms: {
-          conversionId: uuid(),
-          initiatingFsp: from,
-          counterPartyFsp: to,
-          amountType: 'SEND',
-          sourceAmount: {
-            currency: 'USD',
-            amount: 300
-          },
-          targetAmount: {
-            currency: 'TZS'
-          }
-        }
-      }
+      const payload = mocks.fxQuotesPostPayloadDto({
+        initiatingFsp: from,
+        counterPartyFsp: to
+      })
       const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.conversionRequestId, payloadBase64: base64Encode(JSON.stringify(payload)) })
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)

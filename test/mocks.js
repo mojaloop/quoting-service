@@ -1,3 +1,4 @@
+const uuid = require('crypto').randomUUID
 const Config = new (require('../src/lib/config'))()
 
 const CONTENT_TYPE = 'application/vnd.interoperability.quotes+json;version={{API_VERSION}}'
@@ -91,8 +92,34 @@ const proxyCacheConfigDto = ({
   timeout: 5000 // is it used anywhere?
 })
 
+const fxQuotesPostPayloadDto = ({
+  conversionRequestId = uuid(),
+  conversionId = uuid(),
+  initiatingFsp = 'pinkbank',
+  counterPartyFsp = 'redbank',
+  amountType = 'SEND',
+  sourceAmount = {
+    currency: 'USD',
+    amount: 300
+  },
+  targetAmount = {
+    currency: 'TZS'
+  }
+} = {}) => ({
+  conversionRequestId,
+  conversionTerms: {
+    conversionId,
+    initiatingFsp,
+    counterPartyFsp,
+    amountType,
+    sourceAmount,
+    targetAmount
+  }
+})
+
 module.exports = {
   kafkaMessagePayloadDto,
   kafkaMessagePayloadPostDto,
-  proxyCacheConfigDto
+  proxyCacheConfigDto,
+  fxQuotesPostPayloadDto
 }
