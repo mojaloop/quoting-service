@@ -77,6 +77,24 @@ const kafkaMessagePayloadPostDto = (params = {}) => kafkaMessagePayloadDto({
   operationId: 'Quotes'
 })
 
+const kafkaMessageFxPayloadPostDto = (params = {}) => kafkaMessagePayloadDto({
+  ...params,
+  action: 'post',
+  type: 'fxquote',
+  operationId: 'FxQuotesPost'
+})
+
+const kafkaMessageFxPayloadPutDto = (params = {}) => {
+  const dto = kafkaMessagePayloadDto({
+    ...params,
+    action: 'put',
+    type: 'fxquote',
+    operationId: 'FxQuotesPut'
+  })
+  delete dto.content.headers.accept
+  return dto
+}
+
 const proxyCacheConfigDto = ({
   type = 'redis'
 } = {}) => Object.freeze({
@@ -103,7 +121,7 @@ const fxQuotesPostPayloadDto = ({
     amount: 300
   },
   targetAmount = {
-    currency: 'TZS'
+    currency: 'ZMW'
   }
 } = {}) => ({
   conversionRequestId,
@@ -117,9 +135,25 @@ const fxQuotesPostPayloadDto = ({
   }
 })
 
+const fxQuotesPutPayloadDto = ({
+  fxQuotesPostPayload = fxQuotesPostPayloadDto(),
+  condition = 'mock-condition',
+  charges = [{ chargeType: 'Tax', sourceAmount: { amount: 1, currency: 'USD' }, targetAmount: { amount: 100, currency: 'ZMW' } }]
+} = {}) => {
+  const dto = {
+    ...fxQuotesPostPayload,
+    condition,
+    charges
+  }
+  return dto
+}
+
 module.exports = {
   kafkaMessagePayloadDto,
   kafkaMessagePayloadPostDto,
+  kafkaMessageFxPayloadPostDto,
+  kafkaMessageFxPayloadPutDto,
   proxyCacheConfigDto,
-  fxQuotesPostPayloadDto
+  fxQuotesPostPayloadDto,
+  fxQuotesPutPayloadDto
 }
