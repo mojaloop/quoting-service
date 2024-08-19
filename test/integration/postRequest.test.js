@@ -36,22 +36,15 @@ const MockServerClient = require('./mockHttpServer/MockServerClient')
 const uuid = require('crypto').randomUUID
 const { wrapWithRetries } = require('../util/helper')
 
-const TEST_TIMEOUT = 20_000
-
 const hubClient = new MockServerClient()
-
 const base64Encode = (data) => Buffer.from(data).toString('base64')
-const retryDelay = process?.env?.TEST_INT_RETRY_DELAY || 1
-const retryCount = process?.env?.TEST_INT_RETRY_COUNT || 20
-const retryOpts = {
-  retries: retryCount,
-  minTimeout: retryDelay,
-  maxTimeout: retryDelay
+
+const retryConf = {
+  remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
+  timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
 }
-const wrapWithRetriesConf = {
-  remainingRetries: retryOpts?.retries || 10, // default 10
-  timeout: retryOpts?.maxTimeout || 2 // default 2
-}
+
+const TEST_TIMEOUT = 20_000
 
 describe('POST request tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
@@ -74,22 +67,14 @@ describe('POST request tests --> ', () => {
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
     const to = 'greenbank'
-    const payload = {
-      quoteId: uuid(),
-      transactionId: uuid(),
-      amountType: 'SEND',
-      amount: { amount: '100', currency: 'USD' },
-      transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
-      payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
-      payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
-    }
+    const payload = mocks.postQuotesPayloadDto({ from, to })
     const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
     response = await wrapWithRetries(() => hubClient.getHistory(),
-      wrapWithRetriesConf.remainingRetries,
-      wrapWithRetriesConf.timeout,
+      retryConf.remainingRetries,
+      retryConf.timeout,
       (result) => result.data.history.length > 0
     )
 
@@ -113,22 +98,14 @@ describe('POST request tests --> ', () => {
       const proxyId2 = 'proxyRB'
       await proxyClient.addDfspIdToProxyMapping(to, proxyId1)
       await proxyClient.addDfspIdToProxyMapping(from, proxyId2)
-      const payload = {
-        quoteId: uuid(),
-        transactionId: uuid(),
-        amountType: 'SEND',
-        amount: { amount: '100', currency: 'USD' },
-        transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
-        payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
-        payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
-      }
+      const payload = mocks.postQuotesPayloadDto({ from, to })
       const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
       response = await wrapWithRetries(() => hubClient.getHistory(),
-        wrapWithRetriesConf.remainingRetries,
-        wrapWithRetriesConf.timeout,
+        retryConf.remainingRetries,
+        retryConf.timeout,
         (result) => result.data.history.length > 0
       )
       expect(response.data.history.length).toBe(1)
@@ -150,22 +127,14 @@ describe('POST request tests --> ', () => {
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
     const to = 'greenbank'
-    const payload = {
-      quoteId: uuid(),
-      transactionId: uuid(),
-      amountType: 'SEND',
-      amount: { amount: '100', currency: 'GBP' },
-      transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
-      payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
-      payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
-    }
+    const payload = mocks.postQuotesPayloadDto({ from, to, amount: { amount: '100', currency: 'GBP' } })
     const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
     response = await wrapWithRetries(() => hubClient.getHistory(),
-      wrapWithRetriesConf.remainingRetries,
-      wrapWithRetriesConf.timeout,
+      retryConf.remainingRetries,
+      retryConf.timeout,
       (result) => result.data.history.length > 0
     )
     expect(response.data.history.length).toBe(1)
@@ -184,22 +153,18 @@ describe('POST request tests --> ', () => {
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
     const to = 'greenbank'
-    const payload = {
-      quoteId: uuid(),
-      transactionId: uuid(),
-      amountType: 'SEND',
-      amount: { amount: '100', currency: 'USD' },
-      transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
-      payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from }, supportedCurrencies: ['USD', 'ZMW'] },
-      payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
-    }
+    const payload = mocks.postQuotesPayloadDto({
+      from,
+      to,
+      payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from }, supportedCurrencies: ['USD', 'ZMW'] }
+    })
     const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
     response = await wrapWithRetries(() => hubClient.getHistory(),
-      wrapWithRetriesConf.remainingRetries,
-      wrapWithRetriesConf.timeout,
+      retryConf.remainingRetries,
+      retryConf.timeout,
       (result) => result.data.history.length > 0
     )
     expect(response.data.history.length).toBe(1)
@@ -216,22 +181,18 @@ describe('POST request tests --> ', () => {
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
     const to = 'greenbank'
-    const payload = {
-      quoteId: uuid(),
-      transactionId: uuid(),
-      amountType: 'SEND',
-      amount: { amount: '100', currency: 'USD' },
-      transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
-      payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from }, supportedCurrencies: ['USD', 'ZMW', 'GBP'] },
-      payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
-    }
+    const payload = mocks.postQuotesPayloadDto({
+      from,
+      to,
+      payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from }, supportedCurrencies: ['USD', 'ZMW', 'GBP'] }
+    })
     const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
     response = await wrapWithRetries(() => hubClient.getHistory(),
-      wrapWithRetriesConf.remainingRetries,
-      wrapWithRetriesConf.timeout,
+      retryConf.remainingRetries,
+      retryConf.timeout,
       (result) => result.data.history.length > 0
     )
     expect(response.data.history.length).toBe(1)
@@ -240,6 +201,35 @@ describe('POST request tests --> ', () => {
     expect(url).toBe(`/${message.from}/quotes/${message.id}/error`)
     expect(body.errorInformation.errorCode).toBe('3202')
     expect(body.errorInformation.errorDescription).toBe(`Payer FSP ID not found - Unsupported participant '${message.from}'`)
+  })
+
+  test('should forward POST /quotes request to payee dfsp registered in the hub', async () => {
+    let response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+
+    const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
+    const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const from = 'pinkbank'
+    const to = 'greenbank'
+
+    const payload = mocks.postQuotesPayloadDto({ from, to })
+    const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
+    const isOk = await Producer.produceMessage(message, topicConfig, config)
+    expect(isOk).toBe(true)
+
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      retryConf.remainingRetries,
+      retryConf.timeout,
+      (result) => result.data.history.length > 0
+    )
+    expect([1, 2]).toContain(response.data.history.length)
+
+    const request = response.data.history[0]
+    expect(request.method).toBe('POST')
+    expect(request.url).toBe(`/${to}/quotes`)
+    expect(request.body).toEqual(payload)
+    expect(request.headers['fspiop-source']).toBe(from)
+    expect(request.headers['fspiop-destination']).toBe(to)
   })
 
   test('should forward POST /quotes request to proxy if the payee dfsp is not registered in the hub', async () => {
@@ -267,22 +257,14 @@ describe('POST request tests --> ', () => {
       expect(isAdded).toBe(true)
       expect(representative).toBe(proxyId)
 
-      const payload = {
-        quoteId: uuid(),
-        transactionId: uuid(),
-        amountType: 'SEND',
-        amount: { amount: '100', currency: 'USD' },
-        transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
-        payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
-        payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
-      }
+      const payload = mocks.postQuotesPayloadDto({ from, to })
       const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
       response = await wrapWithRetries(() => hubClient.getHistory(),
-        wrapWithRetriesConf.remainingRetries,
-        wrapWithRetriesConf.timeout,
+        retryConf.remainingRetries,
+        retryConf.timeout,
         (result) => result.data.history.length > 0
       )
       expect([1, 2]).toContain(response.data.history.length)
@@ -297,6 +279,34 @@ describe('POST request tests --> ', () => {
       await proxyClient.removeDfspIdFromProxyMapping(from)
       await proxyClient.disconnect()
     }
+  })
+
+  test('should forward POST /bulkQuotes request the payee dfsp registered in the hub', async () => {
+    let response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+
+    const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.POST
+    const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const from = 'pinkbank'
+    const to = 'greenbank'
+
+    const payload = mocks.postBulkQuotesPayloadDto({ from, to })
+    const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
+    const isOk = await Producer.produceMessage(message, topicConfig, config)
+    expect(isOk).toBe(true)
+
+    response = await wrapWithRetries(() => hubClient.getHistory(),
+      retryConf.remainingRetries,
+      retryConf.timeout,
+      (result) => result.data.history.length > 0
+    )
+    expect(response.data.history.length).toBe(1)
+
+    const request = response.data.history[0]
+    expect(request.url).toBe(`/${to}/bulkQuotes`)
+    expect(request.body).toEqual(payload)
+    expect(request.headers['fspiop-source']).toBe(from)
+    expect(request.headers['fspiop-destination']).toBe(to)
   })
 
   test('should forward POST /bulkQuotes request to proxy if the payee dfsp is not registered in the hub', async () => {
@@ -343,8 +353,8 @@ describe('POST request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await wrapWithRetries(() => hubClient.getHistory(),
-        wrapWithRetriesConf.remainingRetries,
-        wrapWithRetriesConf.timeout,
+        retryConf.remainingRetries,
+        retryConf.timeout,
         (result) => result.data.history.length > 0
       )
       expect(response.data.history.length).toBe(1)
@@ -361,8 +371,3 @@ describe('POST request tests --> ', () => {
     }
   })
 })
-
-/**
- - POST quotes (no proxy) --> PUT quotes (no proxy) --> Expect callback received at the sender's endpoint
- - POST quotes (proxy) --> PUT quotes (proxy) --> Expect end to end success of fx quote and final quote
- */

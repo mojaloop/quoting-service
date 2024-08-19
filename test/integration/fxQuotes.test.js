@@ -36,15 +36,15 @@ const dto = require('../../src/lib/dto')
 const mocks = require('../mocks')
 const { wrapWithRetries } = require('../util/helper')
 
-const TEST_TIMEOUT = 20_000
-
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
 
-const wrapWithRetriesConf = {
+const retryConf = {
   remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
   timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
 }
+
+const TEST_TIMEOUT = 20_000
 
 describe('POST /fxQuotes request tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
@@ -82,7 +82,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isAdded).toBe(true)
       expect(proxy).toBe(proxyId)
 
-      const payload = mocks.fxQuotesPostPayloadDto({
+      const payload = mocks.postFxQuotesPayloadDto({
         initiatingFsp: from,
         counterPartyFsp: to
       })
@@ -93,8 +93,8 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await wrapWithRetries(() => hubClient.getHistory(),
-        wrapWithRetriesConf.remainingRetries,
-        wrapWithRetriesConf.timeout,
+        retryConf.remainingRetries,
+        retryConf.timeout,
         (result) => result.data.history.length > 0
       )
       expect(response.data.history.length).toBe(1)
@@ -137,8 +137,8 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isAdded).toBe(true)
       expect(proxy).toBe(proxyId)
 
-      const payload = mocks.fxQuotesPutPayloadDto({
-        fxQuotesPostPayload: mocks.fxQuotesPostPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
+      const payload = mocks.putFxQuotesPayloadDto({
+        fxQuotesPostPayload: mocks.postFxQuotesPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
       })
       const message = mocks.kafkaMessageFxPayloadPutDto({ from, to, id: payload.conversionRequestId, payloadBase64: base64Encode(JSON.stringify(payload)) })
       const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.PUT
@@ -148,8 +148,8 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await wrapWithRetries(() => hubClient.getHistory(),
-        wrapWithRetriesConf.remainingRetries,
-        wrapWithRetriesConf.timeout,
+        retryConf.remainingRetries,
+        retryConf.timeout,
         (result) => result.data.history.length > 0
       )
       expect(response.data.history.length).toBe(1)
@@ -177,7 +177,7 @@ describe('POST /fxQuotes request tests --> ', () => {
 
     const from = 'pinkbank'
     const to = 'greenbank'
-    const payload = mocks.fxQuotesPostPayloadDto({
+    const payload = mocks.postFxQuotesPayloadDto({
       initiatingFsp: from,
       counterPartyFsp: to
     })
@@ -189,8 +189,8 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await wrapWithRetries(() => hubClient.getHistory(),
-      wrapWithRetriesConf.remainingRetries,
-      wrapWithRetriesConf.timeout,
+      retryConf.remainingRetries,
+      retryConf.timeout,
       (result) => result.data.history.length > 0
     )
     expect(response.data.history.length).toBe(1)
@@ -214,8 +214,8 @@ describe('POST /fxQuotes request tests --> ', () => {
 
     const from = 'greenbank'
     const to = 'pinkbank'
-    const payload = mocks.fxQuotesPutPayloadDto({
-      fxQuotesPostPayload: mocks.fxQuotesPostPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
+    const payload = mocks.putFxQuotesPayloadDto({
+      fxQuotesPostPayload: mocks.postFxQuotesPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
     })
     const message = mocks.kafkaMessageFxPayloadPutDto({ from, to, id: payload.conversionRequestId, payloadBase64: base64Encode(JSON.stringify(payload)) })
     const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.PUT
@@ -225,8 +225,8 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await wrapWithRetries(() => hubClient.getHistory(),
-      wrapWithRetriesConf.remainingRetries,
-      wrapWithRetriesConf.timeout,
+      retryConf.remainingRetries,
+      retryConf.timeout,
       (result) => result.data.history.length > 0
     )
     expect(response.data.history.length).toBe(1)
@@ -250,7 +250,7 @@ describe('POST /fxQuotes request tests --> ', () => {
 
     const from = 'pinkbank'
     const to = 'invalidbank'
-    const payload = mocks.fxQuotesPostPayloadDto({
+    const payload = mocks.postFxQuotesPayloadDto({
       initiatingFsp: from,
       counterPartyFsp: to
     })
@@ -262,8 +262,8 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await wrapWithRetries(() => hubClient.getHistory(),
-      wrapWithRetriesConf.remainingRetries,
-      wrapWithRetriesConf.timeout,
+      retryConf.remainingRetries,
+      retryConf.timeout,
       (result) => result.data.history.length > 0
     )
     expect(response.data.history.length).toBe(1)
@@ -303,8 +303,8 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await wrapWithRetries(() => hubClient.getHistory(),
-      wrapWithRetriesConf.remainingRetries,
-      wrapWithRetriesConf.timeout,
+      retryConf.remainingRetries,
+      retryConf.timeout,
       (result) => result.data.history.length > 0
     )
     expect(response.data.history.length).toBe(1)
@@ -359,8 +359,8 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await wrapWithRetries(() => hubClient.getHistory(),
-        wrapWithRetriesConf.remainingRetries,
-        wrapWithRetriesConf.timeout,
+        retryConf.remainingRetries,
+        retryConf.timeout,
         (result) => result.data.history.length > 0
       )
       expect(response.data.history.length).toBe(1)
@@ -398,8 +398,8 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await wrapWithRetries(() => hubClient.getHistory(),
-      wrapWithRetriesConf.remainingRetries,
-      wrapWithRetriesConf.timeout,
+      retryConf.remainingRetries,
+      retryConf.timeout,
       (result) => result.data.history.length > 0
     )
     expect(response.data.history.length).toBe(1)
@@ -447,8 +447,8 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await wrapWithRetries(() => hubClient.getHistory(),
-        wrapWithRetriesConf.remainingRetries,
-        wrapWithRetriesConf.timeout,
+        retryConf.remainingRetries,
+        retryConf.timeout,
         (result) => result.data.history.length > 0
       )
       expect(response.data.history.length).toBe(1)

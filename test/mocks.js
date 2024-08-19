@@ -4,6 +4,21 @@ const Config = new (require('../src/lib/config'))()
 const CONTENT_TYPE = 'application/vnd.interoperability.quotes+json;version={{API_VERSION}}'
 const contentTypeFn = ({ fspiopVersion = 1.0 }) => CONTENT_TYPE.replace('{{API_VERSION}}', fspiopVersion)
 
+const proxyCacheConfigDto = ({
+  type = 'redis'
+} = {}) => Object.freeze({
+  type,
+  proxyConfig: {
+    ...(type === 'redis' && {
+      host: 'localhost', port: 6379
+    }),
+    ...(type === 'redis-cluster' && {
+      cluster: [{ host: 'localhost', port: 6379 }]
+    })
+  },
+  timeout: 5000 // is it used anywhere?
+})
+
 const kafkaMessagePayloadDto = ({
   action = 'put',
   from = Config.hubName,
@@ -107,22 +122,7 @@ const kafkaMessageFxPayloadGetDto = (params = {}) => kafkaMessagePayloadDto({
   operationId: 'FxQuotesGet'
 })
 
-const proxyCacheConfigDto = ({
-  type = 'redis'
-} = {}) => Object.freeze({
-  type,
-  proxyConfig: {
-    ...(type === 'redis' && {
-      host: 'localhost', port: 6379
-    }),
-    ...(type === 'redis-cluster' && {
-      cluster: [{ host: 'localhost', port: 6379 }]
-    })
-  },
-  timeout: 5000 // is it used anywhere?
-})
-
-const fxQuotesPostPayloadDto = ({
+const postFxQuotesPayloadDto = ({
   conversionRequestId = uuid(),
   conversionId = uuid(),
   initiatingFsp = 'pinkbank',
@@ -147,18 +147,56 @@ const fxQuotesPostPayloadDto = ({
   }
 })
 
-const fxQuotesPutPayloadDto = ({
-  fxQuotesPostPayload = fxQuotesPostPayloadDto(),
+const putFxQuotesPayloadDto = ({
+  fxQuotesPostPayload = postFxQuotesPayloadDto(),
   condition = 'mock-condition',
   charges = [{ chargeType: 'Tax', sourceAmount: { amount: 1, currency: 'USD' }, targetAmount: { amount: 100, currency: 'ZMW' } }]
-} = {}) => {
-  const dto = {
-    ...fxQuotesPostPayload,
-    condition,
-    charges
-  }
-  return dto
-}
+} = {}) => ({
+  ...fxQuotesPostPayload,
+  condition,
+  charges
+})
+
+const postQuotesPayloadDto = ({
+  from = 'payer',
+  to = 'payee',
+  quoteId = uuid(),
+  transactionId = uuid(),
+  amountType = 'SEND',
+  amount = { amount: '100', currency: 'USD' },
+  transactionType = { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
+  payer = { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
+  payee = { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
+} = {}) => ({
+  quoteId,
+  transactionId,
+  amountType,
+  amount,
+  transactionType,
+  payer,
+  payee
+})
+
+const postBulkQuotesPayloadDto = ({
+  from = 'payer',
+  to = 'payee',
+  bulkQuoteId = uuid(),
+  payer = { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
+  individualQuotes = [
+    {
+      quoteId: uuid(),
+      transactionId: uuid(),
+      payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
+      amountType: 'SEND',
+      amount: { amount: '100', currency: 'USD' },
+      transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' }
+    }
+  ]
+} = {}) => ({
+  bulkQuoteId,
+  payer,
+  individualQuotes
+})
 
 module.exports = {
   kafkaMessagePayloadDto,
@@ -167,6 +205,8 @@ module.exports = {
   kafkaMessageFxPayloadPutDto,
   kafkaMessageFxPayloadGetDto,
   proxyCacheConfigDto,
-  fxQuotesPostPayloadDto,
-  fxQuotesPutPayloadDto
+  postFxQuotesPayloadDto,
+  putFxQuotesPayloadDto,
+  postQuotesPayloadDto,
+  postBulkQuotesPayloadDto
 }
