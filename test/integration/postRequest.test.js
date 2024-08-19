@@ -361,3 +361,8 @@ describe('POST request tests --> ', () => {
     }
   })
 })
+
+/**
+ - POST quotes (no proxy) --> PUT quotes (no proxy) --> Expect callback received at the sender's endpoint
+ - POST quotes (proxy) --> PUT quotes (proxy) --> Expect end to end success of fx quote and final quote
+ */

@@ -79,21 +79,33 @@ const kafkaMessagePayloadPostDto = (params = {}) => kafkaMessagePayloadDto({
 
 const kafkaMessageFxPayloadPostDto = (params = {}) => kafkaMessagePayloadDto({
   ...params,
+  fspiopVersion: '2.0',
   action: 'post',
   type: 'fxquote',
   operationId: 'FxQuotesPost'
 })
 
 const kafkaMessageFxPayloadPutDto = (params = {}) => {
-  const dto = kafkaMessagePayloadDto({
-    ...params,
-    action: 'put',
-    type: 'fxquote',
-    operationId: 'FxQuotesPut'
-  })
+  const dto = {
+    ...kafkaMessagePayloadDto({
+      ...params,
+      fspiopVersion: '2.0',
+      action: 'put',
+      type: 'fxquote',
+      operationId: 'FxQuotesPut'
+    })
+  }
   delete dto.content.headers.accept
   return dto
 }
+
+const kafkaMessageFxPayloadGetDto = (params = {}) => kafkaMessagePayloadDto({
+  ...params,
+  fspiopVersion: '2.0',
+  action: 'get',
+  type: 'fxquote',
+  operationId: 'FxQuotesGet'
+})
 
 const proxyCacheConfigDto = ({
   type = 'redis'
@@ -153,6 +165,7 @@ module.exports = {
   kafkaMessagePayloadPostDto,
   kafkaMessageFxPayloadPostDto,
   kafkaMessageFxPayloadPutDto,
+  kafkaMessageFxPayloadGetDto,
   proxyCacheConfigDto,
   fxQuotesPostPayloadDto,
   fxQuotesPutPayloadDto
