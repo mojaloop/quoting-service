@@ -36,6 +36,7 @@ const mocks = require('../mocks')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
 const uuid = require('crypto').randomUUID
 const { wrapWithRetries } = require('../util/helper')
+const Database = require('../../src/data/cachedDatabase')
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
@@ -53,16 +54,26 @@ const wrapWithRetriesConf = {
   timeout: retryOpts?.maxTimeout || 2 // default 2
 }
 
+let db
+
 describe('POST request tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
-
-  const { kafkaConfig, proxyCache } = new Config()
+  const config = new Config()
+  const { kafkaConfig, proxyCache } = config
 
   beforeEach(async () => {
     await hubClient.clearHistory()
   })
 
+  beforeAll(async () => {
+    db = new Database(config)
+    await db.connect()
+    const isDbOk = await db.isConnected()
+    if (!isDbOk) throw new Error('DB is not connected')
+  })
+
   afterAll(async () => {
+    await db?.disconnect()
     await Producer.disconnect()
   })
 
@@ -337,6 +348,15 @@ describe('POST request tests --> ', () => {
           },
           targetAmount: {
             currency: 'TZS'
+          },
+          expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          extensionList: {
+            extension: [
+              {
+                key: 'Test',
+                value: 'Data'
+              }
+            ]
           }
         }
       }
@@ -356,6 +376,25 @@ describe('POST request tests --> ', () => {
       expect(request.body).toEqual(payload)
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
+
+      // check fx quote details were saved to db
+      const fxQuoteDetails = await db._getFxQuoteDetails(payload.conversionRequestId)
+      expect(fxQuoteDetails).toEqual({
+        conversionRequestId: payload.conversionRequestId,
+        conversionId: payload.conversionTerms.conversionId,
+        determiningTransferId: null,
+        amountTypeId: 1,
+        initiatingFsp: payload.conversionTerms.initiatingFsp,
+        counterPartyFsp: payload.conversionTerms.counterPartyFsp,
+        sourceAmount: payload.conversionTerms.sourceAmount.amount,
+        sourceCurrency: payload.conversionTerms.sourceAmount.currency,
+        targetAmount: null,
+        targetCurrency: payload.conversionTerms.targetAmount.currency,
+        extensions: expect.anything(),
+        expirationDate: expect.anything(),
+        createdDate: expect.anything()
+      })
+      expect(JSON.parse(fxQuoteDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
     } finally {
       await proxyClient.removeDfspIdFromProxyMapping(to)
       await proxyClient.removeDfspIdFromProxyMapping(from)
