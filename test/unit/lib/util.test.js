@@ -24,20 +24,31 @@
  ******/
 'use strict'
 
+jest.mock('axios')
 jest.mock('@mojaloop/central-services-logger')
 
-const Enum = require('@mojaloop/central-services-shared').Enum
-jest.mock('axios')
 const axios = require('axios')
 const Logger = require('@mojaloop/central-services-logger')
+const { Cache } = require('memory-cache')
+const { Enum } = require('@mojaloop/central-services-shared')
+
+const Config = require('../../../src/lib/config.js')
+const { RESOURCES } = require('../../../src/constants')
+const {
+  failActionHandler,
+  getStackOrInspect,
+  getSpanTags,
+  generateRequestHeaders,
+  generateRequestHeadersForJWS,
+  removeEmptyKeys,
+  fetchParticipantInfo,
+  getParticipantEndpoint,
+  makeAppInteroperabilityHeader
+} = require('../../../src/lib/util')
 
 Logger.isDebugEnabled = jest.fn(() => true)
 Logger.isErrorEnabled = jest.fn(() => true)
 Logger.isInfoEnabled = jest.fn(() => true)
-const { failActionHandler, getStackOrInspect, getSpanTags, generateRequestHeaders, generateRequestHeadersForJWS, removeEmptyKeys, fetchParticipantInfo, getParticipantEndpoint } = require('../../../src/lib/util')
-
-const Config = require('../../../src/lib/config.js')
-const { Cache } = require('memory-cache')
 
 // load config
 const config = new Config()
@@ -450,7 +461,7 @@ describe('util', () => {
       }
 
       // Act
-      const result = generateRequestHeaders(mockData.headers, config.protocolVersions, false, additionalHeaders)
+      const result = generateRequestHeaders(mockData.headers, config.protocolVersions, false, RESOURCES.quotes, additionalHeaders)
 
       // Assert
       expect(result).toStrictEqual({ ...expected, ...additionalHeaders })
@@ -459,8 +470,8 @@ describe('util', () => {
     it('generates request headers, including the and converts accept and content-type to quotes', () => {
       // Arrange
       const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
+        Accept: makeAppInteroperabilityHeader(RESOURCES.quotes, config.protocolVersions.ACCEPT.DEFAULT),
+        'Content-Type': makeAppInteroperabilityHeader(RESOURCES.quotes, config.protocolVersions.CONTENT.DEFAULT),
         'FSPIOP-Destination': 'dfsp2',
         'FSPIOP-Source': config.hubName
       }
@@ -477,7 +488,7 @@ describe('util', () => {
     it('generates the default request headers', () => {
       // Arrange
       const expected = {
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
+        'content-type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'fspiop-destination': 'dfsp2',
         'fspiop-source': 'dfsp1'
       }
@@ -492,8 +503,8 @@ describe('util', () => {
     it('generates default request headers, including the Accept', () => {
       // Arrange
       const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1.1',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
+        accept: 'application/vnd.interoperability.quotes+json;version=1.1',
+        'content-type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'fspiop-destination': 'dfsp2',
         'fspiop-source': 'dfsp1'
       }
@@ -525,6 +536,44 @@ describe('util', () => {
       expect(axios.request.mock.calls.length).toBe(2)
       expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
       expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+
+    it('returns original payer and original payee data structure when they are proxied', async () => {
+      // Arrange
+      const cache = new Cache()
+      const proxyId1 = 'proxy1'
+      const proxyId2 = 'proxy2'
+      // Act
+      const result = await fetchParticipantInfo(
+        mockData.headers['fspiop-source'],
+        mockData.headers['fspiop-destination'],
+        cache,
+        {
+          isConnected: false,
+          connect: jest.fn().mockResolvedValue(true),
+          lookupProxyByDfspId: jest.fn().mockResolvedValueOnce(proxyId1).mockResolvedValueOnce(proxyId2)
+        }
+      )
+      // Assert
+      expect(result).toEqual({
+        payer: {
+          name: mockData.headers['fspiop-source'],
+          id: '',
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        },
+        payee: {
+          name: mockData.headers['fspiop-destination'],
+          id: '',
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        }
+      })
+      expect(axios.request.mock.calls.length).toBe(0)
     })
 
     it('caches payer and payee when cache is provided', async () => {

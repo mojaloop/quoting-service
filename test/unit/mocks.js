@@ -135,7 +135,8 @@ const fxQuoteMocks = {
   logger: () => ({
     error: jest.fn(),
     info: jest.fn(),
-    debug: jest.fn()
+    debug: jest.fn(),
+    verbose: jest.fn()
   })
 }
 

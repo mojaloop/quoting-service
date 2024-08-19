@@ -49,6 +49,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash, fetchParticipantInfo, getParticipantEndpoint } = require('../lib/util')
+const { RESOURCES } = require('../constants')
 const LOCAL_ENUM = require('../lib/enum')
 const rules = require('../../config/rules.json')
 const RulesEngine = require('./rules.js')
@@ -218,9 +219,17 @@ class QuotesModel {
    * @returns {promise} - promise will reject if request is not valid
    */
   async validateQuoteUpdate (headers, quoteUpdateRequest) {
+    if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
+    let proxyIdSource
+    if (this.proxyClient) {
+      proxyIdSource = await this.proxyClient.lookupProxyByDfspId(fspiopSource)
+    }
+    // skip fulfil validation if the source is a proxy
+    if (!proxyIdSource) {
+      const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
+      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
+    }
   }
 
   /**
@@ -249,7 +258,7 @@ class QuotesModel {
       // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
-      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination, cache)
+      const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination, cache, this.proxyClient)
       this.writeLog(`Got payer ${payer} and payee ${payee}`)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
@@ -308,12 +317,12 @@ class QuotesModel {
           this.db.getAmountType(quoteRequest.amountType),
           this.db.getPartyType(LOCAL_ENUM.PAYER),
           this.db.getPartyIdentifierType(quoteRequest.payer.partyIdInfo.partyIdType),
-          this.db.getParticipantByName(quoteRequest.payer.partyIdInfo.fspId),
+          payer.proxiedParticipant ? null : this.db.getParticipantByName(quoteRequest.payer.partyIdInfo.fspId),
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYER_DFSP),
           this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE),
           this.db.getPartyType(LOCAL_ENUM.PAYEE),
           this.db.getPartyIdentifierType(quoteRequest.payee.partyIdInfo.partyIdType),
-          this.db.getParticipantByName(quoteRequest.payee.partyIdInfo.fspId),
+          payee.proxiedParticipant ? null : this.db.getParticipantByName(quoteRequest.payee.partyIdInfo.fspId),
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYEE_DFSP),
           this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE)
         ])
@@ -332,8 +341,11 @@ class QuotesModel {
 
         // create a txn reference
         this.writeLog(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
-        refs.transactionReferenceId = await this.db.createTransactionReference(txn,
-          quoteRequest.quoteId, quoteRequest.transactionId)
+        refs.transactionReferenceId = await this.db.createTransactionReference(
+          txn,
+          quoteRequest.quoteId,
+          quoteRequest.transactionId
+        )
         this.writeLog(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
 
         // create the quote row itself
@@ -475,7 +487,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes`
-      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, false, additionalHeaders)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, additionalHeaders)
 
       this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)

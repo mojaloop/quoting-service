@@ -127,7 +127,7 @@ class QuotingHandler {
       await model.handleException(fspiopSource, quoteId, err, headers, span)
     } finally {
       if (span && !span.isFinished) {
-        span.finish()
+        await span.finish()
       }
     }
 
@@ -150,7 +150,7 @@ class QuotingHandler {
       await model.handleException(fspiopSource, payload.bulkQuoteId, fspiopError, headers, span)
     } finally {
       if (span && !span.isFinished) {
-        span.finish()
+        await span.finish()
       }
     }
 
@@ -175,7 +175,7 @@ class QuotingHandler {
       await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
     } finally {
       if (span && !span.isFinished) {
-        span.finish()
+        await span.finish()
       }
     }
 
@@ -197,7 +197,7 @@ class QuotingHandler {
       await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
     } finally {
       if (span && !span.isFinished) {
-        span.finish()
+        await span.finish()
       }
     }
 
@@ -220,7 +220,7 @@ class QuotingHandler {
       await model.handleException(fspiopSource, payload.conversionRequestId, fspiopError, headers, span)
     } finally {
       if (span && !span.isFinished) {
-        span.finish()
+        await span.finish()
       }
     }
 
@@ -245,7 +245,7 @@ class QuotingHandler {
       await model.handleException(fspiopSource, conversionRequestId, err, headers, span)
     } finally {
       if (span && !span.isFinished) {
-        span.finish()
+        await span.finish()
       }
     }
 
@@ -267,7 +267,7 @@ class QuotingHandler {
       await model.handleException(fspiopSource, conversionRequestId, err, headers, span)
     } finally {
       if (span && !span.isFinished) {
-        span.finish()
+        await span.finish()
       }
     }
 
