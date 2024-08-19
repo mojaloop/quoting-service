@@ -36,20 +36,22 @@
 
 const Knex = require('knex')
 const util = require('util')
-const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const MLNumber = require('@mojaloop/ml-number')
 const Enum = require('@mojaloop/central-services-shared').Enum
+const { loggerFactory } = require('../lib')
 
 const LOCAL_ENUM = require('../lib/enum')
-const { getStackOrInspect } = require('../lib/util')
 
 /**
  * Abstracts operations against the database
  */
 class Database {
-  constructor (config) {
+  constructor (config, logger) {
     this.config = config
+    this.log = logger || loggerFactory({
+      context: this.constructor.name
+    })
   }
 
   /**
@@ -118,7 +120,7 @@ class Database {
       }
       return rows[0].transactionInitiatorTypeId
     } catch (err) {
-      this.writeLog(`Error in getInitiatorType: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getInitiatorType:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -140,7 +142,7 @@ class Database {
       }
       return rows[0].transactionInitiatorId
     } catch (err) {
-      this.writeLog(`Error in getInitiator: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getInitiator:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -162,7 +164,7 @@ class Database {
       }
       return rows[0].transactionScenarioId
     } catch (err) {
-      this.writeLog(`Error in getScenario: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getScenario:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -184,7 +186,7 @@ class Database {
       }
       return rows[0].transactionSubScenarioId
     } catch (err) {
-      this.writeLog(`Error in getSubScenario: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getSubScenario:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -206,7 +208,7 @@ class Database {
       }
       return rows[0].amountTypeId
     } catch (err) {
-      this.writeLog(`Error in getAmountType: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getAmountType:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -225,10 +227,10 @@ class Database {
           transactionReferenceId
         })
 
-      this.writeLog(`inserted new transactionReference in db: ${transactionReferenceId}`)
+      this.log.debug('inserted new transactionReference in db: ', transactionReferenceId)
       return transactionReferenceId
     } catch (err) {
-      this.writeLog(`Error in createTransactionReference: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createTransactionReference:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -247,10 +249,10 @@ class Database {
           hash
         })
 
-      this.writeLog(`inserted new duplicate check in db for quoteId: ${quoteId}`)
+      this.log.debug('inserted new duplicate check in db for quoteId: ', quoteId)
       return quoteId
     } catch (err) {
-      this.writeLog(`Error in createQuoteDuplicateCheck: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createQuoteDuplicateCheck:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -270,10 +272,10 @@ class Database {
           hash
         })
 
-      this.writeLog(`inserted new response duplicate check in db for quote ${quoteId}, quoteResponseId: ${quoteResponseId}`)
+      this.log.debug('inserted new response duplicate check in db for quote: ', { quoteId, quoteResponseId })
       return quoteId
     } catch (err) {
-      this.writeLog(`Error in createQuoteUpdateDuplicateCheck: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createQuoteUpdateDuplicateCheck:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -296,7 +298,7 @@ class Database {
 
       return rows[0].partyTypeId
     } catch (err) {
-      this.writeLog(`Error in getPartyType: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getPartyType:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -319,7 +321,7 @@ class Database {
 
       return rows[0].partyIdentifierTypeId
     } catch (err) {
-      this.writeLog(`Error in getPartyIdentifierType: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getPartyIdentifierType:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -356,7 +358,7 @@ class Database {
 
       return rows[0].participantId
     } catch (err) {
-      this.writeLog(`Error in getParticipant: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getParticipant:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -388,7 +390,7 @@ class Database {
 
       return rows[0].participantId
     } catch (err) {
-      this.writeLog(`Error in getParticipantByName: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getParticipantByName:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -414,7 +416,7 @@ class Database {
 
       return rows[0].transferParticipantRoleTypeId
     } catch (err) {
-      this.writeLog(`Error in getTransferParticipantRoleType: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getTransferParticipantRoleType:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -440,7 +442,7 @@ class Database {
 
       return rows[0].ledgerEntryTypeId
     } catch (err) {
-      this.writeLog(`Error in getLedgerEntryType: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getLedgerEntryType:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -506,7 +508,7 @@ class Database {
         .transacting(txn)
         .insert(newQuoteParty)
 
-      this.writeLog(`inserted new quoteParty in db: ${res[0]}`)
+      this.log.debug('inserted new quoteParty in db: ', res[0])
 
       // hold on to the created quotePartyId so we can return it when we are done
       const quotePartyId = res[0]
@@ -521,7 +523,7 @@ class Database {
         }
 
         const createdParty = await this.createParty(txn, quotePartyId, newParty)
-        this.writeLog(`inserted new party in db: ${util.inspect(createdParty)}`)
+        this.log.debug('inserted new party in db: ', createdParty)
       }
       if (party.partyIdInfo.extensionList) {
         const extensions = party.partyIdInfo.extensionList.extension
@@ -532,7 +534,7 @@ class Database {
 
       return quotePartyId
     } catch (err) {
-      this.writeLog(`Error in createQuoteParty: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createQuoteParty:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -556,7 +558,7 @@ class Database {
       newParty.partyId = res[0]
       return newParty
     } catch (err) {
-      this.writeLog(`Error in createParty: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createParty:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -586,10 +588,10 @@ class Database {
           currencyId: quote.currencyId
         })
 
-      this.writeLog(`inserted new quote in db: ${util.inspect(quote)}`)
+      this.log.debug('inserted new quote in db: ', quote)
       return quote.quoteId
     } catch (err) {
-      this.writeLog(`Error in createQuote: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createQuote:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -607,7 +609,7 @@ class Database {
         .insert(newExtensions)
       return true
     } catch (err) {
-      this.writeLog(`Error in createQuotePartyIdInfoExtensions: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createQuotePartyIdInfoExtensions:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -635,7 +637,7 @@ class Database {
 
       return rows[0]
     } catch (err) {
-      this.writeLog(`Error in getQuoteParty: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getQuoteParty:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -659,7 +661,7 @@ class Database {
 
       return rows[0]
     } catch (err) {
-      this.writeLog(`Error in getQuoteParty: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getQuoteParty:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -685,7 +687,7 @@ class Database {
 
       return rows[0].value
     } catch (err) {
-      this.writeLog(`Error in getParticipantEndpoint: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getParticipantEndpoint:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -709,7 +711,7 @@ class Database {
 
       return rows[0]
     } catch (err) {
-      this.writeLog(`Error in getQuoteDuplicateCheck: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getQuoteDuplicateCheck:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -733,7 +735,7 @@ class Database {
 
       return rows[0]
     } catch (err) {
-      this.writeLog(`Error in getQuoteResponseDuplicateCheck: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getQuoteResponseDuplicateCheck:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -766,10 +768,10 @@ class Database {
 
       newQuoteResponse.quoteResponseId = res[0]
 
-      this.writeLog(`inserted new quoteResponse in db: ${util.inspect(newQuoteResponse)}`)
+      this.log.debug('inserted new quoteResponse in db: ', newQuoteResponse)
       return newQuoteResponse
     } catch (err) {
-      this.writeLog(`Error in createQuoteResponse: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createQuoteResponse:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -790,10 +792,10 @@ class Database {
         .transacting(txn)
         .insert(newPacket)
 
-      this.writeLog(`inserted new quoteResponseIlpPacket in db: ${util.inspect(res)}`)
+      this.log.debug('inserted new quoteResponseIlpPacket in db: ', res)
       return res
     } catch (err) {
-      this.writeLog(`Error in createIlpPacket: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createIlpPacket:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -817,10 +819,10 @@ class Database {
 
       newGeoCode.geoCodeId = res[0]
 
-      this.writeLog(`inserted new geoCode in db: ${util.inspect(newGeoCode)}`)
+      this.log.debug('inserted new geoCode in db: ', newGeoCode)
       return res
     } catch (err) {
-      this.writeLog(`Error in createGeoCode: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createGeoCode:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -844,10 +846,10 @@ class Database {
 
       newError.quoteErrorId = res[0]
 
-      this.writeLog(`inserted new quoteError in db: ${util.inspect(newError)}`)
+      this.log.debug('inserted new quoteError in db: ', newError)
       return res
     } catch (err) {
-      this.writeLog(`Error in createQuoteError: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createQuoteError:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -872,10 +874,10 @@ class Database {
         .transacting(txn)
         .insert(newExtensions)
 
-      this.writeLog(`inserted new quoteExtensions in db: ${util.inspect(newExtensions)}`)
+      this.log.debug('inserted new quoteExtensions in db: ', newExtensions)
       return res
     } catch (err) {
-      this.writeLog(`Error in createQuoteExtensions: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createQuoteExtensions:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -892,10 +894,10 @@ class Database {
 
       newFxQuote.fxQuoteId = res[0]
 
-      this.writeLog(`inserted new fxQuote in db: ${util.inspect(newFxQuote)}`)
+      this.log.debug('inserted new fxQuote in db: ', newFxQuote)
       return newFxQuote
     } catch (err) {
-      this.writeLog(`Error in createFxQuote: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createFxQuote:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -913,10 +915,10 @@ class Database {
 
       newFxQuoteResponse.fxQuoteResponseId = res[0]
 
-      this.writeLog(`inserted new fxQuoteResponse in db: ${util.inspect(newFxQuoteResponse)}`)
+      this.log.debug('inserted new fxQuoteResponse in db: ', newFxQuoteResponse)
       return newFxQuoteResponse
     } catch (err) {
-      this.writeLog(`Error in createFxQuoteResponse: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createFxQuoteResponse:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -935,10 +937,10 @@ class Database {
 
       newFxQuoteError.fxQuoteErrorId = res[0]
 
-      this.writeLog(`inserted new fxQuoteError in db: ${util.inspect(newFxQuoteError)}`)
+      this.log.debug('inserted new fxQuoteError in db: ', newFxQuoteError)
       return newFxQuoteError
     } catch (err) {
-      this.writeLog(`Error in createFxQuoteError: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createFxQuoteError:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -956,10 +958,10 @@ class Database {
 
       newFxQuoteDuplicateCheck.fxQuoteDuplicateCheckId = res[0]
 
-      this.writeLog(`inserted new fxQuoteDuplicateCheck in db: ${util.inspect(newFxQuoteDuplicateCheck)}`)
+      this.log.debug('inserted new fxQuoteDuplicateCheck in db: ', newFxQuoteDuplicateCheck)
       return newFxQuoteDuplicateCheck
     } catch (err) {
-      this.writeLog(`Error in createFxQuoteDuplicateCheck: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createFxQuoteDuplicateCheck:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -978,10 +980,10 @@ class Database {
 
       newFxQuoteResponseDuplicateCheck.fxQuoteResponseDuplicateCheckId = res[0]
 
-      this.writeLog(`inserted new fxQuoteResponseDuplicateCheck in db: ${util.inspect(newFxQuoteResponseDuplicateCheck)}`)
+      this.log.debug('inserted new fxQuoteResponseDuplicateCheck in db: ', newFxQuoteResponseDuplicateCheck)
       return newFxQuoteResponseDuplicateCheck
     } catch (err) {
-      this.writeLog(`Error in createFxQuoteResponseDuplicateCheck: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createFxQuoteResponseDuplicateCheck:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1008,10 +1010,10 @@ class Database {
         .insert(newFxQuoteConversionTerms)
 
       newFxQuoteConversionTerms.conversionId = res[0]
-      this.writeLog(`inserted new fxQuoteConversionTerms in db: ${util.inspect(newFxQuoteConversionTerms)}`)
+      this.log.debug('inserted new fxQuoteConversionTerms in db: ', newFxQuoteConversionTerms)
       return newFxQuoteConversionTerms
     } catch (err) {
-      this.writeLog(`Error in createFxQuoteConversionTerms: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createFxQuoteConversionTerms:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1031,10 +1033,10 @@ class Database {
         .transacting(txn)
         .insert(newFxQuoteResponseFxCharges)
 
-      this.writeLog(`inserted new fxCharge in db: ${util.inspect(newFxQuoteResponseFxCharges)}`)
+      this.log.debug('inserted new fxCharge in db: ', newFxQuoteResponseFxCharges)
       return res
     } catch (err) {
-      this.writeLog(`Error in fxCharge: ${getStackOrInspect(err)}`)
+      this.log.error('Error in fxCharge:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1051,10 +1053,10 @@ class Database {
         .transacting(txn)
         .insert(newFxQuoteConversionTermsExtension)
 
-      this.writeLog(`inserted new fxQuoteConversionTermsExtension in db: ${util.inspect(newFxQuoteConversionTermsExtension)}`)
+      this.log.debug('inserted new fxQuoteConversionTermsExtension in db: ', newFxQuoteConversionTermsExtension)
       return res
     } catch (err) {
-      this.writeLog(`Error in createFxQuoteConversionTermsExtension: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createFxQuoteConversionTermsExtension:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1084,10 +1086,10 @@ class Database {
 
       newFxQuoteResponseConversionTerms.fxQuoteResponseConversionTermsId = res[0]
 
-      this.writeLog(`inserted new fxQuoteResponseConversionTerms in db: ${util.inspect(newFxQuoteResponseConversionTerms)}`)
+      this.log.debug('inserted new fxQuoteResponseConversionTerms in db: ', newFxQuoteResponseConversionTerms)
       return newFxQuoteResponseConversionTerms
     } catch (err) {
-      this.writeLog(`Error in createFxQuoteResponseConversionTerms: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createFxQuoteResponseConversionTerms:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1104,10 +1106,10 @@ class Database {
         .transacting(txn)
         .insert(newFxQuoteResponseConversionTermsExtension)
 
-      this.writeLog(`inserted new fxQuoteResponseConversionTermsExtension in db: ${util.inspect(newFxQuoteResponseConversionTermsExtension)}`)
+      this.log.debug('inserted new fxQuoteResponseConversionTermsExtension in db: ', newFxQuoteResponseConversionTermsExtension)
       return res
     } catch (err) {
-      this.writeLog(`Error in createFxQuoteResponseConversionTermsExtension: ${getStackOrInspect(err)}`)
+      this.log.error('Error in createFxQuoteResponseConversionTermsExtension:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1119,7 +1121,7 @@ class Database {
         .first()
       return result
     } catch (err) {
-      this.writeLog(`Error in getFxQuoteDuplicateCheck: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getFxQuoteDuplicateCheck:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1131,7 +1133,7 @@ class Database {
         .first()
       return result
     } catch (err) {
-      this.writeLog(`Error in getFxQuoteResponseDuplicateCheck: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getFxQuoteResponseDuplicateCheck:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1156,7 +1158,7 @@ class Database {
         .first()
       return result
     } catch (err) {
-      this.writeLog(`Error in _getFxQuoteDetails: ${getStackOrInspect(err)}`)
+      this.log.error('Error in _getFxQuoteDetails:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1185,7 +1187,7 @@ class Database {
         .first()
       return result
     } catch (err) {
-      this.writeLog(`Error in _getFxQuoteDetails: ${getStackOrInspect(err)}`)
+      this.log.error('Error in _getFxQuoteDetails:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1197,7 +1199,7 @@ class Database {
         .first()
       return result
     } catch (err) {
-      this.writeLog(`Error in _getFxQuoteErrorDetails: ${getStackOrInspect(err)}`)
+      this.log.error('Error in _getFxQuoteErrorDetails:', err)
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }
   }
@@ -1214,13 +1216,6 @@ class Database {
       .first()
       .select('is_locked AS isLocked')
     return result.isLocked
-  }
-
-  /**
-     * Writes a formatted log message to the console
-     */
-  writeLog (message) {
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [quotesdatabase]: ${message}`)
   }
 }
 

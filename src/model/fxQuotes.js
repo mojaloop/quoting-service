@@ -68,15 +68,18 @@ class FxQuotesModel {
 
   async checkDuplicateFxQuoteRequest (fxQuoteRequest) {
     try {
+      const conversionRequestId = fxQuoteRequest.conversionRequestId
+      const log = this.log.child({ conversionRequestId })
+
       // calculate a SHA-256 of the request
       const hash = calculateRequestHash(fxQuoteRequest)
-      this.log.debug(`Calculated sha256 hash of quote request with id ${fxQuoteRequest.conversionRequestId} as: ${hash}`)
+      log.debug('Calculated sha256 hash of fxQuote as: ', { hash })
 
       const dupchk = await this.db.getFxQuoteDuplicateCheck(fxQuoteRequest.conversionRequestId)
-      this.log.debug(`DB query for quote duplicate check with id ${fxQuoteRequest.conversionRequestId} returned: ${util.inspect(dupchk)}`)
+      log.debug('DB query for fxQuote duplicate check returned: ', { dupchk })
 
       if (!dupchk) {
-        // no existing record for this quoteId found
+        this.log.info('no existing record for this conversionRequestId found')
         return {
           isResend: false,
           isDuplicateId: false
@@ -98,19 +101,20 @@ class FxQuotesModel {
       }
     } catch (err) {
       // internal-error
-      this.log.error(`Error in checkDuplicateFxQuoteRequest: ${getStackOrInspect(err)}`)
+      this.log.error('Error in checkDuplicateFxQuoteRequest: ', err)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
 
   async checkDuplicateFxQuoteResponse (conversionRequestId, fxQuoteResponse) {
     try {
+      const log = this.log.child({ conversionRequestId })
       // calculate a SHA-256 of the request
       const hash = calculateRequestHash(fxQuoteResponse)
-      this.log.debug(`Calculated sha256 hash of quote response with id ${conversionRequestId} as: ${hash}`)
+      log.debug('Calculated sha256 hash of fxQuote response as: ', { hash })
 
       const dupchk = await this.db.getFxQuoteResponseDuplicateCheck(conversionRequestId)
-      this.log.debug(`DB query for quote response duplicate check with id ${conversionRequestId} returned: ${util.inspect(dupchk)}`)
+      log.debug('DB query for fxQuote response duplicate check returned: ', { dupchk })
 
       if (!dupchk) {
         // no existing record for this conversionRequestId found
@@ -135,7 +139,7 @@ class FxQuotesModel {
       }
     } catch (err) {
       // internal-error
-      this.log.error(`Error in checkDuplicateFxQuoteResponse: ${getStackOrInspect(err)}`)
+      this.log.error('Error in checkDuplicateFxQuoteResponse: ', err)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -514,7 +518,7 @@ class FxQuotesModel {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
         // get the model to handle it
-        this.log.error(`Error forwarding quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        this.log.error('Error forwarding fxQuote request: ', err)
         const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
         await this.handleException(fspiopSource, fxQuoteRequest.conversionRequestId, fspiopError, headers, childSpan)
       } finally {
@@ -524,7 +528,7 @@ class FxQuotesModel {
       }
     } catch (err) {
       // internal-error
-      this.log.error(`Error in handleFxQuoteRequestResend: ${getStackOrInspect(err)}`)
+      this.log.error('Error in handleFxQuoteRequestResend: ', err)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -561,7 +565,7 @@ class FxQuotesModel {
       }
     } catch (err) {
       // internal-error
-      this.log.error(`Error in handleQuoteUpdateResend: ${getStackOrInspect(err)}`)
+      this.log.error('Error in handleQuoteUpdateResend: ', err)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
