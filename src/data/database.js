@@ -1190,6 +1190,18 @@ class Database {
     }
   }
 
+  async _getFxQuoteErrorDetails (conversionRequestId) {
+    try {
+      const result = await this.queryBuilder('fxQuoteError')
+        .where('conversionRequestId', conversionRequestId)
+        .first()
+      return result
+    } catch (err) {
+      this.writeLog(`Error in _getFxQuoteErrorDetails: ${getStackOrInspect(err)}`)
+      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+    }
+  }
+
   /**
    * @function getIsMigrationLocked
    *

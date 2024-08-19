@@ -38,6 +38,8 @@ const MockServerClient = require('./mockHttpServer/MockServerClient')
 const uuid = require('crypto').randomUUID
 const { wrapWithRetries } = require('../util/helper')
 const Database = require('../../src/data/cachedDatabase')
+const { error } = require('console')
+const exp = require('constants')
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
@@ -543,6 +545,128 @@ describe('PUT callback Tests --> ', () => {
         }
       }))
       expect(expectedCharges).toEqual(payload.conversionTerms.charges)
+    } finally {
+      await proxyClient.disconnect()
+    }
+  }, TEST_TIMEOUT)
+
+  test('should forward PUT /fxQuotes/{ID}/error request to proxy if the payer dfsp is not registered in the hub', async () => {
+    let response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+
+    const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.PUT
+    const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const postTopicConfig = dto.topicConfigDto({ topicName: kafkaConfig.PRODUCER.FX_QUOTE.POST.topic })
+
+    const from = 'greenbank'
+    // redbank not in the hub db
+    const to = 'redbank'
+
+    // register proxy representative for redbank
+    const proxyId = 'redbankproxy'
+    let proxyClient
+
+    try {
+      proxyClient = await createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+      const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
+
+      // assert that the proxy representative is mapped in the cache
+      const key = `dfsp:${to}`
+      const representative = await proxyClient.redisClient.get(key)
+
+      expect(isAdded).toBe(true)
+      expect(representative).toBe(proxyId)
+      const conversionRequestId = uuid()
+      const postPayload = {
+        conversionRequestId,
+        conversionTerms: {
+          conversionId: uuid(),
+          initiatingFsp: from,
+          counterPartyFsp: to,
+          amountType: 'SEND',
+          sourceAmount: {
+            currency: 'USD',
+            amount: 300
+          },
+          targetAmount: {
+            currency: 'TZS'
+          },
+          expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          extensionList: {
+            extension: [
+              {
+                key: 'Test',
+                value: 'Data'
+              }
+            ]
+          }
+        }
+      }
+      const postMessage = mocks.kafkaMessagePayloadPostDto({ from, to, id: conversionRequestId, payloadBase64: base64Encode(JSON.stringify(postPayload)) })
+      const postIsOk = await Producer.produceMessage(postMessage, postTopicConfig, kafkaConfig.PRODUCER.FX_QUOTE.POST.config)
+
+      expect(postIsOk).toBe(true)
+
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
+      expect(response.data.history.length).toBe(1)
+
+      // check fx quote details were saved to db
+      const fxQuoteDetails = await db._getFxQuoteDetails(postPayload.conversionRequestId)
+      expect(fxQuoteDetails).toEqual({
+        conversionRequestId: postPayload.conversionRequestId,
+        conversionId: postPayload.conversionTerms.conversionId,
+        determiningTransferId: null,
+        amountTypeId: 1,
+        initiatingFsp: postPayload.conversionTerms.initiatingFsp,
+        counterPartyFsp: postPayload.conversionTerms.counterPartyFsp,
+        sourceAmount: postPayload.conversionTerms.sourceAmount.amount,
+        sourceCurrency: postPayload.conversionTerms.sourceAmount.currency,
+        targetAmount: null,
+        targetCurrency: postPayload.conversionTerms.targetAmount.currency,
+        extensions: expect.anything(),
+        expirationDate: expect.anything(),
+        createdDate: expect.anything()
+      })
+      expect(JSON.parse(fxQuoteDetails.extensions)).toEqual(postPayload.conversionTerms.extensionList.extension)
+      await hubClient.clearHistory()
+
+      const payload = {
+        errorInformation: {
+          errorCode: '5000',
+          errorDescription: 'Test error'
+        }
+      }
+      const message = mocks.kafkaMessagePayloadDto({ from, to, id: conversionRequestId, payloadBase64: base64Encode(JSON.stringify(payload)) })
+      delete message.content.headers.accept
+      const isOk = await Producer.produceMessage(message, topicConfig, config)
+      expect(isOk).toBe(true)
+
+      response = await wrapWithRetries(() => hubClient.getHistory(),
+        wrapWithRetriesConf.remainingRetries,
+        wrapWithRetriesConf.timeout,
+        (result) => result.data.history.length > 0
+      )
+      expect(response.data.history.length).toBe(1)
+
+      const request = response.data.history[0]
+      expect(request.url).toBe(`/${proxyId}/fxQuotes/${message.id}/error`)
+      expect(request.body).toEqual(payload)
+      expect(request.headers['fspiop-source']).toBe(from)
+      expect(request.headers['fspiop-destination']).toBe(to)
+
+      const fxQuoteErrorDetails = await db._getFxQuoteErrorDetails(conversionRequestId)
+      expect(fxQuoteErrorDetails).toEqual({
+        conversionRequestId,
+        fxQuoteResponseId: null,
+        fxQuoteErrorId: expect.anything(),
+        errorCode: Number(payload.errorInformation.errorCode),
+        errorDescription: payload.errorInformation.errorDescription,
+        createdDate: expect.anything()
+      })
     } finally {
       await proxyClient.disconnect()
     }

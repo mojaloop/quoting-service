@@ -467,8 +467,7 @@ class FxQuotesModel {
         txn = await this.db.newTransaction()
 
         // persist the error
-        await this.db.createQuoteError(txn, {
-          conversionRequestId,
+        await this.db.createFxQuoteError(txn, conversionRequestId, {
           errorCode: Number(error.errorCode),
           errorDescription: error.errorDescription
         })
