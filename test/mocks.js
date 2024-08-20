@@ -208,10 +208,11 @@ const postBulkQuotesPayloadDto = ({
   from = 'payer',
   to = 'payee',
   bulkQuoteId = uuid(),
+  quoteIds = [uuid()],
   payer = { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
   individualQuotes = [
     {
-      quoteId: uuid(),
+      quoteId: quoteIds[0],
       transactionId: uuid(),
       payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
       amountType: 'SEND',
@@ -225,6 +226,27 @@ const postBulkQuotesPayloadDto = ({
   individualQuotes
 })
 
+const putBulkQuotesPayloadDto = ({
+  to = 'payee',
+  quoteIds = [uuid()],
+  individualQuoteResults = [
+    {
+      quoteId: quoteIds[0],
+      payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
+      transferAmount: { amount: '100', currency: 'USD' },
+      payeeReceiveAmount: { amount: '100', currency: 'USD' },
+      payeeFspFee: { amount: '0', currency: 'USD' },
+      payeeFspCommission: { amount: '0', currency: 'USD' },
+      ilpPacket: 'test-ilp-packet',
+      condition: 'test-condition'
+    }
+  ],
+  expiration = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+} = {}) => ({
+  individualQuoteResults,
+  expiration
+})
+
 module.exports = {
   kafkaMessagePayloadDto,
   kafkaMessagePayloadPostDto,
@@ -236,5 +258,6 @@ module.exports = {
   putFxQuotesPayloadDto,
   postQuotesPayloadDto,
   putQuotesPayloadDto,
-  postBulkQuotesPayloadDto
+  postBulkQuotesPayloadDto,
+  putBulkQuotesPayloadDto
 }

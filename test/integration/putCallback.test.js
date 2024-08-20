@@ -253,7 +253,7 @@ describe('PUT callback Tests --> ', () => {
     expect(body2.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.from}'`)
   })
 
-  test.only('should forward PUT /quotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
+  test('should forward PUT /quotes/{ID} request to proxy if the payer dfsp is not registered in the hub', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
@@ -341,21 +341,8 @@ describe('PUT callback Tests --> ', () => {
       expect(representative).toBe(proxyId)
 
       const bulkQuoteId = uuid()
-      const quoteId = uuid()
-      const postPayload = {
-        bulkQuoteId,
-        payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
-        individualQuotes: [
-          {
-            quoteId,
-            transactionId: uuid(),
-            payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
-            amountType: 'SEND',
-            amount: { amount: '100', currency: 'USD' },
-            transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' }
-          }
-        ]
-      }
+      const quoteIds = [uuid()]
+      const postPayload = mocks.postBulkQuotesPayloadDto({ from, to, bulkQuoteId, quoteIds })
       const postMessage = mocks.kafkaMessagePayloadPostDto({ from, to, id: null, payloadBase64: base64Encode(JSON.stringify(postPayload)) })
       const postIsOk = await Producer.produceMessage(postMessage, postTopicConfig, kafkaConfig.PRODUCER.BULK_QUOTE.POST.config)
       expect(postIsOk).toBe(true)
@@ -364,22 +351,8 @@ describe('PUT callback Tests --> ', () => {
       expect(response.data.history.length).toBe(1)
       await hubClient.clearHistory()
 
-      const payload = {
-        individualQuoteResults: [
-          {
-            quoteId,
-            payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
-            transferAmount: { amount: '100', currency: 'USD' },
-            payeeReceiveAmount: { amount: '100', currency: 'USD' },
-            payeeFspFee: { amount: '0', currency: 'USD' },
-            payeeFspCommission: { amount: '0', currency: 'USD' },
-            ilpPacket: 'test',
-            condition: 'test'
-          }
-        ],
-        expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString()
-      }
-      const message = mocks.kafkaMessagePayloadDto({ from, to, id: uuid(), payloadBase64: base64Encode(JSON.stringify(payload)) })
+      const putPayload = mocks.putQuotesPayloadDto({ to, quoteIds })
+      const message = mocks.kafkaMessagePayloadDto({ from, to, id: uuid(), payloadBase64: base64Encode(JSON.stringify(putPayload)) })
       delete message.content.headers.accept
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
@@ -389,7 +362,7 @@ describe('PUT callback Tests --> ', () => {
 
       const request = response.data.history[0]
       expect(request.url).toBe(`/${proxyId}/bulkQuotes/${message.id}`)
-      expect(request.body).toEqual(payload)
+      expect(request.body).toEqual(putPayload)
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
     } finally {
