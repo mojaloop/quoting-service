@@ -158,8 +158,9 @@ describe('POST request tests --> ', () => {
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
     const to = 'greenbank'
-    const payload = mocks.postQuotesPayloadDto({ 
-      from, to,
+    const payload = mocks.postQuotesPayloadDto({
+      from,
+      to,
       payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from }, supportedCurrencies: ['USD', 'ZMW'] }
     })
     const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
@@ -182,7 +183,8 @@ describe('POST request tests --> ', () => {
     const from = 'pinkbank'
     const to = 'greenbank'
     const payload = mocks.postQuotesPayloadDto({
-      from, to,
+      from,
+      to,
       payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from }, supportedCurrencies: ['USD', 'ZMW', 'GBP'] }
     })
     const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
