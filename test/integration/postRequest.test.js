@@ -37,21 +37,18 @@ const uuid = require('crypto').randomUUID
 const { wrapWithRetries } = require('../util/helper')
 const Database = require('../../src/data/cachedDatabase')
 
-const hubClient = new MockServerClient()
-const base64Encode = (data) => Buffer.from(data).toString('base64')
-
-const retryConf = {
-  remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
-  timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
-}
-
 const TEST_TIMEOUT = 20_000
-let db
 
 describe('POST request tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
+  let db
   const config = new Config()
   const { kafkaConfig, proxyCache } = config
+  const hubClient = new MockServerClient()
+  const retryConf = {
+    remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
+    timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
+  }
 
   beforeEach(async () => {
     await hubClient.clearHistory()
@@ -69,6 +66,16 @@ describe('POST request tests --> ', () => {
     await Producer.disconnect()
   })
 
+  const base64Encode = (data) => Buffer.from(data).toString('base64')
+
+  const getResponseWithRetry = async () => {
+    return wrapWithRetries(() => hubClient.getHistory(),
+      retryConf.remainingRetries,
+      retryConf.timeout,
+      (result) => result.data.history.length > 0
+    )
+  }
+
   test('should pass validation for POST /quotes request if request amount currency is registered (position account exists) for the payer participant', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
@@ -82,11 +89,7 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
 
     expect(response.data.history.length).toBeGreaterThan(0)
     const { url } = response.data.history[0]
@@ -113,11 +116,7 @@ describe('POST request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await wrapWithRetries(() => hubClient.getHistory(),
-        retryConf.remainingRetries,
-        retryConf.timeout,
-        (result) => result.data.history.length > 0
-      )
+      response = await getResponseWithRetry()
       expect(response.data.history.length).toBe(1)
 
       const { url } = response.data.history[0]
@@ -142,11 +141,7 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
     expect(response.data.history.length).toBe(1)
 
     const { url, body } = response.data.history[0]
@@ -163,20 +158,15 @@ describe('POST request tests --> ', () => {
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
     const to = 'greenbank'
-    const payload = mocks.postQuotesPayloadDto({
-      from,
-      to,
+    const payload = mocks.postQuotesPayloadDto({ 
+      from, to,
       payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from }, supportedCurrencies: ['USD', 'ZMW'] }
     })
     const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
     expect(response.data.history.length).toBe(1)
 
     const { url } = response.data.history[0]
@@ -192,19 +182,14 @@ describe('POST request tests --> ', () => {
     const from = 'pinkbank'
     const to = 'greenbank'
     const payload = mocks.postQuotesPayloadDto({
-      from,
-      to,
+      from, to,
       payer: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from }, supportedCurrencies: ['USD', 'ZMW', 'GBP'] }
     })
     const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.quoteId, payloadBase64: base64Encode(JSON.stringify(payload)) })
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
     expect(response.data.history.length).toBe(1)
 
     const { url, body } = response.data.history[0]
@@ -227,11 +212,7 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
     expect([1, 2]).toContain(response.data.history.length)
 
     const request = response.data.history[0]
@@ -272,11 +253,7 @@ describe('POST request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await wrapWithRetries(() => hubClient.getHistory(),
-        retryConf.remainingRetries,
-        retryConf.timeout,
-        (result) => result.data.history.length > 0
-      )
+      response = await getResponseWithRetry()
       expect([1, 2]).toContain(response.data.history.length)
 
       const request = response.data.history[0]
@@ -305,11 +282,7 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
     expect(response.data.history.length).toBe(1)
 
     const request = response.data.history[0]
@@ -362,11 +335,7 @@ describe('POST request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await wrapWithRetries(() => hubClient.getHistory(),
-        retryConf.remainingRetries,
-        retryConf.timeout,
-        (result) => result.data.history.length > 0
-      )
+      response = await getResponseWithRetry()
       expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]
