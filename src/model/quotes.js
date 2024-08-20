@@ -67,6 +67,7 @@ class QuotesModel {
     this.db = deps.db
     this.requestId = deps.requestId
     this.proxyClient = deps.proxyClient
+    this.envConfig = deps.config || new Config()
   }
 
   async executeRules (headers, quoteRequest, payer, payee) {
@@ -152,7 +153,7 @@ class QuotesModel {
       'validateQuoteRequest - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
-    const envConfig = new Config()
+    const { envConfig } = this
     // note that the framework should validate the form of the request
     // here we can do some hard-coded rule validations to ensure requests
     // do not lead to unsupported scenarios or use-cases.
@@ -162,56 +163,53 @@ class QuotesModel {
     //   throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.NOT_IMPLEMENTED, 'Only PAYER initiated transactions are supported', null, fspiopSource)
     // }
 
-    // Any quoteRequest specific validations to be added here
-    if (!quoteRequest) {
-      // internal-error
-      histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
-      throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
-    }
-
-    // Ensure the proxy client is connected if we need to use it down the road
-    if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
-
-    // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
-    // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
-    if (quoteRequest.payer.supportedCurrencies &&
-      quoteRequest.payer.supportedCurrencies.length > 0 &&
-      // if the payer dfsp has a proxy cache entry, we do not validate the dfsp here
-      !(await this.proxyClient?.lookupProxyByDfspId(fspiopSource))
-    ) {
-      await Promise.all(quoteRequest.payer.supportedCurrencies.map(currency =>
-        this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
-      ))
-    } else {
-      // If it is not passed in, then we validate payee against the `amount` currency.
-      // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
-      if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
-        await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    try {
+      // Any quoteRequest specific validations to be added here
+      if (!quoteRequest) {
+        // internal-error
+        throw ErrorHandler.CreateInternalServerFSPIOPError('Missing quoteRequest', null, fspiopSource)
       }
-    }
 
-    histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
+      // Ensure the proxy client is connected if we need to use it down the road
+      if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
 
-    // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
-    if (envConfig.simpleRoutingMode) {
-      // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
-      if (
-        quoteRequest.payer?.partyIdInfo?.fspId &&
-        quoteRequest.payer.partyIdInfo.fspId !== fspiopSource &&
-        // if the payer dfsp has a proxy cache entry, we do not validate the dfsp here
-        !(await this.proxyClient?.lookupProxyByDfspId(quoteRequest.payer.partyIdInfo.fspId))
-      ) {
-        await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-      }
-      // Lets make sure the optional fspId exists in the payee's partyIdInfo before we validate it
-      if (
-        quoteRequest.payee?.partyIdInfo?.fspId &&
-        quoteRequest.payee.partyIdInfo.fspId !== fspiopDestination &&
+      // In fspiop api spec 2.0, to support FX, `supportedCurrencies` can be optionally passed in via the payer property.
+      // If `supportedCurrencies` is present, then payer FSP must have position accounts for all those currencies.
+      if (quoteRequest.payer.supportedCurrencies && quoteRequest.payer.supportedCurrencies.length > 0) {
+        await Promise.all(quoteRequest.payer.supportedCurrencies.map(currency =>
+          this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+        ))
+      } else {
+        // If it is not passed in, then we validate payee against the `amount` currency.
         // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
-        !(await this.proxyClient?.lookupProxyByDfspId(quoteRequest.payee.partyIdInfo.fspId))
-      ) {
-        await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+        if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
+          await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+        }
       }
+
+      // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
+      if (envConfig.simpleRoutingMode) {
+        // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
+        if (
+          quoteRequest.payer?.partyIdInfo?.fspId &&
+          quoteRequest.payer.partyIdInfo.fspId !== fspiopSource
+        ) {
+          await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+        }
+        // Lets make sure the optional fspId exists in the payee's partyIdInfo before we validate it
+        if (
+          quoteRequest.payee?.partyIdInfo?.fspId &&
+          quoteRequest.payee.partyIdInfo.fspId !== fspiopDestination &&
+          // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
+          !(await this.proxyClient?.lookupProxyByDfspId(quoteRequest.payee.partyIdInfo.fspId))
+        ) {
+          await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+        }
+      }
+      histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
+    } catch (err) {
+      histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
+      throw err
     }
   }
 
@@ -245,7 +243,7 @@ class QuotesModel {
       'handleQuoteRequest - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
-    const envConfig = new Config()
+    const { envConfig } = this
     // accumulate enum ids
     const refs = {}
 
@@ -489,7 +487,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions, false, RESOURCES.quotes, additionalHeaders)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, additionalHeaders)
 
       this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)
@@ -577,7 +575,7 @@ class QuotesModel {
     let txn = null
     let payeeParty = null
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const envConfig = new Config()
+    const { envConfig } = this
     const handleQuoteUpdateSpan = span.getChild('qs_quote_handleQuoteUpdate')
     try {
       // ensure no 'accept' header is present in the request headers.
@@ -755,7 +753,7 @@ class QuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions, true)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, true)
 
       this.writeLog(`Forwarding quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote response headers: ${JSON.stringify(newHeaders)}`)
@@ -839,7 +837,7 @@ class QuotesModel {
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     let txn = null
-    const envConfig = new Config()
+    const { envConfig } = this
     let newError
     const childSpan = span.getChild('qs_quote_handleQuoteError')
     try {
@@ -955,7 +953,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes/${quoteId}`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
 
       this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
 
@@ -1023,7 +1021,7 @@ class QuotesModel {
       'sendErrorCallback - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
-    const envConfig = new Config()
+    const { envConfig } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       // look up the callback base url
@@ -1066,9 +1064,9 @@ class QuotesModel {
 
       // JWS Signer expects headers in lowercase
       if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, this.db.config.protocolVersions, true)
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true)
       } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, this.db.config.protocolVersions, true)
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true)
       }
 
       let opts = {

@@ -59,6 +59,7 @@ class BulkQuotesModel {
     this.db = deps.db
     this.requestId = deps.requestId
     this.proxyClient = deps.proxyClient
+    this.envConfig = deps.config || new Config()
   }
 
   /**
@@ -139,7 +140,7 @@ class BulkQuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
 
       this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)
@@ -223,7 +224,7 @@ class BulkQuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions, true)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, true)
 
       this.writeLog(`Forwarding bulk quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding bulk quote response headers: ${JSON.stringify(newHeaders)}`)
@@ -297,7 +298,7 @@ class BulkQuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
 
       this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
 
@@ -378,7 +379,7 @@ class BulkQuotesModel {
    * @returns {promise}
    */
   async sendErrorCallback (fspiopSource, fspiopError, bulkQuoteId, headers, span, modifyHeaders = true) {
-    const envConfig = new Config()
+    const { envConfig } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       // look up the callback base url
@@ -421,9 +422,9 @@ class BulkQuotesModel {
 
       // JWS Signer expects headers in lowercase
       if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, this.db.config.protocolVersions, true)
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true)
       } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, this.db.config.protocolVersions, true)
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true)
       }
 
       let opts = {

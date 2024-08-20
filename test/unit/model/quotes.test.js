@@ -629,6 +629,21 @@ describe('QuotesModel', () => {
 
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
+
+    it('should validate payer supported currencies if supplied', async () => {
+      const fspiopSource = 'dfsp1'
+      const fspiopDestination = 'dfsp2'
+      const request = mockData.quoteRequest
+      request.payer.supportedCurrencies = ['ZMW', 'TZS']
+      quotesModel.db.getParticipant.mockResolvedValueOnce({ accounts: [{ currency: 'ZMW' }] })
+      quotesModel.db.getParticipant.mockResolvedValueOnce({ accounts: [{ currency: 'TZS' }] })
+
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, request)).resolves.toBeUndefined()
+
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(fspiopSource, 'PAYER_DFSP', 'ZMW', Enum.Accounts.LedgerAccountType.POSITION)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(fspiopSource, 'PAYER_DFSP', 'TZS', Enum.Accounts.LedgerAccountType.POSITION)
+    })
   })
   describe('validateQuoteUpdate', () => {
     beforeEach(() => {
@@ -1072,6 +1087,18 @@ describe('QuotesModel', () => {
             expect(quotesModel.handleException).toBeCalledWith(...expectedHandleExceptionArgs)
             expect(quotesModel.handleException.mock.calls.length).toBe(1)
             expect(result).toEqual(expectedResult)
+          })
+
+          it('calls handleQuoteRequestResend if request is duplicate and should resend', async () => {
+            expect.assertions(1)
+            quotesModel.checkDuplicateQuoteRequest = jest.fn(() => {
+              return {
+                isDuplicateId: true,
+                isResend: true
+              }
+            })
+            await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            expect(quotesModel.handleQuoteRequestResend).toHaveBeenCalledTimes(1)
           })
         })
       })

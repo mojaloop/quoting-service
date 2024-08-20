@@ -267,7 +267,7 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
   if (!cachedPayee && !requestPayee) {
     requestPayee = await axios.request({ url: `${url}/${destination}` })
     cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payee ${destination}`)
   } else {
     Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payee ${destination}`)
   }

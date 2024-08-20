@@ -66,7 +66,7 @@
     "package-lock": "docker run --rm -it quoting-service:local cat package-lock.json > package-lock.json",
     "run": "docker run -p 3002:3002 --rm --link db:mysql quoting-service:local",
     "docker:build": "docker build --build-arg NODE_VERSION=\"$(cat .nvmrc)-alpine\" -t mojaloop/quoting-service:local -f ./Dockerfile .",
-    "docker:up": "docker-compose up",
+    "docker:up": ". ./scripts/env.sh && docker-compose up -d",
     "docker:stop": "docker-compose stop",
     "docker:rm": "docker-compose rm -f -v",
     "docker:down": "docker-compose down -v",

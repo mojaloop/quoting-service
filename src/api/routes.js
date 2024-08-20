@@ -176,4 +176,7 @@ const APIRoutes = (api) => [
   }
 ]
 
-module.exports = { APIRoutes }
+module.exports = {
+  APIRoutes,
+  handleRequest // Exposed for testing
+}
