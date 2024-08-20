@@ -134,6 +134,15 @@ const postFxQuotesPayloadDto = ({
   },
   targetAmount = {
     currency: 'ZMW'
+  },
+  expiration = new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+  extensionList = {
+    extension: [
+      {
+        key: 'Test',
+        value: 'Data'
+      }
+    ]
   }
 } = {}) => ({
   conversionRequestId,
@@ -143,7 +152,9 @@ const postFxQuotesPayloadDto = ({
     counterPartyFsp,
     amountType,
     sourceAmount,
-    targetAmount
+    targetAmount,
+    expiration,
+    extensionList
   }
 })
 

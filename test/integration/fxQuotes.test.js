@@ -35,6 +35,7 @@ const MockServerClient = require('./mockHttpServer/MockServerClient')
 const dto = require('../../src/lib/dto')
 const mocks = require('../mocks')
 const { wrapWithRetries } = require('../util/helper')
+const Database = require('../../src/data/cachedDatabase')
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
@@ -48,14 +49,23 @@ const TEST_TIMEOUT = 20_000
 
 describe('POST /fxQuotes request tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
+  const config = new Config()
+  const { kafkaConfig, proxyCache, hubName } = config
+  let db
 
-  const { kafkaConfig, proxyCache, hubName } = new Config()
+  beforeAll(async () => {
+    db = new Database(config)
+    await db.connect()
+    const isDbOk = await db.isConnected()
+    if (!isDbOk) throw new Error('DB is not connected')
+  })
 
   beforeEach(async () => {
     await hubClient.clearHistory()
   })
 
   afterAll(async () => {
+    await db?.disconnect()
     await Producer.disconnect()
   })
   /**
@@ -106,6 +116,25 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(request.body).toEqual(payload)
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
+
+      // check fx quote details were saved to db
+      const fxQuoteDetails = await db._getFxQuoteDetails(payload.conversionRequestId)
+      expect(fxQuoteDetails).toEqual({
+        conversionRequestId: payload.conversionRequestId,
+        conversionId: payload.conversionTerms.conversionId,
+        determiningTransferId: null,
+        amountTypeId: 1,
+        initiatingFsp: payload.conversionTerms.initiatingFsp,
+        counterPartyFsp: payload.conversionTerms.counterPartyFsp,
+        sourceAmount: payload.conversionTerms.sourceAmount.amount,
+        sourceCurrency: payload.conversionTerms.sourceAmount.currency,
+        targetAmount: null,
+        targetCurrency: payload.conversionTerms.targetAmount.currency,
+        extensions: expect.anything(),
+        expirationDate: expect.anything(),
+        createdDate: expect.anything()
+      })
+      expect(JSON.parse(fxQuoteDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
     } finally {
       await proxyClient.removeDfspIdFromProxyMapping(to)
       await proxyClient.disconnect()

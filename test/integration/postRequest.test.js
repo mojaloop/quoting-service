@@ -35,6 +35,7 @@ const mocks = require('../mocks')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
 const uuid = require('crypto').randomUUID
 const { wrapWithRetries } = require('../util/helper')
+const Database = require('../../src/data/cachedDatabase')
 
 const hubClient = new MockServerClient()
 const base64Encode = (data) => Buffer.from(data).toString('base64')
@@ -45,17 +46,26 @@ const retryConf = {
 }
 
 const TEST_TIMEOUT = 20_000
+let db
 
 describe('POST request tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
-
-  const { kafkaConfig, proxyCache } = new Config()
+  const config = new Config()
+  const { kafkaConfig, proxyCache } = config
 
   beforeEach(async () => {
     await hubClient.clearHistory()
   })
 
+  beforeAll(async () => {
+    db = new Database(config)
+    await db.connect()
+    const isDbOk = await db.isConnected()
+    if (!isDbOk) throw new Error('DB is not connected')
+  })
+
   afterAll(async () => {
+    await db?.disconnect()
     await Producer.disconnect()
   })
 
@@ -281,7 +291,7 @@ describe('POST request tests --> ', () => {
     }
   })
 
-  test('should forward POST /bulkQuotes request the payee dfsp registered in the hub', async () => {
+  test('should forward POST /bulkQuotes request to payee dfsp registered in the hub', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
