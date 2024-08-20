@@ -36,21 +36,19 @@ const mocks = require('../mocks')
 const { wrapWithRetries } = require('../util/helper')
 const Database = require('../../src/data/cachedDatabase')
 
-const hubClient = new MockServerClient()
-const base64Encode = (data) => Buffer.from(data).toString('base64')
-
-const retryConf = {
-  remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
-  timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
-}
-
 const TEST_TIMEOUT = 20_000
 
 describe('POST /fxQuotes request tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
+
+  let db
   const config = new Config()
   const { kafkaConfig, proxyCache, hubName } = config
-  let db
+  const hubClient = new MockServerClient()
+  const retryConf = {
+    remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
+    timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
+  }
 
   beforeAll(async () => {
     db = new Database(config)
@@ -68,13 +66,14 @@ describe('POST /fxQuotes request tests --> ', () => {
     await Producer.disconnect()
   })
 
+  const base64Encode = (data) => Buffer.from(data).toString('base64')
+
   const createFxQuote = async (from, to, payload) => {
     const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.conversionRequestId, payloadBase64: base64Encode(JSON.stringify(payload)) })
     const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.POST
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
-
     const response = await getResponseWithRetry()
     expect(response.data.history.length).toBe(1)
     await hubClient.clearHistory()
@@ -204,6 +203,41 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(request.body).toEqual(payload)
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
+
+      // check fx quote response details were saved to db
+      const fxQuoteResponseDetails = await db._getFxQuoteResponseDetails(payload.conversionRequestId)
+      expect(fxQuoteResponseDetails).toEqual({
+        conversionRequestId: payload.conversionRequestId,
+        fxQuoteResponseId: expect.anything(),
+        ilpCondition: payload.condition,
+        conversionId: payload.conversionTerms.conversionId,
+        amountTypeId: 1,
+        determiningTransferId: null,
+        counterPartyFsp: payload.conversionTerms.counterPartyFsp,
+        initiatingFsp: payload.conversionTerms.initiatingFsp,
+        sourceAmount: payload.conversionTerms.sourceAmount.amount,
+        sourceCurrency: payload.conversionTerms.sourceAmount.currency,
+        targetAmount: payload.conversionTerms.targetAmount.amount,
+        targetCurrency: payload.conversionTerms.targetAmount.currency,
+        expirationDate: expect.anything(),
+        createdDate: expect.anything(),
+        charges: expect.anything(),
+        extensions: expect.anything()
+      })
+      expect(JSON.parse(fxQuoteResponseDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
+      const charges = JSON.parse(fxQuoteResponseDetails.charges)
+      const expectedCharges = charges.map(charge => ({
+        chargeType: charge.chargeType,
+        sourceAmount: {
+          currency: charge.sourceCurrency,
+          amount: charge.sourceAmount
+        },
+        targetAmount: {
+          currency: charge.targetCurrency,
+          amount: charge.targetAmount
+        }
+      }))
+      expect(expectedCharges).toEqual(payload.conversionTerms.charges)
     } finally {
       await proxyClient.removeDfspIdFromProxyMapping(from)
       await proxyClient.disconnect()
@@ -408,6 +442,17 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(request.body.errorInformation.errorDescription).toBe('Generic validation error')
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
+
+      // check fxquote error details were saved to db
+      const fxQuoteErrorDetails = await db._getFxQuoteErrorDetails(conversionRequestId)
+      expect(fxQuoteErrorDetails).toEqual({
+        conversionRequestId,
+        fxQuoteResponseId: null,
+        fxQuoteErrorId: expect.anything(),
+        errorCode: Number(payload.errorInformation.errorCode),
+        errorDescription: payload.errorInformation.errorDescription,
+        createdDate: expect.anything()
+      })
     } finally {
       await proxyClient.removeDfspIdFromProxyMapping(to)
       await proxyClient.disconnect()

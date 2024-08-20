@@ -192,6 +192,18 @@ const postQuotesPayloadDto = ({
   payee
 })
 
+const putQuotesPayloadDto = ({
+  transferAmount = { amount: '100', currency: 'USD' },
+  payeeReceiveAmount = { amount: '100', currency: 'USD' },
+  ilpPacket = 'test-ilp-packet',
+  condition = 'test-condition'
+} = {}) => ({
+  transferAmount,
+  payeeReceiveAmount,
+  ilpPacket,
+  condition
+})
+
 const postBulkQuotesPayloadDto = ({
   from = 'payer',
   to = 'payee',
@@ -223,5 +235,6 @@ module.exports = {
   postFxQuotesPayloadDto,
   putFxQuotesPayloadDto,
   postQuotesPayloadDto,
+  putQuotesPayloadDto,
   postBulkQuotesPayloadDto
 }
