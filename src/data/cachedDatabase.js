@@ -127,7 +127,7 @@ class CachedDatabase extends Database {
         }
         histTimer({ success: true, queryName: type, hit: false })
       } else {
-        this.log.error('Cache hit for : ', { type, params, value })
+        this.log.debug('Cache hit for : ', { type, params, value })
         histTimer({ success: true, queryName: type, hit: true })
       }
 

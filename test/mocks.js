@@ -162,11 +162,15 @@ const putFxQuotesPayloadDto = ({
   fxQuotesPostPayload = postFxQuotesPayloadDto(),
   condition = 'mock-condition',
   charges = [{ chargeType: 'Tax', sourceAmount: { amount: 1, currency: 'USD' }, targetAmount: { amount: 100, currency: 'ZMW' } }]
-} = {}) => ({
-  ...fxQuotesPostPayload,
-  condition,
-  charges
-})
+} = {}) => {
+  const dto = {
+    ...fxQuotesPostPayload,
+    condition
+  }
+  dto.conversionTerms.targetAmount.amount = 600
+  dto.conversionTerms.charges = charges
+  return dto
+}
 
 const postQuotesPayloadDto = ({
   from = 'payer',

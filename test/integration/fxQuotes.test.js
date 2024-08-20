@@ -27,7 +27,6 @@
  --------------
  ******/
 
-const uuid = require('crypto').randomUUID
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { createProxyClient } = require('../../src/lib/proxy')
 const Config = require('../../src/lib/config')
@@ -68,6 +67,27 @@ describe('POST /fxQuotes request tests --> ', () => {
     await db?.disconnect()
     await Producer.disconnect()
   })
+
+  const createFxQuote = async (from, to, payload) => {
+    const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.conversionRequestId, payloadBase64: base64Encode(JSON.stringify(payload)) })
+    const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.POST
+    const topicConfig = dto.topicConfigDto({ topicName: topic })
+    const isOk = await Producer.produceMessage(message, topicConfig, config)
+    expect(isOk).toBe(true)
+
+    const response = await getResponseWithRetry()
+    expect(response.data.history.length).toBe(1)
+    await hubClient.clearHistory()
+  }
+
+  const getResponseWithRetry = async () => {
+    return wrapWithRetries(() => hubClient.getHistory(),
+      retryConf.remainingRetries,
+      retryConf.timeout,
+      (result) => result.data.history.length > 0
+    )
+  }
+
   /**
    * Produces a POST /fxQuotes message for a dfsp that is not registered in the hub
    */
@@ -102,11 +122,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await wrapWithRetries(() => hubClient.getHistory(),
-        retryConf.remainingRetries,
-        retryConf.timeout,
-        (result) => result.data.history.length > 0
-      )
+      response = await getResponseWithRetry()
       expect(response.data.history.length).toBe(1)
 
       // assert that the request was received by the proxy
@@ -166,21 +182,19 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isAdded).toBe(true)
       expect(proxy).toBe(proxyId)
 
-      const payload = mocks.putFxQuotesPayloadDto({
-        fxQuotesPostPayload: mocks.postFxQuotesPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
-      })
+      // create subject fxquote
+      const fxQuotesPostPayload = mocks.postFxQuotesPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
+      await createFxQuote(to, from, fxQuotesPostPayload)
+
+      // send put callback
+      const payload = mocks.putFxQuotesPayloadDto({ fxQuotesPostPayload })
       const message = mocks.kafkaMessageFxPayloadPutDto({ from, to, id: payload.conversionRequestId, payloadBase64: base64Encode(JSON.stringify(payload)) })
       const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await wrapWithRetries(() => hubClient.getHistory(),
-        retryConf.remainingRetries,
-        retryConf.timeout,
-        (result) => result.data.history.length > 0
-      )
+      response = await getResponseWithRetry()
       expect(response.data.history.length).toBe(1)
 
       // assert that the callback was received by the payer dfsp
@@ -200,7 +214,7 @@ describe('POST /fxQuotes request tests --> ', () => {
    * Produces a POST /fxQuotes message for a dfsp that is registered in the hub
    * Expects a POST /fxQuotes request at the payee dfsp's endpoint
    */
-  test('should POST fx quote (no proxy)', async () => {
+  test('should POST fxquote (no proxy)', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
@@ -217,11 +231,7 @@ describe('POST /fxQuotes request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
     expect(response.data.history.length).toBe(1)
 
     // assert that the request was received by the payee dfsp
@@ -237,27 +247,26 @@ describe('POST /fxQuotes request tests --> ', () => {
    * Produces a PUT /fxQuotes/{ID} callback for a dfsp that is registered in the hub
    * Expects a PUT /fxQuotes/{ID} callback at the payer dfsp's endpoint
    */
-  test('should PUT fx quote callback (no proxy)', async () => {
+  test('should PUT fxquote callback (no proxy)', async () => {
     let response = await hubClient.getHistory()
     expect(response.data.history.length).toBe(0)
 
     const from = 'greenbank'
     const to = 'pinkbank'
-    const payload = mocks.putFxQuotesPayloadDto({
-      fxQuotesPostPayload: mocks.postFxQuotesPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
-    })
+
+    // create subject fxquote
+    const fxQuotesPostPayload = mocks.postFxQuotesPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
+    await createFxQuote(to, from, fxQuotesPostPayload)
+
+    // send put callback
+    const payload = mocks.putFxQuotesPayloadDto({ fxQuotesPostPayload })
     const message = mocks.kafkaMessageFxPayloadPutDto({ from, to, id: payload.conversionRequestId, payloadBase64: base64Encode(JSON.stringify(payload)) })
     const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.PUT
     const topicConfig = dto.topicConfigDto({ topicName: topic })
-
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
     expect(response.data.history.length).toBe(1)
 
     // assert that the callback was received by the payee dfsp
@@ -290,11 +299,7 @@ describe('POST /fxQuotes request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
     expect(response.data.history.length).toBe(1)
 
     // assert that error callback was received by the payer dfsp
@@ -317,7 +322,12 @@ describe('POST /fxQuotes request tests --> ', () => {
 
     const from = 'greenbank'
     const to = 'pinkbank'
-    const conversionRequestId = uuid()
+
+    // create subject fxquote
+    const fxQuotesPostPayload = mocks.postFxQuotesPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
+    await createFxQuote(to, from, fxQuotesPostPayload)
+
+    const conversionRequestId = fxQuotesPostPayload.conversionRequestId
     const payload = {
       errorInformation: {
         errorCode: '3100',
@@ -331,11 +341,7 @@ describe('POST /fxQuotes request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
     expect(response.data.history.length).toBe(1)
 
     // assert that the error callback was received by the payer dfsp
@@ -373,7 +379,11 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isAdded).toBe(true)
       expect(proxy).toBe(proxyId)
 
-      const conversionRequestId = uuid()
+      // create subject fxquote
+      const fxQuotesPostPayload = mocks.postFxQuotesPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
+      await createFxQuote(to, from, fxQuotesPostPayload)
+
+      const conversionRequestId = fxQuotesPostPayload.conversionRequestId
       const payload = {
         errorInformation: {
           errorCode: '3100',
@@ -387,11 +397,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await wrapWithRetries(() => hubClient.getHistory(),
-        retryConf.remainingRetries,
-        retryConf.timeout,
-        (result) => result.data.history.length > 0
-      )
+      response = await getResponseWithRetry()
       expect(response.data.history.length).toBe(1)
 
       // assert that the error callback was received by the proxy
@@ -418,7 +424,13 @@ describe('POST /fxQuotes request tests --> ', () => {
 
     const from = 'pinkbank'
     const to = 'greenbank'
-    const conversionRequestId = uuid()
+
+    // create subject fxquote
+    const fxQuotesPostPayload = mocks.postFxQuotesPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
+    await createFxQuote(to, from, fxQuotesPostPayload)
+
+    // get the fxquote
+    const conversionRequestId = fxQuotesPostPayload.conversionRequestId
     const message = mocks.kafkaMessageFxPayloadGetDto({ from, to, id: conversionRequestId })
     const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.GET
     const topicConfig = dto.topicConfigDto({ topicName: topic })
@@ -426,11 +438,7 @@ describe('POST /fxQuotes request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await wrapWithRetries(() => hubClient.getHistory(),
-      retryConf.remainingRetries,
-      retryConf.timeout,
-      (result) => result.data.history.length > 0
-    )
+    response = await getResponseWithRetry()
     expect(response.data.history.length).toBe(1)
 
     // assert that the callback was received by the destination dfsp's endpoint
@@ -467,7 +475,11 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isAdded).toBe(true)
       expect(proxy).toBe(proxyId)
 
-      const conversionRequestId = uuid()
+      // create subject fxquote
+      const fxQuotesPostPayload = mocks.postFxQuotesPayloadDto({ initiatingFsp: to, counterPartyFsp: from })
+      await createFxQuote(to, from, fxQuotesPostPayload)
+
+      const conversionRequestId = fxQuotesPostPayload.conversionRequestId
       const message = mocks.kafkaMessageFxPayloadGetDto({ from, to, id: conversionRequestId })
       const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.GET
       const topicConfig = dto.topicConfigDto({ topicName: topic })
@@ -475,11 +487,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await wrapWithRetries(() => hubClient.getHistory(),
-        retryConf.remainingRetries,
-        retryConf.timeout,
-        (result) => result.data.history.length > 0
-      )
+      response = await getResponseWithRetry()
       expect(response.data.history.length).toBe(1)
 
       // assert that the callback was received by the proxy

@@ -53,7 +53,7 @@
     "includeCauseExtension": false,
     "truncateExtensions": true
   },
-  "SIMPLE_ROUTING_MODE": true,
+  "SIMPLE_ROUTING_MODE": false,
   "ENDPOINT_SECURITY":{
     "JWS": {
       "JWS_SIGN": false,

@@ -1,5 +1,3 @@
-version: "3.7"
-
 x-depends-on: &dependsOnMysqlAndKafka
   mysql:
     condition: service_healthy
@@ -62,7 +60,7 @@ services:
 
   quoting-service-handler:
     <<: *quotingServiceBase
-    command: npm run start:handlers
+    command: npm run start:handlers:debug
     ports:
       - "3003:3003"
       - "29229:9229"

@@ -409,7 +409,7 @@ describe('PUT callback Tests --> ', () => {
             amount: 300
           },
           targetAmount: {
-            currency: 'TZS'
+            currency: 'ZMW'
           },
           expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
           extensionList: {
@@ -462,7 +462,7 @@ describe('PUT callback Tests --> ', () => {
           counterPartyFsp: to,
           amountType: 'SEND',
           sourceAmount: { amount: 100, currency: 'USD' },
-          targetAmount: { amount: 100, currency: 'TZS' },
+          targetAmount: { amount: 100, currency: 'ZMW' },
           expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
           charges: [
             {
@@ -472,7 +472,7 @@ describe('PUT callback Tests --> ', () => {
                 amount: 1
               },
               targetAmount: {
-                currency: 'TZS',
+                currency: 'ZMW',
                 amount: 1
               }
             }
@@ -582,7 +582,7 @@ describe('PUT callback Tests --> ', () => {
             amount: 300
           },
           targetAmount: {
-            currency: 'TZS'
+            currency: 'ZMW'
           },
           expiration: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
           extensionList: {
