@@ -90,7 +90,27 @@ const mockRules = [
         message: 'The requested payee does not support the payment currency'
       }
     }
+  },
+  {
+    conditions: {
+      all: [
+        {
+          fact: 'payload',
+          path: '$.extensionList',
+          operator: 'isObject',
+          value: 'true'
+        }
+      ]
+    },
+    event: {
+      type: 'INVALID_QUOTE_REQUEST',
+      params: {
+        FSPIOPError: 'PAYEE_UNSUPPORTED_CURRENCY',
+        message: 'The requested payee does not support the payment currency'
+      }
+    }
   }
+
 ]
 
 const RulesEngine = require('../../../src/model/rules')

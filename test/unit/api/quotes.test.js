@@ -69,6 +69,34 @@ describe('POST /quotes API Tests -->', () => {
     expect(producerConfig).toStrictEqual(config)
   })
 
+  it('should publish an fxQuote request message', async () => {
+    // Arrange
+    Producer.produceMessage = jest.fn()
+    const conversionRequestId = randomUUID()
+    const mockRequest = mocks.mockHttpRequest({
+      payload: { conversionRequestId },
+      headers: {
+        'content-type': 'application/vnd.interoperability.fxquotes+json;version=1.0',
+      }
+    })
+    const { handler, code } = mocks.createMockHapiHandler()
+
+    // Act
+    await quotesApi.post(mockContext, mockRequest, handler)
+
+    // Assert
+    expect(code).toHaveBeenCalledWith(Http.ReturnCodes.ACCEPTED.CODE)
+    expect(Producer.produceMessage).toHaveBeenCalledTimes(1)
+
+    const [message, topicConfig, producerConfig] = Producer.produceMessage.mock.calls[0]
+    const { id, type, action } = message.content
+    expect(id).toBe(conversionRequestId)
+    expect(type).toBe(Events.Event.Type.FX_QUOTE)
+    expect(action).toBe(Events.Event.Action.POST)
+    expect(topicConfig.topicName).toBe(kafkaConfig.PRODUCER.FX_QUOTE.POST.topic)
+    expect(producerConfig).toStrictEqual(kafkaConfig.PRODUCER.FX_QUOTE.POST.config)
+  })
+
   it('should rethrow and log error in case of error on publishing quote', async () => {
     // Arrange
     const error = new Error('Create Quote Test Error')

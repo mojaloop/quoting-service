@@ -173,6 +173,46 @@ describe('FxQuotesModel Tests -->', () => {
       expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalled()
     })
 
+    test('should handle fx quote request in persistent mode', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel.envConfig.simpleRoutingMode = false
+
+      jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteRequest').mockResolvedValue({
+        isResend: false,
+        isDuplicateId: false
+      })
+      jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest').mockResolvedValue()
+      jest.spyOn(db, 'createFxQuote').mockResolvedValue({
+        fxQuoteId: 1
+      })
+      jest.spyOn(db, 'createFxQuoteConversionTerms')
+      jest.spyOn(db, 'createFxQuoteConversionTermsExtension')
+      jest.spyOn(db, 'createFxQuoteDuplicateCheck')
+
+      await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span)).resolves.toBeUndefined()
+
+      expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
+      expect(db.createFxQuote).toBeCalled()
+      expect(db.createFxQuoteConversionTerms).toBeCalled()
+      expect(db.createFxQuoteConversionTermsExtension).toBeCalled()
+      expect(db.createFxQuoteDuplicateCheck).toBeCalled()
+    })
+
+    test('it should rollback db changes on error in persistent mode', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel.envConfig.simpleRoutingMode = false
+
+      jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteRequest').mockResolvedValue({
+        isResend: false,
+        isDuplicateId: false
+      })
+      jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest').mockResolvedValue()
+      jest.spyOn(db, 'createFxQuote').mockRejectedValue(new Error('DB Error'))
+
+      await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span)).resolves.toBeUndefined()
+      expect(db.rollback).toBeCalled()
+    })
+
     test('should handle error thrown', async () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest').mockRejectedValue(new Error('Forward Error'))
@@ -285,16 +325,50 @@ describe('FxQuotesModel Tests -->', () => {
       expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalled()
     })
 
-    test('should handle fx quote update', async () => {
+    test('should handle fx quote update in persistent mode', async () => {
       delete headers.accept
 
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel.envConfig.simpleRoutingMode = false
+
+      jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteResponse').mockResolvedValue({
+        isResend: false,
+        isDuplicateId: false
+      })
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteUpdate').mockResolvedValue()
-      jest.spyOn(fxQuotesModel, 'handleException').mockResolvedValue()
+      jest.spyOn(db, 'createFxQuoteResponse').mockResolvedValue({
+        fxQuoteResponseId: 1
+      })
+      jest.spyOn(db, 'createFxQuoteResponseFxCharge')
+      jest.spyOn(db, 'createFxQuoteResponseConversionTerms')
+      jest.spyOn(db, 'createFxQuoteResponseConversionTermsExtension')
+      jest.spyOn(db, 'createFxQuoteResponseDuplicateCheck')
 
       await expect(fxQuotesModel.handleFxQuoteUpdate(headers, conversionRequestId, updateRequest, span)).resolves.toBeUndefined()
 
       expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalledWith(headers, conversionRequestId, updateRequest, span.getChild())
+      expect(db.createFxQuoteResponse).toBeCalled()
+      expect(db.createFxQuoteResponseFxCharge).toBeCalled()
+      expect(db.createFxQuoteResponseConversionTerms).toBeCalled()
+      expect(db.createFxQuoteResponseConversionTermsExtension).toBeCalled()
+      expect(db.createFxQuoteResponseDuplicateCheck).toBeCalled()
+    })
+
+    test('it should rollback db changes on error in persistent mode', async () => {
+      delete headers.accept
+
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel.envConfig.simpleRoutingMode = false
+
+      jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteResponse').mockResolvedValue({
+        isResend: false,
+        isDuplicateId: false
+      })
+      jest.spyOn(fxQuotesModel, 'forwardFxQuoteUpdate').mockResolvedValue()
+      jest.spyOn(db, 'createFxQuoteResponse').mockRejectedValue(new Error('DB Error'))
+
+      await expect(fxQuotesModel.handleFxQuoteUpdate(headers, conversionRequestId, updateRequest, span)).resolves.toBeUndefined()
+      expect(db.rollback).toBeCalled()
     })
   })
 
@@ -400,6 +474,34 @@ describe('FxQuotesModel Tests -->', () => {
 
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
       expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false)
+    })
+
+    test('should handle fx quote error in persistent mode', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel.envConfig.simpleRoutingMode = false
+      jest.spyOn(fxQuotesModel, 'sendErrorCallback').mockResolvedValue()
+      jest.spyOn(db, 'createFxQuoteError')
+
+      const error = { errorCode: '3201', errorDescription: 'Destination FSP error' }
+      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span)).resolves.toBeUndefined()
+
+      const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
+      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false)
+      expect(db.createFxQuoteError).toBeCalledWith(expect.anything(), conversionRequestId, {
+        errorCode: Number(error.errorCode),
+        errorDescription: error.errorDescription
+      })
+    })
+
+    test('should handle error thrown in persistent mode', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel.envConfig.simpleRoutingMode = false
+      jest.spyOn(fxQuotesModel, 'sendErrorCallback').mockResolvedValue()
+      jest.spyOn(db, 'createFxQuoteError').mockRejectedValue(new Error('DB Error'))
+
+      const error = { errorCode: '3201', errorDescription: 'Destination FSP error' }
+      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span)).resolves.toBeUndefined()
+      expect(db.rollback).toBeCalled()
     })
 
     test('should handle error thrown', async () => {

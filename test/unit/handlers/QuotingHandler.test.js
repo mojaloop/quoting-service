@@ -35,6 +35,8 @@ const createKafkaMessage = (topic) => ({
   }
 })
 
+Logger.isDebugEnabled = jest.fn(() => true)
+
 describe('QuotingHandler Tests -->', () => {
   let handler
   let quotesModel
