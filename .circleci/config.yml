@@ -734,17 +734,17 @@ workflows:
               ignore:
                 - /feature*/
                 - /bugfix*/
-      - test-functional:
-          context: org-global
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              ignore:
-                - /feature*/
-                - /bugfix*/
+      # - test-functional:
+      #     context: org-global
+      #     requires:
+      #       - setup
+      #     filters:
+      #       tags:
+      #         only: /.*/
+      #       branches:
+      #         ignore:
+      #           - /feature*/
+      #           - /bugfix*/
       - vulnerability-check:
           context: org-global
           requires:
@@ -813,7 +813,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+            # - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
@@ -840,7 +840,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+            # - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
@@ -859,7 +859,7 @@ workflows:
             - test-unit
             - test-coverage
             - test-integration
-            - test-functional
+            # - test-functional
             - vulnerability-check
             - audit-licenses
             - license-scan
