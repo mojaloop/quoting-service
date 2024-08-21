@@ -650,7 +650,6 @@ describe('QuotesModel', () => {
       const fspiopDestination = 'dfsp2'
       const request = mockData.quoteRequest
       request.payer.supportedCurrencies = ['ZMW', 'TZS']
-
       quotesModel.proxyClient = {
         isConnected: false,
         connect: jest.fn().mockResolvedValue(true),
