@@ -301,9 +301,9 @@ class FxQuotesModel {
     let txn
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteUpdate')
+
     try {
       await childSpan.audit({ headers, params: { conversionRequestId }, payload: fxQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
-
       if ('accept' in headers) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           `Update for fx quote ${conversionRequestId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
@@ -582,7 +582,7 @@ class FxQuotesModel {
         const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
         await this.handleException(fspiopSource, fxQuoteRequest.conversionRequestId, fspiopError, headers, childSpan)
       } finally {
-        if (!childSpan.isFinished) {
+        if (childSpan && !childSpan.isFinished) {
           await childSpan.finish()
         }
       }
@@ -619,7 +619,7 @@ class FxQuotesModel {
         this.log.error(`Error forwarding fxQuote response: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
         await this.handleException(fspiopSource, conversionRequestId, err, headers, childSpan)
       } finally {
-        if (!childSpan.isFinished) {
+        if (childSpan && !childSpan.isFinished) {
           await childSpan.finish()
         }
       }
@@ -651,7 +651,7 @@ class FxQuotesModel {
       histTimer({ success: false, queryName: 'handleException' })
       this.log.error('error in handleException, stop request processing!', err)
     } finally {
-      if (!childSpan.isFinished) {
+      if (childSpan && !childSpan.isFinished) {
         await childSpan.finish()
       }
     }

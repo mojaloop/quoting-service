@@ -145,6 +145,34 @@ describe('FxQuotesModel Tests -->', () => {
       expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
     })
 
+    test('should throw error if request is a duplicate', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel.envConfig.simpleRoutingMode = false
+      jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteRequest').mockResolvedValue({
+        isResend: false,
+        isDuplicateId: true
+      })
+      jest.spyOn(fxQuotesModel, 'handleException')
+
+      await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span)).resolves.toBeUndefined()
+      expect(fxQuotesModel.handleException).toBeCalled()
+    })
+
+    test('should handle resends', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel.envConfig.simpleRoutingMode = false
+      jest.spyOn(fxQuotesModel, 'handleFxQuoteRequestResend')
+      jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest')
+      jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteRequest').mockResolvedValue({
+        isResend: true,
+        isDuplicateId: true
+      })
+
+      await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span)).resolves.toBeUndefined()
+      expect(fxQuotesModel.handleFxQuoteRequestResend).toBeCalled()
+      expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalled()
+    })
+
     test('should handle error thrown', async () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest').mockRejectedValue(new Error('Forward Error'))
@@ -223,6 +251,38 @@ describe('FxQuotesModel Tests -->', () => {
 
       expect(fxQuotesModel.forwardFxQuoteUpdate).not.toBeCalled()
       expect(fxQuotesModel.handleException).toBeCalledWith(headers['fspiop-source'], conversionRequestId, expect.any(Error), headers, span.getChild())
+    })
+
+    test('should throw error if request is a duplicate', async () => {
+      delete headers.accept
+
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel.envConfig.simpleRoutingMode = false
+      jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteResponse').mockResolvedValue({
+        isResend: false,
+        isDuplicateId: true
+      })
+      jest.spyOn(fxQuotesModel, 'handleException')
+
+      await expect(fxQuotesModel.handleFxQuoteUpdate(headers, conversionRequestId, updateRequest, span)).resolves.toBeUndefined()
+      expect(fxQuotesModel.handleException).toBeCalled()
+    })
+
+    test('should handle resends', async () => {
+      delete headers.accept
+
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel.envConfig.simpleRoutingMode = false
+      jest.spyOn(fxQuotesModel, 'handleFxQuoteUpdateResend')
+      jest.spyOn(fxQuotesModel, 'forwardFxQuoteUpdate')
+      jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteResponse').mockResolvedValue({
+        isResend: true,
+        isDuplicateId: true
+      })
+
+      await expect(fxQuotesModel.handleFxQuoteUpdate(headers, conversionRequestId, updateRequest, span)).resolves.toBeUndefined()
+      expect(fxQuotesModel.handleFxQuoteUpdateResend).toBeCalled()
+      expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalled()
     })
 
     test('should handle fx quote update', async () => {
@@ -378,6 +438,92 @@ describe('FxQuotesModel Tests -->', () => {
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-source'], fspiopError, conversionRequestId, headers, childSpan, true)
       expect(log.error).toBeCalledWith(expect.any(String), error)
+    })
+  })
+
+  describe('checkDuplicateFxQuoteRequest', () => {
+    test('should return isResend false, isDuplicateId true, if ids are same but hashes dont match', async () => {
+      const fxQuoteRequest = { conversionRequestId: 1 }
+      const duplicateFxQuoteRequest = { conversionRequestId: 1, hash: '481bd172c6dbfba81e8f864332eb0350d1bea77bdf33e9db196efdb1bbb4668' }
+      fxQuotesModel.db.getFxQuoteDuplicateCheck = jest.fn().mockResolvedValue(duplicateFxQuoteRequest)
+
+      expect(await fxQuotesModel.checkDuplicateFxQuoteRequest(fxQuoteRequest)).toStrictEqual({
+        isResend: false,
+        isDuplicateId: true
+      })
+    })
+
+    test('should return isResend true, isDuplicateId true, if ids are same and hashes match', async () => {
+      const fxQuoteRequest = { conversionRequestId: 1 }
+      const duplicateFxQuoteRequest = { conversionRequestId: 1, hash: '481bd172c6dbfba81e8f864332eb0350d1bea77bdf33e9db196efdb1bbb4668d' }
+      fxQuotesModel.db.getFxQuoteDuplicateCheck = jest.fn().mockResolvedValue(duplicateFxQuoteRequest)
+
+      expect(await fxQuotesModel.checkDuplicateFxQuoteRequest(fxQuoteRequest)).toStrictEqual({
+        isResend: true,
+        isDuplicateId: true
+      })
+    })
+
+    test('should return isResend false, isDuplicateId false, match not found in db', async () => {
+      const fxQuoteRequest = { conversionRequestId: 1 }
+      fxQuotesModel.db.getFxQuoteDuplicateCheck = jest.fn().mockResolvedValue(null)
+
+      expect(await fxQuotesModel.checkDuplicateFxQuoteRequest(fxQuoteRequest)).toStrictEqual({
+        isResend: false,
+        isDuplicateId: false
+      })
+    })
+
+    test('throws error if db query fails', async () => {
+      const fxQuoteRequest = { conversionRequestId: 1 }
+      fxQuotesModel.db.getFxQuoteDuplicateCheck = jest.fn().mockRejectedValue(new Error('DB Error'))
+
+      await expect(fxQuotesModel.checkDuplicateFxQuoteRequest(fxQuoteRequest)).rejects.toThrow()
+    })
+  })
+
+  describe('checkDuplicateFxQuoteResponse', () => {
+    test('should return isResend false, isDuplicateId true, if ids are same but hashes dont match', async () => {
+      const conversionRequestId = 1
+      const fxQuoteResponse = { conversionRequestId: 1 }
+      const duplicateFxQuoteResponse = { conversionRequestId: 1, hash: '481bd172c6dbfba81e8f864332eb0350d1bea77bdf33e9db196efdb1bbb4668' }
+      fxQuotesModel.db.getFxQuoteResponseDuplicateCheck = jest.fn().mockResolvedValue(duplicateFxQuoteResponse)
+
+      expect(await fxQuotesModel.checkDuplicateFxQuoteResponse(conversionRequestId, fxQuoteResponse)).toStrictEqual({
+        isResend: false,
+        isDuplicateId: true
+      })
+    })
+
+    test('should return isResend true, isDuplicateId true, if ids are same and hashes match', async () => {
+      const conversionRequestId = 1
+      const fxQuoteResponse = { conversionRequestId: 1 }
+      const duplicateFxQuoteResponse = { conversionRequestId: 1, hash: '481bd172c6dbfba81e8f864332eb0350d1bea77bdf33e9db196efdb1bbb4668d' }
+      fxQuotesModel.db.getFxQuoteResponseDuplicateCheck = jest.fn().mockResolvedValue(duplicateFxQuoteResponse)
+
+      expect(await fxQuotesModel.checkDuplicateFxQuoteResponse(conversionRequestId, fxQuoteResponse)).toStrictEqual({
+        isResend: true,
+        isDuplicateId: true
+      })
+    })
+
+    test('should return isResend false, isDuplicateId false, match not found in db', async () => {
+      const conversionRequestId = 1
+      const fxQuoteResponse = { conversionRequestId: 1 }
+      fxQuotesModel.db.getFxQuoteResponseDuplicateCheck = jest.fn().mockResolvedValue(null)
+
+      expect(await fxQuotesModel.checkDuplicateFxQuoteResponse(conversionRequestId, fxQuoteResponse)).toStrictEqual({
+        isResend: false,
+        isDuplicateId: false
+      })
+    })
+
+    test('throws error if db query fails', async () => {
+      const conversionRequestId = 1
+      const fxQuoteResponse = { conversionRequestId: 1 }
+      fxQuotesModel.db.getFxQuoteResponseDuplicateCheck = jest.fn().mockRejectedValue(new Error('DB Error'))
+
+      await expect(fxQuotesModel.checkDuplicateFxQuoteResponse(conversionRequestId, fxQuoteResponse)).rejects.toThrow()
     })
   })
 
