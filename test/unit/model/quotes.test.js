@@ -644,6 +644,26 @@ describe('QuotesModel', () => {
       expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(fspiopSource, 'PAYER_DFSP', 'ZMW', Enum.Accounts.LedgerAccountType.POSITION)
       expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(fspiopSource, 'PAYER_DFSP', 'TZS', Enum.Accounts.LedgerAccountType.POSITION)
     })
+
+    it('should skip validating source if source is a proxied participant', async () => {
+      const fspiopSource = 'dfsp1'
+      const fspiopDestination = 'dfsp2'
+      const request = mockData.quoteRequest
+      request.payer.supportedCurrencies = ['ZMW', 'TZS']
+      quotesModel.proxyClient = {
+        isConnected: false,
+        connect: jest.fn().mockResolvedValue(true),
+        lookupProxyByDfspId: jest.fn().mockImplementation(fspid => {
+          return fspid === fspiopSource ? 'proxyId' : undefined
+        })
+      }
+
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, request)).resolves.toBeUndefined()
+
+      quotesModel.db.getParticipant.mock.calls.forEach(call => {
+        expect(call[0]).not.toBe(fspiopSource)
+      })
+    })
   })
   describe('validateQuoteUpdate', () => {
     beforeEach(() => {
