@@ -125,7 +125,7 @@ describe('PUT callback Tests --> ', () => {
     expect(protectedHeader).toBeTruthy()
   })
 
-  test('should pass validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is registered (position account exists) for the payee pariticpant', async () => {
+  test('should pass validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is registered (position account exists) for the payee participant', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
     await wait(WAIT_TIMEOUT)
@@ -194,7 +194,7 @@ describe('PUT callback Tests --> ', () => {
     }
   })
 
-  test('should fail validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is not registered (position account does not exist) for the payee pariticpant', async () => {
+  test('should fail validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is not registered (position account does not exist) for the payee participant', async () => {
     // test the same scenario with only transferAmount set
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
