@@ -428,6 +428,15 @@ describe('BulkQuotesModel', () => {
 
       expect(bulkQuotesModel._getParticipantEndpoint).toBeCalled()
     })
+
+    it('should throw rethrow any errors', async () => {
+      expect.assertions(1)
+      bulkQuotesModel._getParticipantEndpoint.mockRejectedValueOnce(new Error('Test Error'))
+
+      await expect(bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest, mockChildSpan))
+        .rejects
+        .toThrowError()
+    })
   })
 
   describe('handleBulkQuoteUpdate', () => {

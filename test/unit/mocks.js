@@ -117,11 +117,37 @@ const fxQuoteMocks = {
   httpRequestOptions: () => ({
   }),
   db: ({
+    commit = jest.fn().mockResolvedValue({}),
+    rollback = jest.fn(),
     getParticipant = jest.fn().mockResolvedValue({}),
-    getParticipantEndpoint = jest.fn().mockResolvedValue(undefined)
+    getParticipantEndpoint = jest.fn().mockResolvedValue(undefined),
+    createFxQuoteResponse = jest.fn().mockResolvedValue({}),
+    createFxQuoteResponseConversionTerms = jest.fn().mockResolvedValue({}),
+    createFxQuoteResponseFxCharge = jest.fn().mockResolvedValue({}),
+    createFxQuoteResponseConversionTermsExtension = jest.fn().mockResolvedValue({}),
+    createFxQuoteResponseDuplicateCheck = jest.fn().mockResolvedValue({}),
+    newTransaction = jest.fn().mockResolvedValue({ commit, rollback }),
+    createFxQuoteDuplicateCheck = jest.fn().mockResolvedValue({}),
+    createFxQuote = jest.fn().mockResolvedValue({}),
+    createFxQuoteConversionTerms = jest.fn().mockResolvedValue({}),
+    createFxQuoteConversionTermsExtension = jest.fn().mockResolvedValue({}),
+    createFxQuoteError = jest.fn().mockResolvedValue({})
   } = {}) => ({
     getParticipant,
-    getParticipantEndpoint
+    getParticipantEndpoint,
+    createFxQuoteResponse,
+    createFxQuoteResponseConversionTerms,
+    createFxQuoteResponseFxCharge,
+    createFxQuoteResponseConversionTermsExtension,
+    createFxQuoteResponseDuplicateCheck,
+    newTransaction,
+    createFxQuoteDuplicateCheck,
+    createFxQuote,
+    createFxQuoteConversionTerms,
+    createFxQuoteConversionTermsExtension,
+    createFxQuoteError,
+    commit,
+    rollback
   }),
   proxyClient: ({
     isConnected = jest.fn().mockReturnValue(true),

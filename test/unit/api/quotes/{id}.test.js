@@ -75,6 +75,34 @@ describe('/quotes/{id} API Tests -->', () => {
       expect(producerConfig).toStrictEqual(config)
     })
 
+    it('should publish an fxQuote request message', async () => {
+      // Arrange
+      Producer.produceMessage = jest.fn()
+      const conversionRequestId = randomUUID()
+      const mockRequest = mocks.mockHttpRequest({
+        params: { id: conversionRequestId },
+        headers: {
+          'content-type': 'application/vnd.interoperability.fxQuotes+json;version=1.0'
+        }
+      })
+      const { handler, code } = mocks.createMockHapiHandler()
+
+      // Act
+      await quotesApi.get(mockContext, mockRequest, handler)
+
+      // Assert
+      expect(code).toHaveBeenCalledWith(Http.ReturnCodes.ACCEPTED.CODE)
+      expect(Producer.produceMessage).toHaveBeenCalledTimes(1)
+
+      const [message, topicConfig, producerConfig] = Producer.produceMessage.mock.calls[0]
+      const { id, type, action } = message.content
+      expect(id).toBe(conversionRequestId)
+      expect(type).toBe(Events.Event.Type.FX_QUOTE)
+      expect(action).toBe(Events.Event.Action.GET)
+      expect(topicConfig.topicName).toBe(kafkaConfig.PRODUCER.FX_QUOTE.GET.topic)
+      expect(producerConfig).toStrictEqual(kafkaConfig.PRODUCER.FX_QUOTE.GET.config)
+    })
+
     it('should rethrow error in case of error during publish a message', async () => {
       // Arrange
       const error = new Error('Get Quote Test Error')
@@ -120,6 +148,34 @@ describe('/quotes/{id} API Tests -->', () => {
       expect(action).toBe(Events.Event.Action.PUT)
       expect(topicConfig.topicName).toBe(topic)
       expect(producerConfig).toStrictEqual(config)
+    })
+
+    it('should publish a message with PUT fxQuotes callback payload', async () => {
+      // Arrange
+      Producer.produceMessage = jest.fn()
+      const conversionRequestId = randomUUID()
+      const mockRequest = mocks.mockHttpRequest({
+        payload: { conversionRequestId },
+        headers: {
+          'content-type': 'application/vnd.interoperability.fxQuotes+json;version=1.0'
+        }
+      })
+      const { handler, code } = mocks.createMockHapiHandler()
+
+      // Act
+      await quotesApi.put(mockContext, mockRequest, handler)
+
+      // Assert
+      expect(code).toHaveBeenCalledWith(Http.ReturnCodes.OK.CODE)
+      expect(Producer.produceMessage).toHaveBeenCalledTimes(1)
+
+      const [message, topicConfig, producerConfig] = Producer.produceMessage.mock.calls[0]
+      const { id, type, action } = message.content
+      expect(id).toBe(conversionRequestId)
+      expect(type).toBe(Events.Event.Type.FX_QUOTE)
+      expect(action).toBe(Events.Event.Action.PUT)
+      expect(topicConfig.topicName).toBe(kafkaConfig.PRODUCER.FX_QUOTE.PUT.topic)
+      expect(producerConfig).toStrictEqual(kafkaConfig.PRODUCER.FX_QUOTE.PUT.config)
     })
 
     it('should rethrow error in case of error during publish callback message', async () => {
@@ -169,6 +225,35 @@ describe('/quotes/{id} API Tests -->', () => {
       expect(action).toBe(Events.Event.Action.PUT)
       expect(topicConfig.topicName).toBe(topic)
       expect(producerConfig).toStrictEqual(config)
+    })
+
+    it('should publish a message with PUT fxQuotes callback error payload', async () => {
+      // Arrange
+      Producer.produceMessage = jest.fn()
+      const conversionRequestId = randomUUID()
+      const mockRequest = mocks.mockHttpRequest({
+        payload: { errorInformation: {} },
+        params: { id: conversionRequestId },
+        headers: {
+          'content-type': 'application/vnd.interoperability.fxQuotes+json;version=1.0'
+        }
+      })
+      const { handler, code } = mocks.createMockHapiHandler()
+
+      // Act
+      await quotesApi.put(mockContext, mockRequest, handler)
+
+      // Assert
+      expect(code).toHaveBeenCalledWith(Http.ReturnCodes.OK.CODE)
+      expect(Producer.produceMessage).toHaveBeenCalledTimes(1)
+
+      const [message, topicConfig, producerConfig] = Producer.produceMessage.mock.calls[0]
+      const { id, type, action } = message.content
+      expect(id).toBe(conversionRequestId)
+      expect(type).toBe(Events.Event.Type.FX_QUOTE)
+      expect(action).toBe(Events.Event.Action.PUT)
+      expect(topicConfig.topicName).toBe(kafkaConfig.PRODUCER.FX_QUOTE.PUT.topic)
+      expect(producerConfig).toStrictEqual(kafkaConfig.PRODUCER.FX_QUOTE.PUT.config)
     })
 
     it('should rethrow error case of error during publish a message', async () => {
