@@ -47,6 +47,7 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
+const { loggerFactory } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash, fetchParticipantInfo, getParticipantEndpoint } = require('../lib/util')
 const { RESOURCES } = require('../constants')
@@ -68,6 +69,10 @@ class QuotesModel {
     this.requestId = deps.requestId
     this.proxyClient = deps.proxyClient
     this.envConfig = deps.config || new Config()
+    this.log = deps.log || loggerFactory({
+      context: this.constructor.name,
+      requestId: this.requestId
+    })
   }
 
   async executeRules (headers, quoteRequest, payer, payee) {
