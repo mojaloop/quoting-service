@@ -117,7 +117,7 @@
     "@mojaloop/sdk-standard-components": "18.1.0",
     "ajv": "8.17.1",
     "ajv-keywords": "5.1.0",
-    "axios": "1.7.4",
+    "axios": "1.7.5",
     "blipp": "4.0.2",
     "commander": "12.1.0",
     "event-stream": "4.0.1",

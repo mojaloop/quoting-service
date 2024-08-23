@@ -472,7 +472,7 @@ class QuotesModel {
       'forwardQuoteRequest - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
-    let endpoint
+    const log = this.log.child({ quoteId })
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
@@ -485,9 +485,8 @@ class QuotesModel {
       // lookup payee dfsp callback endpoint
       // TODO: for MVP we assume initiator is always payer dfsp! this may not always be the
       // case if a xfer is requested by payee
-      endpoint = await this._getParticipantEndpoint(fspiopDest)
-
-      this.writeLog(`Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint for quote ${quoteId} to: ${endpoint}, destination: ${fspiopDest}`)
+      const endpoint = await this._getParticipantEndpoint(fspiopDest)
+      log.verbose('Resolved PAYEE party FSPIOP_CALLBACK_URL_QUOTES endpoint', { endpoint, fspiopDest })
 
       // if the endpoint is also not found in the proxy cache, throw an error
       if (!endpoint) {
@@ -497,31 +496,23 @@ class QuotesModel {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_QUOTES found for quote ${quoteId} PAYEE party ${fspiopDest}`, null, fspiopSource)
       }
 
-      const fullCallbackUrl = `${endpoint}/quotes`
-      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, additionalHeaders)
-
-      this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
-      this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)
-      this.writeLog(`Forwarding quote request body: ${JSON.stringify(originalQuoteRequest)}`)
-
       let opts = {
         method: ENUM.Http.RestMethods.POST,
-        url: fullCallbackUrl,
+        url: `${endpoint}/quotes`,
         data: JSON.stringify(originalQuoteRequest),
-        headers: newHeaders
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, additionalHeaders)
       }
-
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
         span.audit(opts, EventSdk.AuditEventAction.egress)
       }
+      log.debug('Forwarding quote request...', { opts })
 
-      this.writeLog(`Forwarding request : ${util.inspect(opts)}`)
-      histTimer({ success: true, queryName: 'quote_forwardQuoteRequest' })
       await httpRequest(opts, fspiopSource)
+      histTimer({ success: true, queryName: 'quote_forwardQuoteRequest' })
+      log.info('forwardQuoteRequest is done')
     } catch (err) {
-      // any-error
-      this.writeLog(`Error forwarding quote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
+      log.error('forwardQuoteRequest is failed with error:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteRequest' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
