@@ -159,6 +159,7 @@ class QuotesModel {
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     const { envConfig } = this
+    const log = this.log.child({ quoteId: quoteRequest?.quoteId })
     // note that the framework should validate the form of the request
     // here we can do some hard-coded rule validations to ensure requests
     // do not lead to unsupported scenarios or use-cases.
@@ -198,6 +199,7 @@ class QuotesModel {
 
       // Following is the validation to make sure valid fsp's are used in the payload for simple routing mode
       if (envConfig.simpleRoutingMode) {
+        log.debug('simpleRoutingMode case')
         // Lets make sure the optional fspId exists in the payer's partyIdInfo before we validate it
         if (
           quoteRequest.payer?.partyIdInfo?.fspId &&
@@ -218,7 +220,9 @@ class QuotesModel {
         }
       }
       histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
+      log.verbose('validateQuoteRequest is done')
     } catch (err) {
+      log.warn('validateQuoteRequest is failed with error', err)
       histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
       throw err
     }
@@ -258,26 +262,25 @@ class QuotesModel {
     // accumulate enum ids
     const refs = {}
 
+    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+    const log = this.log.child({ quoteId: quoteRequest?.quoteId })
+    log.debug('handleQuoteRequest...', { fspiopSource, fspiopDestination })
+
     let txn
     let handledRuleEvents
-    let fspiopSource
     const handleQuoteRequestSpan = span.getChild('qs_quote_handleQuoteRequest')
     try {
-      fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-      const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-
-      // validate - this will throw if the request is invalid
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
       const { payer, payee } = await fetchParticipantInfo(fspiopSource, fspiopDestination, cache, this.proxyClient)
-      this.writeLog(`Got payer ${payer} and payee ${payee}`)
+      log.debug('got payer and payee', { payer, payee })
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
       // supply a rules file containing an empty array.
       const events = await this.executeRules(headers, quoteRequest, payer, payee)
 
       handledRuleEvents = await this.handleRuleEvents(events, headers, quoteRequest)
-
       if (handledRuleEvents.terminate) {
         return
       }
@@ -285,8 +288,7 @@ class QuotesModel {
       if (!envConfig.simpleRoutingMode) {
         // check if this is a resend or an erroneous duplicate
         const dupe = await this.checkDuplicateQuoteRequest(quoteRequest)
-
-        this.writeLog(`Check duplicate for quoteId ${quoteRequest.quoteId} returned: ${util.inspect(dupe)}`)
+        log.debug('check duplicate for quote', { dupe })
 
         // fail fast on duplicate
         if (dupe.isDuplicateId && (!dupe.isResend)) {
@@ -351,13 +353,16 @@ class QuotesModel {
         await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
 
         // create a txn reference
-        this.writeLog(`Creating transactionReference for quoteId: ${quoteRequest.quoteId} and transactionId: ${quoteRequest.transactionId}`)
         refs.transactionReferenceId = await this.db.createTransactionReference(
           txn,
           quoteRequest.quoteId,
           quoteRequest.transactionId
         )
-        this.writeLog(`transactionReference created transactionReferenceId: ${refs.transactionReferenceId}`)
+        this.log.verbose('transactionReference for quote is created in db: ', {
+          quoteId: quoteRequest.quoteId,
+          transactionId: quoteRequest.transactionId,
+          transactionReferenceId: refs.transactionReferenceId
+        })
 
         // create the quote row itself
         // eslint-disable-next-line require-atomic-updates
@@ -405,13 +410,12 @@ class QuotesModel {
         }
 
         await txn.commit()
-        this.writeLog(`create quote transaction committed to db: ${util.inspect(refs)}`)
+        log.debug('create quote transaction committed to db', { refs })
       }
 
-      // if we got here rules passed, so we can forward the quote on to the recipient dfsp
+      log.verbose('rules passed, forwarding the quote on to the recipient dfsp...')
     } catch (err) {
-      // internal-error
-      this.writeLog(`Error in handleQuoteRequest for quoteId ${quoteRequest.quoteId}: ${getStackOrInspect(err)}`)
+      log.error('error in handleQuoteRequest:', err)
       if (txn) {
         txn.rollback(err)
       }
@@ -430,6 +434,7 @@ class QuotesModel {
     try {
       forwardQuoteRequestSpan = handleQuoteRequestSpan.getChild('qs_quote_forwardQuoteRequest')
       histTimer({ success: true, queryName: 'quote_handleQuoteRequest' })
+
       if (envConfig.simpleRoutingMode) {
         await forwardQuoteRequestSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
         await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
@@ -441,8 +446,7 @@ class QuotesModel {
       // any-error
       // as we are on our own in this context, dont just rethrow the error, instead...
       // get the model to handle it
-      this.writeLog(`Error forwarding quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
-      histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
+      log.warn('handleQuoteRequest failed on forwarding quote request:', err)
       if (envConfig.simpleRoutingMode) {
         await this.handleException(fspiopSource, quoteRequest.quoteId, err, headers, forwardQuoteRequestSpan)
       } else {
@@ -458,6 +462,7 @@ class QuotesModel {
       }
     }
 
+    log.info('handleQuoteRequest is done')
     // all ok, return refs
     return refs
   }

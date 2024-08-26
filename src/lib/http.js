@@ -61,6 +61,7 @@ async function httpRequest (opts, fspiopSource) {
   let res
   let body
   const log = logger.child({ context: 'httpRequest', fspiopSource, opts })
+  log.debug('httpRequest is started...')
 
   try {
     res = await axios.request(opts)
