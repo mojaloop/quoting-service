@@ -417,7 +417,7 @@ class QuotesModel {
     } catch (err) {
       log.error('error in handleQuoteRequest:', err)
       if (txn) {
-        txn.rollback(err)
+        await txn.rollback().catch(() => {})
       }
 
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
@@ -711,7 +711,7 @@ class QuotesModel {
       // internal-error
       this.writeLog(`Error in handleQuoteUpdate: ${getStackOrInspect(err)}`)
       if (txn) {
-        txn.rollback(err)
+        await txn.rollback().catch(() => {})
       }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
@@ -857,7 +857,7 @@ class QuotesModel {
         })
 
         // commit the txn to the db
-        txn.commit()
+        await txn.commit()
       }
       // create a new object to represent the error
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
@@ -871,7 +871,7 @@ class QuotesModel {
       // internal-error
       this.writeLog(`Error in handleQuoteError: ${getStackOrInspect(err)}`)
       if (txn) {
-        txn.rollback(err)
+        await txn.rollback().catch(() => {})
       }
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
@@ -998,9 +998,10 @@ class QuotesModel {
     const childSpan = span.getChild('qs_quote_sendErrorCallback')
     try {
       await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
-      await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan, true)
+      const result = await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan, true)
       histTimer({ success: true, queryName: 'quote_handleException' })
       log.info('handleException is done')
+      return result
     } catch (err) {
       // any-error
       // not much we can do other than log the error

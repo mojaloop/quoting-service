@@ -118,7 +118,7 @@ const fxQuoteMocks = {
   }),
   db: ({
     commit = jest.fn().mockResolvedValue({}),
-    rollback = jest.fn(),
+    rollback = jest.fn(() => Promise.reject(new Error('DB error'))),
     getParticipant = jest.fn().mockResolvedValue({}),
     getParticipantEndpoint = jest.fn().mockResolvedValue(undefined),
     createFxQuoteResponse = jest.fn().mockResolvedValue({}),

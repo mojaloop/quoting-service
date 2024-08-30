@@ -124,7 +124,7 @@ describe('QuotesModel', () => {
     })
     mockTransaction = {
       commit: jest.fn(),
-      rollback: jest.fn()
+      rollback: jest.fn(() => Promise.reject(new Error('DB error')))
     }
     mockChildSpan = {
       injectContextToHttpRequest: jest.fn(opts => opts),
