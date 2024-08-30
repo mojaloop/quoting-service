@@ -231,7 +231,7 @@ class FxQuotesModel {
       histTimer({ success: false, queryName: 'handleFxQuoteRequest' })
       this.log.error('error in handleFxQuoteRequest', err)
       if (txn) {
-        txn.rollback(err)
+        await txn.rollback().catch(() => {})
       }
       await this.handleException(fspiopSource, fxQuoteRequest.conversionRequestId, err, headers, childSpan)
     } finally {
@@ -380,7 +380,7 @@ class FxQuotesModel {
       this.log.error('error in handleFxQuoteUpdate', err)
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       if (txn) {
-        txn.rollback(err)
+        await txn.rollback().catch(() => {})
       }
       await this.handleException(fspiopSource, conversionRequestId, err, headers, childSpan)
     } finally {
@@ -534,7 +534,7 @@ class FxQuotesModel {
         })
 
         // commit the txn to the db
-        txn.commit()
+        await txn.commit()
       }
 
       await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
@@ -545,7 +545,7 @@ class FxQuotesModel {
       histTimer({ success: false, queryName: 'handleFxQuoteError' })
       this.log.error('error in handleFxQuoteError', err)
       if (txn) {
-        txn.rollback(err)
+        await txn.rollback().catch(() => {})
       }
       await this.handleException(fspiopSource, conversionRequestId, err, headers, childSpan)
     } finally {
