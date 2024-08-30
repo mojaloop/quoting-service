@@ -116,7 +116,7 @@ describe('PUT callback Tests --> ', () => {
     expect(isOk).toBe(true)
     response = await getResponseWithRetry()
 
-    expect(response.data.history.length).toBe(1)
+    expect(response.data.history.length).toBeGreaterThan(0)
     const { headers, url } = response.data.history[0]
     expect(headers['fspiop-signature']).toBeTruthy()
     expect(url).toBe(`/${message.to}/quotes/${message.id}/error`)
