@@ -1433,32 +1433,10 @@ describe('QuotesModel', () => {
         .resolves
         .toBe(undefined)
 
-      expect(mockChildSpan.audit).toBeCalled()
+      expect(mockChildSpan.audit).toHaveBeenCalled()
       const args = [mockData.headers['fspiop-source'], mockData.quoteRequest.quoteId, customErrorNoStack, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
-      expect(mockChildSpan.finish).not.toBeCalled()
-    })
-    it('handle custom error without stack when writeLog fails', async () => {
-      expect.assertions(1)
-
-      const errorMessage = 'Custom error'
-      const customErrorNoStack = new Error(errorMessage)
-      delete customErrorNoStack.stack
-      quotesModel.writeLog = jest.fn(() => { throw customErrorNoStack })
-
-      await expect(quotesModel.handleQuoteRequestResend(mockData.headers, mockData.quoteRequest, mockSpan))
-        .rejects
-        .toHaveProperty('message', errorMessage)
-    })
-    it('handle custom error without stack when writeLog fails', async () => {
-      expect.assertions(1)
-
-      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
-      quotesModel.writeLog = jest.fn().mockImplementationOnce(cb => cb(fspiopError))
-
-      await expect(quotesModel.handleQuoteRequestResend(mockData.headers, mockData.quoteRequest, mockSpan))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+      expect(mockChildSpan.finish).not.toHaveBeenCalled()
     })
   })
   describe('handleQuoteUpdate', () => {
@@ -1820,28 +1798,6 @@ describe('QuotesModel', () => {
       expect(quotesModel.handleException).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
     })
-    it('handle custom error without stack when writeLog fails', async () => {
-      expect.assertions(1)
-
-      const errorMessage = 'Custom error'
-      const customErrorNoStack = new Error(errorMessage)
-      delete customErrorNoStack.stack
-      quotesModel.writeLog = jest.fn(() => { throw customErrorNoStack })
-
-      await expect(quotesModel.handleQuoteUpdateResend(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan))
-        .rejects
-        .toHaveProperty('message', errorMessage)
-    })
-    it('handle custom error without stack when writeLog fails', async () => {
-      expect.assertions(1)
-
-      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
-      quotesModel.writeLog = jest.fn().mockImplementationOnce(cb => cb(fspiopError))
-
-      await expect(quotesModel.handleQuoteUpdateResend(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
-    })
   })
 
   describe('handleQuoteError', () => {
@@ -2047,17 +2003,15 @@ describe('QuotesModel', () => {
 
     it('handles the error and finishes the child span', async () => {
       // Arrange
-      expect.assertions(3)
       const error = new Error('Test Error')
       const expectedError = ErrorHandler.ReformatFSPIOPError(error)
       quotesModel.sendErrorCallback.mockImplementationOnce(() => true)
 
       // Act
-      const result = await quotesModel.handleException('payeefsp', mockData.quoteId, error, mockData.headers, mockSpan)
+      await quotesModel.handleException('payeefsp', mockData.quoteId, error, mockData.headers, mockSpan)
 
       // Assert
       expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan, true)
-      expect(result).toBe(true)
       expect(mockChildSpan.finish).toHaveBeenCalledTimes(1)
     })
 
@@ -2066,6 +2020,7 @@ describe('QuotesModel', () => {
       expect.assertions(3)
       const error = new Error('Test Error')
       const expectedError = ErrorHandler.ReformatFSPIOPError(error)
+      const spyLogError = jest.spyOn(quotesModel.log.mlLogger, 'error')
       quotesModel.sendErrorCallback.mockImplementationOnce(() => { throw new Error('Error sending callback.') })
 
       // Act
@@ -2073,7 +2028,7 @@ describe('QuotesModel', () => {
 
       // Assert
       expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan, true)
-      expect(quotesModel.writeLog).toHaveBeenCalledTimes(1)
+      expect(spyLogError).toHaveBeenCalledTimes(1)
       expect(mockChildSpan.finish).toHaveBeenCalledTimes(1)
     })
   })

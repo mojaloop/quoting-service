@@ -33,11 +33,12 @@
  --------------
  ******/
 
+const http = require('node:http')
+const util = require('node:util')
 const axios = require('axios')
-const util = require('util')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const http = require('http')
 
+const { logger } = require('../lib')
 const { getStackOrInspect } = require('../lib/util')
 
 axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
@@ -59,11 +60,15 @@ async function httpRequest (opts, fspiopSource) {
   // need to wrap the request below in a `try catch` to handle network errors
   let res
   let body
+  const log = logger.child({ context: 'httpRequest', fspiopSource, opts })
+  log.debug('httpRequest is started...')
 
   try {
     res = await axios.request(opts)
     body = await res.data
+    log.debug('httpRequest is finished', { body })
   } catch (e) {
+    log.error('httpRequest is failed due to error:', e)
     const [fspiopErrorType, fspiopErrorDescr] = e.response && e.response.status === 404
       ? [ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Not found']
       : [ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error']
@@ -74,18 +79,21 @@ async function httpRequest (opts, fspiopSource) {
 
   // handle non network related errors below
   if (res.status < 200 || res.status >= 300) {
-    const errObj = util.inspect({
+    const errObj = {
       opts,
       status: res.status,
       statusText: res.statusText,
       body
-    })
+    }
+    log.warn('httpRequest returned non-success status code', errObj)
 
     throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
       'Non-success response in HTTP request',
       `${errObj}`,
       fspiopSource)
   }
+
+  return body
 }
 
 module.exports = {
