@@ -15,8 +15,9 @@ program
 program.command('handler') // sub-command name, required
   .alias('h')
   .description('Start quoting Handlers')
-  .option('--quotes', 'Start all Handlers')
-  .option('--bulk_quotes', 'No Handlers Start')
+  .option('--quotes', 'Start quotes handler')
+  .option('--bulk_quotes', 'Start bulk quotes handler')
+  .option('--fx_quotes', 'Start fx quotes handler')
   .action(async (args) => {
     const handlerList = []
 
@@ -30,6 +31,12 @@ program.command('handler') // sub-command name, required
       Logger.debug('CLI: Executing --bulk_quotes')
       handlerList.push(Functionalities.BULK_QUOTE)
     }
+    /* istanbul ignore next */
+    if (args.fx_quotes) {
+      Logger.debug('CLI: Executing --fx_quotes')
+      handlerList.push(Functionalities.FX_QUOTE)
+    }
+
     Logger.info(`handlerList: ${handlerList}`)
 
     startingProcess(() => startFn(handlerList), stopFn)

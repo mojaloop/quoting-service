@@ -1,22 +1,30 @@
 {
+  "HUB_PARTICIPANT": {
+    "ID": 1,
+    "NAME": "Hub"
+  },
   "HOSTNAME": "http://quoting-service",
   "LISTEN_ADDRESS": "0.0.0.0",
   "PORT": 3002,
+  "MONITORING_PORT": 3003,
   "AMOUNT": {
     "PRECISION": 18,
     "SCALE": 4
   },
   "PROTOCOL_VERSIONS": {
     "CONTENT": {
-      "DEFAULT": "1.1",
+      "DEFAULT": "2.0",
       "VALIDATELIST": [
+        "2.0",
         "1.1",
         "1.0"
       ]
     },
     "ACCEPT": {
-      "DEFAULT": "1",
+      "DEFAULT": "2",
       "VALIDATELIST": [
+        "2",
+        "2.0",
         "1",
         "1.0",
         "1.1"
@@ -49,7 +57,6 @@
   "ENDPOINT_SECURITY":{
     "JWS": {
       "JWS_SIGN": false,
-      "FSPIOP_SOURCE_TO_SIGN": "switch",
       "JWS_SIGNING_KEY_PATH": "secrets/jwsSigningKey.key"
     }
   },
@@ -73,6 +80,16 @@
     "ENUM_DATA_EXPIRES_IN_MS": 4170000,
     "PARTICIPANT_DATA_EXPIRES_IN_MS": 60000
   },
+  "PROXY_CACHE": {
+    "enabled": false,
+    "type": "redis-cluster",
+    "proxyConfig": {
+      "cluster": [
+        { "host": "localhost", "port": 6379 }
+      ]
+    }
+  },
+  "LOG_LEVEL": "info",
   "KAFKA": {
     "CONSUMER": {
       "QUOTE": {
@@ -228,6 +245,83 @@
             }
           }
         }
+      },
+      "FX_QUOTE": {
+        "POST": {
+          "topic": "topic-fx-quotes-post",
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "fx-quotes-handler-post_c",
+              "group.id": "group-fx-quotes-handler-post",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        },
+        "PUT": {
+          "topic": "topic-fx-quotes-put",
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "fx-quotes-handler-put_c",
+              "group.id": "group-fx-quotes-handler-put",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        },
+        "GET": {
+          "topic": "topic-fx-quotes-get",
+          "config": {
+            "options": {
+              "mode": 2,
+              "batchSize": 1,
+              "pollFrequency": 10,
+              "recursiveTimeout": 100,
+              "messageCharset": "utf8",
+              "messageAsJSON": true,
+              "sync": true,
+              "consumeTimeout": 1000
+            },
+            "rdkafkaConf": {
+              "client.id": "fx-quotes-handler-get_c",
+              "group.id": "group-fx-quotes-handler-get",
+              "metadata.broker.list": "localhost:9092",
+              "socket.keepalive.enable": true,
+              "allow.auto.create.topics": true
+            },
+            "topicConf": {
+              "auto.offset.reset": "earliest"
+            }
+          }
+        }
       }
     },
     "PRODUCER": {
@@ -343,6 +437,68 @@
             "rdkafkaConf": {
               "metadata.broker.list": "localhost:9092",
               "client.id": "bulkquotes-handler-get_p",
+              "event_cb": true,
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
+            }
+          }
+        }
+      },
+      "FX_QUOTE": {
+        "POST": {
+          "topic": "topic-fx-quotes-post",
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "fx-quotes-handler-post_p",
+              "event_cb": true,
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
+            }
+          }
+        },
+        "PUT": {
+          "topic": "topic-fx-quotes-put",
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "fx-quotes-handler-put_p",
+              "event_cb": true,
+              "dr_cb": true,
+              "socket.keepalive.enable": true,
+              "queue.buffering.max.messages": 10000000
+            },
+            "topicConf": {
+              "request.required.acks": "all",
+              "partitioner": "murmur2_random"
+            }
+          }
+        },
+        "GET": {
+          "topic": "topic-fx-quotes-get",
+          "config": {
+            "options": {
+              "messageCharset": "utf8"
+            },
+            "rdkafkaConf": {
+              "metadata.broker.list": "localhost:9092",
+              "client.id": "fx-quotes-handler-get_p",
               "event_cb": true,
               "dr_cb": true,
               "socket.keepalive.enable": true,
