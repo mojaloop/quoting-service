@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [15.7.3](https://github.com/mojaloop/quoting-service/compare/v15.7.2...v15.7.3) (2024-06-17)
+
+
+### Chore
+
+* dependency upgrades and minor maintenance ([#337](https://github.com/mojaloop/quoting-service/issues/337)) ([51c9ad9](https://github.com/mojaloop/quoting-service/commit/51c9ad95cb0dfae8cb406a4da7a3762fba9d86d2))
+
+### [15.7.2](https://github.com/mojaloop/quoting-service/compare/v15.7.1...v15.7.2) (2024-05-16)
+
+
+### Bug Fixes
+
+* logging issues ([#331](https://github.com/mojaloop/quoting-service/issues/331)) ([3d4cba6](https://github.com/mojaloop/quoting-service/commit/3d4cba6601a94221348be359e07182ab40080414))
+
 ### [15.7.1](https://github.com/mojaloop/quoting-service/compare/v15.7.0...v15.7.1) (2024-04-19)
 
 

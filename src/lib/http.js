@@ -37,6 +37,7 @@ const http = require('node:http')
 const util = require('node:util')
 const axios = require('axios')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const http = require('http')
 
 const { logger } = require('../lib')
 const { getStackOrInspect } = require('../lib/util')
