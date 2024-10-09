@@ -32,8 +32,8 @@
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { Producer } = require('@mojaloop/central-services-stream').Util
-const Logger = require('@mojaloop/central-services-logger')
 
+const { logger } = require('../../../src/lib')
 const quotesApi = require('../../../src/api/quotes')
 const Config = require('../../../src/lib/config')
 const mocks = require('../mocks')
@@ -104,7 +104,7 @@ describe('POST /quotes API Tests -->', () => {
 
     const mockRequest = mocks.mockHttpRequest()
     const { handler } = mocks.createMockHapiHandler()
-    const spyErrorLog = jest.spyOn(Logger, 'error')
+    const spyErrorLog = jest.spyOn(logger, 'error')
 
     // Act
     await expect(() => quotesApi.post(mockContext, mockRequest, handler))
@@ -112,6 +112,6 @@ describe('POST /quotes API Tests -->', () => {
 
     // Assert
     expect(spyErrorLog).toHaveBeenCalledTimes(1)
-    expect(spyErrorLog.mock.calls[0][0].message).toContain(error.message)
+    expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
   })
 })

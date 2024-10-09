@@ -32,6 +32,7 @@ const mockDefaultFile = {
   HOSTNAME: 'http://quoting-service',
   LISTEN_ADDRESS: '0.0.0.0',
   PORT: 3002,
+  API_TYPE: 'fspiop',
   AMOUNT: {
     PRECISION: 18,
     SCALE: 4

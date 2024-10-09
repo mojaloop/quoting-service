@@ -2,6 +2,8 @@ const path = require('path')
 
 module.exports = {
   verbose: true,
+  clearMocks: true, // to avoid jest.clearAllMocks() in afterEach
+
   collectCoverageFrom: [
     '**/src/**/**/*.js'
   ],

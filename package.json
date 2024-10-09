@@ -86,16 +86,12 @@
       "ejs": "3.1.10",
       "sanitize-html": "2.12.1",
       "yargs-parser": "18.1.1",
-      "markdown-it": "12.3.2",
-      "postcss": "8.4.31"
+      "markdown-it": "12.3.2"
     },
     "widdershins": {
       "swagger2openapi": "7.0.8",
       "yargs-parser": "13.1.2",
       "markdown-it": "12.3.2"
-    },
-    "yargs": {
-      "yargs-parser": "^21.1.1"
     },
     "jsonwebtoken": "9.0.0",
     "jsonpointer": "5.0.0"
@@ -109,7 +105,7 @@
     "@mojaloop/central-services-health": "15.0.0",
     "@mojaloop/central-services-logger": "11.5.1",
     "@mojaloop/central-services-metrics": "12.0.8",
-    "@mojaloop/central-services-shared": "18.5.0-snapshot.2",
+    "@mojaloop/central-services-shared": "18.10.0-snapshot.4",
     "@mojaloop/central-services-stream": "11.3.1",
     "@mojaloop/event-sdk": "14.1.1",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.3.0",
@@ -133,22 +129,6 @@
     "node-fetch": "3.3.2",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8"
-  },
-  "overrides": {
-    "shins": {
-      "ajv": "6.12.3",
-      "ejs": "3.1.10",
-      "sanitize-html": "2.12.1",
-      "yargs-parser": "18.1.1",
-      "markdown-it": "12.3.2"
-    },
-    "widdershins": {
-      "swagger2openapi": "7.0.8",
-      "yargs-parser": "13.1.2",
-      "markdown-it": "12.3.2"
-    },
-    "jsonwebtoken": "9.0.0",
-    "jsonpointer": "5.0.0"
   },
   "devDependencies": {
     "audit-ci": "^7.1.0",

@@ -98,6 +98,7 @@ class Config {
 
   constructor () {
     // load config from environment (or use sensible defaults)
+    this.apiType = RC.API_TYPE
     this.hubName = RC.HUB_PARTICIPANT.NAME
     this.listenAddress = RC.LISTEN_ADDRESS
     this.listenPort = RC.PORT

@@ -1,3 +1,5 @@
+const { API_TYPES } = require('@mojaloop/central-services-shared').Util.Hapi
+
 const RESOURCES = Object.freeze({
   quotes: 'quotes',
   fxQuotes: 'fxQuotes'
@@ -22,6 +24,7 @@ const ERROR_MESSAGES = {
 }
 
 module.exports = {
+  API_TYPES,
   RESOURCES,
   HEADERS,
   ERROR_MESSAGES
