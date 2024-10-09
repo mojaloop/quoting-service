@@ -5,6 +5,7 @@
   },
   "HOSTNAME": "http://quoting-service",
   "LISTEN_ADDRESS": "0.0.0.0",
+  "API_TYPE": "fspiop",
   "PORT": 3002,
   "MONITORING_PORT": 3003,
   "AMOUNT": {

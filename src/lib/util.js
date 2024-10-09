@@ -32,20 +32,22 @@
 
 'use strict'
 
-const util = require('util')
-const crypto = require('crypto')
+const crypto = require('node:crypto')
+const path = require('node:path')
+const util = require('node:util')
 const axios = require('axios')
-const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
-const { RESOURCES, HEADERS } = require('../constants')
+
+const { API_TYPES, RESOURCES, HEADERS } = require('../constants')
+const { logger } = require('../lib')
 const Config = require('./config')
 
 const config = new Config()
 
 const failActionHandler = async (request, h, err) => {
-  Logger.isErrorEnabled && Logger.error(`validation failure: ${err ? getStackOrInspect(err) : ''}`)
+  logger.error('validation failure: ', err)
   throw err
 }
 
@@ -260,16 +262,16 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
   if (!cachedPayer && !requestPayer) {
     requestPayer = await axios.request({ url: `${url}/${source}` })
     cache && cache.put(`fetchParticipantInfo_${source}`, requestPayer, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
+    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
   } else {
-    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payer ${source}`)
+    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache hit for payer ${source}`)
   }
   if (!cachedPayee && !requestPayee) {
     requestPayee = await axios.request({ url: `${url}/${destination}` })
     cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payee ${destination}`)
+    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache miss for payee ${destination}`)
   } else {
-    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payee ${destination}`)
+    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache hit for payee ${destination}`)
   }
 
   const payer = cachedPayer || requestPayer.data
@@ -311,8 +313,15 @@ const auditSpan = async (request) => {
 
 const rethrowFspiopError = (error) => {
   const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
-  Logger.isErrorEnabled && Logger.error(fspiopError)
+  logger.error(`rethrowFspiopError: ${error?.message}`, { fspiopError })
   throw fspiopError
+}
+
+const resolveOpenApiSpecPath = (apiType) => {
+  const specFile = apiType === API_TYPES.iso20022
+    ? 'QuotingService-swagger_iso20022.yaml'
+    : 'QuotingService-swagger.yaml'
+  return path.resolve(__dirname, '../interface', specFile)
 }
 
 module.exports = {
@@ -328,5 +337,6 @@ module.exports = {
   rethrowFspiopError,
   fetchParticipantInfo,
   getParticipantEndpoint,
-  makeAppInteroperabilityHeader
+  makeAppInteroperabilityHeader,
+  resolveOpenApiSpecPath
 }

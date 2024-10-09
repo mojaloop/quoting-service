@@ -39,17 +39,12 @@ jest.mock('@mojaloop/central-services-stream', () => ({
 }))
 
 let Hapi
-let Logger
 
 describe('Server Tests', () => {
   beforeEach(() => {
     jest.resetModules()
-
     jest.mock('@hapi/hapi')
-    jest.mock('@mojaloop/central-services-logger')
-
     Hapi = require('@hapi/hapi')
-    Logger = require('@mojaloop/central-services-logger')
   })
 
   it('runs the server', async () => {
@@ -102,6 +97,9 @@ describe('Server Tests', () => {
       }
     }))
 
+    const { logger } = require('../../src/lib')
+    const spyErrorLog = jest.spyOn(logger, 'error')
+
     // Act
     const server = require('../../src/server')
     await server()
@@ -111,6 +109,6 @@ describe('Server Tests', () => {
     expect(mockStart).not.toHaveBeenCalled()
     expect(mockRoute).not.toHaveBeenCalled()
     expect(mockLog).not.toHaveBeenCalled()
-    expect(Logger.error).toHaveBeenCalledTimes(1)
+    expect(spyErrorLog).toHaveBeenCalledTimes(1)
   })
 })

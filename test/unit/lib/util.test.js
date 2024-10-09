@@ -27,13 +27,14 @@
 jest.mock('axios')
 jest.mock('@mojaloop/central-services-logger')
 
+const fs = require('node:fs/promises')
 const axios = require('axios')
 const Logger = require('@mojaloop/central-services-logger')
 const { Cache } = require('memory-cache')
 const { Enum } = require('@mojaloop/central-services-shared')
 
 const Config = require('../../../src/lib/config.js')
-const { RESOURCES } = require('../../../src/constants')
+const { API_TYPES, RESOURCES } = require('../../../src/constants')
 const {
   failActionHandler,
   getStackOrInspect,
@@ -43,7 +44,8 @@ const {
   removeEmptyKeys,
   fetchParticipantInfo,
   getParticipantEndpoint,
-  makeAppInteroperabilityHeader
+  makeAppInteroperabilityHeader,
+  resolveOpenApiSpecPath
 } = require('../../../src/lib/util')
 
 Logger.isDebugEnabled = jest.fn(() => true)
@@ -739,6 +741,18 @@ describe('util', () => {
       expect(params.db.getParticipantEndpoint).toBeCalledWith(proxyId, params.endpointType)
       expect(params.proxyClient.connect).toBeCalledTimes(1)
       expect(params.proxyClient.lookupProxyByDfspId).toBeCalledTimes(1)
+    })
+  })
+
+  describe('resolveOpenApiSpecPath Tests -->', () => {
+    it('should resolve ISO OpenAPI spec path, and be able to read it', async () => {
+      const path = resolveOpenApiSpecPath(API_TYPES.iso20022)
+      await expect(fs.access(path, fs.constants.R_OK)).resolves.toBeUndefined()
+    })
+
+    it('should resolve FSPIOP OpenAPI spec path, and be able to read it', async () => {
+      const path = resolveOpenApiSpecPath(API_TYPES.fspiop)
+      await expect(fs.access(path, fs.constants.R_OK)).resolves.toBeUndefined()
     })
   })
 })
