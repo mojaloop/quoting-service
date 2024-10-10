@@ -1,5 +1,8 @@
-const uuid = require('crypto').randomUUID
-const Config = new (require('../src/lib/config'))()
+const uuid = require('node:crypto').randomUUID
+const Config = require('../src/lib/config')
+const { API_TYPES } = require('../src/constants')
+
+const config = new Config()
 
 const CONTENT_TYPE = 'application/vnd.interoperability.quotes+json;version={{API_VERSION}}'
 const contentTypeFn = ({ fspiopVersion = 1.0 }) => CONTENT_TYPE.replace('{{API_VERSION}}', fspiopVersion)
@@ -21,7 +24,7 @@ const proxyCacheConfigDto = ({
 
 const kafkaMessagePayloadDto = ({
   action = 'put',
-  from = Config.hubName,
+  from = config.hubName,
   to = 'greenbank',
   id = 'aaab9c4d-2aac-42ef-8aad-2e76f2fac95a',
   type = 'quote',
@@ -196,12 +199,14 @@ const putQuotesPayloadDto = ({
   transferAmount = { amount: '100', currency: 'USD' },
   payeeReceiveAmount = { amount: '100', currency: 'USD' },
   ilpPacket = 'test-ilp-packet',
-  condition = 'test-condition'
+  condition = 'test-condition',
+  expiration = (new Date()).toISOString()
 } = {}) => ({
   transferAmount,
   payeeReceiveAmount,
   ilpPacket,
-  condition
+  condition,
+  expiration
 })
 
 const postBulkQuotesPayloadDto = ({
@@ -247,7 +252,39 @@ const putBulkQuotesPayloadDto = ({
   expiration
 })
 
+const interoperabilityHeaderDto = (resource, version, apiType) => {
+  const isoPart = apiType === API_TYPES.iso20022 ? '.iso20022' : ''
+  return `application/vnd.interoperability${isoPart}.${resource}+json;version=${version}`
+}
+
+const headersDto = ({
+  resource = 'quotes',
+  version = '2.0',
+  source = 'mockSource',
+  destination = 'mockDestination',
+  apiType = API_TYPES.fspiop
+} = {}) => Object.freeze({
+  accept: interoperabilityHeaderDto(resource, version, apiType),
+  'content-type': interoperabilityHeaderDto(resource, version, apiType),
+  date: new Date().toISOString(),
+  'fspiop-source': source,
+  'fspiop-destination': destination
+})
+
+const errorPayloadDto = ({
+  errorCode = '3100',
+  errorDescription = 'Generic validation error',
+  extensionList
+} = {}) => Object.freeze({
+  errorInformation: {
+    errorCode,
+    errorDescription,
+    ...(extensionList && { extensionList })
+  }
+})
+
 module.exports = {
+  headersDto,
   kafkaMessagePayloadDto,
   kafkaMessagePayloadPostDto,
   kafkaMessageFxPayloadPostDto,
@@ -259,5 +296,6 @@ module.exports = {
   postQuotesPayloadDto,
   putQuotesPayloadDto,
   postBulkQuotesPayloadDto,
-  putBulkQuotesPayloadDto
+  putBulkQuotesPayloadDto,
+  errorPayloadDto
 }

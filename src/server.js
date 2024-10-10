@@ -132,7 +132,8 @@ const initServer = async function (config, topicNames) {
     return {
       resources,
       supportedProtocolContentVersions,
-      supportedProtocolAcceptVersions
+      supportedProtocolAcceptVersions,
+      apiType: config.apiType
     }
   }
 

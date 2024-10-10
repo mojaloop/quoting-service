@@ -47,7 +47,7 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
-const { loggerFactory } = require('../lib')
+const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash, fetchParticipantInfo, getParticipantEndpoint } = require('../lib/util')
 const { RESOURCES } = require('../constants')
@@ -69,7 +69,7 @@ class QuotesModel {
     this.requestId = deps.requestId
     this.proxyClient = deps.proxyClient
     this.envConfig = deps.config || new Config()
-    this.log = deps.log || loggerFactory({
+    this.log = deps.log || logger.child({
       context: this.constructor.name,
       requestId: this.requestId
     })
@@ -88,8 +88,7 @@ class QuotesModel {
     }
 
     const { events } = await RulesEngine.run(rules, facts)
-
-    this.writeLog(`Rules engine returned events ${JSON.stringify(events)}`)
+    this.log.debug('Rules engine returned events:', { events })
 
     return events
   }
@@ -601,7 +600,7 @@ class QuotesModel {
       if (!envConfig.simpleRoutingMode) {
         // check if this is a resend or an erroneous duplicate
         const dupe = await this.checkDuplicateQuoteResponse(quoteId, quoteUpdateRequest)
-        this.writeLog(`Check duplicate for quoteId ${quoteId} update returned: ${util.inspect(dupe)}`)
+        this.log.debug('Check duplicate for quote update: ', { quoteId, dupe })
 
         // fail fast on duplicate
         if (dupe.isDuplicateId && (!dupe.isResend)) {
@@ -647,13 +646,12 @@ class QuotesModel {
         await this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash)
 
         // create ilp packet in the db
-        await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId,
-          quoteUpdateRequest.ilpPacket)
+        await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId, quoteUpdateRequest.ilpPacket)
 
         // did we get a geoCode for the payee?
         if (quoteUpdateRequest.geoCode) {
           refs.geoCodeId = await this.db.createGeoCode(txn, {
-            quotePartyId: payeeParty.quotePartyId,
+            quotePartyId: payeeParty?.quotePartyId,
             latitude: quoteUpdateRequest.geoCode.latitude,
             longitude: quoteUpdateRequest.geoCode.longitude
           })
@@ -669,7 +667,7 @@ class QuotesModel {
         // todo: create any additional quoteParties e.g. for fees, comission etc...
 
         await txn.commit()
-        this.writeLog(`create quote update transaction committed to db: ${util.inspect(refs)}`)
+        this.log.debug('create quote update transaction committed to db:', { refs })
 
         /// if we got here, all entities have been created in db correctly to record the quote request
 
@@ -709,7 +707,7 @@ class QuotesModel {
       return refs
     } catch (err) {
       // internal-error
-      this.writeLog(`Error in handleQuoteUpdate: ${getStackOrInspect(err)}`)
+      this.log.error('error in handleQuoteUpdate: ', err)
       if (txn) {
         await txn.rollback().catch(() => {})
       }
@@ -869,7 +867,7 @@ class QuotesModel {
       return newError
     } catch (err) {
       // internal-error
-      this.writeLog(`Error in handleQuoteError: ${getStackOrInspect(err)}`)
+      this.log.error('error in handleQuoteError: ', err)
       if (txn) {
         await txn.rollback().catch(() => {})
       }
