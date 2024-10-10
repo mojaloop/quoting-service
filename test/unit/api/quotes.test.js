@@ -76,7 +76,7 @@ describe('POST /quotes API Tests -->', () => {
     const mockRequest = mocks.mockHttpRequest({
       payload: { conversionRequestId },
       headers: {
-        'content-type': 'application/vnd.interoperability.fxquotes+json;version=1.0'
+        'content-type': 'application/vnd.interoperability.fxQuotes+json;version=1.0'
       }
     })
     const { handler, code } = mocks.createMockHapiHandler()
