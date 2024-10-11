@@ -66,12 +66,16 @@ module.exports = {
     try {
       await util.auditSpan(request)
 
-      const eventType = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
+      const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.POST : kafkaConfig.PRODUCER.QUOTE.POST
 
       const { topic, config } = producerConfig
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = await dto.messageFromRequestDto(request, eventType, Events.Event.Action.POST)
+      const message = await dto.messageFromRequestDto({
+        request,
+        type,
+        action: Events.Event.Action.POST
+      })
 
       await Producer.produceMessage(message, topicConfig, config)
 

@@ -23,9 +23,16 @@ const ERROR_MESSAGES = {
   NO_FX_CALLBACK_ENDPOINT: (fspiopSource, conversionRequestId) => `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FSP '${fspiopSource}' while processing fxquote ${conversionRequestId}`
 }
 
+const PAYLOAD_STORAGES = Object.freeze({
+  none: '',
+  kafka: 'kafka',
+  redis: 'redis'
+})
+
 module.exports = {
   API_TYPES,
   RESOURCES,
   HEADERS,
-  ERROR_MESSAGES
+  ERROR_MESSAGES,
+  PAYLOAD_STORAGES
 }

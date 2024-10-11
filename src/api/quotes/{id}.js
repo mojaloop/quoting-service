@@ -66,12 +66,16 @@ module.exports = {
     try {
       await util.auditSpan(request)
 
-      const eventType = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
+      const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.GET : kafkaConfig.PRODUCER.QUOTE.GET
 
       const { topic, config } = producerConfig
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = await dto.messageFromRequestDto(request, eventType, Events.Event.Action.GET)
+      const message = await dto.messageFromRequestDto({
+        request,
+        type,
+        action: Events.Event.Action.GET
+      })
 
       await Producer.produceMessage(message, topicConfig, config)
 
@@ -96,7 +100,7 @@ module.exports = {
      */
   put: async function putQuotesById (context, request, h) {
     const isFX = util.isFxRequest(request.headers)
-    const isError = !!request.payload.errorInformation
+    const isError = request.path?.endsWith('/error')
 
     let metricsId = isFX ? 'fxQuotes_id_put' : 'quotes_id_put'
     metricsId = isError ? `${metricsId}_error` : metricsId
@@ -112,12 +116,17 @@ module.exports = {
     try {
       await util.auditSpan(request)
 
-      const eventType = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
+      const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.PUT : kafkaConfig.PRODUCER.QUOTE.PUT
 
       const { topic, config } = producerConfig
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = await dto.messageFromRequestDto(request, eventType, Events.Event.Action.PUT, isIsoApi)
+      const message = await dto.messageFromRequestDto({
+        request,
+        type,
+        action: Events.Event.Action.PUT,
+        isIsoApi
+      })
 
       await Producer.produceMessage(message, topicConfig, config)
 

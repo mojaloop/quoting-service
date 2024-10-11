@@ -22,8 +22,8 @@ const createRequestData = async ({
   action = 'action',
   isIsoPayload = false
 } = {}) => {
-  const httpRequest = mocks.mockHttpRequest({ payload })
-  const messageValue = await dto.messageFromRequestDto(httpRequest, type, action, isIsoPayload)
+  const request = mocks.mockHttpRequest({ payload })
+  const messageValue = await dto.messageFromRequestDto({ request, type, action, isIsoPayload })
   const { requestData } = dto.requestDataFromMessageDto({ value: messageValue })
 
   return requestData

@@ -63,7 +63,11 @@ module.exports = {
 
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.GET
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = await dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.GET)
+      const message = await dto.messageFromRequestDto({
+        request,
+        type: Events.Event.Type.BULK_QUOTE,
+        action: Events.Event.Action.GET
+      })
 
       await Producer.produceMessage(message, topicConfig, config)
 
@@ -93,7 +97,11 @@ module.exports = {
 
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = await dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.PUT)
+      const message = await dto.messageFromRequestDto({
+        request,
+        type: Events.Event.Type.BULK_QUOTE,
+        action: Events.Event.Action.PUT
+      })
 
       await Producer.produceMessage(message, topicConfig, config)
 
