@@ -124,7 +124,6 @@ describe('ISO format validation Tests -->', () => {
       const { body } = await TransformFacades.FSPIOP.fxQuotes.post({
         body: fspiopPatload
       })
-      body.CdtTrfTxInf.PmtId.TxId = '123456778'
       const request = {
         method: 'POST',
         url: '/fxQuotes',

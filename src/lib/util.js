@@ -324,6 +324,9 @@ const resolveOpenApiSpecPath = (isIsoApi) => {
   return path.resolve(__dirname, '../interface', specFile)
 }
 
+// todo: think better way of defining FX request (taking into account FSPIOP/ISO API formats)
+const isFxRequest = (headers = {}) => headers['content-type'].includes('fxQuotes')
+
 module.exports = {
   auditSpan,
   failActionHandler,
@@ -338,5 +341,6 @@ module.exports = {
   fetchParticipantInfo,
   getParticipantEndpoint,
   makeAppInteroperabilityHeader,
-  resolveOpenApiSpecPath
+  resolveOpenApiSpecPath,
+  isFxRequest
 }
