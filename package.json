@@ -58,10 +58,13 @@
     "lint:fix": "npx standard --fix",
     "test": "npm run test:unit",
     "test:unit": "jest --testMatch '**/test/unit/**/*.test.js' ",
+    "test:xunit": "npm run test:junit",
     "test:coverage": "jest --coverage --coverageThreshold='{}' --testMatch '**/test/unit/**/*.test.js'",
     "test:coverage-check": "jest --runInBand --forceExit --coverage --testMatch '**/test/unit/**/*.test.js'",
     "test:junit": "jest --runInBand --forceExit --reporters=default --reporters=jest-junit --testMatch '**/test/unit/**/*.test.js'",
     "test:int": "jest --runInBand --testMatch '**/test/integration/**/*.test.js'",
+    "test:integration": "./test/integration/scripts/start.sh && npm run test:int",
+    "test:functional": "true",
     "regenerate": "yo swaggerize:test --framework hapi --apiPath './src/interface/swagger.json'",
     "package-lock": "docker run --rm -it quoting-service:local cat package-lock.json > package-lock.json",
     "run": "docker run -p 3002:3002 --rm --link db:mysql quoting-service:local",
@@ -86,16 +89,12 @@
       "ejs": "3.1.10",
       "sanitize-html": "2.12.1",
       "yargs-parser": "18.1.1",
-      "markdown-it": "12.3.2",
-      "postcss": "8.4.31"
+      "markdown-it": "12.3.2"
     },
     "widdershins": {
       "swagger2openapi": "7.0.8",
       "yargs-parser": "13.1.2",
       "markdown-it": "12.3.2"
-    },
-    "yargs": {
-      "yargs-parser": "^21.1.1"
     },
     "jsonwebtoken": "9.0.0",
     "jsonpointer": "5.0.0"
@@ -133,22 +132,6 @@
     "node-fetch": "3.3.2",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8"
-  },
-  "overrides": {
-    "shins": {
-      "ajv": "6.12.3",
-      "ejs": "3.1.10",
-      "sanitize-html": "2.12.1",
-      "yargs-parser": "18.1.1",
-      "markdown-it": "12.3.2"
-    },
-    "widdershins": {
-      "swagger2openapi": "7.0.8",
-      "yargs-parser": "13.1.2",
-      "markdown-it": "12.3.2"
-    },
-    "jsonwebtoken": "9.0.0",
-    "jsonpointer": "5.0.0"
   },
   "devDependencies": {
     "audit-ci": "^7.1.0",
