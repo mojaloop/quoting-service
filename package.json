@@ -58,7 +58,7 @@
     "lint:fix": "npx standard --fix",
     "test": "npm run test:unit",
     "test:unit": "jest --testMatch '**/test/unit/**/*.test.js' ",
-    "test:xunit": "JEST_JUNIT_OUTPUT_DIR=./test/reports/ JEST_JUNIT_OUTPUT_NAME=xunit.xml npm run test:unit -- --reporters=jest-junit",
+    "test:xunit": "npm run test:junit",
     "test:coverage": "jest --coverage --coverageThreshold='{}' --testMatch '**/test/unit/**/*.test.js'",
     "test:coverage-check": "jest --runInBand --forceExit --coverage --testMatch '**/test/unit/**/*.test.js'",
     "test:junit": "jest --runInBand --forceExit --reporters=default --reporters=jest-junit --testMatch '**/test/unit/**/*.test.js'",
