@@ -26,8 +26,7 @@
 const { API_TYPES } = require('../../src/constants')
 Object.assign(process.env, {
   QUOTE_API_TYPE: API_TYPES.iso20022,
-  QUOTE_LOG_LEVEL: 'debug',
-  LOG_LEVEL: 'debug'
+  QUOTE_PORT: '13002'
 })
 
 jest.mock('@mojaloop/central-services-stream', () => ({
@@ -55,7 +54,7 @@ describe('ISO format validation Tests -->', () => {
   })
 
   afterAll(async () => {
-    await server.stop({ timeout: 100 })
+    await server?.stop({ timeout: 100 })
   })
 
   describe('quotes endpoints tests -->', () => {
@@ -81,6 +80,7 @@ describe('ISO format validation Tests -->', () => {
       expect(response.statusCode).toBe(202)
     })
 
+    // todo: unskip after transformerLib is fixed
     test.skip('should validate ISO payload for PUT /quotes/{id} callback', async () => {
       const { body } = await TransformFacades.FSPIOP.quotes.put({
         body: mocks.putQuotesPayloadDto()
@@ -117,12 +117,14 @@ describe('ISO format validation Tests -->', () => {
     })
 
     test.skip('should validate ISO payload for POST /fxQuotes callback', async () => {
-      const { body } = await TransformFacades.FSPIOP.fxQuotes.post({
-        body: mocks.postFxQuotesPayloadDto({
-          conversionRequestId: Date.now(),
-          conversionId: Date.now()
-        })
+      const fspiopPatload = mocks.postFxQuotesPayloadDto({
+        conversionRequestId: Date.now(),
+        conversionId: Date.now()
       })
+      const { body } = await TransformFacades.FSPIOP.fxQuotes.post({
+        body: fspiopPatload
+      })
+      body.CdtTrfTxInf.PmtId.TxId = '123456778'
       const request = {
         method: 'POST',
         url: '/fxQuotes',
@@ -131,6 +133,40 @@ describe('ISO format validation Tests -->', () => {
       }
       const response = await server.inject(request)
       expect(response.statusCode).toBe(202)
+    })
+
+    test.skip('should validate ISO payload for PUT /fxQuotes/{id} callback', async () => {
+      const fspiopPayload = mocks.putFxQuotesPayloadDto({
+        fxQuotesPostPayload: mocks.postFxQuotesPayloadDto({
+          conversionRequestId: Date.now(),
+          conversionId: Date.now()
+        })
+      })
+      const { body } = await TransformFacades.FSPIOP.fxQuotes.put({
+        body: fspiopPayload
+      })
+      const request = {
+        method: 'PUT',
+        url: `/fxQuotes/${randomUUID()}`,
+        headers,
+        payload: body
+      }
+      const response = await server.inject(request)
+      expect(response.statusCode).toBe(200)
+    })
+
+    test('should validate ISO payload for PUT /fxQuotes/{id}/error callback', async () => {
+      const { body } = await TransformFacades.FSPIOP.fxQuotes.putError({
+        body: mocks.errorPayloadDto()
+      })
+      const request = {
+        method: 'PUT',
+        url: `/fxQuotes/${randomUUID()}/error`,
+        headers,
+        payload: body
+      }
+      const response = await server.inject(request)
+      expect(response.statusCode).toBe(200)
     })
   })
 })

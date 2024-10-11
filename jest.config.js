@@ -1,4 +1,4 @@
-const path = require('path')
+process.env.LOG_LEVEL = 'debug'
 
 module.exports = {
   verbose: true,
@@ -17,9 +17,5 @@ module.exports = {
       branches: 90,
       lines: 90
     }
-  },
-  globals: {
-    __SRC__: path.resolve(__dirname, 'src'),
-    __ROOT__: path.resolve(__dirname)
   }
 }
