@@ -40,7 +40,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
 
-const { API_TYPES, RESOURCES, HEADERS } = require('../constants')
+const { RESOURCES, HEADERS } = require('../constants')
 const { logger } = require('../lib')
 const Config = require('./config')
 
@@ -317,8 +317,8 @@ const rethrowFspiopError = (error) => {
   throw fspiopError
 }
 
-const resolveOpenApiSpecPath = (apiType) => {
-  const specFile = apiType === API_TYPES.iso20022
+const resolveOpenApiSpecPath = (isIsoApi) => {
+  const specFile = isIsoApi
     ? 'QuotingService-swagger_iso20022.yaml'
     : 'QuotingService-swagger.yaml'
   return path.resolve(__dirname, '../interface', specFile)

@@ -39,7 +39,7 @@ const util = require('../../lib/util')
 const Config = require('../../lib/config')
 const dto = require('../../lib/dto')
 
-const { kafkaConfig } = new Config()
+const { kafkaConfig, isIsoApi } = new Config()
 
 /**
  * Operations on /quotes/{id}
@@ -71,7 +71,7 @@ module.exports = {
 
       const { topic, config } = producerConfig
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = dto.messageFromRequestDto(request, eventType, Events.Event.Action.GET)
+      const message = await dto.messageFromRequestDto(request, eventType, Events.Event.Action.GET)
 
       await Producer.produceMessage(message, topicConfig, config)
 
@@ -117,7 +117,7 @@ module.exports = {
 
       const { topic, config } = producerConfig
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = dto.messageFromRequestDto(request, eventType, Events.Event.Action.PUT)
+      const message = await dto.messageFromRequestDto(request, eventType, Events.Event.Action.PUT, isIsoApi)
 
       await Producer.produceMessage(message, topicConfig, config)
 

@@ -59,8 +59,8 @@ describe('ISO format validation Tests -->', () => {
 
   describe('quotes endpoints tests -->', () => {
     const headers = mocks.headersDto({
-      apiType: API_TYPES.iso20022,
-      resource: 'quotes'
+      resource: 'quotes',
+      isIsoApi: true
     })
 
     test('should validate ISO payload for POST /quotes callback', async () => {
@@ -112,8 +112,8 @@ describe('ISO format validation Tests -->', () => {
 
   describe('fxQuotes endpoints tests -->', () => {
     const headers = mocks.headersDto({
-      apiType: API_TYPES.iso20022,
-      resource: 'fxQuotes'
+      resource: 'fxQuotes',
+      isIsoApi: true
     })
 
     test.skip('should validate ISO payload for POST /fxQuotes callback', async () => {

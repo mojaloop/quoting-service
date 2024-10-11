@@ -34,7 +34,7 @@ const { Cache } = require('memory-cache')
 const { Enum } = require('@mojaloop/central-services-shared')
 
 const Config = require('../../../src/lib/config.js')
-const { API_TYPES, RESOURCES } = require('../../../src/constants')
+const { RESOURCES } = require('../../../src/constants')
 const {
   failActionHandler,
   getStackOrInspect,
@@ -746,12 +746,14 @@ describe('util', () => {
 
   describe('resolveOpenApiSpecPath Tests -->', () => {
     it('should resolve ISO OpenAPI spec path, and be able to read it', async () => {
-      const path = resolveOpenApiSpecPath(API_TYPES.iso20022)
+      const isIsoApi = true
+      const path = resolveOpenApiSpecPath(isIsoApi)
       await expect(fs.access(path, fs.constants.R_OK)).resolves.toBeUndefined()
     })
 
     it('should resolve FSPIOP OpenAPI spec path, and be able to read it', async () => {
-      const path = resolveOpenApiSpecPath(API_TYPES.fspiop)
+      const isIsoApi = false
+      const path = resolveOpenApiSpecPath(isIsoApi)
       await expect(fs.access(path, fs.constants.R_OK)).resolves.toBeUndefined()
     })
   })

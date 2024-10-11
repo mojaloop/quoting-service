@@ -48,6 +48,7 @@ const { Producer } = require('@mojaloop/central-services-stream').Util
 
 const { failActionHandler, resolveOpenApiSpecPath } = require('../src/lib/util')
 const { logger } = require('../src/lib')
+const { API_TYPES } = require('../src/constants')
 const Config = require('./lib/config')
 const Handlers = require('./api')
 const Routes = require('./api/routes')
@@ -60,7 +61,7 @@ const { APIDocumentation, OpenapiBackendValidator, FSPIOPHeaderValidation, HapiE
 // load config
 const config = new Config()
 
-const openAPISpecPath = resolveOpenApiSpecPath(config.apiType)
+const openAPISpecPath = resolveOpenApiSpecPath(config.isIsoApi)
 
 /**
  * Initializes a Hapi server
@@ -133,7 +134,7 @@ const initServer = async function (config, topicNames) {
       resources,
       supportedProtocolContentVersions,
       supportedProtocolAcceptVersions,
-      apiType: config.apiType
+      apiType: config.isIsoApi ? API_TYPES.iso20022 : API_TYPES.fspiop
     }
   }
 
