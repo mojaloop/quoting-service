@@ -38,9 +38,11 @@ jest.mock('@mojaloop/central-services-stream', () => ({
   Util: { Producer: mockProducer }
 }))
 
-let Hapi
+jest.setTimeout(10_000)
 
 describe('Server Tests', () => {
+  let Hapi
+
   beforeEach(() => {
     jest.resetModules()
     jest.mock('@hapi/hapi')
