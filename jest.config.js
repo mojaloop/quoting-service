@@ -5,6 +5,9 @@ module.exports = {
   collectCoverageFrom: [
     '**/src/**/**/*.js'
   ],
+  coveragePathIgnorePatterns: [
+    './src/handlers/index.js'
+  ],
   coverageThreshold: {
     global: {
       statements: 90,

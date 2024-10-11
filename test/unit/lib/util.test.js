@@ -24,20 +24,31 @@
  ******/
 'use strict'
 
+jest.mock('axios')
 jest.mock('@mojaloop/central-services-logger')
 
-const Enum = require('@mojaloop/central-services-shared').Enum
-jest.mock('axios')
 const axios = require('axios')
 const Logger = require('@mojaloop/central-services-logger')
+const { Cache } = require('memory-cache')
+const { Enum } = require('@mojaloop/central-services-shared')
+
+const Config = require('../../../src/lib/config.js')
+const { RESOURCES } = require('../../../src/constants')
+const {
+  failActionHandler,
+  getStackOrInspect,
+  getSpanTags,
+  generateRequestHeaders,
+  generateRequestHeadersForJWS,
+  removeEmptyKeys,
+  fetchParticipantInfo,
+  getParticipantEndpoint,
+  makeAppInteroperabilityHeader
+} = require('../../../src/lib/util')
 
 Logger.isDebugEnabled = jest.fn(() => true)
 Logger.isErrorEnabled = jest.fn(() => true)
 Logger.isInfoEnabled = jest.fn(() => true)
-const { failActionHandler, getStackOrInspect, getSpanTags, generateRequestHeaders, generateRequestHeadersForJWS, removeEmptyKeys, fetchParticipantInfo } = require('../../../src/lib/util')
-
-const Config = require('../../../src/lib/config.js')
-const { Cache } = require('memory-cache')
 
 // load config
 const config = new Config()
@@ -64,7 +75,7 @@ describe('util', () => {
     switchHeaders: {
       Accept: 'application/vnd.interoperability.transfers+json;version=1.1',
       'Content-Type': 'application/vnd.interoperability.transfers+json;version=1.1',
-      'fspiop-source': 'switch',
+      'fspiop-source': config.hubName,
       'fspiop-destination': 'dfsp2'
     },
     initiatorType: 'fakeInitiatorType',
@@ -215,6 +226,7 @@ describe('util', () => {
     subScenario: 'fakeSubScenario',
     transactionReference: 'fakeTxRef'
   }
+
   describe('failActionHandler', () => {
     it('throws the reformatted error', async () => {
       // Arrange
@@ -237,7 +249,7 @@ describe('util', () => {
         transactionId: '12345',
         quoteId: 'ABCDE',
         source: 'fsp1',
-        destination: 'switch'
+        destination: config.hubName
       }
       const mockRequest = {
         params: {
@@ -248,7 +260,7 @@ describe('util', () => {
         },
         headers: {
           'fspiop-source': 'fsp1',
-          'fspiop-destination': 'switch'
+          'fspiop-destination': config.hubName
         }
       }
 
@@ -267,7 +279,7 @@ describe('util', () => {
         transactionId: '12345',
         quoteId: 'ABCDE',
         source: 'fsp1',
-        destination: 'switch',
+        destination: config.hubName,
         payeeFsp: 'fsp1',
         payerFsp: 'fsp2'
       }
@@ -290,7 +302,7 @@ describe('util', () => {
         },
         headers: {
           'fspiop-source': 'fsp1',
-          'fspiop-destination': 'switch'
+          'fspiop-destination': config.hubName
         }
       }
 
@@ -449,7 +461,7 @@ describe('util', () => {
       }
 
       // Act
-      const result = generateRequestHeaders(mockData.headers, config.protocolVersions, false, additionalHeaders)
+      const result = generateRequestHeaders(mockData.headers, config.protocolVersions, false, RESOURCES.quotes, additionalHeaders)
 
       // Assert
       expect(result).toStrictEqual({ ...expected, ...additionalHeaders })
@@ -458,10 +470,10 @@ describe('util', () => {
     it('generates request headers, including the and converts accept and content-type to quotes', () => {
       // Arrange
       const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
+        Accept: makeAppInteroperabilityHeader(RESOURCES.quotes, config.protocolVersions.ACCEPT.DEFAULT),
+        'Content-Type': makeAppInteroperabilityHeader(RESOURCES.quotes, config.protocolVersions.CONTENT.DEFAULT),
         'FSPIOP-Destination': 'dfsp2',
-        'FSPIOP-Source': 'switch'
+        'FSPIOP-Source': config.hubName
       }
 
       // Act
@@ -476,7 +488,7 @@ describe('util', () => {
     it('generates the default request headers', () => {
       // Arrange
       const expected = {
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
+        'content-type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'fspiop-destination': 'dfsp2',
         'fspiop-source': 'dfsp1'
       }
@@ -491,8 +503,8 @@ describe('util', () => {
     it('generates default request headers, including the Accept', () => {
       // Arrange
       const expected = {
-        Accept: 'application/vnd.interoperability.quotes+json;version=1.1',
-        'Content-Type': 'application/vnd.interoperability.quotes+json;version=1.1',
+        accept: 'application/vnd.interoperability.quotes+json;version=1.1',
+        'content-type': 'application/vnd.interoperability.quotes+json;version=1.1',
         'fspiop-destination': 'dfsp2',
         'fspiop-source': 'dfsp1'
       }
@@ -503,6 +515,7 @@ describe('util', () => {
       expect(result).toStrictEqual(expected)
     })
   })
+
   describe('fetchParticipantInfo', () => {
     beforeEach(() => {
       // restore the current method in test to its original implementation
@@ -523,6 +536,44 @@ describe('util', () => {
       expect(axios.request.mock.calls.length).toBe(2)
       expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
       expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+
+    it('returns original payer and original payee data structure when they are proxied', async () => {
+      // Arrange
+      const cache = new Cache()
+      const proxyId1 = 'proxy1'
+      const proxyId2 = 'proxy2'
+      // Act
+      const result = await fetchParticipantInfo(
+        mockData.headers['fspiop-source'],
+        mockData.headers['fspiop-destination'],
+        cache,
+        {
+          isConnected: false,
+          connect: jest.fn().mockResolvedValue(true),
+          lookupProxyByDfspId: jest.fn().mockResolvedValueOnce(proxyId1).mockResolvedValueOnce(proxyId2)
+        }
+      )
+      // Assert
+      expect(result).toEqual({
+        payer: {
+          name: mockData.headers['fspiop-source'],
+          id: '',
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        },
+        payee: {
+          name: mockData.headers['fspiop-destination'],
+          id: '',
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        }
+      })
+      expect(axios.request.mock.calls.length).toBe(0)
     })
 
     it('caches payer and payee when cache is provided', async () => {
@@ -577,6 +628,117 @@ describe('util', () => {
       expect(axios.request.mock.calls.length).toBe(2)
       expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
       expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+  })
+
+  describe('getParticipantEndpoint', () => {
+    it('throws an error if required arguments are missing', async () => {
+      // Arrange
+      const fspId = 'fsp1'
+      const db = {
+        getParticipantEndpoint: jest.fn()
+      }
+      const endpointType = 'TEST_ENDPOINT_TYPE'
+      const proxyClient = {
+        connect: jest.fn(),
+        lookupProxyByDfspId: jest.fn()
+      }
+      const loggerFn = Logger.info
+      const params = { db, loggerFn, endpointType, proxyClient }
+
+      // Act
+      const action = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
+
+      // Arrange
+      params.fspId = fspId
+      params.db = null
+      // Act
+      const action2 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action2()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
+
+      // Arrange
+      params.db = db
+      params.loggerFn = null
+      // Act
+      const action3 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action3()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
+
+      // Arrange
+      params.loggerFn = loggerFn
+      params.endpointType = null
+      // Act
+      const action4 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action4()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
+
+      // Arrange
+      params.endpointType = endpointType
+      params.proxyClient = null
+      // Act
+      const action5 = async () => getParticipantEndpoint(params)
+      // Assert
+      await expect(action5()).resolves.not.toThrow()
+    })
+
+    it('returns the participant endpoint by calling db.getParticipantEndpoint', async () => {
+      // Arrange
+      const expected = 'http://localhost:8444/payerfsp'
+      const params = {
+        fspId: 'fsp1',
+        db: {
+          getParticipantEndpoint: jest.fn().mockResolvedValue(expected)
+        },
+        loggerFn: Logger.info,
+        endpointType: 'TEST_ENDPOINT_TYPE',
+        proxyClient: {
+          connect: jest.fn(),
+          lookupProxyByDfspId: jest.fn()
+        }
+      }
+      // Act
+      const result = await getParticipantEndpoint(params)
+      // Assert
+      expect(result).toEqual(expected)
+      expect(params.db.getParticipantEndpoint).toBeCalledTimes(1)
+      expect(params.db.getParticipantEndpoint).toBeCalledWith(params.fspId, params.endpointType)
+      expect(params.proxyClient.connect).toBeCalledTimes(0)
+      expect(params.proxyClient.lookupProxyByDfspId).toBeCalledTimes(0)
+    })
+
+    it('returns the participant endpoint using proxy client if participant not found in db', async () => {
+      // Arrange
+      const expected = 'http://localhost:8444/payerfsp'
+      const proxyId = 'proxy1'
+      const params = {
+        fspId: 'fsp1',
+        db: {
+          getParticipantEndpoint: jest.fn().mockImplementation((fspId, endpointType) => {
+            if (fspId === proxyId && endpointType === 'TEST_ENDPOINT_TYPE') {
+              return Promise.resolve(expected)
+            }
+            return Promise.resolve(null)
+          })
+        },
+        loggerFn: Logger.info,
+        endpointType: 'TEST_ENDPOINT_TYPE',
+        proxyClient: {
+          isConnecected: false,
+          connect: jest.fn().mockResolvedValue(true),
+          lookupProxyByDfspId: jest.fn().mockResolvedValue(proxyId)
+        }
+      }
+      // Act
+      const result = await getParticipantEndpoint(params)
+      // Assert
+      expect(result).toEqual(expected)
+      expect(params.db.getParticipantEndpoint).toBeCalledTimes(2)
+      expect(params.db.getParticipantEndpoint).toBeCalledWith(proxyId, params.endpointType)
+      expect(params.proxyClient.connect).toBeCalledTimes(1)
+      expect(params.proxyClient.lookupProxyByDfspId).toBeCalledTimes(1)
     })
   })
 })
