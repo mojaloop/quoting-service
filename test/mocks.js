@@ -1,6 +1,5 @@
 const uuid = require('node:crypto').randomUUID
 const Config = require('../src/lib/config')
-const { API_TYPES } = require('../src/constants')
 
 const config = new Config()
 
@@ -252,8 +251,8 @@ const putBulkQuotesPayloadDto = ({
   expiration
 })
 
-const interoperabilityHeaderDto = (resource, version, apiType) => {
-  const isoPart = apiType === API_TYPES.iso20022 ? '.iso20022' : ''
+const interoperabilityHeaderDto = (resource, version, isIsoApi = false) => {
+  const isoPart = isIsoApi ? '.iso20022' : ''
   return `application/vnd.interoperability${isoPart}.${resource}+json;version=${version}`
 }
 
@@ -262,10 +261,10 @@ const headersDto = ({
   version = '2.0',
   source = 'mockSource',
   destination = 'mockDestination',
-  apiType = API_TYPES.fspiop
+  isIsoApi = false
 } = {}) => Object.freeze({
-  accept: interoperabilityHeaderDto(resource, version, apiType),
-  'content-type': interoperabilityHeaderDto(resource, version, apiType),
+  accept: interoperabilityHeaderDto(resource, version, isIsoApi),
+  'content-type': interoperabilityHeaderDto(resource, version, isIsoApi),
   date: new Date().toISOString(),
   'fspiop-source': source,
   'fspiop-destination': destination

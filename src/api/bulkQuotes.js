@@ -64,7 +64,7 @@ module.exports = {
 
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.POST
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.POST)
+      const message = await dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.POST)
 
       await Producer.produceMessage(message, topicConfig, config)
 

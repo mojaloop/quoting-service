@@ -71,7 +71,7 @@ module.exports = {
 
       const { topic, config } = producerConfig
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = dto.messageFromRequestDto(request, eventType, Events.Event.Action.POST)
+      const message = await dto.messageFromRequestDto(request, eventType, Events.Event.Action.POST)
 
       await Producer.produceMessage(message, topicConfig, config)
 

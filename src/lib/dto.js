@@ -17,17 +17,40 @@ const makeMessageMetadata = (id, type, action) => {
   return createMetadata(id, event)
 }
 
-const messageFromRequestDto = (request, type, action) => {
+const extractInfoFromRequestDto = (request = {}) => {
   const { headers, payload = {}, params = {} } = request
   const { spanContext } = request.span || {}
+  const { id: requestId } = request.info || {}
+
+  return {
+    headers,
+    originalPayload: payload,
+    params,
+    requestId,
+    spanContext
+  }
+}
+
+const transformPayloadToFspiopDto = async (payload = {}) => {
+  // todo: implement transformation
+  return payload
+}
+
+const messageFromRequestDto = async (request, type, action, isIsoPayload = false) => {
+  const { headers, originalPayload, params, requestId, spanContext } = extractInfoFromRequestDto(request)
+
+  const payload = isIsoPayload
+    ? await transformPayloadToFspiopDto(originalPayload)
+    : originalPayload
+
   const id = params.id || payload.quoteId || payload.bulkQuoteId || payload.conversionRequestId
-  const encodedJson = encodePayload(JSON.stringify(payload), headers[Headers.GENERAL.CONTENT_TYPE.value])
+  const encodedJson = encodePayload(JSON.stringify(originalPayload), headers[Headers.GENERAL.CONTENT_TYPE.value])
 
   return Object.freeze({
     content: {
-      requestId: request.info?.id,
+      requestId,
       headers,
-      payload: encodedJson,
+      payload: encodedJson, // think, if we need to rename it to originalPayload?
       uriParams: params,
       spanContext,
       id,
