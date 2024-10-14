@@ -86,7 +86,7 @@
       ]
     }
   },
-  "ORIGINAL_PAYLOAD_STORAGE": "redis",
+  "ORIGINAL_PAYLOAD_STORAGE": "",
   "PAYLOAD_CACHE": {
     "enabled": true,
     "type": "redis-cluster",

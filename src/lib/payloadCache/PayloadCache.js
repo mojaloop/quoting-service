@@ -42,8 +42,8 @@ class PayloadCache extends RedisCache {
   // todo: think, if we need deletePayload method
 
   static formatPayloadCacheKey (requestId) {
-    const reqIdInBase64 = Buffer.from(requestId).toString('base64url')
-    return `${KEY_PREFIX}:${reqIdInBase64}`
+    // const reqIdInBase64 = Buffer.from(requestId).toString('base64url')
+    return `${KEY_PREFIX}:${requestId}`
   }
 }
 

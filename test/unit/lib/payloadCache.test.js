@@ -2,7 +2,8 @@ const MockIoRedis = require('../../MockIoRedis')
 jest.mock('ioredis', () => MockIoRedis)
 
 const { setTimeout: sleep } = require('node:timers/promises')
-const { createPayloadCache, PayloadCache } = require('../../../src/lib/payloadCache')
+const { createPayloadCache } = require('../../../src/lib')
+const { PayloadCache } = require('../../../src/lib/payloadCache')
 const Config = require('../../../src/lib/config')
 
 const config = new Config()

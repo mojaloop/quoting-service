@@ -14,10 +14,10 @@ chmod +x $SCRIPTS_FOLDER/env.sh
 source $SCRIPTS_FOLDER/env.sh
 
 echo "Starting docker-compose..."
-docker-compose up -d
+docker compose up -d
 
 echo "Services started. Checking status..."
-docker-compose ps
+docker compose ps
 
 echo "Waiting central-ledger migrations for $MIGRATION_TIMEOUT sec..."
 sleep $MIGRATION_TIMEOUT

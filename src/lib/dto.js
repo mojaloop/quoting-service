@@ -51,7 +51,7 @@ const makeContentField = ({ headers, payload, params, requestId, spanContext, ty
   return {
     requestId,
     headers,
-    payload: encodedJson,
+    payload: encodedJson, // parsedPayload (JSON)
     uriParams: params,
     spanContext,
     id,
@@ -60,19 +60,18 @@ const makeContentField = ({ headers, payload, params, requestId, spanContext, ty
   }
 }
 
-const storeOriginalPayload = async ({ originalPayloadStorage, originalPayload, content, payloadCache }) => {
+const storeOriginalPayload = async ({ originalPayloadStorage, originalPayload, requestId, payloadCache, context = {} }) => {
   logger.debug('originalPayloadStorage: ', { originalPayloadStorage })
 
   if (originalPayloadStorage === PAYLOAD_STORAGES.kafka) {
-    content.originalPayload = originalPayload // or add it to data field?
+    context.originalRequestPayload = originalPayload
   } else if (originalPayloadStorage === PAYLOAD_STORAGES.redis) {
-    const { requestId } = content
     const isOk = await payloadCache?.setPayload(requestId, originalPayload)
     if (!isOk) logger.warn('originalPayload was not stored in cache:', { requestId })
-    content.originalPayload = { requestId }
+    context.originalRequestId = requestId
   }
 
-  return content
+  return context
 }
 
 // todo: move to domain folder
@@ -97,10 +96,12 @@ const messageFromRequestDto = async ({
     type, action, headers, payload, params, requestId, spanContext
   })
 
-  await storeOriginalPayload({ originalPayloadStorage, originalPayload, content, payloadCache })
+  const context = {}
+  await storeOriginalPayload({ originalPayloadStorage, originalPayload, requestId, payloadCache, context })
 
   return Object.freeze({
     content,
+    context,
     type,
     from: headers[Headers.FSPIOP.SOURCE],
     to: headers[Headers.FSPIOP.DESTINATION],

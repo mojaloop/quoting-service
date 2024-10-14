@@ -20,7 +20,6 @@ x-quoting-service: &quotingServiceBase
     - CSL_LOG_TRANSPORT=file
   volumes:
     - ./docker/quoting-service/default.json:/opt/app/config/default.json
-    #  think, how to use ./config/default.json inside docker-compose
     - ./secrets/:/opt/app/secrets/
   depends_on:
     <<: *dependsOnMysqlAndKafka
