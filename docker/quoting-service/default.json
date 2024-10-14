@@ -86,6 +86,16 @@
       ]
     }
   },
+  "ORIGINAL_PAYLOAD_STORAGE": "redis",
+  "PAYLOAD_CACHE": {
+    "enabled": true,
+    "type": "redis-cluster",
+    "connectionConfig": {
+      "cluster": [
+        { "host": "redis-node-0", "port": 6379 }
+      ]
+    }
+  },
   "KAFKA": {
     "CONSUMER": {
       "QUOTE": {

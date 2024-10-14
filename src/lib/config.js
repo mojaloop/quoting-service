@@ -32,7 +32,7 @@
 
 const RC = require('parse-strings-in-object')(require('rc')('QUOTE', require('../../config/default.json')))
 const fs = require('node:fs')
-const { API_TYPES } = require('../constants')
+const { API_TYPES, PAYLOAD_STORAGES } = require('../constants')
 
 const DEFAULT_PROTOCOL_VERSION = {
   CONTENT: {
@@ -160,6 +160,8 @@ class Config {
     this.enumDataCacheExpiresInMs = RC.CACHE.ENUM_DATA_EXPIRES_IN_MS || 4170000
     this.participantDataCacheExpiresInMs = RC.CACHE.PARTICIPANT_DATA_EXPIRES_IN_MS || 60000
     this.proxyCache = RC.PROXY_CACHE
+    this.payloadCache = RC.PAYLOAD_CACHE
+    this.originalPayloadStorage = RC.ORIGINAL_PAYLOAD_STORAGE || PAYLOAD_STORAGES.none
   }
 }
 
