@@ -56,7 +56,13 @@ const plugins = require('./api/plugins')
 const dto = require('./lib/dto')
 
 const { OpenapiBackend } = CentralServices.Util
-const { APIDocumentation, OpenapiBackendValidator, FSPIOPHeaderValidation, HapiEventPlugin } = CentralServices.Util.Hapi
+const {
+  APIDocumentation,
+  FSPIOPHeaderValidation,
+  HapiRawPayload,
+  HapiEventPlugin,
+  OpenapiBackendValidator
+} = CentralServices.Util.Hapi
 
 // load config
 const config = new Config()
@@ -78,6 +84,11 @@ const initServer = async function (config, topicNames) {
     routes: {
       validate: {
         failAction: failActionHandler
+      },
+      payload: {
+        // these options are required to activate HapiRawPayload plugin
+        output: 'stream',
+        parse: true
       }
     }
   })
@@ -181,6 +192,7 @@ const initServer = async function (config, topicNames) {
     Vision,
     Blipp,
     ErrorHandler,
+    HapiRawPayload,
     HapiEventPlugin
   ])
 

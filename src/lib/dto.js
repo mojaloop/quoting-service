@@ -20,15 +20,16 @@ const makeMessageMetadata = (id, type, action) => {
 }
 
 const extractInfoFromRequestDto = (request = {}) => {
-  const { headers, payload = {}, params = {} } = request
+  const { headers, params = {}, payload = {}, rawPayload = Buffer.from('') } = request
   const { spanContext } = request.span || {}
   const { id: requestId } = request.info || {}
   const isError = request.path?.endsWith('/error')
 
   return {
     headers,
-    originalPayload: payload,
     params,
+    payload,
+    rawPayload,
     requestId,
     spanContext,
     isError
@@ -44,14 +45,14 @@ const transformPayloadToFspiopDto = async (payload, type, action, isError) => {
   return body
 }
 
-const makeContentField = ({ headers, payload, params, requestId, spanContext, type, action }) => {
-  const id = params.id || payload.quoteId || payload.bulkQuoteId || payload.conversionRequestId
-  const encodedJson = encodePayload(JSON.stringify(payload), headers[Headers.GENERAL.CONTENT_TYPE.value])
+const makeContentField = ({ type, action, headers, fspiopPayload, params, requestId, spanContext }) => {
+  const id = params.id || fspiopPayload.quoteId || fspiopPayload.bulkQuoteId || fspiopPayload.conversionRequestId
+  const encodedJson = encodePayload(JSON.stringify(fspiopPayload), headers[Headers.GENERAL.CONTENT_TYPE.value])
 
   return {
     requestId,
     headers,
-    payload: encodedJson, // parsedPayload (JSON)
+    payload: encodedJson,
     uriParams: params,
     spanContext,
     id,
@@ -60,13 +61,13 @@ const makeContentField = ({ headers, payload, params, requestId, spanContext, ty
   }
 }
 
-const storeOriginalPayload = async ({ originalPayloadStorage, originalPayload, requestId, payloadCache, context = {} }) => {
+const storeOriginalPayload = async ({ originalPayloadStorage, rawPayload, requestId, payloadCache, context = {} }) => {
   logger.debug('originalPayloadStorage: ', { originalPayloadStorage })
 
   if (originalPayloadStorage === PAYLOAD_STORAGES.kafka) {
-    context.originalRequestPayload = originalPayload
+    context.originalRequestPayload = rawPayload
   } else if (originalPayloadStorage === PAYLOAD_STORAGES.redis) {
-    const isOk = await payloadCache?.setPayload(requestId, originalPayload)
+    const isOk = await payloadCache?.setPayload(requestId, rawPayload.toString()) // todo: think, if we need to use .toString()
     if (!isOk) logger.warn('originalPayload was not stored in cache:', { requestId })
     context.originalRequestId = requestId
   }
@@ -83,21 +84,21 @@ const messageFromRequestDto = async ({
   originalPayloadStorage = PAYLOAD_STORAGES.none,
   payloadCache = null
 }) => {
-  const { headers, originalPayload, params, requestId, spanContext, isError } = extractInfoFromRequestDto(request)
+  const { headers, params, payload, rawPayload, requestId, spanContext, isError } = extractInfoFromRequestDto(request)
 
   const needTransform = isIsoPayload && (type !== Enum.Events.Event.Type.BULK_QUOTE)
   logger.debug('needTransform:', { needTransform, type, action, isIsoPayload })
 
-  const payload = needTransform
-    ? await transformPayloadToFspiopDto(originalPayload, type, action, isError)
-    : originalPayload
+  const fspiopPayload = needTransform
+    ? await transformPayloadToFspiopDto(payload, type, action, isError)
+    : payload
 
   const content = makeContentField({
-    type, action, headers, payload, params, requestId, spanContext
+    type, action, fspiopPayload, headers, params, requestId, spanContext
   })
 
   const context = {}
-  await storeOriginalPayload({ originalPayloadStorage, originalPayload, requestId, payloadCache, context })
+  await storeOriginalPayload({ originalPayloadStorage, rawPayload, requestId, payloadCache, context })
 
   return Object.freeze({
     content,

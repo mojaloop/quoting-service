@@ -1,5 +1,9 @@
 const { randomUUID } = require('node:crypto')
+const { encodePayload } = require('@mojaloop/central-services-shared').Util.StreamingProtocol
+
 const Config = require('../../src/lib/config')
+
+const toBuffer = json => Buffer.from(JSON.stringify(json))
 
 const mockHttpRequest = ({
   requestId = randomUUID(),
@@ -15,6 +19,8 @@ const mockHttpRequest = ({
   }
 } = {}) => ({
   payload,
+  rawPayload: toBuffer(payload), // by HapiRawPayload plugin
+  dataUri: encodePayload(toBuffer(payload), headers['content-type']), // by HapiRawPayload plugin
   params,
   headers,
   info: {
