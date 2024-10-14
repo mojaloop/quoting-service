@@ -36,10 +36,7 @@ const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 
 const util = require('../lib/util')
-const Config = require('../lib/config')
 const dto = require('../lib/dto')
-
-const { kafkaConfig } = new Config()
 
 /**
  * Operations on /quotes
@@ -55,6 +52,8 @@ module.exports = {
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
   post: async function Quotes (context, request, h) {
+    const { config, payloadCache } = request.server.app
+    const { kafkaConfig, isIsoApi, originalPayloadStorage } = config
     const isFX = util.isFxRequest(request.headers)
 
     const histTimerEnd = Metrics.getHistogram(
@@ -65,19 +64,20 @@ module.exports = {
 
     try {
       await util.auditSpan(request)
-
       const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
-      const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.POST : kafkaConfig.PRODUCER.QUOTE.POST
 
-      const { topic, config } = producerConfig
-      const topicConfig = dto.topicConfigDto({ topicName: topic })
       const message = await dto.messageFromRequestDto({
         request,
         type,
-        action: Events.Event.Action.POST
+        action: Events.Event.Action.POST,
+        isIsoApi,
+        originalPayloadStorage,
+        payloadCache
       })
 
-      await Producer.produceMessage(message, topicConfig, config)
+      const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.POST : kafkaConfig.PRODUCER.QUOTE.POST
+      const topicConfig = dto.topicConfigDto({ topicName: producerConfig.topic })
+      await Producer.produceMessage(message, topicConfig, producerConfig.config)
 
       histTimerEnd({ success: true })
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)

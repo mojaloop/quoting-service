@@ -1,4 +1,5 @@
 const { randomUUID } = require('node:crypto')
+const Config = require('../../src/lib/config')
 
 const mockHttpRequest = ({
   requestId = randomUUID(),
@@ -7,6 +8,10 @@ const mockHttpRequest = ({
   headers = {
     'fspiop-source': 'payerFsp',
     'content-type': 'application/vnd.interoperability.quotes+json;version=1.0'
+  },
+  app = {
+    database: jest.fn(),
+    config: new Config()
   }
 } = {}) => ({
   payload,
@@ -16,9 +21,7 @@ const mockHttpRequest = ({
     id: requestId
   },
   server: {
-    app: {
-      database: jest.fn()
-    },
+    app,
     log: jest.fn()
   },
   span: {

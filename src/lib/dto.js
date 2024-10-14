@@ -60,14 +60,16 @@ const makeContentField = ({ headers, payload, params, requestId, spanContext, ty
   }
 }
 
-const storeOriginalPayload = async (originalPayloadStorage, originalPayload, content) => {
+const storeOriginalPayload = async ({ originalPayloadStorage, originalPayload, content, payloadCache }) => {
   logger.debug('originalPayloadStorage: ', { originalPayloadStorage })
 
   if (originalPayloadStorage === PAYLOAD_STORAGES.kafka) {
-    content.originalPayload = originalPayload
+    content.originalPayload = originalPayload // or add it to data field?
   } else if (originalPayloadStorage === PAYLOAD_STORAGES.redis) {
-    // todo: store originalPayload in redis
-    content.originalPayload = { storeId: 'add impl.!' }
+    const { requestId } = content
+    const isOk = await payloadCache?.setPayload(requestId, originalPayload)
+    if (!isOk) logger.warn('originalPayload was not stored in cache:', { requestId })
+    content.originalPayload = { requestId }
   }
 
   return content
@@ -75,7 +77,12 @@ const storeOriginalPayload = async (originalPayloadStorage, originalPayload, con
 
 // todo: move to domain folder
 const messageFromRequestDto = async ({
-  request, type, action, isIsoPayload = false, originalPayloadStorage = PAYLOAD_STORAGES.none
+  request,
+  type,
+  action,
+  isIsoPayload = false,
+  originalPayloadStorage = PAYLOAD_STORAGES.none,
+  payloadCache = null
 }) => {
   const { headers, originalPayload, params, requestId, spanContext, isError } = extractInfoFromRequestDto(request)
 
@@ -90,7 +97,7 @@ const messageFromRequestDto = async ({
     type, action, headers, payload, params, requestId, spanContext
   })
 
-  await storeOriginalPayload(originalPayloadStorage, originalPayload, content)
+  await storeOriginalPayload({ originalPayloadStorage, originalPayload, content, payloadCache })
 
   return Object.freeze({
     content,
