@@ -42,8 +42,8 @@ describe('dto Tests -->', () => {
       expect(fspiopPayload).toEqual(putErrorQuotes)
     })
 
-    test.skip('should transform POST /fxQuotes ISO payload to FSPIOP format', async () => {
-      const postFxQuotes = mocks.postFxQuotesPayloadDto()
+    test('should transform POST /fxQuotes ISO payload to FSPIOP format', async () => {
+      const postFxQuotes = mocks.postFxQuotesPayloadDto({ extensionList: null })
 
       const { body: isoPayload } = await TransformFacades.FSPIOP.fxQuotes.post({ body: postFxQuotes })
 

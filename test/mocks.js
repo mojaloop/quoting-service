@@ -156,7 +156,7 @@ const postFxQuotesPayloadDto = ({
     sourceAmount,
     targetAmount,
     expiration,
-    extensionList
+    ...(extensionList && { extensionList })
   }
 })
 
