@@ -4,10 +4,10 @@ const safeStringify = require('fast-safe-stringify')
 
 const DEFAULT_TTL_SEC = 300 // pass through config
 const KEY_PREFIX = 'iso_payload' //
-// todo: think, if we nee to add resource part: 'iso_payload:quote:....'
+// think, if we need to add resource part: 'iso_payload:quote:....'
 
 class PayloadCache extends RedisCache {
-  async getPayload (requestId, parseJson = true) {
+  async getPayload (requestId, parseJson = false) {
     try {
       const key = PayloadCache.formatPayloadCacheKey(requestId)
       const rawValue = await super.get(key)

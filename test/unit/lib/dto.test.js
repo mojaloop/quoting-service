@@ -38,7 +38,7 @@ describe('dto Tests -->', () => {
     })
 
     test('should store PUT /quotes/{id} ISO payload in redis cache', async () => {
-      config.originalPayloadStorage = PAYLOAD_STORAGES.redis
+      const originalPayloadStorage = PAYLOAD_STORAGES.redis
       const { ilpPacket, condition } = mocks.mockIlp4Combo()
       const putQuotes = mocks.putQuotesPayloadDto({ ilpPacket, condition })
       const isoPayload = await TransformFacades.FSPIOP.quotes.put({ body: putQuotes })
@@ -49,8 +49,7 @@ describe('dto Tests -->', () => {
         payload: isoPayload.body,
         app: {
           config,
-          payloadCache,
-          database: jest.fn()
+          payloadCache
         }
       })
 
@@ -59,17 +58,16 @@ describe('dto Tests -->', () => {
         type: 'quote',
         action: 'put',
         isIsoApi: true,
-        originalPayloadStorage: PAYLOAD_STORAGES.redis,
+        originalPayloadStorage,
         payloadCache
       })
       expect(message).toBeTruthy()
       expect(message.content.context.originalRequestId).toBe(requestId)
 
       const cachedPayload = await payloadCache.getPayload(requestId)
-      expect(cachedPayload).toEqual(isoPayload.body)
-
-      const decodedPayload = decodePayload(message.content.payload)
-      expect(decodedPayload).toEqual(putQuotes)
+      expect(cachedPayload).toBeTruthy()
+      expect(decodePayload(cachedPayload)).toEqual(isoPayload.body)
+      expect(decodePayload(message.content.payload)).toEqual(putQuotes)
     })
 
     test('should store PUT /quotes/{id} ISO payload in kafka message', async () => {
@@ -94,8 +92,8 @@ describe('dto Tests -->', () => {
 
       expect(message.content).toBeTruthy()
       const { originalRequestPayload } = message.content.context
-      expect(originalRequestPayload).toBeInstanceOf(Buffer)
-      expect(JSON.parse(originalRequestPayload.toString())).toEqual(isoPayload.body)
+      expect(typeof originalRequestPayload).toBe('string')
+      expect(decodePayload(originalRequestPayload)).toEqual(isoPayload.body)
     })
   })
 
