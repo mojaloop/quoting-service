@@ -41,7 +41,7 @@ jest.mock('@mojaloop/central-services-stream', () => ({
 jest.mock('../../src/model/quotes')
 
 const { randomUUID } = require('node:crypto')
-const { TransformFacades } = require('../../src/lib')
+const { TransformFacades, logger } = require('../../src/lib')
 const serverStart = require('../../src/server')
 const mocks = require('../mocks')
 
@@ -92,6 +92,7 @@ describe('ISO format validation Tests -->', () => {
         payload: body
       }
       const response = await server.inject(request)
+      logger.info('response.result:', response.result)
       expect(response.statusCode).toBe(200)
     })
 
@@ -131,6 +132,7 @@ describe('ISO format validation Tests -->', () => {
         payload: body
       }
       const response = await server.inject(request)
+      logger.info('response.result:', response.result)
       expect(response.statusCode).toBe(202)
     })
 
@@ -151,6 +153,7 @@ describe('ISO format validation Tests -->', () => {
         payload: body
       }
       const response = await server.inject(request)
+      logger.info('response.result:', response.result)
       expect(response.statusCode).toBe(200)
     })
 
