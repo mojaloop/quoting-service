@@ -45,7 +45,7 @@ const transformPayloadToFspiopDto = async (payload, type, action, isError) => {
   return body
 }
 
-const makeContentField = ({ type, action, headers, fspiopPayload, params, requestId, spanContext }) => {
+const makeContentField = ({ type, action, headers, fspiopPayload, params, requestId, spanContext, context }) => {
   const id = params.id || fspiopPayload.quoteId || fspiopPayload.bulkQuoteId || fspiopPayload.conversionRequestId
   const encodedJson = encodePayload(JSON.stringify(fspiopPayload), headers[Headers.GENERAL.CONTENT_TYPE.value])
 
@@ -57,7 +57,8 @@ const makeContentField = ({ type, action, headers, fspiopPayload, params, reques
     spanContext,
     id,
     type,
-    action
+    action,
+    context
   }
   logger.debug('makeContentField is done: ', { content, fspiopPayload })
 
@@ -96,16 +97,15 @@ const messageFromRequestDto = async ({
     ? await transformPayloadToFspiopDto(payload, type, action, isError)
     : payload
 
-  const content = makeContentField({
-    type, action, fspiopPayload, headers, params, requestId, spanContext
-  })
-
   const context = {}
   await storeOriginalPayload({ originalPayloadStorage, rawPayload, requestId, context, payloadCache })
 
+  const content = makeContentField({
+    type, action, fspiopPayload, headers, params, requestId, spanContext, context
+  })
+
   return Object.freeze({
     content,
-    context,
     type,
     from: headers[Headers.FSPIOP.SOURCE],
     to: headers[Headers.FSPIOP.DESTINATION],
