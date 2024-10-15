@@ -81,7 +81,7 @@ describe('ISO format validation Tests -->', () => {
     })
 
     // todo: unskip after transformerLib is fixed
-    test.skip('should validate ISO payload for PUT /quotes/{id} callback', async () => {
+    test('should validate ISO payload for PUT /quotes/{id} callback', async () => {
       const { body } = await TransformFacades.FSPIOP.quotes.put({
         body: mocks.putQuotesPayloadDto()
       })
@@ -116,7 +116,7 @@ describe('ISO format validation Tests -->', () => {
       isIsoApi: true
     })
 
-    test.skip('should validate ISO payload for POST /fxQuotes callback', async () => {
+    test('should validate ISO payload for POST /fxQuotes callback', async () => {
       const fspiopPatload = mocks.postFxQuotesPayloadDto({
         conversionRequestId: Date.now(),
         conversionId: Date.now()
@@ -134,7 +134,7 @@ describe('ISO format validation Tests -->', () => {
       expect(response.statusCode).toBe(202)
     })
 
-    test.skip('should validate ISO payload for PUT /fxQuotes/{id} callback', async () => {
+    test('should validate ISO payload for PUT /fxQuotes/{id} callback', async () => {
       const fspiopPayload = mocks.putFxQuotesPayloadDto({
         fxQuotesPostPayload: mocks.postFxQuotesPayloadDto({
           conversionRequestId: Date.now(),
