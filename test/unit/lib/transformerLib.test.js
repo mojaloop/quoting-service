@@ -16,7 +16,8 @@ describe('transformerLib Tests -->', () => {
   test('should transform putQuotes payload to ISO format', async () => {
     const fspiopBody = mocks.putQuotesPayloadDto()
     const isoPayload = await TransformFacades.FSPIOP.quotes.put({
-      body: fspiopBody
+      body: fspiopBody,
+      headers: { 'fspiop-source': 'sourcefsp', 'fspiop-destination': 'destfsp' }
     })
     expect(isoPayload.body).toBeTruthy()
     expect(isoPayload.body.GrpHdr).toBeTruthy()

@@ -23,6 +23,7 @@
  --------------
  **********/
 
+const { randomUUID } = require('node:crypto')
 const { API_TYPES } = require('../../src/constants')
 Object.assign(process.env, {
   QUOTE_API_TYPE: API_TYPES.iso20022,
@@ -40,7 +41,6 @@ jest.mock('@mojaloop/central-services-stream', () => ({
 }))
 jest.mock('../../src/model/quotes')
 
-const { randomUUID } = require('node:crypto')
 const { TransformFacades, logger } = require('../../src/lib')
 const serverStart = require('../../src/server')
 const mocks = require('../mocks')
@@ -82,12 +82,17 @@ describe('ISO format validation Tests -->', () => {
 
     // todo: unskip after transformerLib is fixed
     test('should validate ISO payload for PUT /quotes/{id} callback', async () => {
+      /**
+       * This test was failing because ISO supports only ULID for CdtTrfTxInf.PmtId.TxId (35 chars) rather than uuidv4 (36 chars), so ULID has to be used in FSPIOP
+       */
       const { body } = await TransformFacades.FSPIOP.quotes.put({
-        body: mocks.putQuotesPayloadDto()
+        body: mocks.putQuotesPayloadDto(),
+        params: { ID: mocks.generateULID() },
+        headers: { 'fspiop-source': 'sourcefsp', 'fspiop-destination': 'destfsp' }
       })
       const request = {
         method: 'PUT',
-        url: `/quotes/${randomUUID()}`,
+        url: `/quotes/${body.CdtTrfTxInf.PmtId.TxId}`,
         headers,
         payload: body
       }
@@ -118,12 +123,18 @@ describe('ISO format validation Tests -->', () => {
     })
 
     test('should validate ISO payload for POST /fxQuotes callback', async () => {
-      const fspiopPatload = mocks.postFxQuotesPayloadDto({
+      /**
+       * This test was failing because in FSPIOP targetAmount is optional, but the ISO equivalent (CdtTrfTxInf.IntrBkSttlmAmt.ActiveCurrencyAndAmount) is required
+       */
+      const fspiopPayload = mocks.postFxQuotesPayloadDto({
         conversionRequestId: Date.now(),
         conversionId: Date.now()
       })
+      // Addiing targetAmount to make it valid for ISO
+      fspiopPayload.conversionTerms.targetAmount.amount = 100
+
       const { body } = await TransformFacades.FSPIOP.fxQuotes.post({
-        body: fspiopPatload
+        body: fspiopPayload
       })
       const request = {
         method: 'POST',
@@ -137,12 +148,18 @@ describe('ISO format validation Tests -->', () => {
     })
 
     test('should validate ISO payload for PUT /fxQuotes/{id} callback', async () => {
+      /**
+       * This test was failing because conversionTerms.determiningTransferId is optional FSPIOP but the ISO equivalent (CdtTrfTxInf.PmtId.TxId) is required
+       */
       const fspiopPayload = mocks.putFxQuotesPayloadDto({
         fxQuotesPostPayload: mocks.postFxQuotesPayloadDto({
           conversionRequestId: Date.now(),
           conversionId: Date.now()
-        })
+        }),
+        condition: mocks.mockIlp4Combo().condition
       })
+      // Adding determiningTransferId to make it valid for ISO
+      fspiopPayload.conversionTerms.determiningTransferId = mocks.generateULID()
       const { body } = await TransformFacades.FSPIOP.fxQuotes.put({
         body: fspiopPayload
       })
