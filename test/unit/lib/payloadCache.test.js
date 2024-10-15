@@ -48,7 +48,7 @@ describe('Payload Cache Tests -->', () => {
     const isSet = await cache.setPayload(reqId, payload)
     expect(isSet).toBe(true)
     const cachedValue = await cache.getPayload(reqId)
-    expect(cachedValue).toEqual(payload)
+    expect(cachedValue).toBe(JSON.stringify(payload))
   })
 
   test('should expire cached payload after defined period', async () => {

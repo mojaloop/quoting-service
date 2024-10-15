@@ -20,7 +20,7 @@ const makeMessageMetadata = (id, type, action) => {
 }
 
 const extractInfoFromRequestDto = (request = {}) => {
-  const { headers, params = {}, payload = {}, rawPayload = Buffer.from('') } = request
+  const { headers, params = {}, payload = {}, dataUri = '' } = request
   const { spanContext } = request.span || {}
   const { id: requestId } = request.info || {}
   const isError = request.path?.endsWith('/error')
@@ -29,7 +29,7 @@ const extractInfoFromRequestDto = (request = {}) => {
     headers,
     params,
     payload,
-    rawPayload,
+    dataUri,
     requestId,
     spanContext,
     isError
@@ -65,13 +65,13 @@ const makeContentField = ({ type, action, headers, fspiopPayload, params, reques
   return content
 }
 
-const storeOriginalPayload = async ({ originalPayloadStorage, rawPayload, requestId, context, payloadCache }) => {
+const storeOriginalPayload = async ({ originalPayloadStorage, dataUri, requestId, context, payloadCache }) => {
   logger.debug('originalPayloadStorage: ', { originalPayloadStorage })
 
   if (originalPayloadStorage === PAYLOAD_STORAGES.kafka) {
-    context.originalRequestPayload = rawPayload
+    context.originalRequestPayload = dataUri
   } else if (originalPayloadStorage === PAYLOAD_STORAGES.redis) {
-    const isOk = await payloadCache?.setPayload(requestId, rawPayload.toString()) // todo: think, if we need to use .toString()
+    const isOk = await payloadCache?.setPayload(requestId, dataUri)
     if (!isOk) logger.warn('originalPayload was not stored in cache:', { requestId })
     context.originalRequestId = requestId
   }
@@ -88,7 +88,7 @@ const messageFromRequestDto = async ({
   originalPayloadStorage = PAYLOAD_STORAGES.none,
   payloadCache = null
 }) => {
-  const { headers, params, payload, rawPayload, requestId, spanContext, isError } = extractInfoFromRequestDto(request)
+  const { headers, params, payload, dataUri, requestId, spanContext, isError } = extractInfoFromRequestDto(request)
 
   const needTransform = isIsoApi && (type !== Enum.Events.Event.Type.BULK_QUOTE)
   logger.info('needTransform:', { needTransform, type, action, isIsoApi })
@@ -98,7 +98,7 @@ const messageFromRequestDto = async ({
     : payload
 
   const context = {}
-  await storeOriginalPayload({ originalPayloadStorage, rawPayload, requestId, context, payloadCache })
+  await storeOriginalPayload({ originalPayloadStorage, dataUri, requestId, context, payloadCache })
 
   const content = makeContentField({
     type, action, fspiopPayload, headers, params, requestId, spanContext, context
