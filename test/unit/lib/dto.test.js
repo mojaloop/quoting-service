@@ -63,13 +63,39 @@ describe('dto Tests -->', () => {
         payloadCache
       })
       expect(message).toBeTruthy()
-      expect(message.context.originalRequestId).toBe(requestId)
+      expect(message.content.context.originalRequestId).toBe(requestId)
 
       const cachedPayload = await payloadCache.getPayload(requestId)
       expect(cachedPayload).toEqual(isoPayload.body)
 
       const decodedPayload = decodePayload(message.content.payload)
       expect(decodedPayload).toEqual(putQuotes)
+    })
+
+    test('should store PUT /quotes/{id} ISO payload in kafka message', async () => {
+      const originalPayloadStorage = PAYLOAD_STORAGES.kafka
+      const putQuotes = mocks.putQuotesPayloadDto(mocks.mockIlp4Combo())
+      const isoPayload = await TransformFacades.FSPIOP.quotes.put({ body: putQuotes })
+
+      const requestId = `requestId-${Date.now()}`
+      const request = mockHttpRequest({
+        requestId,
+        payload: isoPayload.body,
+        app: { config }
+      })
+
+      const message = await dto.messageFromRequestDto({
+        request,
+        type: 'quote',
+        action: 'put',
+        isIsoApi: true,
+        originalPayloadStorage
+      })
+
+      expect(message.content).toBeTruthy()
+      const { originalRequestPayload } = message.content.context
+      expect(originalRequestPayload).toBeInstanceOf(Buffer)
+      expect(JSON.parse(originalRequestPayload.toString())).toEqual(isoPayload.body)
     })
   })
 
