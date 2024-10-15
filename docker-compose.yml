@@ -57,6 +57,18 @@ services:
       - "19229:9229"
     container_name: qs_quoting-service
 
+  quoting-service-iso:
+    <<: *quotingServiceBase
+    command: npm start
+    environment:
+      - LOG_LEVEL=debug
+      - QUOTE_API_TYPE=iso20022
+      - QUOTE_ORIGINAL_PAYLOAD_STORAGE=redis
+    ports:
+      - "13002:3002"
+      - "39229:9229"
+    container_name: qs_quoting-service-iso
+
   quoting-service-handler:
     <<: *quotingServiceBase
     command: npm run start:handlers:debug

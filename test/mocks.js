@@ -1,5 +1,6 @@
 const uuid = require('node:crypto').randomUUID
 const Config = require('../src/lib/config')
+const { RESOURCES } = require('../src/constants')
 
 const config = new Config()
 
@@ -257,7 +258,7 @@ const interoperabilityHeaderDto = (resource, version, isIsoApi = false) => {
 }
 
 const headersDto = ({
-  resource = 'quotes',
+  resource = RESOURCES.quotes,
   version = '2.0',
   source = 'mockSource',
   destination = 'mockDestination',

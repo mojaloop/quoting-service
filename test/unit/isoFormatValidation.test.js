@@ -26,7 +26,7 @@
 const { API_TYPES } = require('../../src/constants')
 Object.assign(process.env, {
   QUOTE_API_TYPE: API_TYPES.iso20022,
-  QUOTE_PORT: '13002'
+  QUOTE_PORT: '33002'
 })
 
 jest.mock('@mojaloop/central-services-stream', () => ({
@@ -117,12 +117,12 @@ describe('ISO format validation Tests -->', () => {
     })
 
     test.skip('should validate ISO payload for POST /fxQuotes callback', async () => {
-      const fspiopPatload = mocks.postFxQuotesPayloadDto({
+      const fspiopPayload = mocks.postFxQuotesPayloadDto({
         conversionRequestId: Date.now(),
         conversionId: Date.now()
       })
       const { body } = await TransformFacades.FSPIOP.fxQuotes.post({
-        body: fspiopPatload
+        body: fspiopPayload
       })
       const request = {
         method: 'POST',
