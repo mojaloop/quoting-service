@@ -1,5 +1,5 @@
 const { Enum, Util } = require('@mojaloop/central-services-shared')
-const { PAYLOAD_STORAGES } = require('../constants')
+const { PAYLOAD_STORAGES, RESOURCES } = require('../constants')
 const { TransformFacades, logger } = require('../lib')
 
 const { Headers } = Enum.Http
@@ -37,7 +37,7 @@ const extractInfoFromRequestDto = (request = {}) => {
 }
 
 const transformPayloadToFspiopDto = async (payload, type, action, isError) => {
-  const resource = type === 'quote' ? 'quotes' : 'fxQuotes'
+  const resource = type === 'quote' ? RESOURCES.quotes : RESOURCES.fxQuotes
   const operation = isError ? `${action}Error` : action
   logger.verbose('transforming to ISO20022...', { resource, operation })
 
@@ -61,7 +61,7 @@ const makeContentField = ({ type, action, headers, fspiopPayload, params, reques
   }
 }
 
-const storeOriginalPayload = async ({ originalPayloadStorage, rawPayload, requestId, payloadCache, context = {} }) => {
+const storeOriginalPayload = async ({ originalPayloadStorage, rawPayload, requestId, context, payloadCache }) => {
   logger.debug('originalPayloadStorage: ', { originalPayloadStorage })
 
   if (originalPayloadStorage === PAYLOAD_STORAGES.kafka) {
@@ -98,7 +98,7 @@ const messageFromRequestDto = async ({
   })
 
   const context = {}
-  await storeOriginalPayload({ originalPayloadStorage, rawPayload, requestId, payloadCache, context })
+  await storeOriginalPayload({ originalPayloadStorage, rawPayload, requestId, context, payloadCache })
 
   return Object.freeze({
     content,
