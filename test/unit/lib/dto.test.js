@@ -58,7 +58,7 @@ describe('dto Tests -->', () => {
         request,
         type: 'quote',
         action: 'put',
-        isIsoPayload: true,
+        isIsoApi: true,
         originalPayloadStorage: PAYLOAD_STORAGES.redis,
         payloadCache
       })

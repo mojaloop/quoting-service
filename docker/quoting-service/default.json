@@ -5,6 +5,7 @@
   },
   "HOSTNAME": "http://quoting-service",
   "LISTEN_ADDRESS": "0.0.0.0",
+  "LOG_LEVEL": "debug",
   "PORT": 3002,
   "MONITORING_PORT": 3003,
   "AMOUNT": {
@@ -13,15 +14,18 @@
   },
   "PROTOCOL_VERSIONS": {
     "CONTENT": {
-      "DEFAULT": "1.1",
+      "DEFAULT": "2.0",
       "VALIDATELIST": [
+        "2.0",
         "1.1",
         "1.0"
       ]
     },
     "ACCEPT": {
-      "DEFAULT": "1",
+      "DEFAULT": "2",
       "VALIDATELIST": [
+        "2",
+        "2.0",
         "1",
         "1.0",
         "1.1"

@@ -20,10 +20,10 @@ const createRequestData = async ({
   payload,
   type = 'type',
   action = 'action',
-  isIsoPayload = false
+  isIsoApi = false
 } = {}) => {
   const request = mocks.mockHttpRequest({ payload })
-  const messageValue = await dto.messageFromRequestDto({ request, type, action, isIsoPayload })
+  const messageValue = await dto.messageFromRequestDto({ request, type, action, isIsoApi })
   const { requestData } = dto.requestDataFromMessageDto({ value: messageValue })
 
   return requestData

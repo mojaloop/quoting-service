@@ -49,7 +49,7 @@ const makeContentField = ({ type, action, headers, fspiopPayload, params, reques
   const id = params.id || fspiopPayload.quoteId || fspiopPayload.bulkQuoteId || fspiopPayload.conversionRequestId
   const encodedJson = encodePayload(JSON.stringify(fspiopPayload), headers[Headers.GENERAL.CONTENT_TYPE.value])
 
-  return {
+  const content = {
     requestId,
     headers,
     payload: encodedJson,
@@ -59,6 +59,9 @@ const makeContentField = ({ type, action, headers, fspiopPayload, params, reques
     type,
     action
   }
+  logger.debug('makeContentField is done: ', { content, fspiopPayload })
+
+  return content
 }
 
 const storeOriginalPayload = async ({ originalPayloadStorage, rawPayload, requestId, context, payloadCache }) => {
@@ -80,14 +83,14 @@ const messageFromRequestDto = async ({
   request,
   type,
   action,
-  isIsoPayload = false,
+  isIsoApi = false,
   originalPayloadStorage = PAYLOAD_STORAGES.none,
   payloadCache = null
 }) => {
   const { headers, params, payload, rawPayload, requestId, spanContext, isError } = extractInfoFromRequestDto(request)
 
-  const needTransform = isIsoPayload && (type !== Enum.Events.Event.Type.BULK_QUOTE)
-  logger.debug('needTransform:', { needTransform, type, action, isIsoPayload })
+  const needTransform = isIsoApi && (type !== Enum.Events.Event.Type.BULK_QUOTE)
+  logger.info('needTransform:', { needTransform, type, action, isIsoApi })
 
   const fspiopPayload = needTransform
     ? await transformPayloadToFspiopDto(payload, type, action, isError)

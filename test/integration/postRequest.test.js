@@ -27,20 +27,19 @@
  --------------
  ******/
 
+const uuid = require('crypto').randomUUID
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { createProxyClient } = require('../../src/lib/proxy')
 const Config = require('../../src/lib/config')
 const dto = require('../../src/lib/dto')
-const mocks = require('../mocks')
-const MockServerClient = require('./mockHttpServer/MockServerClient')
-const uuid = require('crypto').randomUUID
 const { wrapWithRetries } = require('../util/helper')
 const Database = require('../../src/data/cachedDatabase')
+const mocks = require('../mocks')
+const MockServerClient = require('./mockHttpServer/MockServerClient')
 
-const TEST_TIMEOUT = 20_000
+jest.setTimeout(20_000)
 
 describe('POST request tests --> ', () => {
-  jest.setTimeout(TEST_TIMEOUT)
   let db
   const config = new Config()
   const { kafkaConfig, proxyCache } = config
@@ -50,15 +49,15 @@ describe('POST request tests --> ', () => {
     timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
   }
 
-  beforeEach(async () => {
-    await hubClient.clearHistory()
-  })
-
   beforeAll(async () => {
     db = new Database(config)
     await db.connect()
     const isDbOk = await db.isConnected()
     if (!isDbOk) throw new Error('DB is not connected')
+  })
+
+  beforeEach(async () => {
+    await hubClient.clearHistory()
   })
 
   afterAll(async () => {
