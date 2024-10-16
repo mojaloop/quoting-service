@@ -42,6 +42,7 @@ jest.mock('../../src/model/quotes')
 
 const { randomUUID } = require('node:crypto')
 const { TransformFacades } = require('../../src/lib')
+const { RESOURCES } = require('../../src/constants')
 const serverStart = require('../../src/server')
 const mocks = require('../mocks')
 
@@ -59,7 +60,7 @@ describe('ISO format validation Tests -->', () => {
 
   describe('quotes endpoints tests -->', () => {
     const headers = mocks.headersDto({
-      resource: 'quotes',
+      resource: RESOURCES.quotes,
       isIsoApi: true
     })
 
@@ -80,14 +81,16 @@ describe('ISO format validation Tests -->', () => {
       expect(response.statusCode).toBe(202)
     })
 
-    // todo: unskip after transformerLib is fixed
-    test.skip('should validate ISO payload for PUT /quotes/{id} callback', async () => {
+    test('should validate ISO payload for PUT /quotes/{id} callback', async () => {
+      const { ilpPacket, condition } = mocks.mockIlp4Combo()
       const { body } = await TransformFacades.FSPIOP.quotes.put({
-        body: mocks.putQuotesPayloadDto()
+        body: mocks.putQuotesPayloadDto({ ilpPacket, condition }),
+        params: { ID: mocks.generateULID() },
+        headers
       })
       const request = {
         method: 'PUT',
-        url: `/quotes/${randomUUID()}`,
+        url: `/quotes/${mocks.generateULID()}`,
         headers,
         payload: body
       }
@@ -116,11 +119,8 @@ describe('ISO format validation Tests -->', () => {
       isIsoApi: true
     })
 
-    test.skip('should validate ISO payload for POST /fxQuotes callback', async () => {
-      const fspiopPayload = mocks.postFxQuotesPayloadDto({
-        conversionRequestId: Date.now(),
-        conversionId: Date.now()
-      })
+    test.skip('should validate ISO payload for POST /fxQuotes request', async () => {
+      const fspiopPayload = mocks.postFxQuotesPayloadDto()
       const { body } = await TransformFacades.FSPIOP.fxQuotes.post({
         body: fspiopPayload
       })
@@ -136,17 +136,16 @@ describe('ISO format validation Tests -->', () => {
 
     test.skip('should validate ISO payload for PUT /fxQuotes/{id} callback', async () => {
       const fspiopPayload = mocks.putFxQuotesPayloadDto({
-        fxQuotesPostPayload: mocks.postFxQuotesPayloadDto({
-          conversionRequestId: Date.now(),
-          conversionId: Date.now()
-        })
+        fxQuotesPostPayload: mocks.postFxQuotesPayloadDto(),
+        condition: mocks.mockIlp4Combo().condition
       })
+      fspiopPayload.conversionTerms.determiningTransferId = mocks.generateULID()
       const { body } = await TransformFacades.FSPIOP.fxQuotes.put({
         body: fspiopPayload
       })
       const request = {
         method: 'PUT',
-        url: `/fxQuotes/${randomUUID()}`,
+        url: `/fxQuotes/${mocks.generateULID()}`,
         headers,
         payload: body
       }

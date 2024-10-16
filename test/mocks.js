@@ -1,3 +1,4 @@
+const idGenerator = require('@mojaloop/central-services-shared').Util.id
 const uuid = require('node:crypto').randomUUID
 const Config = require('../src/lib/config')
 const { RESOURCES } = require('../src/constants')
@@ -6,6 +7,8 @@ const config = new Config()
 
 const CONTENT_TYPE = 'application/vnd.interoperability.quotes+json;version={{API_VERSION}}'
 const contentTypeFn = ({ fspiopVersion = 1.0 }) => CONTENT_TYPE.replace('{{API_VERSION}}', fspiopVersion)
+
+const generateULID = idGenerator({ type: 'ulid' })
 
 const proxyCacheConfigDto = ({
   type = 'redis'
@@ -126,8 +129,9 @@ const kafkaMessageFxPayloadGetDto = (params = {}) => kafkaMessagePayloadDto({
 })
 
 const postFxQuotesPayloadDto = ({
-  conversionRequestId = uuid(),
-  conversionId = uuid(),
+  conversionRequestId = generateULID(),
+  conversionId = generateULID(),
+  determiningTransferId = generateULID(),
   initiatingFsp = 'pinkbank',
   counterPartyFsp = 'redbank',
   amountType = 'SEND',
@@ -151,6 +155,7 @@ const postFxQuotesPayloadDto = ({
   conversionRequestId,
   conversionTerms: {
     conversionId,
+    ...(determiningTransferId && { determiningTransferId }),
     initiatingFsp,
     counterPartyFsp,
     amountType,
@@ -178,8 +183,8 @@ const putFxQuotesPayloadDto = ({
 const postQuotesPayloadDto = ({
   from = 'payer',
   to = 'payee',
-  quoteId = uuid(),
-  transactionId = uuid(),
+  quoteId = generateULID(),
+  transactionId = generateULID(),
   amountType = 'SEND',
   amount = { amount: '100', currency: 'USD' },
   transactionType = { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
@@ -304,5 +309,6 @@ module.exports = {
   postBulkQuotesPayloadDto,
   putBulkQuotesPayloadDto,
   errorPayloadDto,
-  mockIlp4Combo
+  mockIlp4Combo,
+  generateULID
 }
