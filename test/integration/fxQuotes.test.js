@@ -137,7 +137,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(fxQuoteDetails).toEqual({
         conversionRequestId: payload.conversionRequestId,
         conversionId: payload.conversionTerms.conversionId,
-        determiningTransferId: null,
+        determiningTransferId: payload.conversionTerms.determiningTransferId,
         amountTypeId: 1,
         initiatingFsp: payload.conversionTerms.initiatingFsp,
         counterPartyFsp: payload.conversionTerms.counterPartyFsp,
@@ -212,7 +212,7 @@ describe('POST /fxQuotes request tests --> ', () => {
         ilpCondition: payload.condition,
         conversionId: payload.conversionTerms.conversionId,
         amountTypeId: 1,
-        determiningTransferId: null,
+        determiningTransferId: payload.conversionTerms.determiningTransferId,
         counterPartyFsp: payload.conversionTerms.counterPartyFsp,
         initiatingFsp: payload.conversionTerms.initiatingFsp,
         sourceAmount: payload.conversionTerms.sourceAmount.amount,

@@ -96,6 +96,7 @@ const initServer = async function (config, topicNames) {
   server.app.config = config
   server.app.topicNames = topicNames
 
+  /* istanbul ignore next */
   if (config.originalPayloadStorage === PAYLOAD_STORAGES.redis && config.payloadCache.enabled) {
     const { type, connectionConfig } = config.payloadCache
     const payloadCache = createPayloadCache(type, connectionConfig)

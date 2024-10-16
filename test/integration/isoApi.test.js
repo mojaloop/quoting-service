@@ -9,7 +9,7 @@ const MockServerClient = require('./mockHttpServer/MockServerClient')
 const QS_ISO_PORT = 13002 // in docker-compose.yml
 const config = new Config()
 
-jest.setTimeout(20_000)
+jest.setTimeout(10_000)
 
 describe('ISO API Tests -->', () => {
   const qsClient = new QSClient({ port: QS_ISO_PORT })
