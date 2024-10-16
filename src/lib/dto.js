@@ -5,7 +5,6 @@ const { TransformFacades, logger } = require('../lib')
 const { Headers } = Enum.Http
 const {
   decodePayload,
-  encodePayload,
   createEventState,
   createEventMetadata,
   createMetadata
@@ -47,12 +46,11 @@ const transformPayloadToFspiopDto = async (payload, type, action, isError) => {
 
 const makeContentField = ({ type, action, headers, fspiopPayload, params, requestId, spanContext, context }) => {
   const id = params.id || fspiopPayload.quoteId || fspiopPayload.bulkQuoteId || fspiopPayload.conversionRequestId
-  const encodedJson = encodePayload(JSON.stringify(fspiopPayload), headers[Headers.GENERAL.CONTENT_TYPE.value])
 
   const content = {
     requestId,
     headers,
-    payload: encodedJson,
+    payload: fspiopPayload,
     uriParams: params,
     spanContext,
     id,

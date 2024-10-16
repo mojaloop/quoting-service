@@ -41,7 +41,10 @@ describe('dto Tests -->', () => {
       const originalPayloadStorage = PAYLOAD_STORAGES.redis
       const { ilpPacket, condition } = mocks.mockIlp4Combo()
       const putQuotes = mocks.putQuotesPayloadDto({ ilpPacket, condition })
-      const isoPayload = await TransformFacades.FSPIOP.quotes.put({ body: putQuotes })
+      const isoPayload = await TransformFacades.FSPIOP.quotes.put({
+        body: putQuotes,
+        headers: mocks.headersDto({ isIsoApi: true })
+      })
 
       const requestId = `requestId-${Date.now()}`
       const request = mockHttpRequest({
@@ -73,7 +76,10 @@ describe('dto Tests -->', () => {
     test('should store PUT /quotes/{id} ISO payload in kafka message', async () => {
       const originalPayloadStorage = PAYLOAD_STORAGES.kafka
       const putQuotes = mocks.putQuotesPayloadDto(mocks.mockIlp4Combo())
-      const isoPayload = await TransformFacades.FSPIOP.quotes.put({ body: putQuotes })
+      const isoPayload = await TransformFacades.FSPIOP.quotes.put({
+        body: putQuotes,
+        headers: mocks.headersDto({ isIsoApi: true })
+      })
 
       const requestId = `requestId-${Date.now()}`
       const request = mockHttpRequest({
@@ -111,7 +117,10 @@ describe('dto Tests -->', () => {
       const { ilpPacket, condition } = mocks.mockIlp4Combo()
       const putQuotes = mocks.putQuotesPayloadDto({ ilpPacket, condition })
 
-      const { body: isoPayload } = await TransformFacades.FSPIOP.quotes.put({ body: putQuotes })
+      const { body: isoPayload } = await TransformFacades.FSPIOP.quotes.put({
+        body: putQuotes,
+        headers: mocks.headersDto({ isIsoApi: true })
+      })
 
       const fspiopPayload = await dto.transformPayloadToFspiopDto(isoPayload, 'quote', 'put')
       expect(fspiopPayload).toEqual(putQuotes)
