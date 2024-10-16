@@ -17,6 +17,7 @@ describe('transformerLib Tests -->', () => {
     const fspiopBody = mocks.putQuotesPayloadDto()
     const isoPayload = await TransformFacades.FSPIOP.quotes.put({
       body: fspiopBody,
+      params: { ID: mocks.generateULID() },
       headers: mocks.headersDto()
     })
     expect(isoPayload.body).toBeTruthy()
