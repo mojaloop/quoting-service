@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 const { logger } = require('../../lib')
 const PayloadCache = require('./PayloadCache')
 const PayloadCacheError = require('./errors')
