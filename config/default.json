@@ -5,6 +5,7 @@
   },
   "HOSTNAME": "http://quoting-service",
   "LISTEN_ADDRESS": "0.0.0.0",
+  "API_TYPE": "fspiop",
   "PORT": 3002,
   "MONITORING_PORT": 3003,
   "AMOUNT": {
@@ -84,6 +85,16 @@
     "enabled": false,
     "type": "redis-cluster",
     "proxyConfig": {
+      "cluster": [
+        { "host": "localhost", "port": 6379 }
+      ]
+    }
+  },
+  "ORIGINAL_PAYLOAD_STORAGE": "",
+  "PAYLOAD_CACHE": {
+    "enabled": true,
+    "type": "redis-cluster",
+    "connectionConfig": {
       "cluster": [
         { "host": "localhost", "port": 6379 }
       ]

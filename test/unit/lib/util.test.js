@@ -27,6 +27,7 @@
 jest.mock('axios')
 jest.mock('@mojaloop/central-services-logger')
 
+const fs = require('node:fs/promises')
 const axios = require('axios')
 const Logger = require('@mojaloop/central-services-logger')
 const { Cache } = require('memory-cache')
@@ -43,7 +44,8 @@ const {
   removeEmptyKeys,
   fetchParticipantInfo,
   getParticipantEndpoint,
-  makeAppInteroperabilityHeader
+  makeAppInteroperabilityHeader,
+  resolveOpenApiSpecPath
 } = require('../../../src/lib/util')
 
 Logger.isDebugEnabled = jest.fn(() => true)
@@ -739,6 +741,20 @@ describe('util', () => {
       expect(params.db.getParticipantEndpoint).toBeCalledWith(proxyId, params.endpointType)
       expect(params.proxyClient.connect).toBeCalledTimes(1)
       expect(params.proxyClient.lookupProxyByDfspId).toBeCalledTimes(1)
+    })
+  })
+
+  describe('resolveOpenApiSpecPath Tests -->', () => {
+    it('should resolve ISO OpenAPI spec path, and be able to read it', async () => {
+      const isIsoApi = true
+      const path = resolveOpenApiSpecPath(isIsoApi)
+      await expect(fs.access(path, fs.constants.R_OK)).resolves.toBeUndefined()
+    })
+
+    it('should resolve FSPIOP OpenAPI spec path, and be able to read it', async () => {
+      const isIsoApi = false
+      const path = resolveOpenApiSpecPath(isIsoApi)
+      await expect(fs.access(path, fs.constants.R_OK)).resolves.toBeUndefined()
     })
   })
 })

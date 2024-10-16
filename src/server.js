@@ -34,30 +34,40 @@
  ******/
 
 'use strict'
-const Path = require('path')
+
 const Hapi = require('@hapi/hapi')
 const Inert = require('@hapi/inert')
 const Vision = require('@hapi/vision')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
-const { Producer } = require('@mojaloop/central-services-stream').Util
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const CentralServices = require('@mojaloop/central-services-shared')
-const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
-const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
-const OpenapiBackendValidator = require('@mojaloop/central-services-shared').Util.Hapi.OpenapiBackendValidator
-const Logger = require('@mojaloop/central-services-logger')
-const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.APIDocumentation
-const Metrics = require('@mojaloop/central-services-metrics')
 
-const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
-const Config = require('./lib/config.js')
+const CentralServices = require('@mojaloop/central-services-shared')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const Metrics = require('@mojaloop/central-services-metrics')
+const { Producer } = require('@mojaloop/central-services-stream').Util
+
+const { API_TYPES, PAYLOAD_STORAGES } = require('../src/constants')
+const { logger, createPayloadCache } = require('../src/lib')
+const { failActionHandler, resolveOpenApiSpecPath } = require('../src/lib/util')
+const Config = require('./lib/config')
 const Handlers = require('./api')
 const Routes = require('./api/routes')
 const plugins = require('./api/plugins')
 const dto = require('./lib/dto')
 
-const OpenAPISpecPath = Path.resolve(__dirname, './interface/QuotingService-swagger.yaml')
+const { OpenapiBackend } = CentralServices.Util
+const {
+  APIDocumentation,
+  FSPIOPHeaderValidation,
+  HapiRawPayload,
+  HapiEventPlugin,
+  OpenapiBackendValidator
+} = CentralServices.Util.Hapi
+
+// load config
+const config = new Config()
+
+const openAPISpecPath = resolveOpenApiSpecPath(config.isIsoApi)
 
 /**
  * Initializes a Hapi server
@@ -74,23 +84,38 @@ const initServer = async function (config, topicNames) {
     routes: {
       validate: {
         failAction: failActionHandler
+      },
+      payload: {
+        // these options are required to activate HapiRawPayload plugin
+        output: 'stream',
+        parse: true
       }
     }
   })
 
+  server.app.config = config
   server.app.topicNames = topicNames
+
+  /* istanbul ignore next */
+  if (config.originalPayloadStorage === PAYLOAD_STORAGES.redis && config.payloadCache.enabled) {
+    const { type, connectionConfig } = config.payloadCache
+    const payloadCache = createPayloadCache(type, connectionConfig)
+    await payloadCache.connect()
+    server.app.payloadCache = payloadCache
+    logger.info('payloadCache is connected')
+  }
 
   /* istanbul ignore next */
   if (config.apiDocumentationEndpoints) {
     await server.register({
       plugin: APIDocumentation,
       options: {
-        documentPath: OpenAPISpecPath
+        documentPath: openAPISpecPath
       }
     })
   }
 
-  const api = await OpenapiBackend.initialise(OpenAPISpecPath, Handlers)
+  const api = await OpenapiBackend.initialise(openAPISpecPath, Handlers)
   await server.register(OpenapiBackendValidator)
   await server.register({
     plugin: {
@@ -129,7 +154,8 @@ const initServer = async function (config, topicNames) {
     return {
       resources,
       supportedProtocolContentVersions,
-      supportedProtocolAcceptVersions
+      supportedProtocolAcceptVersions,
+      apiType: config.isIsoApi ? API_TYPES.iso20022 : API_TYPES.fspiop
     }
   }
 
@@ -160,14 +186,15 @@ const initServer = async function (config, topicNames) {
       }
     },
     {
-      plugin: HeaderValidation,
+      plugin: FSPIOPHeaderValidation,
       options: getOptionsForFSPIOPHeaderValidation()
     },
     Inert,
     Vision,
     Blipp,
     ErrorHandler,
-    CentralServices.Util.Hapi.HapiEventPlugin
+    HapiRawPayload,
+    HapiEventPlugin
   ])
 
   server.route(Routes.APIRoutes(api))
@@ -199,13 +226,10 @@ const connectAllProducers = async (config) => {
     }, [])
 
   await Producer.connectAll(producersConfigs)
-  Logger.info('kafka producers connected')
+  logger.info('kafka producers connected')
 
   return producersConfigs.map(({ topicConfig }) => topicConfig.topicName)
 }
-
-// load config
-const config = new Config()
 
 /**
  * @function start
@@ -220,28 +244,28 @@ async function start () {
       // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
       /* istanbul ignore next */
       ['SIGINT', 'SIGTERM'].forEach(sig => process.on(sig, () => {
-        Logger.info(`Received ${sig}, closing server...`)
+        logger.info(`Received ${sig}, closing server...`)
         let isError
         server.stop({ timeout: 10000 })
           .then(err => {
             isError = !!err
-            Logger.isWarnEnabled && Logger.warn(`server stopped. ${err ? (getStackOrInspect(err)) : ''}`)
+            logger.verbose('server stopped', err)
           })
           .then(() => Producer.disconnect())
           .catch(err => {
             isError = true
-            Logger.warn(`error during exiting process: ${err.message}`)
+            logger.warn('error during exiting process', err)
           })
           .finally(() => {
             const exitCode = (isError) ? 1 : 0
-            Logger.info(`process exit code: ${exitCode}`)
+            logger.info('process exit code:', { exitCode })
             process.exit(exitCode)
           })
       }))
       server.log(['info'], `Server running on ${server.info.uri}`)
       return server
     }).catch(err => {
-      Logger.isErrorEnabled && Logger.error(`Error initializing server: ${getStackOrInspect(err)}`)
+      logger.error('Error initializing server: ', err)
       return null
     })
 }

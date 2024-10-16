@@ -27,7 +27,7 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
-const { loggerFactory } = require('../lib')
+const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
@@ -42,7 +42,7 @@ class FxQuotesModel {
     this.proxyClient = deps.proxyClient
     this.envConfig = deps.envConfig || new Config()
     this.httpRequest = deps.httpRequest || httpRequest
-    this.log = deps.log || loggerFactory({
+    this.log = deps.log || logger.child({
       context: this.constructor.name,
       requestId: this.requestId
     })

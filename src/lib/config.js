@@ -31,7 +31,8 @@
  ******/
 
 const RC = require('parse-strings-in-object')(require('rc')('QUOTE', require('../../config/default.json')))
-const fs = require('fs')
+const fs = require('node:fs')
+const { API_TYPES, PAYLOAD_STORAGES } = require('../constants')
 
 const DEFAULT_PROTOCOL_VERSION = {
   CONTENT: {
@@ -98,6 +99,7 @@ class Config {
 
   constructor () {
     // load config from environment (or use sensible defaults)
+    this.isIsoApi = RC.API_TYPE === API_TYPES.iso20022
     this.hubName = RC.HUB_PARTICIPANT.NAME
     this.listenAddress = RC.LISTEN_ADDRESS
     this.listenPort = RC.PORT
@@ -158,6 +160,8 @@ class Config {
     this.enumDataCacheExpiresInMs = RC.CACHE.ENUM_DATA_EXPIRES_IN_MS || 4170000
     this.participantDataCacheExpiresInMs = RC.CACHE.PARTICIPANT_DATA_EXPIRES_IN_MS || 60000
     this.proxyCache = RC.PROXY_CACHE
+    this.payloadCache = RC.PAYLOAD_CACHE
+    this.originalPayloadStorage = RC.ORIGINAL_PAYLOAD_STORAGE || PAYLOAD_STORAGES.none
   }
 }
 

@@ -36,10 +36,7 @@ const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 
 const util = require('../../lib/util')
-const Config = require('../../lib/config')
 const dto = require('../../lib/dto')
-
-const { kafkaConfig } = new Config()
 
 /**
  * Operations on /quotes/{id}
@@ -55,7 +52,9 @@ module.exports = {
      * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
      */
   get: async function getQuotesById (context, request, h) {
-    const isFX = request.headers['content-type'].includes('fxQuotes')
+    const { config, payloadCache } = request.server.app
+    const { kafkaConfig, isIsoApi, originalPayloadStorage } = config
+    const isFX = util.isFxRequest(request.headers)
 
     const histTimerEnd = Metrics.getHistogram(
       isFX ? 'fxQuotes_id_get' : 'quotes_id_get',
@@ -65,15 +64,20 @@ module.exports = {
 
     try {
       await util.auditSpan(request)
+      const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
 
-      const eventType = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
+      const message = await dto.messageFromRequestDto({
+        request,
+        type,
+        action: Events.Event.Action.GET,
+        isIsoApi,
+        originalPayloadStorage,
+        payloadCache
+      })
+
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.GET : kafkaConfig.PRODUCER.QUOTE.GET
-
-      const { topic, config } = producerConfig
-      const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = dto.messageFromRequestDto(request, eventType, Events.Event.Action.GET)
-
-      await Producer.produceMessage(message, topicConfig, config)
+      const topicConfig = dto.topicConfigDto({ topicName: producerConfig.topic })
+      await Producer.produceMessage(message, topicConfig, producerConfig.config)
 
       histTimerEnd({ success: true })
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
@@ -95,8 +99,11 @@ module.exports = {
      * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
      */
   put: async function putQuotesById (context, request, h) {
-    const isFX = request.headers['content-type'].includes('fxQuotes')
-    const isError = !!request.payload.errorInformation
+    const { config, payloadCache } = request.server.app
+    const { kafkaConfig, isIsoApi, originalPayloadStorage } = config
+
+    const isFX = util.isFxRequest(request.headers)
+    const isError = request.path?.endsWith('/error')
 
     let metricsId = isFX ? 'fxQuotes_id_put' : 'quotes_id_put'
     metricsId = isError ? `${metricsId}_error` : metricsId
@@ -111,15 +118,20 @@ module.exports = {
 
     try {
       await util.auditSpan(request)
+      const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
 
-      const eventType = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
+      const message = await dto.messageFromRequestDto({
+        request,
+        type,
+        action: Events.Event.Action.PUT,
+        isIsoApi,
+        originalPayloadStorage,
+        payloadCache
+      })
+
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.PUT : kafkaConfig.PRODUCER.QUOTE.PUT
-
-      const { topic, config } = producerConfig
-      const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = dto.messageFromRequestDto(request, eventType, Events.Event.Action.PUT)
-
-      await Producer.produceMessage(message, topicConfig, config)
+      const topicConfig = dto.topicConfigDto({ topicName: producerConfig.topic })
+      await Producer.produceMessage(message, topicConfig, producerConfig.config)
 
       histTimerEnd({ success: true })
       return h.response().code(Http.ReturnCodes.OK.CODE)
