@@ -43,6 +43,7 @@ describe('dto Tests -->', () => {
       const putQuotes = mocks.putQuotesPayloadDto({ ilpPacket, condition })
       const isoPayload = await TransformFacades.FSPIOP.quotes.put({
         body: putQuotes,
+        params: { ID: mocks.generateULID() },
         headers: mocks.headersDto({ isIsoApi: true })
       })
 
@@ -78,6 +79,7 @@ describe('dto Tests -->', () => {
       const putQuotes = mocks.putQuotesPayloadDto(mocks.mockIlp4Combo())
       const isoPayload = await TransformFacades.FSPIOP.quotes.put({
         body: putQuotes,
+        params: { ID: mocks.generateULID() },
         headers: mocks.headersDto({ isIsoApi: true })
       })
 
@@ -119,6 +121,7 @@ describe('dto Tests -->', () => {
 
       const { body: isoPayload } = await TransformFacades.FSPIOP.quotes.put({
         body: putQuotes,
+        params: { ID: mocks.generateULID() },
         headers: mocks.headersDto({ isIsoApi: true })
       })
 
