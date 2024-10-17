@@ -1,12 +1,9 @@
-const { loggerFactory } = require('@mojaloop/central-services-logger/src/contextLogger')
 const { TransformFacades } = require('@mojaloop/ml-schema-transformer-lib')
-const { createPayloadCache } = require('./payloadCache')
-
-const logger = loggerFactory('QS') // global logger
+const { logger } = require('./logger')
+const { initPayloadCache } = require('./payloadCache')
 
 module.exports = {
-  logger,
-  loggerFactory,
   TransformFacades,
-  createPayloadCache
+  logger,
+  initPayloadCache
 }

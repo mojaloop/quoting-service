@@ -64,7 +64,7 @@ const makeContentField = ({ type, action, headers, fspiopPayload, params, reques
 }
 
 const storeOriginalPayload = async ({ originalPayloadStorage, dataUri, requestId, context, payloadCache }) => {
-  logger.debug('originalPayloadStorage: ', { originalPayloadStorage })
+  logger.debug('storeOriginalPayload: ', { originalPayloadStorage })
 
   if (originalPayloadStorage === PAYLOAD_STORAGES.kafka) {
     context.originalRequestPayload = dataUri
@@ -75,6 +75,20 @@ const storeOriginalPayload = async ({ originalPayloadStorage, dataUri, requestId
   }
 
   return context
+}
+
+const extractOriginalPayload = async (originalPayloadStorage, context, payloadCache) => {
+  logger.debug('extractOriginalPayload: ', { originalPayloadStorage })
+  let payload
+
+  if (originalPayloadStorage === PAYLOAD_STORAGES.kafka) {
+    payload = context?.originalRequestPayload
+  }
+  if (originalPayloadStorage === PAYLOAD_STORAGES.redis) {
+    payload = await payloadCache?.getPayload(context?.originalRequestId)
+  }
+
+  return payload ? decodePayload(payload) : null
 }
 
 // todo: move to domain folder
@@ -143,5 +157,6 @@ module.exports = {
   messageFromRequestDto,
   requestDataFromMessageDto,
   topicConfigDto,
-  transformPayloadToFspiopDto
+  transformPayloadToFspiopDto,
+  extractOriginalPayload
 }

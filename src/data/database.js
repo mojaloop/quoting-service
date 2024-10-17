@@ -39,7 +39,7 @@ const util = require('util')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const MLNumber = require('@mojaloop/ml-number')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const { loggerFactory } = require('../lib')
+const { logger } = require('../lib/')
 
 const LOCAL_ENUM = require('../lib/enum')
 
@@ -47,9 +47,9 @@ const LOCAL_ENUM = require('../lib/enum')
  * Abstracts operations against the database
  */
 class Database {
-  constructor (config, logger) {
+  constructor (config, log) {
     this.config = config
-    this.log = logger || loggerFactory({
+    this.log = log || logger.child({
       context: this.constructor.name
     })
   }

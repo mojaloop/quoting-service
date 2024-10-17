@@ -35,15 +35,15 @@ const Cache = require('memory-cache').Cache
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
 
-const { loggerFactory } = require('../lib/index.js')
+const { logger } = require('../lib/')
 
 /**
  * An extension of the Database class that caches enum values in memory
  */
 class CachedDatabase extends Database {
-  constructor (config, logger) {
+  constructor (config, log) {
     super(config)
-    this.log = logger || loggerFactory({
+    this.log = log || logger.child({
       context: this.constructor.name
     })
     this.cache = new Cache()
