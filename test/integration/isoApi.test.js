@@ -1,8 +1,8 @@
 const { setTimeout: sleep } = require('node:timers/promises')
 
-// const mocks = require('../mocks')
 const { createPayloadCache } = require('../../src/lib/payloadCache')
 const Config = require('../../src/lib/config')
+const mocks = require('../mocks')
 const QSClient = require('./QSClient')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
 
@@ -32,11 +32,11 @@ describe('ISO API Tests -->', () => {
   })
 
   describe('POST /quotes ISO Tests -->', () => {
-    test('should validate ISO POST /quotes payload, and forward it in FSPIOP format', async () => {
+    test('should validate ISO POST /quotes payload, and forward it in ISO format', async () => {
       const from = 'pinkbank'
       const to = 'greenbank'
-      const quoteId = `q-${Date.now()}`
-      const transactionId = `t-${Date.now()}`
+      const quoteId = mocks.generateULID()
+      const transactionId = mocks.generateULID()
       const response = await qsClient.postIsoQuotes({ from, to, quoteId, transactionId })
       expect(response.status).toBe(202)
 
@@ -44,12 +44,11 @@ describe('ISO API Tests -->', () => {
 
       const { data } = await hubClient.getHistory()
       expect(data.history.length).toBe(1)
-      const forwardedPayload = data.history[0].body
-      expect(forwardedPayload.quoteId).toBe(quoteId)
-      expect(forwardedPayload.transactionId).toBe(transactionId)
-      // todo: add cache payload check (think, how to get requestId from kafka message)
-      // const keys = await payloadCache.redisClient.keys('*')
-      // console.log('keys', keys)
+      const { PmtId, CdtrAgt, DbtrAgt } = data.history[0].body.CdtTrfTxInf
+      expect(PmtId.TxId).toBe(quoteId)
+      expect(PmtId.EndToEndId).toBe(transactionId)
+      expect(DbtrAgt.FinInstnId.Othr.Id).toBe(from)
+      expect(CdtrAgt.FinInstnId.Othr.Id).toBe(to)
     })
   })
 })

@@ -1,7 +1,7 @@
 const { randomUUID } = require('node:crypto')
 const { Cache } = require('memory-cache')
 const { Tracer } = require('@mojaloop/event-sdk')
-const Logger = require('@mojaloop/central-services-logger')
+const { encodePayload } = require('@mojaloop/central-services-shared').Util.StreamingProtocol
 
 jest.mock('../../../src/model/quotes')
 jest.mock('../../../src/model/fxQuotes')
@@ -12,6 +12,8 @@ const QuotesModel = require('../../../src/model/quotes')
 const FxQuotesModel = require('../../../src/model/fxQuotes')
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')
 const Config = require('../../../src/lib/config')
+const { logger } = require('../../../src/lib')
+const { PAYLOAD_STORAGES } = require('../../../src/constants')
 
 const dto = require('../../../src/lib/dto')
 const mocks = require('../mocks')
@@ -36,8 +38,6 @@ const createKafkaMessage = (topic) => ({
   }
 })
 
-Logger.isDebugEnabled = jest.fn(() => true)
-
 describe('QuotingHandler Tests -->', () => {
   let handler
   let quotesModel
@@ -60,7 +60,7 @@ describe('QuotingHandler Tests -->', () => {
       bulkQuotesModelFactory,
       fxQuotesModelFactory,
       config,
-      logger: Logger,
+      logger,
       cache: new Cache(),
       payloadCache: null,
       tracer: Tracer
@@ -309,7 +309,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should skip message processing and log warn on incorrect topic name', async () => {
       const message = createKafkaMessage('wrong-topic')
-      const warnLogSpy = jest.spyOn(Logger, 'warn')
+      const warnLogSpy = jest.spyOn(logger, 'warn')
 
       const result = await handler.defineHandlerByTopic(message)
       expect(result).toBeUndefined()
@@ -400,6 +400,40 @@ describe('QuotingHandler Tests -->', () => {
       const error = new Error('Kafka Error')
       await expect(() => handler.handleMessages(error, []))
         .rejects.toThrowError(error.message)
+    })
+  })
+
+  describe('addOriginalPayload method Tests', () => {
+    const toBase64 = (json, mimeType = 'application/json') => encodePayload(JSON.stringify(json), mimeType)
+
+    it('should add originalPayload from kafka message to requestData', async () => {
+      const payload = { quoteId: randomUUID() }
+      const requestData = {
+        context: {
+          originalRequestPayload: toBase64(payload)
+        }
+      }
+      handler.config.originalPayloadStorage = PAYLOAD_STORAGES.kafka
+
+      await handler.addOriginalPayload(requestData)
+      expect(requestData.originalPayload).toEqual(payload)
+    })
+
+    it('should add originalPayload from redis message to requestData', async () => {
+      const payload = { quoteId: randomUUID() }
+      const requestId = randomUUID()
+      const requestData = {
+        context: {
+          originalRequestId: requestId
+        }
+      }
+      handler.config.originalPayloadStorage = PAYLOAD_STORAGES.redis
+      handler.payloadCache = {
+        getPayload: async (reqId) => (reqId === requestId ? toBase64(payload) : null)
+      }
+
+      await handler.addOriginalPayload(requestData)
+      expect(requestData.originalPayload).toEqual(payload)
     })
   })
 })

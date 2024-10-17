@@ -22,7 +22,6 @@ class QuotingHandler {
   }
 
   async handleMessages(error, messages) {
-    // think, if we need to add Metrics.getHistogram here
     if (error) {
       this.logger.error(`${ErrorMessages.consumingErrorFromKafka}: ${error.message}`)
       throw reformatFSPIOPError(error)
@@ -37,8 +36,8 @@ class QuotingHandler {
   }
 
   async defineHandlerByTopic(message) {
-    const { topic, requestData } = dto.requestDataFromMessageDto(message)
-    // todo: add originalPayload (kafka or redis) to requestData
+    const { topic, requestData } = this.extractRequestData(message)
+    await this.addOriginalPayload(requestData)
     const { QUOTE, BULK_QUOTE, FX_QUOTE } = this.config.kafkaConfig.CONSUMER
 
     switch (topic) {
@@ -67,13 +66,13 @@ class QuotingHandler {
   }
 
   async handlePostQuotes(requestData) {
-    const { requestId, payload, headers } = requestData
+    const { requestId, headers, payload, originalPayload } = requestData
     const model = this.quotesModelFactory(requestId)
     let span
 
     try {
       span = await this.createSpan(requestData)
-      await model.handleQuoteRequest(headers, payload, span, this.cache)
+      await model.handleQuoteRequest(headers, payload, span, this.cache, originalPayload)
       this.logger.debug('handlePostQuotes is done')
     } catch (err) {
       this.logger.error(`error in handlePostQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
@@ -90,7 +89,7 @@ class QuotingHandler {
   }
 
   async handlePutQuotes(requestData) {
-    const { id: quoteId, requestId, payload, headers } = requestData
+    const { id: quoteId, requestId, headers, payload, originalPayload } = requestData
     const model = this.quotesModelFactory(requestId)
     const isError = !!payload.errorInformation
     let span
@@ -98,9 +97,9 @@ class QuotingHandler {
     try {
       span = await this.createSpan(requestData)
       const result = isError
-        ? await model.handleQuoteError(headers, quoteId, payload.errorInformation, span)
-        : await model.handleQuoteUpdate(headers, quoteId, payload, span)
-      this.logger.isDebugEnabled && this.logger.debug(`handlePutQuotes is done: ${JSON.stringify(result)}`)
+        ? await model.handleQuoteError(headers, quoteId, payload.errorInformation, span) // todo: think, if we need to pass originalPayload here
+        : await model.handleQuoteUpdate(headers, quoteId, payload, span, originalPayload)
+      this.logger.debug('handlePutQuotes is done', { result })
     } catch (err) {
       this.logger.error(`error in handlePutQuotes partition:${requestData.partition}, offset:${requestData.offset}: ${err?.stack}`)
       const fspiopSource = headers[FSPIOP.SOURCE]
@@ -274,6 +273,18 @@ class QuotingHandler {
     }
 
     return true
+  }
+
+  extractRequestData(message) {
+    return dto.requestDataFromMessageDto(message)
+  }
+
+  async addOriginalPayload(requestData) {
+    requestData.originalPayload = await dto.extractOriginalPayload(
+      this.config.originalPayloadStorage,
+      requestData.context,
+      this.payloadCache
+    )
   }
 
   async createSpan(requestData) {
