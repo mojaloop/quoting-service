@@ -62,6 +62,7 @@ describe('QuotingHandler Tests -->', () => {
       config,
       logger: Logger,
       cache: new Cache(),
+      payloadCache: null,
       tracer: Tracer
     })
   })

@@ -1,7 +1,7 @@
 const { setTimeout: sleep } = require('node:timers/promises')
 
 // const mocks = require('../mocks')
-const { createPayloadCache } = require('../../src/lib')
+const { createPayloadCache } = require('../../src/lib/payloadCache')
 const Config = require('../../src/lib/config')
 const QSClient = require('./QSClient')
 const MockServerClient = require('./mockHttpServer/MockServerClient')

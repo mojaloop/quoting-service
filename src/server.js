@@ -46,8 +46,8 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 
-const { API_TYPES, PAYLOAD_STORAGES } = require('../src/constants')
-const { logger, createPayloadCache } = require('../src/lib')
+const { API_TYPES } = require('../src/constants')
+const { logger, initPayloadCache } = require('../src/lib')
 const { failActionHandler, resolveOpenApiSpecPath } = require('../src/lib/util')
 const Config = require('./lib/config')
 const Handlers = require('./api')
@@ -95,15 +95,7 @@ const initServer = async function (config, topicNames) {
 
   server.app.config = config
   server.app.topicNames = topicNames
-
-  /* istanbul ignore next */
-  if (config.originalPayloadStorage === PAYLOAD_STORAGES.redis && config.payloadCache.enabled) {
-    const { type, connectionConfig } = config.payloadCache
-    const payloadCache = createPayloadCache(type, connectionConfig)
-    await payloadCache.connect()
-    server.app.payloadCache = payloadCache
-    logger.info('payloadCache is connected')
-  }
+  server.app.payloadCache = await initPayloadCache(config)
 
   /* istanbul ignore next */
   if (config.apiDocumentationEndpoints) {

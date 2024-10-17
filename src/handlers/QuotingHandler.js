@@ -16,6 +16,7 @@ class QuotingHandler {
     this.logger = deps.logger
     this.config = deps.config
     this.cache = deps.cache
+    this.payloadCache = deps.payloadCache
     this.tracer = deps.tracer
     this.handleMessages = this.handleMessages.bind(this)
   }
@@ -37,6 +38,7 @@ class QuotingHandler {
 
   async defineHandlerByTopic(message) {
     const { topic, requestData } = dto.requestDataFromMessageDto(message)
+    // todo: add originalPayload (kafka or redis) to requestData
     const { QUOTE, BULK_QUOTE, FX_QUOTE } = this.config.kafkaConfig.CONSUMER
 
     switch (topic) {
