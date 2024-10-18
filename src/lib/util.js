@@ -40,7 +40,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
 
-const { RESOURCES, HEADERS } = require('../constants')
+const { RESOURCES, HEADERS, ISO_HEADER_PART } = require('../constants')
 const { logger } = require('../lib')
 const Config = require('./config')
 
@@ -128,24 +128,27 @@ function removeEmptyKeys (originalObject) {
   return obj
 }
 
-const makeAppInteroperabilityHeader = (resource, version) => `application/vnd.interoperability.${resource}+json;version=${version}`
+const makeAppInteroperabilityHeader = (resource, version, isIsoApi) => {
+  const isoPart = isIsoApi ? `.${ISO_HEADER_PART}` : ''
+  return `application/vnd.interoperability${isoPart}.${resource}+json;version=${version}`
+}
 
-function applyResourceVersionHeaders (headers, protocolVersions, resource) {
+function applyResourceVersionHeaders (headers, protocolVersions, resource, isIsoApi) {
   let contentTypeHeader = headers['content-type'] || headers['Content-Type']
   let acceptHeader = headers.accept || headers.Accept
   if (Util.HeaderValidation.getHubNameRegex(config.hubName).test(headers['fspiop-source'])) {
     if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
-      contentTypeHeader = makeAppInteroperabilityHeader(resource, protocolVersions.CONTENT.DEFAULT)
+      contentTypeHeader = makeAppInteroperabilityHeader(resource, protocolVersions.CONTENT.DEFAULT, isIsoApi)
     }
     if (Enum.Http.Headers.GENERAL.ACCEPT.regex.test(acceptHeader) && !!protocolVersions.ACCEPT.DEFAULT) {
-      acceptHeader = makeAppInteroperabilityHeader(resource, protocolVersions.ACCEPT.DEFAULT)
+      acceptHeader = makeAppInteroperabilityHeader(resource, protocolVersions.ACCEPT.DEFAULT, isIsoApi)
     }
   }
   return { contentTypeHeader, acceptHeader }
 }
 
-const headersMappingDto = (headers, protocolVersions, noAccept, resource) => {
-  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions, resource)
+const headersMappingDto = (headers, protocolVersions, noAccept, resource, isIsoApi) => {
+  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions, resource, isIsoApi)
   return {
     [HEADERS.accept]: noAccept ? null : acceptHeader,
     [HEADERS.contentType]: contentTypeHeader,
@@ -168,9 +171,10 @@ function generateRequestHeaders (
   protocolVersions,
   noAccept = false,
   resource = RESOURCES.quotes,
-  additionalHeaders = null
+  additionalHeaders = null,
+  isIsoApi = false
 ) {
-  let ret = headersMappingDto(headers, protocolVersions, noAccept, resource)
+  let ret = headersMappingDto(headers, protocolVersions, noAccept, resource, isIsoApi)
 
   // below are the non-standard headers added by the rules
   if (additionalHeaders) {
@@ -189,14 +193,15 @@ function generateRequestHeadersForJWS (
   headers,
   protocolVersions,
   noAccept = false,
-  resource = RESOURCES.quotes
+  resource = RESOURCES.quotes,
+  isIsoApi = false
 ) {
-  const mappedHeaders = headersMappingDto(headers, protocolVersions, noAccept, resource)
+  const mappedHeaders = headersMappingDto(headers, protocolVersions, noAccept, resource, isIsoApi)
   // JWS Signer expects headers in lowercase
   const ret = Object.fromEntries(
     Object.entries(mappedHeaders).map(([key, value]) => [key.toLowerCase(), value])
   )
-  // todo: clarify if we need additionalHeaders here (see generateRequestHeaders fn)
+  // clarify, if we need additionalHeaders here (see generateRequestHeaders fn)
 
   return removeEmptyKeys(ret)
 }

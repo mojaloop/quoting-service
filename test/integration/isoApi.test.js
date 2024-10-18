@@ -1,6 +1,7 @@
 const { setTimeout: sleep } = require('node:timers/promises')
 
 const { createPayloadCache } = require('../../src/lib/payloadCache')
+const { ISO_HEADER_PART } = require('../../src/constants')
 const Config = require('../../src/lib/config')
 const mocks = require('../mocks')
 const QSClient = require('./QSClient')
@@ -49,6 +50,42 @@ describe('ISO API Tests -->', () => {
       expect(PmtId.EndToEndId).toBe(transactionId)
       expect(DbtrAgt.FinInstnId.Othr.Id).toBe(from)
       expect(CdtrAgt.FinInstnId.Othr.Id).toBe(to)
+    })
+  })
+
+  describe('PUT /quotes ISO Tests -->', () => {
+    // test('should validate ISO PUT /quotes/{id} payload, and forward it it ISO format', async () => {
+    //   const id = mocks.generateULID()
+    //   const fspiopPayload = mocks.putQuotesPayloadDto()
+    //   const from = 'pinkbank'
+    //   const to = 'greenbank'
+    //   const response = await qsClient.putIsoQuotes(id, fspiopPayload, from, to)
+    //   expect(response.status).toBe(200)
+    //
+    //   await sleep(3000)
+    //
+    //   const { data } = await hubClient.getHistory()
+    //   expect(data.history.length).toBe(1)
+    // })
+
+    test.skip('should validate ISO PUT /quotes/{id}/error payload, but send error callback due to not existing id', async () => {
+      // todo: think, how to run this test in API_TYPE === 'fspiop' mode?
+      //       Maybe, make QH not using API_TYPE env var, and detect API_TYPE base on originalPayload format?
+      const expectedErrorCode = '2001' // todo: clarify, what code should be sent
+      const fspiopPayload = mocks.errorPayloadDto()
+      const id = mocks.generateULID()
+      const from = 'pinkbank'
+      const to = 'greenbank'
+      const response = await qsClient.putErrorIsoQuotes(id, fspiopPayload, from, to)
+      expect(response.status).toBe(200)
+
+      await sleep(3000)
+
+      const { data } = await hubClient.getHistory()
+      expect(data.history.length).toBe(1)
+      const { body, headers } = data.history[0]
+      expect(headers['content-type']).toContain(ISO_HEADER_PART)
+      expect(body.TxInfAndSts.StsRsnInf.Rsn.Cd).toBe(expectedErrorCode)
     })
   })
 })

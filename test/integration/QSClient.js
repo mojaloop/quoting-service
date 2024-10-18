@@ -33,7 +33,40 @@ class QSClient {
     })
   }
 
+  async putIsoQuotes(id, fspiopPayload, from, to) {
+    const url = `${this.baseUrl}/${RESOURCES.quotes}/${id}`
+    const headers = QSClient.makeHeaders({ from, to }, true)
+    const isoPayload = await TransformFacades.FSPIOP.quotes.put({ body: fspiopPayload })
+
+    return axios.request({
+      url,
+      method: 'PUT',
+      headers,
+      data: isoPayload.body
+    })
+  }
+
+  async putErrorIsoQuotes(id, fspiopPayload, from, to) {
+    const url = `${this.baseUrl}/${RESOURCES.quotes}/${id}/error`
+    const headers = QSClient.makeHeaders({ from, to }, true)
+    const isoPayload = await TransformFacades.FSPIOP.quotes.putError({ body: fspiopPayload })
+
+    return axios.request({
+      url,
+      method: 'PUT',
+      headers,
+      data: isoPayload.body
+    })
+  }
   // todo: add other methods
+
+  static makeHeaders(fspiopPayload, isIsoApi = false) {
+    return mocks.headersDto({
+      source: fspiopPayload.from,
+      destination: fspiopPayload.to,
+      isIsoApi
+    })
+  }
 }
 
 module.exports = QSClient

@@ -513,7 +513,7 @@ class QuotesModel {
         method: ENUM.Http.RestMethods.POST,
         url: `${endpoint}/quotes`,
         data: JSON.stringify(originalQuoteRequest),
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, additionalHeaders)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, additionalHeaders, this.envConfig.isIsoApi)
       }
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
@@ -770,7 +770,7 @@ class QuotesModel {
         method: ENUM.Http.RestMethods.PUT,
         url: `${endpoint}/quotes/${quoteId}`,
         data: JSON.stringify(originalQuoteResponse),
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, true)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, true, RESOURCES.quotes, null, this.envConfig.isIsoApi)
       }
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
@@ -964,7 +964,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes/${quoteId}`
-      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, null, this.envConfig.isIsoApi)
 
       this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
 
@@ -1077,9 +1077,9 @@ class QuotesModel {
 
       // JWS Signer expects headers in lowercase
       if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true)
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.quotes, envConfig.isIsoApi)
       } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true)
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.quotes, null, envConfig.isIsoApi)
       }
 
       let opts = {
@@ -1257,8 +1257,10 @@ class QuotesModel {
   async makeErrorPayload (fspiopError) {
     const errInfo = fspiopError.toApiErrorObject(this.envConfig.errorHandling)
 
+    this.log.verbose('makeErrorPayload errInfo:', { errInfo, isIsoApi: this.envConfig.isIsoApi })
+
     const errPayload = this.envConfig.isIsoApi
-      ? await TransformFacades.FSPIOPISO20022.quotes.putError({ body: errInfo })
+      ? (await TransformFacades.FSPIOP.quotes.putError({ body: errInfo })).body
       : errInfo
     this.log.debug('makeErrorPayload is done', { errPayload })
 
