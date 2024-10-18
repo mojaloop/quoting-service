@@ -34,8 +34,8 @@
  --------------
  ******/
 
+const util = require('node:util')
 const axios = require('axios')
-const util = require('util')
 
 const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -47,7 +47,7 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
-const { logger } = require('../lib')
+const { logger, TransformFacades } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, calculateRequestHash, fetchParticipantInfo, getParticipantEndpoint } = require('../lib/util')
 const { RESOURCES } = require('../constants')
@@ -93,7 +93,10 @@ class QuotesModel {
     return events
   }
 
-  async handleRuleEvents (events, headers, quoteRequest) {
+  async handleRuleEvents (events, headers, payload, originalPayload) {
+    const quoteRequest = originalPayload || payload
+    // todo: pass only originalPayload (added this logic only for passing tests)
+
     // At the time of writing, all events cause the "normal" flow of execution to be interrupted.
     // So we'll return false when there have been no events whatsoever.
     if (events.length === 0) {
@@ -251,7 +254,8 @@ class QuotesModel {
    *
    * @returns {object} - returns object containing keys for created database entities
    */
-  async handleQuoteRequest (headers, quoteRequest, span, cache) {
+  async handleQuoteRequest (headers, quoteRequest, span, cache, originalPayload) {
+    // todo: update method signature to use object destructuring
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteRequest - Metrics for quote model',
@@ -279,7 +283,7 @@ class QuotesModel {
       // supply a rules file containing an empty array.
       const events = await this.executeRules(headers, quoteRequest, payer, payee)
 
-      handledRuleEvents = await this.handleRuleEvents(events, headers, quoteRequest)
+      handledRuleEvents = await this.handleRuleEvents(events, headers, quoteRequest, originalPayload)
       if (handledRuleEvents.terminate) {
         return
       }
@@ -300,8 +304,12 @@ class QuotesModel {
         if (dupe.isResend && dupe.isDuplicateId) {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-          return this.handleQuoteRequestResend(handledRuleEvents.headers,
-            handledRuleEvents.quoteRequest, handleQuoteRequestSpan, handledRuleEvents.additionalHeaders)
+          return this.handleQuoteRequestResend(
+            handledRuleEvents.headers,
+            handledRuleEvents.quoteRequest,
+            handleQuoteRequestSpan,
+            handledRuleEvents.additionalHeaders
+          )
         }
 
         // get various enum ids (async, as parallel as possible)
@@ -392,10 +400,10 @@ class QuotesModel {
         ])
 
         // store any extension list items
-        if (quoteRequest.extensionList &&
-          Array.isArray(quoteRequest.extensionList.extension)) {
+        if (quoteRequest.extensionList && Array.isArray(quoteRequest.extensionList.extension)) {
           refs.extensions = await this.db.createQuoteExtensions(
-            txn, quoteRequest.extensionList.extension, quoteRequest.quoteId, quoteRequest.transactionId)
+            txn, quoteRequest.extensionList.extension, quoteRequest.quoteId, quoteRequest.transactionId
+          )
         }
 
         // did we get a geoCode for the initiator?
@@ -505,7 +513,7 @@ class QuotesModel {
         method: ENUM.Http.RestMethods.POST,
         url: `${endpoint}/quotes`,
         data: JSON.stringify(originalQuoteRequest),
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, additionalHeaders)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, additionalHeaders, this.envConfig.isIsoApi)
       }
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
@@ -574,7 +582,9 @@ class QuotesModel {
    *
    * @returns {object} - object containing updated entities
    */
-  async handleQuoteUpdate (headers, quoteId, quoteUpdateRequest, span) {
+  async handleQuoteUpdate (headers, quoteId, payload, span, originalPayload = payload) {
+    // todo: - remove default value (was added only for passing tests)
+    //       - update method signature to use object destructuring
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteUpdate - Metrics for quote model',
@@ -583,23 +593,22 @@ class QuotesModel {
     let txn = null
     let payeeParty = null
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const { envConfig } = this
     const handleQuoteUpdateSpan = span.getChild('qs_quote_handleQuoteUpdate')
+
     try {
       // ensure no 'accept' header is present in the request headers.
       if ('accept' in headers) {
-        // internal-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           `Update for quote ${quoteId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
       }
 
-      await this.validateQuoteUpdate(headers, quoteUpdateRequest)
+      await this.validateQuoteUpdate(headers, payload)
 
       // accumulate enum ids
       const refs = {}
-      if (!envConfig.simpleRoutingMode) {
+      if (!this.envConfig.simpleRoutingMode) {
         // check if this is a resend or an erroneous duplicate
-        const dupe = await this.checkDuplicateQuoteResponse(quoteId, quoteUpdateRequest)
+        const dupe = await this.checkDuplicateQuoteResponse(quoteId, payload)
         this.log.debug('Check duplicate for quote update: ', { quoteId, dupe })
 
         // fail fast on duplicate
@@ -613,10 +622,10 @@ class QuotesModel {
           // this is a resend
           // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
           histTimer({ success: true, queryName: 'quote_handleQuoteUpdate' })
-          return this.handleQuoteUpdateResend(headers, quoteId, quoteUpdateRequest, handleQuoteUpdateSpan)
+          return this.handleQuoteUpdateResend(headers, quoteId, originalPayload, handleQuoteUpdateSpan)
         }
 
-        if (quoteUpdateRequest.geoCode) {
+        if (payload.geoCode) {
           payeeParty = await this.db.getQuoteParty(quoteId, 'PAYEE')
 
           if (!payeeParty) {
@@ -630,38 +639,38 @@ class QuotesModel {
 
         // create the quote response row in the db
         const newQuoteResponse = await this.db.createQuoteResponse(txn, quoteId, {
-          transferAmount: quoteUpdateRequest.transferAmount,
-          payeeReceiveAmount: quoteUpdateRequest.payeeReceiveAmount,
-          payeeFspFee: quoteUpdateRequest.payeeFspFee,
-          payeeFspCommission: quoteUpdateRequest.payeeFspCommission,
-          condition: quoteUpdateRequest.condition,
-          expiration: quoteUpdateRequest.expiration ? new Date(quoteUpdateRequest.expiration) : null,
+          transferAmount: payload.transferAmount,
+          payeeReceiveAmount: payload.payeeReceiveAmount,
+          payeeFspFee: payload.payeeFspFee,
+          payeeFspCommission: payload.payeeFspCommission,
+          condition: payload.condition,
+          expiration: payload.expiration ? new Date(payload.expiration) : null,
           isValid: 1 // assume the request is valid if we passed validation and duplicate checks etc...
         })
 
         refs.quoteResponseId = newQuoteResponse.quoteResponseId
 
         // if we get here we need to create a duplicate check row
-        const hash = calculateRequestHash(quoteUpdateRequest)
+        const hash = calculateRequestHash(payload)
         await this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash)
 
         // create ilp packet in the db
-        await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId, quoteUpdateRequest.ilpPacket)
+        await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId, payload.ilpPacket)
 
         // did we get a geoCode for the payee?
-        if (quoteUpdateRequest.geoCode) {
+        if (payload.geoCode) {
           refs.geoCodeId = await this.db.createGeoCode(txn, {
             quotePartyId: payeeParty?.quotePartyId,
-            latitude: quoteUpdateRequest.geoCode.latitude,
-            longitude: quoteUpdateRequest.geoCode.longitude
+            latitude: payload.geoCode.latitude,
+            longitude: payload.geoCode.longitude
           })
         }
 
         // store any extension list items
-        if (quoteUpdateRequest.extensionList &&
-             Array.isArray(quoteUpdateRequest.extensionList.extension)) {
+        if (payload.extensionList && Array.isArray(payload.extensionList.extension)) {
           refs.extensions = await this.db.createQuoteExtensions(
-            txn, quoteUpdateRequest.extensionList.extension, quoteId, null, refs.quoteResponseId)
+            txn, payload.extensionList.extension, quoteId, null, refs.quoteResponseId
+          )
         }
 
         // todo: create any additional quoteParties e.g. for fees, comission etc...
@@ -672,7 +681,7 @@ class QuotesModel {
         /// if we got here, all entities have been created in db correctly to record the quote request
 
         // check quote response rules
-        // let test = { ...quoteUpdateRequest };
+        // let test = { ...payload };
 
         // const failures = await quoteRules.getFailures(test);
         // if (failures && failures.length > 0) {
@@ -685,7 +694,7 @@ class QuotesModel {
       const childSpan = handleQuoteUpdateSpan.getChild('qs_quote_forwardQuoteUpdate')
       try {
         histTimer({ success: true, queryName: 'quote_handleQuoteUpdate' })
-        await this.forwardQuoteUpdate(headers, quoteId, quoteUpdateRequest, childSpan)
+        await this.forwardQuoteUpdate(headers, quoteId, originalPayload, childSpan)
       } catch (err) {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
@@ -761,7 +770,7 @@ class QuotesModel {
         method: ENUM.Http.RestMethods.PUT,
         url: `${endpoint}/quotes/${quoteId}`,
         data: JSON.stringify(originalQuoteResponse),
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, true)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, true, RESOURCES.quotes, null, this.envConfig.isIsoApi)
       }
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
@@ -783,7 +792,7 @@ class QuotesModel {
    * Deals with resends of quote responses (PUT) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
-  async handleQuoteUpdateResend (headers, quoteId, quoteUpdate, span) {
+  async handleQuoteUpdateResend (headers, quoteId, payload, span) {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteUpdateResend - Metrics for quote model',
@@ -794,7 +803,7 @@ class QuotesModel {
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-      log.debug('handleQuoteUpdateResend...', { fspiopSource, fspiopDest, quoteUpdate })
+      log.debug('handleQuoteUpdateResend...', { fspiopSource, fspiopDest, quoteUpdate: payload })
 
       // we are ok to assume the quoteUpdate object passed to us is the same as the original...
       // as it passed a hash duplicate check...so go ahead and use it to resend rather than
@@ -803,8 +812,8 @@ class QuotesModel {
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       const childSpan = span.getChild('qs_quote_forwardQuoteUpdateResend')
       try {
-        await childSpan.audit({ headers, params: { quoteId }, payload: quoteUpdate }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteUpdate(headers, quoteId, quoteUpdate, childSpan)
+        await childSpan.audit({ headers, params: { quoteId }, payload }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteUpdate(headers, quoteId, payload, childSpan)
         histTimer({ success: true, queryName: 'quote_handleQuoteUpdateResend' })
         log.info('handleQuoteUpdateResend is done')
       } catch (err) {
@@ -839,11 +848,11 @@ class QuotesModel {
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     let txn = null
-    const { envConfig } = this
     let newError
     const childSpan = span.getChild('qs_quote_handleQuoteError')
+
     try {
-      if (!envConfig.simpleRoutingMode) {
+      if (!this.envConfig.simpleRoutingMode) {
         // do everything in a transaction so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
 
@@ -955,7 +964,7 @@ class QuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/quotes/${quoteId}`
-      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, null, this.envConfig.isIsoApi)
 
       this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
 
@@ -1068,15 +1077,15 @@ class QuotesModel {
 
       // JWS Signer expects headers in lowercase
       if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true)
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.quotes, envConfig.isIsoApi)
       } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true)
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.quotes, null, envConfig.isIsoApi)
       }
 
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
-        data: JSON.stringify(fspiopError.toApiErrorObject(envConfig.errorHandling), LibUtil.getCircularReplacer()),
+        data: await this.makeErrorPayload(fspiopError),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
         headers: formattedHeaders
@@ -1243,6 +1252,19 @@ class QuotesModel {
       histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteResponse', duplicateResult: 'error' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
+  }
+
+  async makeErrorPayload (fspiopError) {
+    const errInfo = fspiopError.toApiErrorObject(this.envConfig.errorHandling)
+
+    this.log.verbose('makeErrorPayload errInfo:', { errInfo, isIsoApi: this.envConfig.isIsoApi })
+
+    const errPayload = this.envConfig.isIsoApi
+      ? (await TransformFacades.FSPIOP.quotes.putError({ body: errInfo })).body
+      : errInfo
+    this.log.debug('makeErrorPayload is done', { errPayload })
+
+    return JSON.stringify(errPayload, LibUtil.getCircularReplacer())
   }
 
   // wrapping this dependency here to allow for easier use and testing

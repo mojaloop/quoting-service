@@ -29,8 +29,11 @@ const PAYLOAD_STORAGES = Object.freeze({
   redis: 'redis'
 })
 
+const ISO_HEADER_PART = 'iso20022'
+
 module.exports = {
   API_TYPES,
+  ISO_HEADER_PART,
   RESOURCES,
   HEADERS,
   ERROR_MESSAGES,

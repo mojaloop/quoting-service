@@ -342,7 +342,11 @@ describe('QuotesModel', () => {
     // make all methods of the quotesModel instance be a mock. This helps us re-mock in every
     // method's test suite.
     const propertyNames = Object.getOwnPropertyNames(QuotesModel.prototype)
+    const noMockingMethods = [
+      'makeErrorPayload'
+    ]
     propertyNames.forEach((methodName) => {
+      if (noMockingMethods.includes(methodName)) return
       jest.spyOn(quotesModel, methodName).mockImplementation(() => {
         return {}
       })

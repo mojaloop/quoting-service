@@ -160,7 +160,8 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  async handleFxQuoteRequest (headers, fxQuoteRequest, span) {
+  async handleFxQuoteRequest (headers, fxQuoteRequest, span, originalPayload = fxQuoteRequest) {
+    // todo: remove default value for originalPayload (added just for passing tests)
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'handleFxQuoteRequest - Metrics for fx quote model',
@@ -195,7 +196,8 @@ class FxQuotesModel {
           return this.handleFxQuoteRequestResend(
             headers,
             fxQuoteRequest,
-            span
+            span,
+            originalPayload
           )
         }
 
@@ -225,7 +227,7 @@ class FxQuotesModel {
         await txn.commit()
       }
 
-      await this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, fxQuoteRequest, childSpan)
+      await this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, originalPayload, childSpan)
       histTimer({ success: true, queryName: 'handleFxQuoteRequest' })
     } catch (err) {
       histTimer({ success: false, queryName: 'handleFxQuoteRequest' })
@@ -246,7 +248,7 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardFxQuoteRequest (headers, conversionRequestId, originalFxQuoteRequest, span) {
+  async forwardFxQuoteRequest (headers, conversionRequestId, originalPayload, span) {
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'forwardFxQuoteRequest - Metrics for fx quote model',
@@ -267,8 +269,8 @@ class FxQuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.POST,
         url: `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.FX_QUOTES_POST}`,
-        data: JSON.stringify(originalFxQuoteRequest),
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes)
+        data: JSON.stringify(originalPayload),
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes, null, this.envConfig.isIsoApi)
       }
       this.log.debug('Forwarding fxQuote request details', { conversionRequestId, opts })
 
@@ -291,7 +293,8 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  async handleFxQuoteUpdate (headers, conversionRequestId, fxQuoteUpdateRequest, span) {
+  async handleFxQuoteUpdate (headers, conversionRequestId, fxQuoteUpdateRequest, span, originalPayload = fxQuoteUpdateRequest) {
+    // todo
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'handleFxQuoteUpdate - Metrics for fx quote model',
@@ -327,7 +330,7 @@ class FxQuotesModel {
           return this.handleFxQuoteUpdateResend(
             headers,
             conversionRequestId,
-            fxQuoteUpdateRequest,
+            originalPayload,
             span
           )
         }
@@ -373,7 +376,7 @@ class FxQuotesModel {
         await txn.commit()
       }
 
-      await this.forwardFxQuoteUpdate(headers, conversionRequestId, fxQuoteUpdateRequest, childSpan)
+      await this.forwardFxQuoteUpdate(headers, conversionRequestId, originalPayload, childSpan)
       histTimer({ success: true, queryName: 'handleFxQuoteUpdate' })
     } catch (err) {
       histTimer({ success: false, queryName: 'handleFxQuoteUpdate' })
@@ -409,7 +412,12 @@ class FxQuotesModel {
 
       const endpoint = await this._getParticipantEndpoint(fspiopDest)
       if (!endpoint) {
-        const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for PAYER party FSP '${fspiopDest}' while processing fxQuote ${conversionRequestId}`, null, fspiopSource)
+        const fspiopError = ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
+          `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for PAYER party FSP '${fspiopDest}' while processing fxQuote ${conversionRequestId}`,
+          null,
+          fspiopSource
+        )
         return this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, span, true)
       }
 
@@ -417,7 +425,7 @@ class FxQuotesModel {
         method: ENUM.Http.RestMethods.PUT,
         url: `${endpoint}/fxQuotes/${conversionRequestId}`,
         data: JSON.stringify(originalFxQuoteResponse),
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, true, RESOURCES.fxQuotes)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, true, RESOURCES.fxQuotes, null, this.envConfig.isIsoApi)
         // we need to strip off the 'accept' header
         // for all PUT requests as per the API Specification Document
         // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
@@ -490,7 +498,7 @@ class FxQuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.GET,
         url: `${endpoint}/fxQuotes/${conversionRequestId}`,
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes, null, this.envConfig.isIsoApi)
       }
       this.log.debug('Forwarding fxQuote get request details:', { conversionRequestId, opts })
 
@@ -559,28 +567,29 @@ class FxQuotesModel {
    * Deals with resends of fxQuote requests (POST) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
-  async handleFxQuoteRequestResend (headers, fxQuoteRequest, span, additionalHeaders) {
+  async handleFxQuoteRequestResend (headers, payload, span, originalPayload = payload) {
+    // todo: remove default value for originalPayload (added just for passing tests)
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-      this.log.debug(`Handling resend of fxQuoteRequest from ${fspiopSource} to ${fspiopDestination}: `, fxQuoteRequest)
+      this.log.debug(`Handling resend of fxQuoteRequest from ${fspiopSource} to ${fspiopDestination}: `, payload)
 
-      // we are ok to assume the fxQuoteRequest object passed to us is the same as the original...
+      // we are ok to assume the payload object passed to us is the same as the original...
       // as it passed a hash duplicate check...so go ahead and use it to resend rather than
       // hit the db again
 
       // if we got here rules passed, so we can forward the fxQuote on to the recipient dfsp
       const childSpan = span.getChild('qs_fxQuote_forwardQuoteRequestResend')
       try {
-        await childSpan.audit({ headers, payload: fxQuoteRequest }, EventSdk.AuditEventAction.start)
-        await this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, fxQuoteRequest, childSpan, additionalHeaders)
+        await childSpan.audit({ headers, payload }, EventSdk.AuditEventAction.start)
+        await this.forwardFxQuoteRequest(headers, payload.conversionRequestId, originalPayload, childSpan)
       } catch (err) {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
         // get the model to handle it
         this.log.error('Error forwarding fxQuote request: ', err)
         const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-        await this.handleException(fspiopSource, fxQuoteRequest.conversionRequestId, fspiopError, headers, childSpan)
+        await this.handleException(fspiopSource, payload.conversionRequestId, fspiopError, headers, childSpan)
       } finally {
         if (childSpan && !childSpan.isFinished) {
           await childSpan.finish()
@@ -597,21 +606,21 @@ class FxQuotesModel {
    * Deals with resends of fxQuote responses (PUT) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
-  async handleFxQuoteUpdateResend (headers, conversionRequestId, fxQuoteUpdate, span) {
+  async handleFxQuoteUpdateResend (headers, conversionRequestId, originalPayload, span) {
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-      this.log.debug(`Handling resend of fxQuoteUpdate from ${fspiopSource} to ${fspiopDest}: `, fxQuoteUpdate)
+      this.log.debug('Handling resend of fxQuoteUpdate: ', { fspiopSource, fspiopDest, originalPayload })
 
-      // we are ok to assume the fxQuoteUpdate object passed to us is the same as the original...
+      // we are ok to assume the originalPayload object passed to us is the same as the original...
       // as it passed a hash duplicate check...so go ahead and use it to resend rather than
       // hit the db again
 
       // if we got here rules passed, so we can forward the fxQuote on to the recipient dfsp
       const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteUpdateResend')
       try {
-        await childSpan.audit({ headers, params: { conversionRequestId }, payload: fxQuoteUpdate }, EventSdk.AuditEventAction.start)
-        await this.forwardFxQuoteUpdate(headers, conversionRequestId, fxQuoteUpdate, childSpan)
+        await childSpan.audit({ headers, params: { conversionRequestId }, payload: originalPayload }, EventSdk.AuditEventAction.start)
+        await this.forwardFxQuoteUpdate(headers, conversionRequestId, originalPayload, childSpan)
       } catch (err) {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
@@ -707,10 +716,12 @@ class FxQuotesModel {
       }
 
       // JWS Signer expects headers in lowercase
-      const generateHeadersFn = (envConfig.jws?.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign)
-        ? generateRequestHeadersForJWS
-        : generateRequestHeaders
-      const formattedHeaders = generateHeadersFn(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes)
+      let formattedHeaders
+      if (envConfig.jws?.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, envConfig.isIsoApi)
+      } else {
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, null, envConfig.isIsoApi)
+      }
 
       let opts = {
         method: ENUM.Http.RestMethods.PUT,

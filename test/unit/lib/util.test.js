@@ -34,7 +34,7 @@ const { Cache } = require('memory-cache')
 const { Enum } = require('@mojaloop/central-services-shared')
 
 const Config = require('../../../src/lib/config.js')
-const { RESOURCES } = require('../../../src/constants')
+const { RESOURCES, ISO_HEADER_PART } = require('../../../src/constants')
 const {
   failActionHandler,
   getStackOrInspect,
@@ -755,6 +755,14 @@ describe('util', () => {
       const isIsoApi = false
       const path = resolveOpenApiSpecPath(isIsoApi)
       await expect(fs.access(path, fs.constants.R_OK)).resolves.toBeUndefined()
+    })
+  })
+
+  describe('makeAppInteroperabilityHeader', () => {
+    it('should make ISO20022 header', () => {
+      const isIsoApi = true
+      const header = makeAppInteroperabilityHeader(RESOURCES.quotes, config.protocolVersions.ACCEPT.DEFAULT, isIsoApi)
+      expect(header).toContain(ISO_HEADER_PART)
     })
   })
 })

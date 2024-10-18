@@ -24,4 +24,12 @@ describe('transformerLib Tests -->', () => {
     expect(isoPayload.body.GrpHdr).toBeTruthy()
     expect(isoPayload.body.CdtTrfTxInf).toBeTruthy()
   })
+
+  test('should transform putErrorQuotes payload to ISO format', async () => {
+    const fspiopBody = mocks.errorPayloadDto()
+    const isoPayload = await TransformFacades.FSPIOP.quotes.putError({
+      body: fspiopBody
+    })
+    expect(isoPayload.body).toBeTruthy()
+  })
 })
