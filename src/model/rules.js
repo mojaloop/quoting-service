@@ -59,6 +59,9 @@ const createEngine = () => {
     }
   }
 
+  engine.addOperator('truthy', (factValue, ruleValue) => {
+    return !!factValue === ruleValue
+  })
   engine.addOperator('notDeepEqual', (factValue, ruleValue) => {
     return !deepEqual(factValue, ruleValue)
   })

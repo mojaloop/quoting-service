@@ -428,9 +428,8 @@ describe('QuotesModel', () => {
           const payer = { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] }
           const payee = { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] }
 
-          await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest, payer, payee))
-            .resolves
-            .toEqual(expectedEvents)
+          await quotesModel.executeRules(mockData.headers, mockData.quoteRequest, payer, payee)
+          expect(quotesModel.handleRuleEvents).toHaveBeenCalledWith(expectedEvents, expect.anything(), expect.anything(), expect.anything())
         })
       })
     })
@@ -718,6 +717,10 @@ describe('QuotesModel', () => {
 
     describe('Failures:', () => {
       describe('Before forwarding the request:', () => {
+        beforeEach(() => {
+          quotesModel.executeRules.mockRestore()
+        })
+
         it('throws an exception if `executeRules` fails', async () => {
           expect.assertions(1)
 
@@ -1012,6 +1015,7 @@ describe('QuotesModel', () => {
         describe('In case environment is configured for simple routing mode', () => {
           beforeEach(() => {
             mockConfig.simpleRoutingMode = true
+            quotesModel.executeRules.mockRestore()
           })
 
           it('calls `handleException` with the proper arguments if `span.audit` fails', async () => {
@@ -1058,6 +1062,7 @@ describe('QuotesModel', () => {
 
           beforeEach(() => {
             mockConfig.simpleRoutingMode = false
+            quotesModel.executeRules.mockRestore()
 
             expectedResult = {
               amountTypeId: mockData.amountTypeId,
@@ -1138,6 +1143,7 @@ describe('QuotesModel', () => {
             }
           }))
 
+          quotesModel.executeRules.mockRestore()
           const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
 
           expect(quotesModel.db.createQuoteDuplicateCheck.mock.calls.length).toBe(0)
@@ -1149,6 +1155,7 @@ describe('QuotesModel', () => {
         describe('In case environment is configured for simple routing mode', () => {
           beforeEach(() => {
             mockConfig.simpleRoutingMode = true
+            quotesModel.executeRules.mockRestore()
           })
 
           it('forwards the quote request properly', async () => {
@@ -1174,6 +1181,7 @@ describe('QuotesModel', () => {
 
           beforeEach(() => {
             mockConfig.simpleRoutingMode = false
+            quotesModel.executeRules.mockRestore()
 
             expectedResult = {
               amountTypeId: mockData.amountTypeId,
