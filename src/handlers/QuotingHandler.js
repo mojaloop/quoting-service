@@ -206,13 +206,13 @@ class QuotingHandler {
   }
 
   async handlePostFxQuotes(requestData) {
-    const { requestId, payload, headers } = requestData
+    const { requestId, headers, payload, originalPayload } = requestData
     const model = this.fxQuotesModelFactory(requestId)
     let span
 
     try {
       span = await this.createSpan(requestData)
-      await model.handleFxQuoteRequest(headers, payload, span)
+      await model.handleFxQuoteRequest(headers, payload, span, originalPayload)
       this.logger.debug('handlePostFxQuotes is done')
     } catch (err) {
       this.logger.error(`error in handlePostFxQuotes: ${err?.stack}`)
@@ -229,7 +229,7 @@ class QuotingHandler {
   }
 
   async handlePutFxQuotes(requestData) {
-    const { id: conversionRequestId, requestId, payload, headers } = requestData
+    const { id: conversionRequestId, requestId, headers, payload, originalPayload } = requestData
     const model = this.fxQuotesModelFactory(requestId)
     const isError = !!payload.errorInformation
     let span
@@ -237,8 +237,8 @@ class QuotingHandler {
     try {
       span = await this.createSpan(requestData)
       const result = isError
-        ? await model.handleFxQuoteError(headers, conversionRequestId, payload.errorInformation, span)
-        : await model.handleFxQuoteUpdate(headers, conversionRequestId, payload, span)
+        ? await model.handleFxQuoteError(headers, conversionRequestId, payload.errorInformation, span) // todo: think, if we need to pass originalPayload here
+        : await model.handleFxQuoteUpdate(headers, conversionRequestId, payload, span, originalPayload)
       this.logger.isDebugEnabled && this.logger.debug(`handlePutFxQuotes is done: ${JSON.stringify(result)}`)
     } catch (err) {
       this.logger.error(`error in handlePutFxQuotes: ${err?.stack}`)

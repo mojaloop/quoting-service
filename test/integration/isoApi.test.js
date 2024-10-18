@@ -88,4 +88,24 @@ describe('ISO API Tests -->', () => {
       expect(body.TxInfAndSts.StsRsnInf.Rsn.Cd).toBe(expectedErrorCode)
     })
   })
+
+  describe('fxQuotes ISO Tests -->', () => {
+    test.skip('should validate ISO POST /fxQuotes payload, and forward it in ISO format', async () => {
+      const args = {
+        initiatingFsp: 'pinkbank',
+        counterPartyFsp: 'greenbank',
+        conversionRequestId: mocks.generateULID(),
+        conversionId: mocks.generateULID(),
+        determiningTransferId: mocks.generateULID()
+      }
+      const response = await qsClient.postIsoFxQuotes(args)
+      expect(response.status).toBe(202)
+
+      await sleep(3000)
+
+      const { data } = await hubClient.getHistory()
+      expect(data.history.length).toBe(1)
+      // todo: add checks
+    })
+  })
 })
