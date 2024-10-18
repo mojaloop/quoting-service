@@ -284,7 +284,7 @@ class QuotingHandler {
       this.config.originalPayloadStorage,
       requestData.context,
       this.payloadCache
-    )
+    ) || requestData.payload
   }
 
   async createSpan(requestData) {

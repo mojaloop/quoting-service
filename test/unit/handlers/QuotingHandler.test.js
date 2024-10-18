@@ -435,5 +435,13 @@ describe('QuotingHandler Tests -->', () => {
       await handler.addOriginalPayload(requestData)
       expect(requestData.originalPayload).toEqual(payload)
     })
+
+    it('should use content.payload in no content.context field in kafka', async () => {
+      const payload = { quoteId: randomUUID() }
+      const requestData = { payload }
+
+      await handler.addOriginalPayload(requestData)
+      expect(requestData.originalPayload).toEqual(payload)
+    })
   })
 })
