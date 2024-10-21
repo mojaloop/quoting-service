@@ -143,7 +143,7 @@ describe('POST /fxQuotes request tests --> ', () => {
         counterPartyFsp: payload.conversionTerms.counterPartyFsp,
         sourceAmount: payload.conversionTerms.sourceAmount.amount,
         sourceCurrency: payload.conversionTerms.sourceAmount.currency,
-        targetAmount: null,
+        targetAmount: 0,
         targetCurrency: payload.conversionTerms.targetAmount.currency,
         extensions: expect.anything(),
         expirationDate: expect.anything(),
