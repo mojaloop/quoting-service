@@ -5,7 +5,7 @@ const RulesEngine = require('./rules.js')
 
 module.exports.executeRules = async function executeRules (headers, quoteRequest, originalPayload, payer, payee, operation) {
   if (rules.length === 0) {
-    this.handleRuleEvents([], headers, quoteRequest, originalPayload)
+    return await this.handleRuleEvents([], headers, quoteRequest, originalPayload)
   }
 
   const facts = {

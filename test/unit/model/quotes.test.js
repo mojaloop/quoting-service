@@ -406,9 +406,10 @@ describe('QuotesModel', () => {
         it('stops execution', async () => {
           expect(rules.length).toBe(0)
 
+          quotesModel.handleRuleEvents.mockRestore()
           await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
             .resolves
-            .toEqual([])
+            .toEqual({ terminate: false, headers: mockData.headers, quoteRequest: mockData.quoteRequest })
 
           expect(axios.request.mock.calls.length).toBe(0)
         })
