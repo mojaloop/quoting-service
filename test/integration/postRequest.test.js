@@ -92,7 +92,6 @@ describe('POST request tests --> ', () => {
 
     expect(response.data.history.length).toBeGreaterThan(0)
     const { url } = response.data.history[0]
-    console.log('95 ===>', response.data.history[0])
     expect(url).toBe(`/${message.to}/quotes`)
   })
 
