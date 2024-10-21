@@ -122,6 +122,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
+      if (response.data.history.length !== 1) console.log(response.data.history)
       expect(response.data.history.length).toBe(1)
 
       // assert that the request was received by the proxy
@@ -194,6 +195,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
+      if (response.data.history.length !== 1) console.log(response.data.history)
       expect(response.data.history.length).toBe(1)
 
       // assert that the callback was received by the payer dfsp
@@ -266,6 +268,7 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await getResponseWithRetry()
+    if (response.data.history.length !== 1) console.log(response.data.history)
     expect(response.data.history.length).toBe(1)
 
     // assert that the request was received by the payee dfsp
