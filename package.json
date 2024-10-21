@@ -62,7 +62,7 @@
     "test:coverage": "jest --coverage --coverageThreshold='{}' --testMatch '**/test/unit/**/*.test.js'",
     "test:coverage-check": "jest --runInBand --forceExit --coverage --testMatch '**/test/unit/**/*.test.js'",
     "test:junit": "jest --runInBand --forceExit --reporters=default --reporters=jest-junit --testMatch '**/test/unit/**/*.test.js'",
-    "test:int": "jest --runInBand --testMatch '**/test/integration/postRequest.test.js'",
+    "test:int": "jest --runInBand --testMatch '**/test/integration/**/*.test.js'",
     "test:integration": "./test/integration/scripts/start.sh && npm run test:int",
     "test:functional": "true",
     "regenerate": "yo swaggerize:test --framework hapi --apiPath './src/interface/swagger.json'",
