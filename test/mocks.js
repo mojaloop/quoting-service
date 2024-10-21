@@ -140,7 +140,8 @@ const postFxQuotesPayloadDto = ({
     amount: 300
   },
   targetAmount = {
-    currency: 'ZMW'
+    currency: 'ZMW',
+    amount: 0
   },
   expiration = new Date(Date.now() + 5 * 60 * 1000).toISOString(),
   extensionList = {
