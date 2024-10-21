@@ -54,6 +54,7 @@ const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
 const Config = require('./lib/config.js')
 const Handlers = require('./api')
 const Routes = require('./api/routes')
+const plugins = require('./api/plugins')
 const dto = require('./lib/dto')
 
 const OpenAPISpecPath = Path.resolve(__dirname, './interface/QuotingService-swagger.yaml')
@@ -134,6 +135,10 @@ const initServer = async function (config, topicNames) {
 
   // add plugins to the server
   await server.register([
+    {
+      plugin: plugins.loggingPlugin,
+      options: {}
+    },
     {
       plugin: Good,
       options: {

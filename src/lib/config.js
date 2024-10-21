@@ -98,8 +98,10 @@ class Config {
 
   constructor () {
     // load config from environment (or use sensible defaults)
+    this.hubName = RC.HUB_PARTICIPANT.NAME
     this.listenAddress = RC.LISTEN_ADDRESS
     this.listenPort = RC.PORT
+    this.monitoringPort = RC.MONITORING_PORT
     this.simpleRoutingMode = RC.SIMPLE_ROUTING_MODE
     this.switchEndpoint = RC.SWITCH_ENDPOINT
     this.amount = {
@@ -143,7 +145,7 @@ class Config {
     this.errorHandling = RC.ERROR_HANDLING
     this.jws = {
       jwsSign: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN,
-      fspiopSourceToSign: RC.ENDPOINT_SECURITY.JWS.FSPIOP_SOURCE_TO_SIGN,
+      fspiopSourceToSign: this.hubName,
       jwsSigningKeyPath: RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH,
       jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined
     }
@@ -155,6 +157,7 @@ class Config {
     this.instrumentationMetricsConfig = RC.INSTRUMENTATION.METRICS.config
     this.enumDataCacheExpiresInMs = RC.CACHE.ENUM_DATA_EXPIRES_IN_MS || 4170000
     this.participantDataCacheExpiresInMs = RC.CACHE.PARTICIPANT_DATA_EXPIRES_IN_MS || 60000
+    this.proxyCache = RC.PROXY_CACHE
   }
 }
 

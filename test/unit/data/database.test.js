@@ -2080,5 +2080,657 @@ describe('/database', () => {
         expect(mockList[3]).toHaveBeenCalledWith('is_locked AS isLocked')
       })
     })
+
+    describe('createFxQuote', () => {
+      it('creates a new fxQuote', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const mockList = mockKnexBuilder(mockKnex, ['1'], ['transacting', 'insert'])
+        const expected = {
+          conversionRequestId,
+          fxQuoteId: '1'
+        }
+
+        // Act
+        const result = await database.createFxQuote(txn, conversionRequestId)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+        expect(mockList[0]).toHaveBeenCalledWith('fxQuote')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in createFxQuote', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createFxQuote(txn, conversionRequestId)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('createFxQuoteResponse', () => {
+      it('creates a new fxQuoteResponse', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const fxQuoteResponse = {
+          condition: 'HOr22-H3AfTDHrSkPjJtVPRdKouuMkDXTR4ejlQa8Ks'
+        }
+        const mockList = mockKnexBuilder(mockKnex, ['1'], ['transacting', 'insert'])
+        const expected = {
+          conversionRequestId,
+          fxQuoteResponseId: '1',
+          ilpCondition: fxQuoteResponse.condition
+        }
+
+        // Act
+        const result = await database.createFxQuoteResponse(txn, conversionRequestId, fxQuoteResponse)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+        expect(mockList[0]).toHaveBeenCalledWith('fxQuoteResponse')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in createFxQuoteResponse', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const fxQuoteResponse = {
+          condition: 'HOr22-H3AfTDHrSkPjJtVPRdKouuMkDXTR4ejlQa8Ks'
+        }
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createFxQuoteResponse(txn, conversionRequestId, fxQuoteResponse)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('createFxQuoteError', () => {
+      it('creates a new fxQuoteError', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const error = {
+          errorCode: '2201',
+          errorDescription: 'Test Error'
+        }
+        const mockList = mockKnexBuilder(mockKnex, ['1'], ['transacting', 'insert'])
+        const expected = {
+          conversionRequestId,
+          fxQuoteErrorId: '1',
+          errorCode: error.errorCode,
+          errorDescription: error.errorDescription
+        }
+
+        // Act
+        const result = await database.createFxQuoteError(txn, conversionRequestId, error)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+        expect(mockList[0]).toHaveBeenCalledWith('fxQuoteError')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in createFxQuoteError', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const error = {
+          errorCode: '2201',
+          errorDescription: 'Test Error'
+        }
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createFxQuoteError(txn, conversionRequestId, error)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('createFxQuoteDuplicateCheck', () => {
+      it('creates a new fxQuoteDuplicateCheck', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const hash = 'mock_hash'
+        const mockList = mockKnexBuilder(mockKnex, ['1'], ['transacting', 'insert'])
+        const expected = {
+          conversionRequestId,
+          fxQuoteDuplicateCheckId: '1',
+          hash
+        }
+
+        // Act
+        const result = await database.createFxQuoteDuplicateCheck(txn, conversionRequestId, hash)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+        expect(mockList[0]).toHaveBeenCalledWith('fxQuoteDuplicateCheck')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in createFxQuoteDuplicateCheck', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const hash = 'mock_hash'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createFxQuoteDuplicateCheck(txn, conversionRequestId, hash)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('createFxQuoteResponseDuplicateCheck', () => {
+      it('creates a new fxQuoteResponseDuplicateCheck', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const fxQuoteResponseId = '12345'
+        const conversionRequestId = '67890'
+        const hash = 'mock_hash'
+        const mockList = mockKnexBuilder(mockKnex, ['1'], ['transacting', 'insert'])
+        const expected = {
+          fxQuoteResponseId,
+          conversionRequestId,
+          fxQuoteResponseDuplicateCheckId: '1',
+          hash
+        }
+
+        // Act
+        const result = await database.createFxQuoteResponseDuplicateCheck(txn, fxQuoteResponseId, conversionRequestId, hash)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+        expect(mockList[0]).toHaveBeenCalledWith('fxQuoteResponseDuplicateCheck')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in createFxQuoteResponseDuplicateCheck', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const fxQuoteResponseId = '12345'
+        const conversionRequestId = '67890'
+        const hash = 'mock_hash'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createFxQuoteResponseDuplicateCheck(txn, fxQuoteResponseId, conversionRequestId, hash)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('createFxQuoteConversionTerms', () => {
+      beforeEach(() => {
+        database.getAmountType = jest.fn().mockResolvedValueOnce('55')
+      })
+
+      it('creates a new fxQuoteConversionTerms', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const conversionTerms = {
+          conversionId: '67890',
+          determiningTransferId: 'transferId',
+          initiatingFsp: 'initiatingFsp',
+          counterPartyFsp: 'counterPartyFsp',
+          amountType: 'amountType',
+          sourceAmount: {
+            amount: '100',
+            currency: 'USD'
+          },
+          targetAmount: {
+            amount: '99',
+            currency: 'USD'
+          },
+          expiration: '2019-05-27T15:44:53.292Z'
+        }
+
+        const mockList = mockKnexBuilder(mockKnex, ['1'], ['transacting', 'insert'])
+        const expected = {
+          conversionRequestId,
+          conversionId: '1',
+          determiningTransferId: conversionTerms.determiningTransferId,
+          initiatingFsp: conversionTerms.initiatingFsp,
+          counterPartyFsp: conversionTerms.counterPartyFsp,
+          amountTypeId: '55',
+          sourceAmount: conversionTerms.sourceAmount.amount,
+          sourceCurrency: conversionTerms.sourceAmount.currency,
+          targetAmount: conversionTerms.targetAmount.amount,
+          targetCurrency: conversionTerms.targetAmount.currency,
+          expirationDate: new Date(conversionTerms.expiration)
+        }
+
+        // Act
+        const result = await database.createFxQuoteConversionTerms(txn, conversionRequestId, conversionTerms)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+        expect(mockList[0]).toHaveBeenCalledWith('fxQuoteConversionTerms')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in createFxQuoteConversionTerms', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const conversionTerms = {
+          conversionId: '67890',
+          determiningTransferId: 'transferId',
+          initiatingFsp: 'initiatingFsp',
+          counterPartyFsp: 'counterPartyFsp',
+          amountType: 'amountType',
+          sourceAmount: {
+            amount: '100',
+            currency: 'USD'
+          },
+          targetAmount: {
+            amount: '99',
+            currency: 'USD'
+          },
+          expiration: '2019-05-27T15:44:53.292Z'
+        }
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createFxQuoteConversionTerms(txn, conversionRequestId, conversionTerms)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('createFxQuoteResponseFxCharge', () => {
+      it('creates a new fxCharge', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionId = '12345'
+        const charges = [
+          {
+            chargeType: 'chargeType1',
+            sourceAmount: {
+              amount: '100',
+              currency: 'USD'
+            },
+            targetAmount: {
+              amount: '99',
+              currency: 'USD'
+            }
+          },
+          {
+            chargeType: 'chargeType2',
+            sourceAmount: {
+              amount: '200',
+              currency: 'USD'
+            },
+            targetAmount: {
+              amount: '198',
+              currency: 'USD'
+            }
+          }
+        ]
+        const mockList = mockKnexBuilder(mockKnex, ['1', '2'], ['transacting', 'insert'])
+        const expected = ['1', '2']
+
+        // Act
+        const result = await database.createFxQuoteResponseFxCharge(txn, conversionId, charges)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+        expect(mockList[0]).toHaveBeenCalledWith('fxCharge')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in createFxQuoteResponseFxCharge', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionId = '12345'
+        const charges = [
+          {
+            chargeType: 'chargeType1',
+            sourceAmount: {
+              amount: '100',
+              currency: 'USD'
+            },
+            targetAmount: {
+              amount: '99',
+              currency: 'USD'
+            }
+          },
+          {
+            chargeType: 'chargeType2',
+            sourceAmount: {
+              amount: '200',
+              currency: 'USD'
+            },
+            targetAmount: {
+              amount: '198',
+              currency: 'USD'
+            }
+          }
+        ]
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createFxQuoteResponseFxCharge(txn, conversionId, charges)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('createFxQuoteConversionTermsExtension', () => {
+      it('creates a new fxQuoteConversionTermsExtension', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionId = '12345'
+        const conversionTermsExtension = [
+          {
+            key: 'key1',
+            value: 'value1'
+          },
+          {
+            key: 'key2',
+            value: 'value2'
+          }
+        ]
+        const mockList = mockKnexBuilder(mockKnex, ['1', '2'], ['transacting', 'insert'])
+        const expected = ['1', '2']
+
+        // Act
+        const result = await database.createFxQuoteConversionTermsExtension(txn, conversionId, conversionTermsExtension)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+        expect(mockList[0]).toHaveBeenCalledWith('fxQuoteConversionTermsExtension')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in createFxQuoteConversionTermsExtension', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionId = '12345'
+        const conversionTermsExtension = [
+          {
+            key: 'key1',
+            value: 'value1'
+          },
+          {
+            key: 'key2',
+            value: 'value2'
+          }
+        ]
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createFxQuoteConversionTermsExtension(txn, conversionId, conversionTermsExtension)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('createFxQuoteResponseConversionTerms', () => {
+      beforeEach(() => {
+        database.getAmountType = jest.fn().mockResolvedValueOnce('55')
+      })
+
+      it('creates a new fxQuoteResponseConversionTerms', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const fxQuoteResponseId = '67890'
+        const conversionTerms = {
+          conversionId: '54321',
+          determiningTransferId: 'transferId',
+          initiatingFsp: 'initiatingFsp',
+          counterPartyFsp: 'counterPartyFsp',
+          amountType: 'amountType',
+          sourceAmount: {
+            amount: '100',
+            currency: 'USD'
+          },
+          targetAmount: {
+            amount: '99',
+            currency: 'USD'
+          },
+          expiration: '2019-05-27T15:44:53.292Z'
+        }
+        const mockList = mockKnexBuilder(mockKnex, ['1'], ['transacting', 'insert'])
+        const expected = {
+          fxQuoteResponseConversionTermsId: '1',
+          conversionRequestId,
+          fxQuoteResponseId,
+          conversionId: '54321',
+          determiningTransferId: conversionTerms.determiningTransferId,
+          initiatingFsp: conversionTerms.initiatingFsp,
+          counterPartyFsp: conversionTerms.counterPartyFsp,
+          amountTypeId: '55',
+          sourceAmount: conversionTerms.sourceAmount.amount,
+          sourceCurrency: conversionTerms.sourceAmount.currency,
+          targetAmount: conversionTerms.targetAmount.amount,
+          targetCurrency: conversionTerms.targetAmount.currency,
+          expirationDate: new Date(conversionTerms.expiration)
+        }
+
+        // Act
+        const result = await database.createFxQuoteResponseConversionTerms(txn, conversionRequestId, fxQuoteResponseId, conversionTerms)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+        expect(mockList[0]).toHaveBeenCalledWith('fxQuoteResponseConversionTerms')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in createFxQuoteResponseConversionTerms', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionRequestId = '12345'
+        const fxQuoteResponseId = '67890'
+        const conversionTerms = {
+          conversionId: '54321',
+          determiningTransferId: 'transferId',
+          initiatingFsp: 'initiatingFsp',
+          counterPartyFsp: 'counterPartyFsp',
+          amountType: 'amountType',
+          sourceAmount: {
+            amount: '100',
+            currency: 'USD'
+          },
+          targetAmount: {
+            amount: '99',
+            currency: 'USD'
+          },
+          expiration: '2019-05-27T15:44:53.292Z'
+        }
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createFxQuoteResponseConversionTerms(txn, conversionRequestId, fxQuoteResponseId, conversionTerms)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('createFxQuoteResponseConversionTermsExtension', () => {
+      it('creates a new fxQuoteResponseConversionTermsExtension', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionId = '12345'
+        const conversionTermsExtension = [
+          {
+            key: 'key1',
+            value: 'value1'
+          },
+          {
+            key: 'key2',
+            value: 'value2'
+          }
+        ]
+        const mockList = mockKnexBuilder(mockKnex, ['1', '2'], ['transacting', 'insert'])
+        const expected = ['1', '2']
+
+        // Act
+        const result = await database.createFxQuoteResponseConversionTermsExtension(txn, conversionId, conversionTermsExtension)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+        expect(mockList[0]).toHaveBeenCalledWith('fxQuoteResponseConversionTermsExtension')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in createFxQuoteResponseConversionTermsExtension', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const conversionId = '12345'
+        const conversionTermsExtension = [
+          {
+            key: 'key1',
+            value: 'value1'
+          },
+          {
+            key: 'key2',
+            value: 'value2'
+          }
+        ]
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createFxQuoteResponseConversionTermsExtension(txn, conversionId, conversionTermsExtension)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('getFxQuoteDuplicateCheck', () => {
+      it('gets the fxQuote duplicate check', async () => {
+        // Arrange
+        const conversionRequestId = '12345'
+        const expected = {
+          conversionRequestId,
+          fxQuoteDuplicateCheckId: '1',
+          hash: 'mock_hash'
+        }
+        mockKnexBuilder(
+          mockKnex,
+          { ...expected },
+          ['where', 'first']
+        )
+
+        // Act
+        const result = await database.getFxQuoteDuplicateCheck(conversionRequestId)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+      })
+
+      it('returns null when fxQuote duplicate check is not found', async () => {
+        // Arrange
+        const conversionRequestId = '12345'
+        mockKnexBuilder(
+          mockKnex,
+          null,
+          ['where', 'first']
+        )
+
+        // Act
+        const result = await database.getFxQuoteDuplicateCheck(conversionRequestId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('handles an exception in getFxQuoteDuplicateCheck', async () => {
+        // Arrange
+        const conversionRequestId = '12345'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.getFxQuoteDuplicateCheck(conversionRequestId)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('getFxQuoteResponseDuplicateCheck', () => {
+      it('gets the fxQuoteResponse duplicate check', async () => {
+        // Arrange
+        const conversionRequestId = '12345'
+        const expected = {
+          conversionRequestId,
+          fxQuoteResponseDuplicateCheckId: '1',
+          hash: 'mock_hash'
+        }
+        mockKnexBuilder(
+          mockKnex,
+          { ...expected },
+          ['where', 'first']
+        )
+
+        // Act
+        const result = await database.getFxQuoteResponseDuplicateCheck(conversionRequestId)
+
+        // Assert
+        expect(result).toStrictEqual(expected)
+      })
+
+      it('returns null when fxQuoteResponse duplicate check is not found', async () => {
+        // Arrange
+        const conversionRequestId = '12345'
+        mockKnexBuilder(
+          mockKnex,
+          null,
+          ['where', 'first']
+        )
+
+        // Act
+        const result = await database.getFxQuoteResponseDuplicateCheck(conversionRequestId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('handles an exception in getFxQuoteResponseDuplicateCheck', async () => {
+        // Arrange
+        const conversionRequestId = '12345'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.getFxQuoteResponseDuplicateCheck(conversionRequestId)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
   })
 })

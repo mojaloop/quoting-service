@@ -120,6 +120,42 @@ const APIRoutes = (api) => [
     }
   },
   {
+    method: 'PUT',
+    path: '/fxQuotes/{id}/error',
+    handler: (req, h) => handleRequest(api, req, h),
+    config: {
+      tags: ['api', 'fxQuotes', 'sampled'],
+      description: 'PUT FX Quotes error by ID'
+    }
+  },
+  {
+    method: 'GET',
+    path: '/fxQuotes/{id}',
+    handler: (req, h) => handleRequest(api, req, h),
+    config: {
+      tags: ['api', 'fxQuotes', 'sampled'],
+      description: 'GET FX Quotes by ID'
+    }
+  },
+  {
+    method: 'PUT',
+    path: '/fxQuotes/{id}',
+    handler: (req, h) => handleRequest(api, req, h),
+    config: {
+      tags: ['api', 'fxQuotes', 'sampled'],
+      description: 'PUT FX Quotes by ID'
+    }
+  },
+  {
+    method: 'POST',
+    path: '/fxQuotes',
+    handler: (req, h) => handleRequest(api, req, h),
+    config: {
+      tags: ['api', 'fxQuotes', 'sampled'],
+      description: 'POST FX Quotes'
+    }
+  },
+  {
     method: 'GET',
     path: '/health',
     handler: (req, h) => handleRequest(api, req, h),
@@ -140,4 +176,7 @@ const APIRoutes = (api) => [
   }
 ]
 
-module.exports = { APIRoutes }
+module.exports = {
+  APIRoutes,
+  handleRequest // Exposed for testing
+}
