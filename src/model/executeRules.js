@@ -1,6 +1,6 @@
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
-const rules = require('../../config/rules.json')
+const rules = require('../../config/rules')
 const RulesEngine = require('./rules.js')
 
 module.exports.executeRules = async function executeRules (headers, quoteRequest, originalPayload, payer, payee, operation) {
