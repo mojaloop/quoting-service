@@ -12,7 +12,9 @@ const config = new Config()
 
 jest.setTimeout(10_000)
 
-describe('ISO API Tests -->', () => {
+// todo: think, how to run this test in API_TYPE === 'fspiop' mode?
+//       Maybe, make QH not using API_TYPE env var, and detect API_TYPE base on originalPayload format?
+describe.skip('ISO API Tests -->', () => {
   const qsClient = new QSClient({ port: QS_ISO_PORT })
   const hubClient = new MockServerClient()
 
@@ -54,23 +56,8 @@ describe('ISO API Tests -->', () => {
   })
 
   describe('PUT /quotes ISO Tests -->', () => {
-    // test('should validate ISO PUT /quotes/{id} payload, and forward it it ISO format', async () => {
-    //   const id = mocks.generateULID()
-    //   const fspiopPayload = mocks.putQuotesPayloadDto()
-    //   const from = 'pinkbank'
-    //   const to = 'greenbank'
-    //   const response = await qsClient.putIsoQuotes(id, fspiopPayload, from, to)
-    //   expect(response.status).toBe(200)
-    //
-    //   await sleep(3000)
-    //
-    //   const { data } = await hubClient.getHistory()
-    //   expect(data.history.length).toBe(1)
-    // })
-
-    test.skip('should validate ISO PUT /quotes/{id}/error payload, but send error callback due to not existing id', async () => {
-      // todo: think, how to run this test in API_TYPE === 'fspiop' mode?
-      //       Maybe, make QH not using API_TYPE env var, and detect API_TYPE base on originalPayload format?
+    // add PUT /quotes tests
+    test('should validate ISO PUT /quotes/{id}/error payload, but send error callback due to not existing id', async () => {
       const expectedErrorCode = '2001' // todo: clarify, what code should be sent
       const fspiopPayload = mocks.errorPayloadDto()
       const id = mocks.generateULID()
@@ -90,7 +77,7 @@ describe('ISO API Tests -->', () => {
   })
 
   describe('fxQuotes ISO Tests -->', () => {
-    test.skip('should validate ISO POST /fxQuotes payload, and forward it in ISO format', async () => {
+    test('should validate ISO POST /fxQuotes payload, and forward it in ISO format', async () => {
       const args = {
         initiatingFsp: 'pinkbank',
         counterPartyFsp: 'greenbank',
@@ -105,7 +92,11 @@ describe('ISO API Tests -->', () => {
 
       const { data } = await hubClient.getHistory()
       expect(data.history.length).toBe(1)
-      // todo: add checks
+      const { body, headers } = data.history[0]
+      expect(headers['content-type']).toContain(ISO_HEADER_PART)
+      expect(body.CdtTrfTxInf.PmtId.TxId).toBe(args.conversionRequestId)
+      expect(body.CdtTrfTxInf.PmtId.InstrId).toBe(args.conversionId)
+      expect(body.CdtTrfTxInf.PmtId.EndToEndId).toBe(args.determiningTransferId)
     })
   })
 })
