@@ -29,9 +29,10 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../lib/config')
 const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
-const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash } = require('../lib/util')
+const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 const { RESOURCES, ERROR_MESSAGES } = require('../constants')
+const { executeRules, handleRuleEvents } = require('./executeRules')
 
 axios.defaults.headers.common = {}
 
@@ -47,6 +48,10 @@ class FxQuotesModel {
       requestId: this.requestId
     })
   }
+
+  executeRules = executeRules
+  handleRuleEvents = handleRuleEvents
+  _fetchParticipantInfo = fetchParticipantInfo
 
   /**
    * Validates the fxQuote request object
@@ -160,7 +165,7 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  async handleFxQuoteRequest (headers, fxQuoteRequest, span, originalPayload = fxQuoteRequest) {
+  async handleFxQuoteRequest (headers, fxQuoteRequest, span, originalPayload = fxQuoteRequest, cache) {
     // todo: remove default value for originalPayload (added just for passing tests)
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
@@ -225,6 +230,17 @@ class FxQuotesModel {
         }
 
         await txn.commit()
+      }
+
+      const { payer, payee } = await this._fetchParticipantInfo(fspiopSource, fspiopDestination, cache)
+      this.writeLog(`Got payer ${payer} and payee ${payee}`)
+
+      // Run the rules engine. If the user does not want to run the rules engine, they need only to
+      // supply a rules file containing an empty array.
+      const handledRuleEvents = await this.executeRules(headers, fxQuoteRequest, originalPayload, payer, payee, 'fxQuoteRequest')
+
+      if (handledRuleEvents.terminate) {
+        return
       }
 
       await this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, originalPayload, childSpan)
@@ -809,6 +825,16 @@ class FxQuotesModel {
       })
       opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
     }
+  }
+
+  /**
+   * Writes a formatted message to the console
+   *
+   * @returns {undefined}
+   */
+  // eslint-disable-next-line no-unused-vars
+  writeLog (message) {
+    Logger.isDebugEnabled && Logger.debug(`(${this.requestId}) [quotesmodel]: ${message}`)
   }
 }
 

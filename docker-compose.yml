@@ -130,6 +130,7 @@ services:
 
 #  To use with proxyCache.type === 'redis-cluster'
   redis-node-0:
+    container_name: redis-node-0
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
@@ -142,6 +143,7 @@ services:
       - redis-node-4
       - redis-node-5
   redis-node-1:
+    container_name: redis-node-1
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
@@ -149,6 +151,7 @@ services:
     ports:
       - "16380:16380"
   redis-node-2:
+    container_name: redis-node-2
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
@@ -156,6 +159,7 @@ services:
     ports:
       - "16381:16381"
   redis-node-3:
+    container_name: redis-node-3
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
@@ -163,6 +167,7 @@ services:
     ports:
       - "16382:16382"
   redis-node-4:
+    container_name: redis-node-4
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
@@ -170,6 +175,7 @@ services:
     ports:
       - "16383:16383"
   redis-node-5:
+    container_name: redis-node-5
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
