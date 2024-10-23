@@ -34,9 +34,7 @@
  --------------
  ******/
 
-const util = require('node:util')
 const axios = require('axios')
-
 const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
@@ -93,10 +91,7 @@ class QuotesModel {
     return events
   }
 
-  async handleRuleEvents (events, headers, payload, originalPayload) {
-    const quoteRequest = originalPayload || payload
-    // todo: pass only originalPayload (added this logic only for passing tests)
-
+  async handleRuleEvents (events, headers, quoteRequest) {
     // At the time of writing, all events cause the "normal" flow of execution to be interrupted.
     // So we'll return false when there have been no events whatsoever.
     if (events.length === 0) {
@@ -582,9 +577,8 @@ class QuotesModel {
    *
    * @returns {object} - object containing updated entities
    */
-  async handleQuoteUpdate (headers, quoteId, payload, span, originalPayload = payload) {
-    // todo: - remove default value (was added only for passing tests)
-    //       - update method signature to use object destructuring
+  async handleQuoteUpdate (headers, quoteId, payload, span, originalPayload) {
+    // todo: update method signature to use object destructuring
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteUpdate - Metrics for quote model',
@@ -902,6 +896,7 @@ class QuotesModel {
       'handleQuoteGet - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
+    const log = this.log.child({ quoteId })
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     let childSpan
     try {
@@ -923,8 +918,7 @@ class QuotesModel {
         }
       }
     } catch (err) {
-      // internal-error
-      this.writeLog(`Error in handleQuoteGet: ${getStackOrInspect(err)}`)
+      log.error('error in handleQuoteGet:', err)
       histTimer({ success: false, queryName: 'quote_handleQuoteGet' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
@@ -941,6 +935,7 @@ class QuotesModel {
       'forwardQuoteGet - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
+    const log = this.log.child({ quoteId })
     let endpoint
 
     try {
@@ -953,8 +948,7 @@ class QuotesModel {
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
       endpoint = await this._getParticipantEndpoint(fspiopDest)
-
-      this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_QUOTES endpoint for quote GET ${quoteId} to: ${util.inspect(endpoint)}`)
+      log.debug('resolved FSPIOP_CALLBACK_URL_QUOTES endpoint for quote GET: ', { endpoint, fspiopDest })
 
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
@@ -966,13 +960,12 @@ class QuotesModel {
       const fullCallbackUrl = `${endpoint}/quotes/${quoteId}`
       const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, null, this.envConfig.isIsoApi)
 
-      this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
-
       let opts = {
         method: ENUM.Http.RestMethods.GET,
         url: fullCallbackUrl,
         headers: newHeaders
       }
+      log.debug('Forwarding quote get request opts: ', { opts })
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
@@ -982,8 +975,7 @@ class QuotesModel {
       histTimer({ success: true, queryName: 'quote_forwardQuoteGet' })
       await httpRequest(opts, fspiopSource)
     } catch (err) {
-      // any-error
-      this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
+      log.error('error in forwardQuoteGet:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteGet' })
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
@@ -1035,12 +1027,12 @@ class QuotesModel {
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     const { envConfig } = this
+    const log = this.log.child({ quoteId })
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       // look up the callback base url
       const endpoint = await this._getParticipantEndpoint(fspiopSource)
-
-      this.writeLog(`Resolved participant '${fspiopSource}' FSPIOP_CALLBACK_URL_QUOTES to: '${endpoint}'`)
+      log.debug('resolved participant FSPIOP_CALLBACK_URL_QUOTES: ', { endpoint, fspiopSource })
 
       if (!endpoint) {
         // oops, we cant make an error callback if we dont have an endpoint to call!
@@ -1050,9 +1042,6 @@ class QuotesModel {
 
       const fspiopUri = `/quotes/${quoteId}/error`
       const fullCallbackUrl = `${endpoint}${fspiopUri}`
-
-      // log the original error
-      this.writeLog(`Making error callback to participant '${fspiopSource}' for quoteId '${quoteId}' to ${fullCallbackUrl} for error: ${util.inspect(fspiopError.toFullErrorObject())}`)
 
       // make an error callback
       let fromSwitchHeaders
@@ -1090,6 +1079,7 @@ class QuotesModel {
         // otherwise use sensible defaults
         headers: formattedHeaders
       }
+      log.debug('http request opts:', { opts })
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
@@ -1105,7 +1095,7 @@ class QuotesModel {
           opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign
 
         if (needToSign) {
-          this.writeLog('Getting the JWS Signer to sign the switch generated message')
+          log.verbose('Getting the JWS Signer to sign the switch generated message')
           const jwsSigner = new JwsSigner({
             logger: Logger,
             signingKey: envConfig.jws.jwsSigningKey
@@ -1114,6 +1104,7 @@ class QuotesModel {
         }
         histTimer({ success: true, queryName: 'quote_sendErrorCallback' })
         res = await axios.request(opts)
+        // todo: use wrapper on axios
       } catch (err) {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, {
@@ -1139,8 +1130,7 @@ class QuotesModel {
         }, fspiopSource)
       }
     } catch (err) {
-      // any-error
-      this.writeLog(`Error in sendErrorCallback: ${getStackOrInspect(err)}`)
+      log.error('error in sendErrorCallback:', err)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
