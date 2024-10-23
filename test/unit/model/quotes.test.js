@@ -1455,10 +1455,10 @@ describe('QuotesModel', () => {
       mockConfig.simpleRoutingMode = true
       mockChildSpan.isFinished = false
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
+      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan, mockData.quoteUpdate)
 
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
-      expect(mockChildSpan.audit).not.toBeCalled()
+      expect(mockChildSpan.audit).not.toHaveBeenCalled()
       const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(refs).toEqual({})
@@ -1471,7 +1471,7 @@ describe('QuotesModel', () => {
       quotesModel.forwardQuoteUpdate = jest.fn(() => { throw fspiopError })
       mockChildSpan.isFinished = false
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
+      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan, mockData.quoteUpdate)
 
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
       expect(mockChildSpan.audit).not.toBeCalled()
@@ -1506,7 +1506,7 @@ describe('QuotesModel', () => {
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: true, isResend: true } })
       quotesModel.handleQuoteUpdateResend = jest.fn(() => 'handleQuoteUpdateResendResult')
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
+      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan, mockData.quoteUpdate)
 
       expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
       expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, mockData.quoteUpdate)
@@ -1534,7 +1534,7 @@ describe('QuotesModel', () => {
       const localQuoteUpdate = clone(mockData.quoteUpdate)
       delete localQuoteUpdate.geoCode
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, localQuoteUpdate, mockSpan)
+      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, localQuoteUpdate, mockSpan, localQuoteUpdate)
 
       expect(quotesModel.db.newTransaction.mock.calls.length).toBe(1)
       expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, localQuoteUpdate)
@@ -1573,7 +1573,7 @@ describe('QuotesModel', () => {
       quotesModel.db.getQuoteParty.mockReturnValueOnce('quotePartyRecord')
       mockChildSpan.isFinished = true
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
+      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan, mockData.quoteUpdate)
 
       expect(quotesModel.db.newTransaction.mock.calls.length).toBe(1)
       expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, mockData.quoteUpdate)
@@ -1608,7 +1608,7 @@ describe('QuotesModel', () => {
       const localQuoteUpdate = clone(mockData.quoteUpdate)
       delete localQuoteUpdate.expiration
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, localQuoteUpdate, mockSpan)
+      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, localQuoteUpdate, mockSpan, localQuoteUpdate)
 
       let args = [mockData.headers, mockData.quoteId, localQuoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)

@@ -119,7 +119,7 @@ describe('ISO format validation Tests -->', () => {
       isIsoApi: true
     })
 
-    test.skip('should validate ISO payload for POST /fxQuotes request', async () => {
+    test('should validate ISO payload for POST /fxQuotes request', async () => {
       const fspiopPayload = mocks.postFxQuotesPayloadDto()
       const { body } = await TransformFacades.FSPIOP.fxQuotes.post({
         body: fspiopPayload
@@ -134,7 +134,7 @@ describe('ISO format validation Tests -->', () => {
       expect(response.statusCode).toBe(202)
     })
 
-    test.skip('should validate ISO payload for PUT /fxQuotes/{id} callback', async () => {
+    test('should validate ISO payload for PUT /fxQuotes/{id} callback', async () => {
       const fspiopPayload = mocks.putFxQuotesPayloadDto({
         fxQuotesPostPayload: mocks.postFxQuotesPayloadDto(),
         condition: mocks.mockIlp4Combo().condition

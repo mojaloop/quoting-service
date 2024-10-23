@@ -63,8 +63,8 @@ class QSClient {
     const url = `${this.baseUrl}/${RESOURCES.fxQuotes}`
     const headers = mocks.headersDto({
       resource: RESOURCES.fxQuotes,
-      source: params.from,
-      destination: params.to,
+      source: params.initiatingFsp,
+      destination: params.counterPartyFsp,
       isIsoApi: true
     })
     const fspiopPayload = mocks.postFxQuotesPayloadDto(params)
