@@ -91,11 +91,15 @@ class QuotesModel {
     return events
   }
 
-  async handleRuleEvents (events, headers, quoteRequest) {
+  async handleRuleEvents (events, headers, originalPayload) {
     // At the time of writing, all events cause the "normal" flow of execution to be interrupted.
     // So we'll return false when there have been no events whatsoever.
     if (events.length === 0) {
-      return { terminate: false, quoteRequest, headers }
+      return {
+        terminate: false,
+        quoteRequest: originalPayload,
+        headers
+      }
     }
 
     const { INVALID_QUOTE_REQUEST, INTERCEPT_QUOTE } = RulesEngine.events
@@ -115,8 +119,12 @@ class QuotesModel {
       // once. But is a valid solution in the short-term.
       const { FSPIOPError: code, message } = invalidQuoteRequestEvents[0].params
       // Will throw an internal server error if property doesn't exist
-      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes[code],
-        message, null, headers['fspiop-source'])
+      throw ErrorHandler.CreateFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes[code],
+        message,
+        null,
+        headers['fspiop-source']
+      )
     }
 
     const interceptQuoteEvents = events.filter(ev => ev.type === INTERCEPT_QUOTE)
@@ -128,7 +136,7 @@ class QuotesModel {
       // send the quote request to the recipient in the event
       const result = {
         terminate: false,
-        quoteRequest,
+        quoteRequest: originalPayload,
         headers: {
           ...headers,
           'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp
@@ -278,7 +286,7 @@ class QuotesModel {
       // supply a rules file containing an empty array.
       const events = await this.executeRules(headers, quoteRequest, payer, payee)
 
-      handledRuleEvents = await this.handleRuleEvents(events, headers, quoteRequest, originalPayload)
+      handledRuleEvents = await this.handleRuleEvents(events, headers, originalPayload)
       if (handledRuleEvents.terminate) {
         return
       }

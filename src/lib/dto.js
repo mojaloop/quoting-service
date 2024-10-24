@@ -78,7 +78,6 @@ const storeOriginalPayload = async ({ originalPayloadStorage, dataUri, requestId
 }
 
 const extractOriginalPayload = async (originalPayloadStorage, context, payloadCache) => {
-  logger.debug('extractOriginalPayload: ', { originalPayloadStorage })
   let payload
 
   if (originalPayloadStorage === PAYLOAD_STORAGES.kafka) {
@@ -88,7 +87,10 @@ const extractOriginalPayload = async (originalPayloadStorage, context, payloadCa
     payload = await payloadCache?.getPayload(context?.originalRequestId)
   }
 
-  return payload ? decodePayload(payload) : null
+  const result = payload ? decodePayload(payload) : null
+  logger.debug('extractOriginalPayload result: ', { originalPayloadStorage, result })
+
+  return result
 }
 
 // todo: move to domain folder
