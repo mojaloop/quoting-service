@@ -7,6 +7,7 @@ x-depends-on: &dependsOnMysqlAndKafka
     condition: service_completed_successfully
 
 x-quoting-service: &quotingServiceBase
+#  image: mojaloop/quoting-service:v15.9.0-iso.6
   image: mojaloop/quoting-service:local
   build:
     context: .

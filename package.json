@@ -104,7 +104,7 @@
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
-    "@hapi/hapi": "21.3.10",
+    "@hapi/hapi": "21.3.11",
     "@hapi/inert": "7.1.0",
     "@hapi/vision": "7.0.3",
     "@mojaloop/central-services-error-handling": "13.0.2",
@@ -116,7 +116,7 @@
     "@mojaloop/event-sdk": "14.1.1",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.3.0",
     "@mojaloop/ml-number": "11.2.4",
-    "@mojaloop/ml-schema-transformer-lib": "1.1.5",
+    "@mojaloop/ml-schema-transformer-lib": "1.1.6",
     "@mojaloop/sdk-standard-components": "18.1.0",
     "ajv": "8.17.1",
     "ajv-keywords": "5.1.0",

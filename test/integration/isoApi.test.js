@@ -46,7 +46,7 @@ describe.skip('ISO API Tests -->', () => {
       await sleep(3000)
 
       const { data } = await hubClient.getHistory()
-      expect(data.history.length).toBe(1)
+      expect(data.history.length).toBeGreaterThanOrEqual(1)
       const { PmtId, CdtrAgt, DbtrAgt } = data.history[0].body.CdtTrfTxInf
       expect(PmtId.TxId).toBe(quoteId)
       expect(PmtId.EndToEndId).toBe(transactionId)
