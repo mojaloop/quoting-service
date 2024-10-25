@@ -82,15 +82,17 @@ describe('ISO API Tests -->', () => {
   })
 
   describe('fxQuotes ISO Tests -->', () => {
+    const generatePostFxArgs = () => ({
+      initiatingFsp: 'pinkbank',
+      counterPartyFsp: 'greenbank',
+      conversionRequestId: mocks.generateULID(),
+      conversionId: mocks.generateULID(),
+      determiningTransferId: mocks.generateULID()
+    })
+
     test('should validate ISO POST /fxQuotes payload, and forward it in ISO format', async () => {
-      const args = {
-        initiatingFsp: 'pinkbank',
-        counterPartyFsp: 'greenbank',
-        conversionRequestId: mocks.generateULID(),
-        conversionId: mocks.generateULID(),
-        determiningTransferId: mocks.generateULID()
-      }
-      const response = await qsClient.postIsoFxQuotes(args)
+      const postFxArgs = generatePostFxArgs()
+      const response = await qsClient.postIsoFxQuotes(postFxArgs)
       expect(response.status).toBe(202)
 
       await sleep(3000)
@@ -99,9 +101,35 @@ describe('ISO API Tests -->', () => {
       expect(data.history.length).toBe(1)
       const { body, headers } = data.history[0]
       expect(headers['content-type']).toContain(ISO_HEADER_PART)
-      expect(body.CdtTrfTxInf.PmtId.TxId).toBe(args.conversionRequestId)
-      expect(body.CdtTrfTxInf.PmtId.InstrId).toBe(args.conversionId)
-      expect(body.CdtTrfTxInf.PmtId.EndToEndId).toBe(args.determiningTransferId)
+      expect(body.CdtTrfTxInf.PmtId.TxId).toBe(postFxArgs.conversionRequestId)
+      expect(body.CdtTrfTxInf.PmtId.InstrId).toBe(postFxArgs.conversionId)
+      expect(body.CdtTrfTxInf.PmtId.EndToEndId).toBe(postFxArgs.determiningTransferId)
+    })
+
+    test('should validate ISO PUT /fxQuotes/{id}/error payload, but send error callback due to not existing id in DB', async () => {
+      const postFxArgs = generatePostFxArgs()
+      const postResponse = await qsClient.postIsoFxQuotes(postFxArgs)
+      expect(postResponse.status).toBe(202)
+      await sleep(3000)
+      const postCallback = await hubClient.getHistory()
+      expect(postCallback.data.history.length).toBe(1)
+      await hubClient.clearHistory()
+
+      const errorCode = '3100'
+      const fspiopPayload = mocks.errorPayloadDto({ errorCode })
+
+      const id = postFxArgs.conversionRequestId
+      const from = postFxArgs.initiatingFsp
+      const to = postFxArgs.counterPartyFsp
+      const response = await qsClient.putErrorIsoFxQuotes(id, fspiopPayload, from, to)
+      expect(response.status).toBe(200)
+      await sleep(3000)
+
+      const { data } = await hubClient.getHistory()
+      expect(data.history.length).toBe(1)
+      const { body, headers } = data.history[0]
+      expect(headers['content-type']).toContain(ISO_HEADER_PART)
+      expect(body.TxInfAndSts.StsRsnInf.Rsn.Cd).toBe(errorCode)
     })
   })
 })

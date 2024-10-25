@@ -19,6 +19,7 @@ class QSClient {
   async postIsoQuotes(params = {}) {
     const url = `${this.baseUrl}/${RESOURCES.quotes}`
     const headers = mocks.headersDto({
+      resource: RESOURCES.quotes,
       source: params.from,
       destination: params.to,
       isIsoApi: true
@@ -34,22 +35,27 @@ class QSClient {
     })
   }
 
-  async putIsoQuotes(id, fspiopPayload, from, to) {
-    const url = `${this.baseUrl}/${RESOURCES.quotes}/${id}`
-    const headers = QSClient.makeHeaders({ from, to }, true)
-    const isoPayload = await TransformFacades.FSPIOP.quotes.put({ body: fspiopPayload })
-
-    return axios.request({
-      url,
-      method: 'PUT',
-      headers,
-      data: isoPayload.body
-    })
-  }
+  // async putIsoQuotes(id, fspiopPayload, from, to) {
+  //   const url = `${this.baseUrl}/${RESOURCES.quotes}/${id}`
+  //   const headers = QSClient.makeHeaders({ from, to }, true)
+  //   const isoPayload = await TransformFacades.FSPIOP.quotes.put({ body: fspiopPayload })
+  //
+  //   return axios.request({
+  //     url,
+  //     method: 'PUT',
+  //     headers,
+  //     data: isoPayload.body
+  //   })
+  // }
 
   async putErrorIsoQuotes(id, fspiopPayload, from, to) {
     const url = `${this.baseUrl}/${RESOURCES.quotes}/${id}/error`
-    const headers = QSClient.makeHeaders({ from, to }, true)
+    const headers = mocks.headersDto({
+      resource: RESOURCES.quotes,
+      source: from,
+      destination: to,
+      isIsoApi: true
+    })
     const isoPayload = await TransformFacades.FSPIOP.quotes.putError({ body: fspiopPayload })
 
     return axios.request({
@@ -63,6 +69,7 @@ class QSClient {
   async getIsoQuotes(params) {
     const url = `${this.baseUrl}/${RESOURCES.quotes}/${params.quoteId}`
     const headers = mocks.headersDto({
+      resource: RESOURCES.quotes,
       source: params.from,
       destination: params.to,
       isIsoApi: true
@@ -94,15 +101,34 @@ class QSClient {
     })
   }
 
-  // todo: add other methods
+  async putErrorIsoFxQuotes(id, fspiopPayload, from, to) {
+    const url = `${this.baseUrl}/${RESOURCES.fxQuotes}/${id}/error`
+    const headers = mocks.headersDto({
+      resource: RESOURCES.fxQuotes,
+      source: from,
+      destination: to,
+      isIsoApi: true
+    })
+    const isoPayload = await TransformFacades.FSPIOP.fxQuotes.putError({ body: fspiopPayload })
 
-  static makeHeaders(fspiopPayload, isIsoApi = false) {
-    return mocks.headersDto({
-      source: fspiopPayload.from,
-      destination: fspiopPayload.to,
-      isIsoApi
+    return axios.request({
+      url,
+      method: 'PUT',
+      headers,
+      data: isoPayload.body
     })
   }
+
+  // todo: add other methods
+
+  // static makeHeaders(fspiopPayload, resource, isIsoApi = false) {
+  //   return mocks.headersDto({
+  //     resource,
+  //     source: fspiopPayload.from,
+  //     destination: fspiopPayload.to,
+  //     isIsoApi
+  //   })
+  // }
 }
 
 module.exports = QSClient

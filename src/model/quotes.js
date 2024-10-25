@@ -46,8 +46,9 @@ const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
 const LOCAL_ENUM = require('../lib/enum')
+const dto = require('../lib/dto')
 const util = require('../lib/util')
-const { logger, TransformFacades } = require('../lib')
+const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { RESOURCES } = require('../constants')
 const rules = require('../../config/rules.json')
@@ -1028,14 +1029,16 @@ class QuotesModel {
    * @returns {promise}
    */
   async sendErrorCallback (fspiopSource, fspiopError, quoteId, headers, span, modifyHeaders = true) {
+    // todo: refactor to remove lots of code duplication from FxQuotesModel/BulkQuotesModel!!
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'sendErrorCallback - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     const { envConfig } = this
-    const log = this.log.child({ quoteId })
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+    const log = this.log.child({ quoteId, fspiopDest })
+
     try {
       // look up the callback base url
       const endpoint = await this._getParticipantEndpoint(fspiopSource)
@@ -1252,16 +1255,8 @@ class QuotesModel {
   }
 
   async makeErrorPayload (fspiopError, headers) {
-    const errInfo = fspiopError.toApiErrorObject(this.envConfig.errorHandling)
-    const isIsoApi = util.isIso20022ApiRequest(headers)
-    this.log.debug('makeErrorPayload errInfo:', { errInfo, isIsoApi })
-
-    const errPayload = isIsoApi
-      ? (await TransformFacades.FSPIOP.quotes.putError({ body: errInfo })).body
-      : errInfo
-    this.log.verbose('makeErrorPayload is done', { errPayload })
-
-    return JSON.stringify(errPayload, LibUtil.getCircularReplacer())
+    const errObject = fspiopError.toApiErrorObject(this.envConfig.errorHandling)
+    return dto.makeErrorPayloadDto(errObject, headers, RESOURCES.quotes, this.log)
   }
 
   // wrapping this dependency here to allow for easier use and testing

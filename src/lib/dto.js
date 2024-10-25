@@ -1,6 +1,7 @@
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { PAYLOAD_STORAGES, RESOURCES } = require('../constants')
 const { TransformFacades, logger } = require('../lib')
+const util = require('./util')
 
 const { Headers } = Enum.Http
 const {
@@ -160,10 +161,23 @@ const topicConfigDto = ({
   opaqueKey
 })
 
+const makeErrorPayloadDto = async (errObject, headers, resource, log = logger) => {
+  const isIsoApi = util.isIso20022ApiRequest(headers)
+  log.debug('makeErrorPayload from errObject:', { errObject, isIsoApi })
+
+  const errPayload = isIsoApi
+    ? (await TransformFacades.FSPIOP[resource].putError({ body: errObject })).body
+    : errObject
+  log.verbose('makeErrorPayload is done', { errPayload })
+
+  return JSON.stringify(errPayload, Util.getCircularReplacer())
+}
+
 module.exports = {
   messageFromRequestDto,
   requestDataFromMessageDto,
   topicConfigDto,
   transformPayloadToFspiopDto,
+  makeErrorPayloadDto,
   extractOriginalPayload
 }

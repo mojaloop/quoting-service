@@ -27,10 +27,11 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
+const LOCAL_ENUM = require('../lib/enum')
+const dto = require('../lib/dto')
 const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash } = require('../lib/util')
-const LOCAL_ENUM = require('../lib/enum')
 const { RESOURCES, ERROR_MESSAGES } = require('../constants')
 
 axios.defaults.headers.common = {}
@@ -672,13 +673,15 @@ class FxQuotesModel {
    * @returns {promise}
    */
   async sendErrorCallback (fspiopSource, fspiopError, conversionRequestId, headers, span, modifyHeaders = true) {
+    // todo: refactor to remove lots of code duplication from QuotesModel/BulkQuotes!!
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'sendErrorCallback - Metrics for fx quote model',
       ['success', 'queryName']
     ).startTimer()
-    const { envConfig, log } = this
+    const { envConfig } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+    const log = this.log.child({ conversionRequestId, fspiopDest })
 
     try {
       const endpoint = await this._getParticipantEndpoint(fspiopSource)
@@ -723,7 +726,7 @@ class FxQuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
-        data: JSON.stringify(fspiopError.toApiErrorObject(envConfig.errorHandling), LibUtil.getCircularReplacer()),
+        data: await this.makeErrorPayload(fspiopError, headers),
         headers: formattedHeaders
       }
       this.addFspiopSignatureHeader(opts) // try to "combine" with formattedHeaders logic
@@ -759,6 +762,11 @@ class FxQuotesModel {
       }
       throw fspiopError
     }
+  }
+
+  async makeErrorPayload (fspiopError, headers) {
+    const errObject = fspiopError.toApiErrorObject(this.envConfig.errorHandling)
+    return dto.makeErrorPayloadDto(errObject, headers, RESOURCES.fxQuotes, this.log)
   }
 
   // wrapping this dependency here to allow for easier use and testing
