@@ -41,10 +41,12 @@ jest.mock('@mojaloop/central-services-stream', () => ({
 jest.mock('../../src/model/quotes')
 
 const { randomUUID } = require('node:crypto')
-const { TransformFacades } = require('../../src/lib')
+const { TransformFacades, logger } = require('../../src/lib')
 const { RESOURCES } = require('../../src/constants')
 const serverStart = require('../../src/server')
 const mocks = require('../mocks')
+
+TransformFacades.FSPIOP.configure({ isTestingMode: true, logger })
 
 describe('ISO format validation Tests -->', () => {
   let server

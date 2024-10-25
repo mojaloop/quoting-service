@@ -5,6 +5,7 @@ const { logger, TransformFacades } = require('../../src/lib')
 const mocks = require('../mocks')
 
 axios.defaults.headers.common = {}
+TransformFacades.FSPIOP.configure({ isTestingMode: true, logger })
 
 class QSClient {
   constructor ({

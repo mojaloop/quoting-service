@@ -1071,8 +1071,6 @@ class QuotesModel {
         fromSwitchHeaders = Object.assign({}, headers)
       }
 
-      // const isIsoApi = envConfig.isIsoApi
-
       // JWS Signer expects headers in lowercase
       if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
         formattedHeaders = util.generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.quotes)

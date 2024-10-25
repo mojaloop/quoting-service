@@ -4,11 +4,13 @@ jest.mock('ioredis', () => MockIoRedis)
 const { decodePayload } = require('@mojaloop/central-services-shared').Util.StreamingProtocol
 const dto = require('../../../src/lib/dto')
 const Config = require('../../../src/lib/config')
-const { TransformFacades } = require('../../../src/lib')
+const { TransformFacades, logger } = require('../../../src/lib')
 const { createPayloadCache } = require('../../../src/lib/payloadCache')
 const { PAYLOAD_STORAGES } = require('../../../src/constants')
 const mocks = require('../../mocks')
 const { mockHttpRequest } = require('../mocks') // todo: combine 2 mocks files
+
+TransformFacades.FSPIOP.configure({ isTestingMode: true, logger })
 
 describe('dto Tests -->', () => {
   describe('messageFromRequestDto Tests -->', () => {
