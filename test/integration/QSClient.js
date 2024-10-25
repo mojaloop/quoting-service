@@ -60,6 +60,21 @@ class QSClient {
     })
   }
 
+  async getIsoQuotes(params) {
+    const url = `${this.baseUrl}/${RESOURCES.quotes}/${params.quoteId}`
+    const headers = mocks.headersDto({
+      source: params.from,
+      destination: params.to,
+      isIsoApi: true
+    })
+
+    return axios.request({
+      url,
+      method: 'GET',
+      headers
+    })
+  }
+
   async postIsoFxQuotes(params = {}) {
     const url = `${this.baseUrl}/${RESOURCES.fxQuotes}`
     const headers = mocks.headersDto({

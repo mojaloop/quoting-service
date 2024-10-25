@@ -51,6 +51,15 @@ describe('ISO API Tests -->', () => {
       expect(PmtId.EndToEndId).toBe(transactionId)
       expect(DbtrAgt.FinInstnId.Othr.Id).toBe(from)
       expect(CdtrAgt.FinInstnId.Othr.Id).toBe(to)
+
+      // await hubClient.clearHistory()
+      // const getResp = await qsClient.getIsoQuotes({ quoteId, from, to })
+      // expect(getResp.status).toBe(202)
+      //
+      // await sleep(3000)
+      //
+      // const { data: getCallbackPayload } = await hubClient.getHistory()
+      // expect(getCallbackPayload.history.length).toBeGreaterThanOrEqual(1)
     })
   })
 

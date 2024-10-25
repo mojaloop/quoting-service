@@ -104,10 +104,7 @@ const messageFromRequestDto = async ({
 }) => {
   const { headers, params, payload, dataUri, requestId, spanContext, isError } = extractInfoFromRequestDto(request)
 
-  const needTransform = isIsoApi && (type !== Enum.Events.Event.Type.BULK_QUOTE)
-  logger.info('needTransform:', { needTransform, type, action, isIsoApi })
-
-  const fspiopPayload = needTransform
+  const fspiopPayload = isTransformNeeded(type, action, isIsoApi)
     ? await transformPayloadToFspiopDto(payload, type, action, isError)
     : payload
 
@@ -126,6 +123,14 @@ const messageFromRequestDto = async ({
     id: content.id,
     metadata: makeMessageMetadata(content.id, type, action)
   })
+}
+
+const isTransformNeeded = (type, action, isIsoApi) => {
+  const isNeeded = isIsoApi &&
+    (action !== Enum.Events.Event.Action.GET) &&
+    (type !== Enum.Events.Event.Type.BULK_QUOTE)
+  logger.info('isTransformNeeded:', { isNeeded, type, action, isIsoApi })
+  return isNeeded
 }
 
 const requestDataFromMessageDto = (message) => {
