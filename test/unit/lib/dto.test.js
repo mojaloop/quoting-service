@@ -109,8 +109,9 @@ describe('dto Tests -->', () => {
   })
 
   describe('transformPayloadToFspiopDto Tests -->', () => {
-    test.skip('should transform POST /quotes ISO payload to FSPIOP format', async () => {
-      const postQuotes = mocks.postQuotesPayloadDto()
+    test('should transform POST /quotes ISO payload to FSPIOP format', async () => {
+      const transactionType = mocks.transactionTypeDto({ initiatorType: 'BUSINESS' })
+      const postQuotes = mocks.postQuotesPayloadDto({ transactionType })
 
       const { body: isoPayload } = await TransformFacades.FSPIOP.quotes.post({ body: postQuotes })
 

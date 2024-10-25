@@ -33,15 +33,13 @@ describe('ISO API Tests -->', () => {
   })
 
   describe('POST /quotes ISO Tests -->', () => {
-    // todo: unskip after fix transformLib issue with transactionType (initiatorType and scenario)
-    test.skip('should validate ISO POST /quotes payload, and forward it in ISO format', async () => {
+    test('should validate ISO POST and GET /quotes payload, and forward it in ISO format', async () => {
       const from = 'pinkbank'
       const to = 'greenbank'
       const quoteId = mocks.generateULID()
       const transactionId = mocks.generateULID()
       const response = await qsClient.postIsoQuotes({ from, to, quoteId, transactionId })
       expect(response.status).toBe(202)
-
       await sleep(3000)
 
       const { data } = await hubClient.getHistory()
@@ -52,14 +50,13 @@ describe('ISO API Tests -->', () => {
       expect(DbtrAgt.FinInstnId.Othr.Id).toBe(from)
       expect(CdtrAgt.FinInstnId.Othr.Id).toBe(to)
 
-      // await hubClient.clearHistory()
-      // const getResp = await qsClient.getIsoQuotes({ quoteId, from, to })
-      // expect(getResp.status).toBe(202)
-      //
-      // await sleep(3000)
-      //
-      // const { data: getCallbackPayload } = await hubClient.getHistory()
-      // expect(getCallbackPayload.history.length).toBeGreaterThanOrEqual(1)
+      await hubClient.clearHistory()
+      const getResp = await qsClient.getIsoQuotes({ quoteId, from, to })
+      expect(getResp.status).toBe(202)
+      await sleep(3000)
+
+      const getCallback = await hubClient.getHistory()
+      expect(getCallback.data.history.length).toBe(1)
     })
   })
 
