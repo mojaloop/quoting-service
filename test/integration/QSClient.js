@@ -5,6 +5,7 @@ const { logger, TransformFacades } = require('../../src/lib')
 const mocks = require('../mocks')
 
 axios.defaults.headers.common = {}
+TransformFacades.FSPIOP.configure({ isTestingMode: true, logger })
 
 class QSClient {
   constructor ({
@@ -56,6 +57,21 @@ class QSClient {
       method: 'PUT',
       headers,
       data: isoPayload.body
+    })
+  }
+
+  async getIsoQuotes(params) {
+    const url = `${this.baseUrl}/${RESOURCES.quotes}/${params.quoteId}`
+    const headers = mocks.headersDto({
+      source: params.from,
+      destination: params.to,
+      isIsoApi: true
+    })
+
+    return axios.request({
+      url,
+      method: 'GET',
+      headers
     })
   }
 

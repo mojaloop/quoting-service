@@ -12,9 +12,7 @@ const config = new Config()
 
 jest.setTimeout(10_000)
 
-// todo: think, how to run this test in API_TYPE === 'fspiop' mode?
-//       Maybe, make QH not using API_TYPE env var, and detect API_TYPE base on originalPayload format?
-describe.skip('ISO API Tests -->', () => {
+describe('ISO API Tests -->', () => {
   const qsClient = new QSClient({ port: QS_ISO_PORT })
   const hubClient = new MockServerClient()
 
@@ -35,7 +33,8 @@ describe.skip('ISO API Tests -->', () => {
   })
 
   describe('POST /quotes ISO Tests -->', () => {
-    test('should validate ISO POST /quotes payload, and forward it in ISO format', async () => {
+    // todo: unskip after fix transformLib issue with transactionType (initiatorType and scenario)
+    test.skip('should validate ISO POST /quotes payload, and forward it in ISO format', async () => {
       const from = 'pinkbank'
       const to = 'greenbank'
       const quoteId = mocks.generateULID()
@@ -52,12 +51,21 @@ describe.skip('ISO API Tests -->', () => {
       expect(PmtId.EndToEndId).toBe(transactionId)
       expect(DbtrAgt.FinInstnId.Othr.Id).toBe(from)
       expect(CdtrAgt.FinInstnId.Othr.Id).toBe(to)
+
+      // await hubClient.clearHistory()
+      // const getResp = await qsClient.getIsoQuotes({ quoteId, from, to })
+      // expect(getResp.status).toBe(202)
+      //
+      // await sleep(3000)
+      //
+      // const { data: getCallbackPayload } = await hubClient.getHistory()
+      // expect(getCallbackPayload.history.length).toBeGreaterThanOrEqual(1)
     })
   })
 
   describe('PUT /quotes ISO Tests -->', () => {
-    // add PUT /quotes tests
-    test('should validate ISO PUT /quotes/{id}/error payload, but send error callback due to not existing id', async () => {
+    // todo: add PUT /quotes tests
+    test('should validate ISO PUT /quotes/{id}/error payload, but send error callback due to not existing id in DB', async () => {
       const expectedErrorCode = '2001' // todo: clarify, what code should be sent
       const fspiopPayload = mocks.errorPayloadDto()
       const id = mocks.generateULID()

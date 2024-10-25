@@ -133,9 +133,11 @@ const makeAppInteroperabilityHeader = (resource, version, isIsoApi) => {
   return `application/vnd.interoperability${isoPart}.${resource}+json;version=${version}`
 }
 
-function applyResourceVersionHeaders (headers, protocolVersions, resource, isIsoApi) {
-  let contentTypeHeader = headers['content-type'] || headers['Content-Type']
-  let acceptHeader = headers.accept || headers.Accept
+function applyResourceVersionHeaders (headers, protocolVersions, resource) {
+  const isIsoApi = isIso20022ApiRequest(headers)
+  let contentTypeHeader = getContentTypeHeader(headers)
+  let acceptHeader = getAcceptHeader(headers)
+
   if (Util.HeaderValidation.getHubNameRegex(config.hubName).test(headers['fspiop-source'])) {
     if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
       contentTypeHeader = makeAppInteroperabilityHeader(resource, protocolVersions.CONTENT.DEFAULT, isIsoApi)
@@ -147,8 +149,11 @@ function applyResourceVersionHeaders (headers, protocolVersions, resource, isIso
   return { contentTypeHeader, acceptHeader }
 }
 
-const headersMappingDto = (headers, protocolVersions, noAccept, resource, isIsoApi) => {
-  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions, resource, isIsoApi)
+const getAcceptHeader = (headers = {}) => (headers.accept || headers.Accept)
+const getContentTypeHeader = (headers = {}) => (headers['content-type'] || headers['Content-Type'])
+
+const headersMappingDto = (headers, protocolVersions, noAccept, resource) => {
+  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions, resource)
   return {
     [HEADERS.accept]: noAccept ? null : acceptHeader,
     [HEADERS.contentType]: contentTypeHeader,
@@ -171,10 +176,9 @@ function generateRequestHeaders (
   protocolVersions,
   noAccept = false,
   resource = RESOURCES.quotes,
-  additionalHeaders = null,
-  isIsoApi = false
+  additionalHeaders = null
 ) {
-  let ret = headersMappingDto(headers, protocolVersions, noAccept, resource, isIsoApi)
+  let ret = headersMappingDto(headers, protocolVersions, noAccept, resource)
 
   // below are the non-standard headers added by the rules
   if (additionalHeaders) {
@@ -193,10 +197,9 @@ function generateRequestHeadersForJWS (
   headers,
   protocolVersions,
   noAccept = false,
-  resource = RESOURCES.quotes,
-  isIsoApi = false
+  resource = RESOURCES.quotes
 ) {
-  const mappedHeaders = headersMappingDto(headers, protocolVersions, noAccept, resource, isIsoApi)
+  const mappedHeaders = headersMappingDto(headers, protocolVersions, noAccept, resource)
   // JWS Signer expects headers in lowercase
   const ret = Object.fromEntries(
     Object.entries(mappedHeaders).map(([key, value]) => [key.toLowerCase(), value])
@@ -217,6 +220,18 @@ function calculateRequestHash (request) {
   return crypto.createHash('sha256').update(requestStr).digest('hex')
 }
 
+const proxyAdjacentParticipantDto = (name) => ({
+  data: {
+    name,
+    id: '',
+    // assume source is active
+    isActive: 1,
+    links: { self: '' },
+    accounts: [],
+    proxiedParticipant: true
+  }
+})
+
 // Add caching to the participant endpoint
 const fetchParticipantInfo = async (source, destination, cache, proxyClient) => {
   // Get quote participants from central ledger admin
@@ -232,32 +247,12 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
     if (proxyIdSource) {
       // construct participant adjacent data structure that uses the original
       // participant when they are proxied and out of scheme
-      requestPayer = {
-        data: {
-          name: source,
-          id: '',
-          // assume source is active
-          isActive: 1,
-          links: { self: '' },
-          accounts: [],
-          proxiedParticipant: true
-        }
-      }
+      requestPayer = proxyAdjacentParticipantDto(source)
     }
     if (proxyIdDestination) {
       // construct participant adjacent data structure that uses the original
       // participant when they are proxied and out of scheme
-      requestPayee = {
-        data: {
-          name: destination,
-          id: '',
-          // assume destination is active
-          isActive: 1,
-          links: { self: '' },
-          accounts: [],
-          proxiedParticipant: true
-        }
-      }
+      requestPayee = proxyAdjacentParticipantDto(destination)
     }
   }
 
@@ -329,13 +324,12 @@ const resolveOpenApiSpecPath = (isIsoApi) => {
   return path.resolve(__dirname, '../interface', specFile)
 }
 
-// todo: think better way of defining FX request (taking into account FSPIOP/ISO API formats)
-const isFxRequest = (headers = {}) => headers['content-type'].includes('fxQuotes')
+const isFxRequest = (headers) => getContentTypeHeader(headers)?.includes(RESOURCES.fxQuotes)
+const isIso20022ApiRequest = (headers) => getContentTypeHeader(headers)?.includes(ISO_HEADER_PART)
 
 module.exports = {
   auditSpan,
   failActionHandler,
-  getSafe,
   getSpanTags,
   getStackOrInspect,
   generateRequestHeaders,
@@ -347,5 +341,6 @@ module.exports = {
   getParticipantEndpoint,
   makeAppInteroperabilityHeader,
   resolveOpenApiSpecPath,
-  isFxRequest
+  isFxRequest,
+  isIso20022ApiRequest
 }

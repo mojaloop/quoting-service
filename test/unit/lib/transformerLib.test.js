@@ -1,5 +1,7 @@
-const { TransformFacades } = require('../../../src/lib')
+const { TransformFacades, logger } = require('../../../src/lib')
 const mocks = require('../../mocks')
+
+TransformFacades.FSPIOP.configure({ isTestingMode: true, logger })
 
 describe('transformerLib Tests -->', () => {
   test('should transform postQuotes payload to ISO format', async () => {

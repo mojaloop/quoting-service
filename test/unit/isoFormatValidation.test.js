@@ -41,10 +41,12 @@ jest.mock('@mojaloop/central-services-stream', () => ({
 jest.mock('../../src/model/quotes')
 
 const { randomUUID } = require('node:crypto')
-const { TransformFacades } = require('../../src/lib')
+const { TransformFacades, logger } = require('../../src/lib')
 const { RESOURCES } = require('../../src/constants')
 const serverStart = require('../../src/server')
 const mocks = require('../mocks')
+
+TransformFacades.FSPIOP.configure({ isTestingMode: true, logger })
 
 describe('ISO format validation Tests -->', () => {
   let server
@@ -104,12 +106,22 @@ describe('ISO format validation Tests -->', () => {
       })
       const request = {
         method: 'PUT',
-        url: `/quotes/${randomUUID()}/error`,
+        url: `/quotes/${mocks.generateULID()}/error`,
         headers,
         payload: body
       }
       const response = await server.inject(request)
       expect(response.statusCode).toBe(200)
+    })
+
+    test('should validate ISO payload for GET /quotes/{id} callback', async () => {
+      const request = {
+        method: 'GET',
+        url: `/quotes/${mocks.generateULID()}`,
+        headers
+      }
+      const response = await server.inject(request)
+      expect(response.statusCode).toBe(202)
     })
   })
 
@@ -165,6 +177,16 @@ describe('ISO format validation Tests -->', () => {
       }
       const response = await server.inject(request)
       expect(response.statusCode).toBe(200)
+    })
+
+    test('should validate ISO payload for GET /fxQuotes/{id} callback', async () => {
+      const request = {
+        method: 'GET',
+        url: `/fxQuotes/${mocks.generateULID()}`,
+        headers
+      }
+      const response = await server.inject(request)
+      expect(response.statusCode).toBe(202)
     })
   })
 })
