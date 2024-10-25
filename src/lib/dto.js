@@ -77,18 +77,18 @@ const storeOriginalPayload = async ({ originalPayloadStorage, dataUri, requestId
   return context
 }
 
-const extractOriginalPayload = async (originalPayloadStorage, context, payloadCache) => {
+const extractOriginalPayload = async (context, payloadCache) => {
   let payload
 
-  if (originalPayloadStorage === PAYLOAD_STORAGES.kafka) {
-    payload = context?.originalRequestPayload
+  if (context?.originalRequestPayload) {
+    payload = context.originalRequestPayload
   }
-  if (originalPayloadStorage === PAYLOAD_STORAGES.redis) {
+  if (context?.originalRequestId) {
     payload = await payloadCache?.getPayload(context?.originalRequestId)
   }
 
   const result = payload ? decodePayload(payload) : null
-  logger.debug('extractOriginalPayload result: ', { originalPayloadStorage, result })
+  logger.debug('extractOriginalPayload result: ', { result, context })
 
   return result
 }
@@ -111,7 +111,7 @@ const messageFromRequestDto = async ({
     ? await transformPayloadToFspiopDto(payload, type, action, isError)
     : payload
 
-  const context = {}
+  const context = { isIsoApi }
   await storeOriginalPayload({ originalPayloadStorage, dataUri, requestId, context, payloadCache })
 
   const content = makeContentField({

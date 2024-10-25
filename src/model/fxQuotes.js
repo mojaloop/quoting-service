@@ -269,7 +269,7 @@ class FxQuotesModel {
         method: ENUM.Http.RestMethods.POST,
         url: `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.FX_QUOTES_POST}`,
         data: JSON.stringify(originalPayload),
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes, null, this.envConfig.isIsoApi)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes, null)
       }
       this.log.debug('Forwarding fxQuote request details', { conversionRequestId, opts })
 
@@ -424,7 +424,7 @@ class FxQuotesModel {
         method: ENUM.Http.RestMethods.PUT,
         url: `${endpoint}/fxQuotes/${conversionRequestId}`,
         data: JSON.stringify(originalFxQuoteResponse),
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, true, RESOURCES.fxQuotes, null, this.envConfig.isIsoApi)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, true, RESOURCES.fxQuotes, null)
         // we need to strip off the 'accept' header
         // for all PUT requests as per the API Specification Document
         // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
@@ -497,7 +497,7 @@ class FxQuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.GET,
         url: `${endpoint}/fxQuotes/${conversionRequestId}`,
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes, null, this.envConfig.isIsoApi)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes, null)
       }
       this.log.debug('Forwarding fxQuote get request details:', { conversionRequestId, opts })
 
@@ -715,9 +715,9 @@ class FxQuotesModel {
       // JWS Signer expects headers in lowercase
       let formattedHeaders
       if (envConfig.jws?.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, envConfig.isIsoApi)
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes)
       } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, null, envConfig.isIsoApi)
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, null)
       }
 
       let opts = {
