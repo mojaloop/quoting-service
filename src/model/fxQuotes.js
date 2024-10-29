@@ -27,10 +27,11 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
+const LOCAL_ENUM = require('../lib/enum')
+const dto = require('../lib/dto')
 const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
-const LOCAL_ENUM = require('../lib/enum')
 const { RESOURCES, ERROR_MESSAGES } = require('../constants')
 const { executeRules, handleRuleEvents } = require('./executeRules')
 
@@ -123,8 +124,8 @@ class FxQuotesModel {
   }
 
   async checkDuplicateFxQuoteResponse (conversionRequestId, fxQuoteResponse) {
+    const log = this.log.child({ conversionRequestId })
     try {
-      const log = this.log.child({ conversionRequestId })
       // calculate a SHA-256 of the request
       const hash = calculateRequestHash(fxQuoteResponse)
       log.debug('Calculated sha256 hash of fxQuote response as: ', { hash })
@@ -155,7 +156,7 @@ class FxQuotesModel {
       }
     } catch (err) {
       // internal-error
-      this.log.error('Error in checkDuplicateFxQuoteResponse: ', err)
+      log.error('Error in checkDuplicateFxQuoteResponse: ', err)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -286,7 +287,7 @@ class FxQuotesModel {
         method: ENUM.Http.RestMethods.POST,
         url: `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.FX_QUOTES_POST}`,
         data: JSON.stringify(originalPayload),
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes, null, this.envConfig.isIsoApi)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes, null)
       }
       this.log.debug('Forwarding fxQuote request details', { conversionRequestId, opts })
 
@@ -309,8 +310,7 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  async handleFxQuoteUpdate (headers, conversionRequestId, fxQuoteUpdateRequest, span, originalPayload = fxQuoteUpdateRequest) {
-    // todo
+  async handleFxQuoteUpdate (headers, conversionRequestId, fxQuoteUpdateRequest, span, originalPayload) {
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'handleFxQuoteUpdate - Metrics for fx quote model',
@@ -420,11 +420,12 @@ class FxQuotesModel {
       'forwardFxQuoteUpdate - Metrics for fx quote model',
       ['success', 'queryName']
     ).startTimer()
+    const log = this.log.child({ conversionRequestId })
 
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-      this.log.verbose('forwardFxQuoteUpdate request:', { conversionRequestId, fspiopSource, fspiopDest })
+      log.verbose('forwardFxQuoteUpdate request:', { fspiopSource, fspiopDest })
 
       const endpoint = await this._getParticipantEndpoint(fspiopDest)
       if (!endpoint) {
@@ -441,12 +442,12 @@ class FxQuotesModel {
         method: ENUM.Http.RestMethods.PUT,
         url: `${endpoint}/fxQuotes/${conversionRequestId}`,
         data: JSON.stringify(originalFxQuoteResponse),
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, true, RESOURCES.fxQuotes, null, this.envConfig.isIsoApi)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, true, RESOURCES.fxQuotes, null)
         // we need to strip off the 'accept' header
         // for all PUT requests as per the API Specification Document
         // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
       }
-      this.log.debug('Forwarding fxQuote update request details', { conversionRequestId, opts })
+      log.debug('Forwarding fxQuote update request details', { opts })
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
@@ -457,7 +458,7 @@ class FxQuotesModel {
       histTimer({ success: true, queryName: 'forwardFxQuoteUpdate' })
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteUpdate' })
-      this.log.error('error in forwardFxQuoteUpdate', err)
+      log.error('error in forwardFxQuoteUpdate', err)
       throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
@@ -514,7 +515,7 @@ class FxQuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.GET,
         url: `${endpoint}/fxQuotes/${conversionRequestId}`,
-        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes, null, this.envConfig.isIsoApi)
+        headers: generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.fxQuotes, null)
       }
       this.log.debug('Forwarding fxQuote get request details:', { conversionRequestId, opts })
 
@@ -583,8 +584,7 @@ class FxQuotesModel {
    * Deals with resends of fxQuote requests (POST) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
-  async handleFxQuoteRequestResend (headers, payload, span, originalPayload = payload) {
-    // todo: remove default value for originalPayload (added just for passing tests)
+  async handleFxQuoteRequestResend (headers, payload, span, originalPayload) {
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -690,17 +690,18 @@ class FxQuotesModel {
    * @returns {promise}
    */
   async sendErrorCallback (fspiopSource, fspiopError, conversionRequestId, headers, span, modifyHeaders = true) {
+    // todo: refactor to remove lots of code duplication from QuotesModel/BulkQuotes!!
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'sendErrorCallback - Metrics for fx quote model',
       ['success', 'queryName']
     ).startTimer()
-    const { envConfig, log } = this
+    const { envConfig } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+    const log = this.log.child({ conversionRequestId, fspiopDest })
 
     try {
       const endpoint = await this._getParticipantEndpoint(fspiopSource)
-
       log.debug(`Resolved participant '${fspiopSource}' FSPIOP_CALLBACK_URL_FX_QUOTES to: '${endpoint}'`)
 
       if (!endpoint) {
@@ -734,18 +735,18 @@ class FxQuotesModel {
       // JWS Signer expects headers in lowercase
       let formattedHeaders
       if (envConfig.jws?.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, envConfig.isIsoApi)
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes)
       } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, null, envConfig.isIsoApi)
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, null)
       }
 
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
-        data: JSON.stringify(fspiopError.toApiErrorObject(envConfig.errorHandling), LibUtil.getCircularReplacer()),
+        data: await this.makeErrorPayload(fspiopError, headers),
         headers: formattedHeaders
       }
-      this.addFspiopSignatureHeader(opts) // todo: "combine" with formattedHeaders logic
+      this.addFspiopSignatureHeader(opts) // try to "combine" with formattedHeaders logic
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
@@ -778,6 +779,11 @@ class FxQuotesModel {
       }
       throw fspiopError
     }
+  }
+
+  async makeErrorPayload (fspiopError, headers) {
+    const errObject = fspiopError.toApiErrorObject(this.envConfig.errorHandling)
+    return dto.makeErrorPayloadDto(errObject, headers, RESOURCES.fxQuotes, this.log)
   }
 
   // wrapping this dependency here to allow for easier use and testing

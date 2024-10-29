@@ -379,6 +379,7 @@ class BulkQuotesModel {
    * @returns {promise}
    */
   async sendErrorCallback (fspiopSource, fspiopError, bulkQuoteId, headers, span, modifyHeaders = true) {
+    // todo: refactor to remove lots of code duplication from QuotesModel/FxQuotesModel!!
     const { envConfig } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {

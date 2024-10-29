@@ -75,8 +75,6 @@ services:
     command: npm run start:handlers:debug
     environment:
       - LOG_LEVEL=debug
-#      - QUOTE_API_TYPE=iso20022
-      - QUOTE_ORIGINAL_PAYLOAD_STORAGE=kafka
     ports:
       - "3003:3003"
       - "29229:9229"

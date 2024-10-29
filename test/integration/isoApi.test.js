@@ -33,44 +33,36 @@ describe('ISO API Tests -->', () => {
   })
 
   describe('POST /quotes ISO Tests -->', () => {
-    test('should validate ISO POST /quotes payload, and forward it in ISO format', async () => {
+    test('should validate ISO POST and GET /quotes payload, and forward it in ISO format', async () => {
       const from = 'pinkbank'
       const to = 'greenbank'
       const quoteId = mocks.generateULID()
       const transactionId = mocks.generateULID()
       const response = await qsClient.postIsoQuotes({ from, to, quoteId, transactionId })
       expect(response.status).toBe(202)
-
       await sleep(3000)
 
       const { data } = await hubClient.getHistory()
-      expect(data.history.length).toBe(1)
+      expect(data.history.length).toBeGreaterThanOrEqual(1)
       const { PmtId, CdtrAgt, DbtrAgt } = data.history[0].body.CdtTrfTxInf
       expect(PmtId.TxId).toBe(quoteId)
       expect(PmtId.EndToEndId).toBe(transactionId)
       expect(DbtrAgt.FinInstnId.Othr.Id).toBe(from)
       expect(CdtrAgt.FinInstnId.Othr.Id).toBe(to)
+
+      await hubClient.clearHistory()
+      const getResp = await qsClient.getIsoQuotes({ quoteId, from, to })
+      expect(getResp.status).toBe(202)
+      await sleep(3000)
+
+      const getCallback = await hubClient.getHistory()
+      expect(getCallback.data.history.length).toBe(1)
     })
   })
 
   describe('PUT /quotes ISO Tests -->', () => {
-    // test('should validate ISO PUT /quotes/{id} payload, and forward it it ISO format', async () => {
-    //   const id = mocks.generateULID()
-    //   const fspiopPayload = mocks.putQuotesPayloadDto()
-    //   const from = 'pinkbank'
-    //   const to = 'greenbank'
-    //   const response = await qsClient.putIsoQuotes(id, fspiopPayload, from, to)
-    //   expect(response.status).toBe(200)
-    //
-    //   await sleep(3000)
-    //
-    //   const { data } = await hubClient.getHistory()
-    //   expect(data.history.length).toBe(1)
-    // })
-
-    test.skip('should validate ISO PUT /quotes/{id}/error payload, but send error callback due to not existing id', async () => {
-      // todo: think, how to run this test in API_TYPE === 'fspiop' mode?
-      //       Maybe, make QH not using API_TYPE env var, and detect API_TYPE base on originalPayload format?
+    // todo: add PUT /quotes tests
+    test('should validate ISO PUT /quotes/{id}/error payload, but send error callback due to not existing id in DB', async () => {
       const expectedErrorCode = '2001' // todo: clarify, what code should be sent
       const fspiopPayload = mocks.errorPayloadDto()
       const id = mocks.generateULID()
@@ -90,22 +82,54 @@ describe('ISO API Tests -->', () => {
   })
 
   describe('fxQuotes ISO Tests -->', () => {
-    test.skip('should validate ISO POST /fxQuotes payload, and forward it in ISO format', async () => {
-      const args = {
-        initiatingFsp: 'pinkbank',
-        counterPartyFsp: 'greenbank',
-        conversionRequestId: mocks.generateULID(),
-        conversionId: mocks.generateULID(),
-        determiningTransferId: mocks.generateULID()
-      }
-      const response = await qsClient.postIsoFxQuotes(args)
+    const generatePostFxArgs = () => ({
+      initiatingFsp: 'pinkbank',
+      counterPartyFsp: 'greenbank',
+      conversionRequestId: mocks.generateULID(),
+      conversionId: mocks.generateULID(),
+      determiningTransferId: mocks.generateULID()
+    })
+
+    test('should validate ISO POST /fxQuotes payload, and forward it in ISO format', async () => {
+      const postFxArgs = generatePostFxArgs()
+      const response = await qsClient.postIsoFxQuotes(postFxArgs)
       expect(response.status).toBe(202)
 
       await sleep(3000)
 
       const { data } = await hubClient.getHistory()
       expect(data.history.length).toBe(1)
-      // todo: add checks
+      const { body, headers } = data.history[0]
+      expect(headers['content-type']).toContain(ISO_HEADER_PART)
+      expect(body.CdtTrfTxInf.PmtId.TxId).toBe(postFxArgs.conversionRequestId)
+      expect(body.CdtTrfTxInf.PmtId.InstrId).toBe(postFxArgs.conversionId)
+      expect(body.CdtTrfTxInf.PmtId.EndToEndId).toBe(postFxArgs.determiningTransferId)
+    })
+
+    test('should validate ISO PUT /fxQuotes/{id}/error payload, but send error callback due to not existing id in DB', async () => {
+      const postFxArgs = generatePostFxArgs()
+      const postResponse = await qsClient.postIsoFxQuotes(postFxArgs)
+      expect(postResponse.status).toBe(202)
+      await sleep(3000)
+      const postCallback = await hubClient.getHistory()
+      expect(postCallback.data.history.length).toBe(1)
+      await hubClient.clearHistory()
+
+      const errorCode = '3100'
+      const fspiopPayload = mocks.errorPayloadDto({ errorCode })
+
+      const id = postFxArgs.conversionRequestId
+      const from = postFxArgs.initiatingFsp
+      const to = postFxArgs.counterPartyFsp
+      const response = await qsClient.putErrorIsoFxQuotes(id, fspiopPayload, from, to)
+      expect(response.status).toBe(200)
+      await sleep(3000)
+
+      const { data } = await hubClient.getHistory()
+      expect(data.history.length).toBe(1)
+      const { body, headers } = data.history[0]
+      expect(headers['content-type']).toContain(ISO_HEADER_PART)
+      expect(body.TxInfAndSts.StsRsnInf.Rsn.Cd).toBe(errorCode)
     })
   })
 })

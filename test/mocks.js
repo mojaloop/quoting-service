@@ -188,7 +188,7 @@ const postQuotesPayloadDto = ({
   transactionId = generateULID(),
   amountType = 'SEND',
   amount = { amount: '100', currency: 'USD' },
-  transactionType = { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' },
+  transactionType = transactionTypeDto(),
   payer = { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
   payee = { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
 } = {}) => ({
@@ -228,7 +228,7 @@ const postBulkQuotesPayloadDto = ({
       payee: { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } },
       amountType: 'SEND',
       amount: { amount: '100', currency: 'USD' },
-      transactionType: { scenario: 'DEPOSIT', initiator: 'PAYER', initiatorType: 'CONSUMER' }
+      transactionType: transactionTypeDto()
     }
   ]
 } = {}) => ({
@@ -256,6 +256,16 @@ const putBulkQuotesPayloadDto = ({
 } = {}) => ({
   individualQuoteResults,
   expiration
+})
+
+const transactionTypeDto = ({
+  scenario = 'DEPOSIT',
+  initiator = 'PAYER',
+  initiatorType = 'CONSUMER'
+} = {}) => Object.freeze({
+  scenario,
+  initiator,
+  initiatorType
 })
 
 const interoperabilityHeaderDto = (resource, version, isIsoApi = false) => {
@@ -310,6 +320,7 @@ module.exports = {
   postBulkQuotesPayloadDto,
   putBulkQuotesPayloadDto,
   errorPayloadDto,
+  transactionTypeDto,
   mockIlp4Combo,
   generateULID
 }

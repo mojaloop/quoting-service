@@ -32,6 +32,7 @@ let history = []
 
 const server = createServer(async (req, res) => {
   const { url, method, headers } = req
+  console.log(`[==>] ${method.toUpperCase()} ${url}`)
 
   if (url === Routes.HISTORY && method === 'DELETE') {
     history = []

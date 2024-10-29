@@ -1,6 +1,7 @@
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { PAYLOAD_STORAGES, RESOURCES } = require('../constants')
 const { TransformFacades, logger } = require('../lib')
+const util = require('./util')
 
 const { Headers } = Enum.Http
 const {
@@ -77,18 +78,20 @@ const storeOriginalPayload = async ({ originalPayloadStorage, dataUri, requestId
   return context
 }
 
-const extractOriginalPayload = async (originalPayloadStorage, context, payloadCache) => {
-  logger.debug('extractOriginalPayload: ', { originalPayloadStorage })
+const extractOriginalPayload = async (context, payloadCache) => {
   let payload
 
-  if (originalPayloadStorage === PAYLOAD_STORAGES.kafka) {
-    payload = context?.originalRequestPayload
+  if (context?.originalRequestPayload) {
+    payload = context.originalRequestPayload
   }
-  if (originalPayloadStorage === PAYLOAD_STORAGES.redis) {
+  if (context?.originalRequestId) {
     payload = await payloadCache?.getPayload(context?.originalRequestId)
   }
 
-  return payload ? decodePayload(payload) : null
+  const result = payload ? decodePayload(payload) : null
+  logger.debug('extractOriginalPayload result: ', { result, context })
+
+  return result
 }
 
 // todo: move to domain folder
@@ -102,14 +105,11 @@ const messageFromRequestDto = async ({
 }) => {
   const { headers, params, payload, dataUri, requestId, spanContext, isError } = extractInfoFromRequestDto(request)
 
-  const needTransform = isIsoApi && (type !== Enum.Events.Event.Type.BULK_QUOTE)
-  logger.info('needTransform:', { needTransform, type, action, isIsoApi })
-
-  const fspiopPayload = needTransform
+  const fspiopPayload = isTransformNeeded(type, action, isIsoApi)
     ? await transformPayloadToFspiopDto(payload, type, action, isError)
     : payload
 
-  const context = {}
+  const context = { isIsoApi }
   await storeOriginalPayload({ originalPayloadStorage, dataUri, requestId, context, payloadCache })
 
   const content = makeContentField({
@@ -124,6 +124,14 @@ const messageFromRequestDto = async ({
     id: content.id,
     metadata: makeMessageMetadata(content.id, type, action)
   })
+}
+
+const isTransformNeeded = (type, action, isIsoApi) => {
+  const isNeeded = isIsoApi &&
+    (action !== Enum.Events.Event.Action.GET) &&
+    (type !== Enum.Events.Event.Type.BULK_QUOTE)
+  logger.info('isTransformNeeded:', { isNeeded, type, action, isIsoApi })
+  return isNeeded
 }
 
 const requestDataFromMessageDto = (message) => {
@@ -153,10 +161,23 @@ const topicConfigDto = ({
   opaqueKey
 })
 
+const makeErrorPayloadDto = async (errObject, headers, resource, log = logger) => {
+  const isIsoApi = util.isIso20022ApiRequest(headers)
+  log.debug('makeErrorPayload from errObject:', { errObject, isIsoApi })
+
+  const errPayload = isIsoApi
+    ? (await TransformFacades.FSPIOP[resource].putError({ body: errObject })).body
+    : errObject
+  log.verbose('makeErrorPayload is done', { errPayload })
+
+  return JSON.stringify(errPayload, Util.getCircularReplacer())
+}
+
 module.exports = {
   messageFromRequestDto,
   requestDataFromMessageDto,
   topicConfigDto,
   transformPayloadToFspiopDto,
+  makeErrorPayloadDto,
   extractOriginalPayload
 }
