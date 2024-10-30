@@ -23,6 +23,7 @@
  --------------
  **********/
 
+const idGenerator = require('@mojaloop/central-services-shared').Util.id
 const { API_TYPES } = require('../../src/constants')
 Object.assign(process.env, {
   QUOTE_API_TYPE: API_TYPES.iso20022,
@@ -45,6 +46,7 @@ const { TransformFacades, logger } = require('../../src/lib')
 const { RESOURCES } = require('../../src/constants')
 const serverStart = require('../../src/server')
 const mocks = require('../mocks')
+const generateULID = idGenerator({ type: 'ulid' })
 
 TransformFacades.FSPIOP.configure({ isTestingMode: true, logger })
 
@@ -69,8 +71,8 @@ describe('ISO format validation Tests -->', () => {
     test('should validate ISO payload for POST /quotes callback', async () => {
       const { body } = await TransformFacades.FSPIOP.quotes.post({
         body: mocks.postQuotesPayloadDto({
-          quoteId: Date.now(),
-          transactionId: Date.now()
+          quoteId: generateULID(),
+          transactionId: generateULID()
         })
       })
       const request = {
