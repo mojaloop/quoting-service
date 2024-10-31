@@ -1930,8 +1930,8 @@ components:
           Dbtr: true
           Cdtr: true
         Tax: Cdtr
-    CreditTransferTransaction68:
-      title: CreditTransferTransaction68
+    CreditTransferTransaction68_FX_Quotes:
+      title: CreditTransferTransaction68_FX_Quotes
       description: >
         Provides further details specific to the individual transaction(s)
         included in the message.
@@ -2005,142 +2005,7 @@ components:
                 Account to which a credit entry is made.
         InstrForCdtrAgt:
           allOf:
-            - $ref: "#/components/schemas/InstructionForCreditorAgent3"
-            - description: >
-                InstructionForCreditorAgent
-
-                Set of elements used to provide information on the remittance
-                advice.
-        Purp:
-          allOf:
-            - $ref: "#/components/schemas/Purpose2Choice"
-            - description: |
-                Purpose
-                Underlying reason for the payment transaction.
-        VrfctnOfTerms:
-          allOf:
-            - $ref: "#/components/schemas/CryptographicLockChoice"
-            - description: >
-                VerificationOfTerms
-
-                Set of elements used to provide information on the underlying
-                terms of the transaction.
-      required:
-        - PmtId
-        - IntrBkSttlmAmt
-        - Dbtr
-        - Cdtr
-      example:
-        PmtId:
-          InstrId: INSTRID
-          EndToEndId: ENDTOENDID
-        PmtTpInf:
-          LclInstrm:
-            Cd: CHQB
-            Prtry: PROPRIETARY
-        IntrBkSttlmAmt:
-          Amount: 123.45
-          Ccy: EUR
-        Dbtr:
-          Nm: Debtor Name
-        DbtrAcct:
-          Id:
-            IBAN: IBAN
-        DbtrAgt:
-          FinInstnId:
-            BICFI: BICFI
-        CdtrAgt:
-          FinInstnId:
-            BICFI: BICFI
-        Cdtr:
-          Nm: Creditor Name
-        CdtrAcct:
-          Id:
-            IBAN: IBAN
-        InstrForCdtrAgt:
-          Cd: INSTRUCTION
-        Purp:
-          Cd: CHAR
-        VrfctnOfTerms:
-          Cntt: CONTENT
-          CnttTp: PROPRIETARY
-    CreditTransferTransaction68_Put_FX_Quotes_ID:
-      title: CreditTransferTransaction68_Put_FX_Quotes_ID
-      description: >
-        Provides further details specific to the individual transaction(s)
-        included in the message.
-      type: object
-      properties:
-        PmtId:
-          allOf:
-            - $ref: "#/components/schemas/PaymentIdentification13"
-            - description: |
-                PaymentIdentification
-                Set of elements used to reference a payment instruction.
-        PmtTpInf:
-          allOf:
-            - $ref: "#/components/schemas/PaymentTypeInformation28"
-            - description: |
-                PaymentTypeInformation
-                Set of elements used to further specify the type of transaction.
-        UndrlygCstmrCdtTrf:
-          allOf:
-            - $ref: "#/components/schemas/UnderlyingCustomerCreditTransfer"
-            - description: |
-                Underlying Customer Credit Transfer
-                TBD
-        IntrBkSttlmAmt:
-          allOf:
-            - $ref: "#/components/schemas/ActiveCurrencyAndAmount"
-            - description: >
-                InterbankSettlementAmount
-
-                Amount of money moved between the instructing agent and the
-                instructed agent.
-        Dbtr:
-          allOf:
-            - $ref: >-
-                #/components/schemas/BranchAndFinancialInstitutionIdentification8
-            - description: |
-                Debtor
-                Party that owes an amount of money to the (ultimate) creditor.
-        DbtrAcct:
-          allOf:
-            - $ref: "#/components/schemas/CashAccount40"
-            - description: |
-                DebtorAccount
-                Account used to process a payment.
-        DbtrAgt:
-          allOf:
-            - $ref: >-
-                #/components/schemas/BranchAndFinancialInstitutionIdentification8
-            - description: |
-                DebtorAgent
-                Financial institution servicing an account for the debtor.
-        CdtrAgt:
-          allOf:
-            - $ref: >-
-                #/components/schemas/BranchAndFinancialInstitutionIdentification8
-            - description: |
-                CreditorAgent
-                Financial institution servicing an account for the creditor.
-        Cdtr:
-          allOf:
-            - $ref: >-
-                #/components/schemas/BranchAndFinancialInstitutionIdentification8
-            - description: |
-                Creditor
-                Party to which an amount of money is due.
-        CdtrAcct:
-          allOf:
-            - $ref: "#/components/schemas/CashAccount40"
-            - description: |
-                CreditorAccount
-                Account to which a credit entry is made.
-        InstrForCdtrAgt:
-          allOf:
-            - $ref: >-
-                #/components/schemas/InstructionForCreditorAgent3_Put_FX_Quotes_ID
+            - $ref: "#/components/schemas/InstructionForCreditorAgent3_FX_Quotes"
             - description: >
                 InstructionForCreditorAgent
 
@@ -2670,7 +2535,7 @@ components:
                 included in the message.
         CdtTrfTxInf:
           allOf:
-            - $ref: "#/components/schemas/CreditTransferTransaction68"
+            - $ref: "#/components/schemas/CreditTransferTransaction68_FX_Quotes"
             - description: |
                 Credit Transfer Transaction Information
       required:
@@ -2770,10 +2635,9 @@ components:
                 included in the message.
         CdtTrfTxInf:
           allOf:
-            - $ref: >-
-                #/components/schemas/CreditTransferTransaction68_Put_FX_Quotes_ID
+            - $ref: "#/components/schemas/CreditTransferTransaction68_FX_Quotes"
             - description: >
-                CreditTransferTransaction68_Put_FX_Quotes_ID
+                CreditTransferTransaction68_FX_Quotes
 
                 Set of elements providing information specific to the individual
                 credit transfer(s).
@@ -3299,7 +3163,7 @@ components:
       example:
         Cd: PHOA
         InstrInf: Please advise/contact next agent by phone.
-    InstructionForCreditorAgent3_Put_FX_Quotes_ID:
+    InstructionForCreditorAgent3_FX_Quotes:
       title: InstructionForCreditorAgent3_Put_FX_Quotes_ID
       description: >
         Further information related to the processing of the payment
