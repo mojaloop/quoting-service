@@ -226,6 +226,27 @@ describe('cachedDatabase', () => {
       await cachedDb.invalidateCache()
     })
 
+    it('handles getParticipant type', async () => {
+      // Arrange
+      // Mocking superclasses is a little tricky -- so we directly override the prototype here
+      Database.prototype.getParticipant = jest.fn().mockReturnValueOnce({ participant: true })
+      const expected = { participant: true }
+
+      // Act
+      const result = await cachedDb.getCacheValue('getParticipant', ['paramA', 'paramB', 'paramC', 'paramD'])
+      // Result should now be cached
+      const result2 = await cachedDb.getCacheValue('getParticipant', ['paramA', 'paramB', 'paramC', 'paramD'])
+
+      // Assert
+      // Check that we only called the super method once, the 2nd time should be cached
+      expect(Database.prototype.getParticipant).toBeCalledTimes(1)
+      expect(result).toStrictEqual(expected)
+      expect(result2).toStrictEqual(expected)
+
+      // invalidate to stop jest open handles
+      await cachedDb.invalidateCache()
+    })
+
     it('handles an exception', async () => {
       // Arrange
       // Mocking superclasses is a little tricky -- so we directly override the prototype here

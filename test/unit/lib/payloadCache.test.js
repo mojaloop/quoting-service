@@ -67,4 +67,10 @@ describe('Payload Cache Tests -->', () => {
     const cached = await cache.getPayload(reqId)
     expect(cached).toBeNull()
   })
+
+  test('should handle error when connection config type is not supported', async () => {
+    const type = 'unsupported'
+    const randomConfig = { ...connectionConfig, cluster: [{ host: 'random_host', port: 1234 }] }
+    expect(() => createPayloadCache(type, randomConfig)).toThrowError('ERROR_MESSAGES.unsupportedPayloadCacheType')
+  })
 })
