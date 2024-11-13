@@ -201,19 +201,26 @@ describe('cachedDatabase', () => {
     it('tries to get a value where none is cached', async () => {
       // Arrange
       // Mocking superclasses is a little tricky -- so we directly override the prototype here
-      Database.prototype.getLedgerEntryType = jest.fn().mockReturnValueOnce({ ledgerEntryType: true })
-      const expected = { ledgerEntryType: true }
+      const expectedLedgerEntryType = { ledgerEntryType: true }
+      Database.prototype.getLedgerEntryType = jest.fn().mockReturnValueOnce(expectedLedgerEntryType)
+      const expectedParticipant = {}
+      Database.prototype.getParticipant = jest.fn().mockReturnValueOnce(expectedParticipant)
 
       // Act
       const result = await cachedDb.getCacheValue('getLedgerEntryType', ['paramA'])
+      const result3 = await cachedDb.getCacheValue('getParticipant', [])
       // Result should now be cached
       const result2 = await cachedDb.getCacheValue('getLedgerEntryType', ['paramA'])
+      const result4 = await cachedDb.getCacheValue('getParticipant', [])
 
       // Assert
       // Check that we only called the super method once, the 2nd time should be cached
       expect(Database.prototype.getLedgerEntryType).toBeCalledTimes(1)
-      expect(result).toStrictEqual(expected)
-      expect(result2).toStrictEqual(expected)
+      expect(Database.prototype.getParticipant).toBeCalledTimes(1)
+      expect(result).toStrictEqual(expectedLedgerEntryType)
+      expect(result2).toStrictEqual(expectedLedgerEntryType)
+      expect(result3).toStrictEqual(expectedParticipant)
+      expect(result4).toStrictEqual(expectedParticipant)
 
       // invalidate to stop jest open handles
       await cachedDb.invalidateCache()
