@@ -28,6 +28,12 @@ describe('Payload Cache Tests -->', () => {
     ])
   })
 
+  test('should should throw for invalid type', () => {
+    expect(() => {
+      createPayloadCache('invalid', connectionConfig)
+    }).toThrow()
+  })
+
   test('should create an instance of PayloadCache', () => {
     const payloadCache = createPayloadCache(type, connectionConfig)
     expect(payloadCache).toBeInstanceOf(PayloadCache)

@@ -122,7 +122,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
-      expect(response.data.history.length).toBe(1)
+      expect(response.data.history.length).toBe(3) // count 2 extra calls to redbank and pinkbank
 
       // assert that the request was received by the proxy
       const request = response.data.history[0]
@@ -143,7 +143,7 @@ describe('POST /fxQuotes request tests --> ', () => {
         counterPartyFsp: payload.conversionTerms.counterPartyFsp,
         sourceAmount: payload.conversionTerms.sourceAmount.amount,
         sourceCurrency: payload.conversionTerms.sourceAmount.currency,
-        targetAmount: payload.conversionTerms.targetAmount.amount,
+        targetAmount: 0,
         targetCurrency: payload.conversionTerms.targetAmount.currency,
         extensions: expect.anything(),
         expirationDate: expect.anything(),
@@ -194,6 +194,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
+      if (response.data.history.length !== 1) console.log(response.data.history)
       expect(response.data.history.length).toBe(1)
 
       // assert that the callback was received by the payer dfsp
@@ -266,7 +267,7 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await getResponseWithRetry()
-    expect(response.data.history.length).toBe(1)
+    expect(response.data.history.length).toBe(2) // count 1 extra call to greenbank
 
     // assert that the request was received by the payee dfsp
     const request = response.data.history[0]

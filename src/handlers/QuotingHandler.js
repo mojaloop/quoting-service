@@ -211,7 +211,7 @@ class QuotingHandler {
 
     try {
       span = await this.createSpan(requestData)
-      await model.handleFxQuoteRequest(headers, payload, span, originalPayload)
+      await model.handleFxQuoteRequest(headers, payload, span, originalPayload, this.cache)
       this.logger.debug('handlePostFxQuotes is done')
     } catch (err) {
       this.logger.error('error in handlePostFxQuotes:', err)
