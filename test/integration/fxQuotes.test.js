@@ -122,7 +122,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
-      expect(response.data.history.length).toBe(3) // count 2 extra calls to redbank and pinkbank
+      expect(response.data.history.length).toBe(2) // count 1 extra call to redbank
 
       // assert that the request was received by the proxy
       const request = response.data.history[0]
