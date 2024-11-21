@@ -601,7 +601,7 @@ class QuotesModel {
           )
         }
 
-        // todo: create any additional quoteParties e.g. for fees, comission etc...
+        // todo: create any additional quoteParties e.g. for fees, commission etc...
 
         await txn.commit()
         log.debug('create quote update transaction committed to db:', { refs })
@@ -768,7 +768,7 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async handleQuoteError (headers, quoteId, error, span) {
+  async handleQuoteError (headers, quoteId, error, span, originalPayload) {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteError - Metrics for quote model',
@@ -798,7 +798,7 @@ class QuotesModel {
 
       // Needed to add await here to prevent 'childSpan already finished' bug
       histTimer({ success: true, queryName: 'quote_handleQuoteError' })
-      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, quoteId, headers, childSpan, false)
+      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, quoteId, headers, childSpan, false, originalPayload)
 
       return newError
     } catch (err) {
@@ -953,7 +953,7 @@ class QuotesModel {
    *
    * @returns {promise}
    */
-  async sendErrorCallback (fspiopSource, fspiopError, quoteId, headers, span, modifyHeaders = true) {
+  async sendErrorCallback (fspiopSource, fspiopError, quoteId, headers, span, modifyHeaders = true, originalPayload) {
     // todo: refactor to remove lots of code duplication from FxQuotesModel/BulkQuotesModel!!
     const histTimer = Metrics.getHistogram(
       'model_quote',
@@ -1005,11 +1005,11 @@ class QuotesModel {
       } else {
         formattedHeaders = util.generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.quotes, null)
       }
-
+      logger.warn(JSON.stringify(originalPayload))
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
-        data: await this.makeErrorPayload(fspiopError, headers),
+        data: originalPayload || await this.makeErrorPayload(fspiopError, headers),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
         headers: formattedHeaders

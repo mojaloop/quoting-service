@@ -96,7 +96,7 @@ class QuotingHandler {
     try {
       span = await this.createSpan(requestData)
       const result = isError
-        ? await model.handleQuoteError(headers, quoteId, payload.errorInformation, span) // todo: think, if we need to pass originalPayload here
+        ? await model.handleQuoteError(headers, quoteId, payload.errorInformation, span, originalPayload)
         : await model.handleQuoteUpdate(headers, quoteId, payload, span, originalPayload)
       this.logger.debug('handlePutQuotes is done', { result })
     } catch (err) {
@@ -236,7 +236,7 @@ class QuotingHandler {
     try {
       span = await this.createSpan(requestData)
       const result = isError
-        ? await model.handleFxQuoteError(headers, conversionRequestId, payload.errorInformation, span) // todo: think, if we need to pass originalPayload here
+        ? await model.handleFxQuoteError(headers, conversionRequestId, payload.errorInformation, span, originalPayload)
         : await model.handleFxQuoteUpdate(headers, conversionRequestId, payload, span, originalPayload)
       this.logger.debug('handlePutFxQuotes is done: ', { result })
     } catch (err) {

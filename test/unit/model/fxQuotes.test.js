@@ -477,10 +477,10 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(fxQuotesModel, 'sendErrorCallback').mockResolvedValue()
 
       const error = { errorCode: '3201', errorDescription: 'Destination FSP error' }
-      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span, error)).resolves.toBeUndefined()
 
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
-      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false)
+      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false, error)
     })
 
     test('should handle fx quote error in persistent mode', async () => {
@@ -490,10 +490,10 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(db, 'createFxQuoteError')
 
       const error = { errorCode: '3201', errorDescription: 'Destination FSP error' }
-      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span, error)).resolves.toBeUndefined()
 
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
-      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false)
+      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false, error)
       expect(db.createFxQuoteError).toBeCalledWith(expect.anything(), conversionRequestId, {
         errorCode: Number(error.errorCode),
         errorDescription: error.errorDescription
@@ -517,10 +517,10 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(fxQuotesModel, 'handleException').mockResolvedValue()
 
       const error = { errorCode: '3201', errorDescription: 'Destination FSP error' }
-      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span, error)).resolves.toBeUndefined()
 
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
-      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false)
+      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false, error)
       expect(fxQuotesModel.handleException).toBeCalledWith(headers['fspiop-source'], conversionRequestId, expect.any(Error), headers, childSpan)
     })
   })
