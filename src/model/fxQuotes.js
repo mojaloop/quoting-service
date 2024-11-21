@@ -538,7 +538,7 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  async handleFxQuoteError (headers, conversionRequestId, error, span) {
+  async handleFxQuoteError (headers, conversionRequestId, error, span, originalPayload) {
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'handleFxQuoteError - Metrics for fx quote model',
@@ -564,7 +564,7 @@ class FxQuotesModel {
 
       await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
-      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, conversionRequestId, headers, childSpan, false)
+      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, conversionRequestId, headers, childSpan, false, originalPayload)
       histTimer({ success: true, queryName: 'handleFxQuoteError' })
     } catch (err) {
       histTimer({ success: false, queryName: 'handleFxQuoteError' })
@@ -689,7 +689,7 @@ class FxQuotesModel {
    *
    * @returns {promise}
    */
-  async sendErrorCallback (fspiopSource, fspiopError, conversionRequestId, headers, span, modifyHeaders = true) {
+  async sendErrorCallback (fspiopSource, fspiopError, conversionRequestId, headers, span, modifyHeaders = true, originalPayload) {
     // todo: refactor to remove lots of code duplication from QuotesModel/BulkQuotes!!
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
@@ -743,7 +743,7 @@ class FxQuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
-        data: await this.makeErrorPayload(fspiopError, headers),
+        data: originalPayload || await this.makeErrorPayload(fspiopError, headers),
         headers: formattedHeaders
       }
       this.addFspiopSignatureHeader(opts) // try to "combine" with formattedHeaders logic

@@ -48,6 +48,23 @@ class QSClient {
   //   })
   // }
 
+  async putErrorQuotes(id, payload, from, to) {
+    const url = `${this.baseUrl}/${RESOURCES.quotes}/${id}/error`
+    const headers = mocks.headersDto({
+      resource: RESOURCES.quotes,
+      source: from,
+      destination: to,
+      isIsoApi: true
+    })
+
+    return axios.request({
+      url,
+      method: 'PUT',
+      headers,
+      data: payload
+    })
+  }
+
   async putErrorIsoQuotes(id, fspiopPayload, from, to) {
     const url = `${this.baseUrl}/${RESOURCES.quotes}/${id}/error`
     const headers = mocks.headersDto({
@@ -116,6 +133,23 @@ class QSClient {
       method: 'PUT',
       headers,
       data: isoPayload.body
+    })
+  }
+
+  async putErrorFxQuotes(id, payload, from, to) {
+    const url = `${this.baseUrl}/${RESOURCES.fxQuotes}/${id}/error`
+    const headers = mocks.headersDto({
+      resource: RESOURCES.fxQuotes,
+      source: from,
+      destination: to,
+      isIsoApi: true
+    })
+
+    return axios.request({
+      url,
+      method: 'PUT',
+      headers,
+      data: payload
     })
   }
 
