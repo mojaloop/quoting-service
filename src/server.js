@@ -186,7 +186,8 @@ const initServer = async function (config, topicNames) {
     Blipp,
     ErrorHandler,
     HapiRawPayload,
-    HapiEventPlugin
+    HapiEventPlugin,
+    Metrics.plugin
   ])
 
   server.route(Routes.APIRoutes(api))
