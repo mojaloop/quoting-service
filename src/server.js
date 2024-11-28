@@ -34,37 +34,37 @@
  ******/
 
 'use strict'
-
-const Hapi = require('@hapi/hapi')
-const HapiOpenAPI = require('hapi-openapi')
 const Path = require('path')
+const Hapi = require('@hapi/hapi')
+const Inert = require('@hapi/inert')
+const Vision = require('@hapi/vision')
 const Good = require('@hapi/good')
 const Blipp = require('blipp')
+const { Producer } = require('@mojaloop/central-services-stream').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const CentralServices = require('@mojaloop/central-services-shared')
 const HeaderValidation = require('@mojaloop/central-services-shared').Util.Hapi.FSPIOPHeaderValidation
+const OpenapiBackend = require('@mojaloop/central-services-shared').Util.OpenapiBackend
+const OpenapiBackendValidator = require('@mojaloop/central-services-shared').Util.Hapi.OpenapiBackendValidator
 const Logger = require('@mojaloop/central-services-logger')
+const APIDocumentation = require('@mojaloop/central-services-shared').Util.Hapi.APIDocumentation
+const Metrics = require('@mojaloop/central-services-metrics')
+
 const { getStackOrInspect, failActionHandler } = require('../src/lib/util')
-
 const Config = require('./lib/config.js')
-const Database = require('./data/cachedDatabase')
+const Handlers = require('./api')
+const Routes = require('./api/routes')
+const dto = require('./lib/dto')
 
-/**
- * Initializes a database connection pool
- */
-const initDb = function (config) {
-  // try open a db connection pool
-  const database = new Database(config)
-  return database.connect()
-}
+const OpenAPISpecPath = Path.resolve(__dirname, './interface/QuotingService-swagger.yaml')
 
 /**
  * Initializes a Hapi server
  *
- * @param db - database instance
  * @param config - configuration object
+ * @param topicNames - a list of producers topic names
  */
-const initServer = async function (db, config) {
+const initServer = async function (config, topicNames) {
   // init a server
   const server = new Hapi.Server({
     address: config.listenAddress,
@@ -77,48 +77,126 @@ const initServer = async function (db, config) {
     }
   })
 
-  // put the database pool somewhere handlers can use it
-  server.app.database = db
+  server.app.topicNames = topicNames
+
+  /* istanbul ignore next */
+  if (config.apiDocumentationEndpoints) {
+    await server.register({
+      plugin: APIDocumentation,
+      options: {
+        documentPath: OpenAPISpecPath
+      }
+    })
+  }
+
+  const api = await OpenapiBackend.initialise(OpenAPISpecPath, Handlers)
+  await server.register(OpenapiBackendValidator)
+  await server.register({
+    plugin: {
+      name: 'openapi',
+      version: '1.0.0',
+      multiple: true,
+      register: function (server, options) {
+        server.expose('openapi', options.openapi)
+      }
+    },
+    options: {
+      openapi: api
+    }
+  })
+
+  // Helper to construct FSPIOPHeaderValidation option configuration
+  const getOptionsForFSPIOPHeaderValidation = () => {
+    // configure supported FSPIOP Content-Type versions
+    const supportedProtocolContentVersions = []
+    for (const version of config.protocolVersions.CONTENT.VALIDATELIST) {
+      supportedProtocolContentVersions.push(version.toString())
+    }
+
+    // configure supported FSPIOP Accept version
+    const supportedProtocolAcceptVersions = []
+    for (const version of config.protocolVersions.ACCEPT.VALIDATELIST) {
+      supportedProtocolAcceptVersions.push(version.toString())
+    }
+
+    // configure FSPIOP resources
+    const resources = [
+      'quotes'
+    ]
+
+    // return FSPIOPHeaderValidation plugin options
+    return {
+      resources,
+      supportedProtocolContentVersions,
+      supportedProtocolAcceptVersions
+    }
+  }
 
   // add plugins to the server
   await server.register([
-    {
-      plugin: HapiOpenAPI,
-      options: {
-        api: Path.resolve('./src/interface/swagger.json'),
-        handlers: Path.resolve('./src/handlers')
-      }
-    },
     {
       plugin: Good,
       options: {
         ops: {
           interval: 1000
-        },
-        reporters: {
-          console: [{
-            module: 'good-squeeze',
-            name: 'Squeeze',
-            args: [{ log: '*', response: '*' }]
-          }, {
-            module: 'good-console',
-            args: [{ format: '' }]
-          }, 'stdout']
         }
+        // TODO: hapi good is deprecated per https://www.npmjs.com/package/@hapi/good/v/9.0.1 and is
+        // suggesting we consider another plugin from https://hapi.dev/plugins/#logging
+        // reporters: {
+        //   console: [{
+        //     module: 'good-squeeze',
+        //     name: 'Squeeze',
+        //     args: [{ log: '*', response: '*' }]
+        //   }, {
+        //     module: 'good-console',
+        //     args: [{ format: '' }]
+        //   }, 'stdout']
+        // }
       }
     },
     {
-      plugin: HeaderValidation
+      plugin: HeaderValidation,
+      options: getOptionsForFSPIOPHeaderValidation()
     },
+    Inert,
+    Vision,
     Blipp,
     ErrorHandler,
     CentralServices.Util.Hapi.HapiEventPlugin
   ])
 
+  server.route(Routes.APIRoutes(api))
+  // TODO: follow instructions https://github.com/anttiviljami/openapi-backend/blob/master/DOCS.md#postresponsehandler-handler
+
   // start the server
   await server.start()
 
   return server
+}
+
+const initializeInstrumentation = (config) => {
+  /* istanbul ignore next */
+  if (!config.instrumentationMetricsDisabled) {
+    Metrics.setup(config.instrumentationMetricsConfig)
+  }
+}
+
+const connectAllProducers = async (config) => {
+  const producersConfigs = Object.values(config.kafkaConfig.PRODUCER)
+    .reduce((acc, typeConfig) => {
+      Object.values(typeConfig).forEach(({ topic, config }) => {
+        acc.push({
+          topicConfig: dto.topicConfigDto({ topicName: topic }),
+          kafkaConfig: config
+        })
+      })
+      return acc
+    }, [])
+
+  await Producer.connectAll(producersConfigs)
+  Logger.info('kafka producers connected')
+
+  return producersConfigs.map(({ topicConfig }) => topicConfig.topicName)
 }
 
 // load config
@@ -129,27 +207,37 @@ const config = new Config()
  * @description Starts the web server
  */
 async function start () {
-  // initialise database connection pool and start the api server
-  return initDb(config)
-    .then(db => initServer(db, config))
+  initializeInstrumentation(config)
+
+  return connectAllProducers(config)
+    .then(topicNames => initServer(config, topicNames))
     .then(server => {
-    // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
-    /* istanbul ignore next */
-      process.on('SIGTERM', () => {
-        console.log('sigterm???')
-        server.log(['info'], 'Received SIGTERM, closing server...')
+      // Ignore coverage here as simulating `process.on('SIGTERM'...)` kills jest
+      /* istanbul ignore next */
+      ['SIGINT', 'SIGTERM'].forEach(sig => process.on(sig, () => {
+        Logger.info(`Received ${sig}, closing server...`)
+        let isError
         server.stop({ timeout: 10000 })
           .then(err => {
-            Logger.warn(`server stopped. ${err ? (getStackOrInspect(err)) : ''}`)
-            process.exit((err) ? 1 : 0)
+            isError = !!err
+            Logger.isWarnEnabled && Logger.warn(`server stopped. ${err ? (getStackOrInspect(err)) : ''}`)
           })
-      })
-
-      server.plugins.openapi.setHost(server.info.host + ':' + server.info.port)
+          .then(() => Producer.disconnect())
+          .catch(err => {
+            isError = true
+            Logger.warn(`error during exiting process: ${err.message}`)
+          })
+          .finally(() => {
+            const exitCode = (isError) ? 1 : 0
+            Logger.info(`process exit code: ${exitCode}`)
+            process.exit(exitCode)
+          })
+      }))
       server.log(['info'], `Server running on ${server.info.uri}`)
-    // eslint-disable-next-line no-unused-vars
+      return server
     }).catch(err => {
-      Logger.error(`Error initializing server: ${getStackOrInspect(err)}`)
+      Logger.isErrorEnabled && Logger.error(`Error initializing server: ${getStackOrInspect(err)}`)
+      return null
     })
 }
 

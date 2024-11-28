@@ -29,8 +29,15 @@
  --------------
  ******/
 
+jest.mock('@mojaloop/central-services-logger')
+
 const Config = require('../../../src/lib/config')
 const CachedDatabase = require('../../../src/data/cachedDatabase')
+const Logger = require('@mojaloop/central-services-logger')
+
+Logger.isDebugEnabled = jest.fn(() => true)
+Logger.isErrorEnabled = jest.fn(() => true)
+Logger.isInfoEnabled = jest.fn(() => true)
 
 describe('cachedDatabase', () => {
   describe('getCacheMethods', () => {
@@ -139,6 +146,39 @@ describe('cachedDatabase', () => {
       // Assert
       expect(result).toBe('getLedgerEntryTypeValue')
     })
+
+    it('getParticipant', async () => {
+      // Arrange
+      cachedDb.cachePut('getParticipant', ['paramA', 'paramB', 'paramC', 'paramD'], 'getParticipantValue')
+
+      // Act
+      const result = await cachedDb.getParticipant('paramA', 'paramB', 'paramC', 'paramD')
+
+      // Assert
+      expect(result).toBe('getParticipantValue')
+    })
+
+    it('getParticipantByName', async () => {
+      // Arrange
+      cachedDb.cachePut('getParticipantByName', ['paramA', 'paramB'], 'getParticipantByNameValue')
+
+      // Act
+      const result = await cachedDb.getParticipantByName('paramA', 'paramB')
+
+      // Assert
+      expect(result).toBe('getParticipantByNameValue')
+    })
+
+    it('getParticipantEndpoint', async () => {
+      // Arrange
+      cachedDb.cachePut('getParticipantEndpoint', ['paramA', 'paramB'], 'getParticipantEndpointValue')
+
+      // Act
+      const result = await cachedDb.getParticipantEndpoint('paramA', 'paramB')
+
+      // Assert
+      expect(result).toBe('getParticipantEndpointValue')
+    })
   })
 
   describe('Cache Handling', () => {
@@ -174,6 +214,9 @@ describe('cachedDatabase', () => {
       expect(Database.prototype.getLedgerEntryType).toBeCalledTimes(1)
       expect(result).toStrictEqual(expected)
       expect(result2).toStrictEqual(expected)
+
+      // invalidate to stop jest open handles
+      await cachedDb.invalidateCache()
     })
 
     it('handles an exception', async () => {

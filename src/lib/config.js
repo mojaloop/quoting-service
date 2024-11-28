@@ -31,11 +31,71 @@
  ******/
 
 const RC = require('parse-strings-in-object')(require('rc')('QUOTE', require('../../config/default.json')))
+const fs = require('fs')
+
+const DEFAULT_PROTOCOL_VERSION = {
+  CONTENT: {
+    DEFAULT: '1.1',
+    VALIDATELIST: [
+      '1.0',
+      '1.1'
+    ]
+  },
+  ACCEPT: {
+    DEFAULT: '1',
+    VALIDATELIST: [
+      '1',
+      '1.0',
+      '1.1'
+    ]
+  }
+}
+
+const getProtocolVersions = (defaultProtocolVersions, overrideProtocolVersions) => {
+  const T_PROTOCOL_VERSION = {
+    ...defaultProtocolVersions,
+    ...overrideProtocolVersions
+  }
+
+  if (overrideProtocolVersions && overrideProtocolVersions.CONTENT) {
+    T_PROTOCOL_VERSION.CONTENT = {
+      ...defaultProtocolVersions.CONTENT,
+      ...overrideProtocolVersions.CONTENT
+    }
+  }
+  if (overrideProtocolVersions && overrideProtocolVersions.ACCEPT) {
+    T_PROTOCOL_VERSION.ACCEPT = {
+      ...defaultProtocolVersions.ACCEPT,
+      ...overrideProtocolVersions.ACCEPT
+    }
+  }
+
+  if (T_PROTOCOL_VERSION.CONTENT &&
+    T_PROTOCOL_VERSION.CONTENT.VALIDATELIST &&
+    (typeof T_PROTOCOL_VERSION.CONTENT.VALIDATELIST === 'string' ||
+      T_PROTOCOL_VERSION.CONTENT.VALIDATELIST instanceof String)) {
+    T_PROTOCOL_VERSION.CONTENT.VALIDATELIST = JSON.parse(T_PROTOCOL_VERSION.CONTENT.VALIDATELIST)
+  }
+  if (T_PROTOCOL_VERSION.ACCEPT &&
+    T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST &&
+    (typeof T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST === 'string' ||
+      T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST instanceof String)) {
+    T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST = JSON.parse(T_PROTOCOL_VERSION.ACCEPT.VALIDATELIST)
+  }
+  return T_PROTOCOL_VERSION
+}
 
 /**
  * Loads config from environment
  */
 class Config {
+  getFileContent (path) {
+    if (!fs.existsSync(path)) {
+      throw new Error(`File ${path} doesn't exist, can't enable JWS signing`)
+    }
+    return fs.readFileSync(path)
+  }
+
   constructor () {
     // load config from environment (or use sensible defaults)
     this.listenAddress = RC.LISTEN_ADDRESS
@@ -74,12 +134,27 @@ class Config {
         // how often to check for idle resources to destroy
         reapIntervalMillis: RC.DATABASE.REAP_INTERVAL_MILLIS,
         // long long to idle after failed create before trying again
-        createRetryIntervalMillis: RC.DATABASE.CREATE_RETRY_INTERVAL_MILLIS
+        createRetryIntervalMillis: RC.DATABASE.CREATE_RETRY_INTERVAL_MILLIS,
         // ping: function (conn, cb) { conn.query('SELECT 1', cb) }
+        propagateCreateError: false
       },
       debug: RC.DATABASE.DEBUG ? RC.DATABASE.DEBUG : false
     }
     this.errorHandling = RC.ERROR_HANDLING
+    this.jws = {
+      jwsSign: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN,
+      fspiopSourceToSign: RC.ENDPOINT_SECURITY.JWS.FSPIOP_SOURCE_TO_SIGN,
+      jwsSigningKeyPath: RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH,
+      jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined
+    }
+    this.kafkaConfig = RC.KAFKA
+    this.apiDocumentationEndpoints = RC.API_DOCUMENTATION_ENDPOINTS || false
+    this.protocolVersions = getProtocolVersions(DEFAULT_PROTOCOL_VERSION, RC.PROTOCOL_VERSIONS)
+    this.instrumentationMetricsDisabled = (RC.INSTRUMENTATION.METRICS.DISABLED === true || RC.INSTRUMENTATION.METRICS.DISABLED === 'true')
+    this.instrumentationMetricsLabels = RC.INSTRUMENTATION.METRICS.labels
+    this.instrumentationMetricsConfig = RC.INSTRUMENTATION.METRICS.config
+    this.enumDataCacheExpiresInMs = RC.CACHE.ENUM_DATA_EXPIRES_IN_MS || 4170000
+    this.participantDataCacheExpiresInMs = RC.CACHE.PARTICIPANT_DATA_EXPIRES_IN_MS || 60000
   }
 }
 

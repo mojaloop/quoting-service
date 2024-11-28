@@ -1,0 +1,9 @@
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  // audit-ci supports reading JSON, JSONC, and JSON5 config files.
+  // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
+  "moderate": true,
+  "allowlist": [
+    "GHSA-qgmg-gppg-76g5" //https://github.com/advisories/GHSA-qgmg-gppg-76g5 Mock data generator for swagger api, not a security concern at this time.
+  ]
+}

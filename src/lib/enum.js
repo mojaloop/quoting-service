@@ -40,10 +40,23 @@ const PAYEE_DFSP = 'PAYEE_DFSP'
 
 const PRINCIPLE_VALUE = 'PRINCIPLE_VALUE'
 
+const Functionalities = Object.freeze({
+  QUOTE: 'QUOTE',
+  BULK_QUOTE: 'BULK_QUOTE'
+})
+
+const ErrorMessages = Object.freeze({
+  consumingErrorFromKafka: 'Got consuming error from kafka broker',
+  incorrectOnMessageFnType: 'onMessageFn must be a function',
+  unsupportedKafkaTopic: 'Unsupported kafka topic for quoting'
+})
+
 module.exports = {
   PAYEE,
   PAYER,
   PAYER_DFSP,
   PAYEE_DFSP,
-  PRINCIPLE_VALUE
+  PRINCIPLE_VALUE,
+  Functionalities,
+  ErrorMessages
 }

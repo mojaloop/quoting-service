@@ -23,6 +23,11 @@
  ******/
 'use strict'
 
+const SwagMock = require('swagmock')
+const Path = require('path')
+const apiPath = Path.resolve(__dirname, '../../src/interface/swagger.json')
+let mockGen
+
 /**
  * @object baseMockRequest
  *
@@ -64,7 +69,7 @@ function defaultHeaders () {
   const destination = 'payeefsp'
   const source = 'payerfsp'
   const resource = 'quotes'
-  const version = '1.0'
+  const version = '1.1'
   // TODO: See API section 3.2.1; what should we do about X-Forwarded-For? Also, should we
   // add/append to this field in all 'queueResponse' calls?
   return {
@@ -76,7 +81,33 @@ function defaultHeaders () {
   }
 }
 
+/**
+ * Global MockGenerator Singleron
+ */
+const mockRequest = () => {
+  if (mockGen) {
+    return mockGen
+  }
+
+  mockGen = SwagMock(apiPath)
+
+  /**
+   * Add an async version of requests
+   */
+  mockGen.requestsAsync = async (path, operation) => {
+    return new Promise((resolve, reject) => {
+      mockGen.requests(
+        { path, operation },
+        (error, mock) => error ? reject(error) : resolve(mock)
+      )
+    })
+  }
+
+  return mockGen
+}
+
 module.exports = {
   baseMockRequest,
-  defaultHeaders
+  defaultHeaders,
+  mockRequest
 }

@@ -1,9 +1,9 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "1.0",
-    "title": "Quoting related parts of Open API for FSP Interoperability (FSPIOP) (Implementation Friendly Version)",
-    "description": "Based on API Definition.docx updated on 2018-03-13 Version 1.0. Note - The API supports a maximum size of 65536 bytes (64 Kilobytes) in the HTTP header.",
+    "version": "1.1",
+    "title": "Quoting related parts of Open API for FSP Interoperability (FSPIOP) API Version 1.1",
+    "description": "Based on API Definition.docx updated on 2020-05-19 Version 1.1. Note - The API supports a maximum size of 65536 bytes (64 Kilobytes) in the HTTP header.",
     "license": {
       "name": "Open API for FSP Interoperability (FSPIOP) (Implementation Friendly Version)"
     }
@@ -420,7 +420,15 @@
                 "“partyIdType”": "“PERSONAL_ID”",
                 "“partyIdentifier”": "“16135551212”",
                 "“partySubIdOrType”": "“DRIVING_LICENSE”",
-                "“fspId”": "“1234”"
+                "“fspId”": "“1234”",
+                "“extensionList“": {
+                  "“extension“": [
+                    {
+                      "“key“": "Account Type",
+                      "“value“": "Wallet"
+                    }
+                  ]
+                }
               },
               "merchantClassificationCode": "4321",
               "“name”": "“Justin Trudeau”",
@@ -438,7 +446,15 @@
                 "“partyIdType”": "“PERSONAL_ID”",
                 "“partyIdentifier”": "“16135551212”",
                 "“partySubIdOrType”": "“PASSPORT”",
-                "“fspId”": "“1234”"
+                "“fspId”": "“1234”",
+                "“extensionList“": {
+                  "“extension“": [
+                    {
+                      "“key“": "Account Type",
+                      "“value“": "Wallet"
+                    }
+                  ]
+                }
               },
               "merchantClassificationCode": "1234",
               "“name”": "“Donald Trump”",
@@ -1295,6 +1311,8 @@
         "XDR",
         "XOF",
         "XPF",
+        "XTS",
+        "XXX",
         "YER",
         "ZAR",
         "ZMW",
@@ -1351,7 +1369,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 128,
-      "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+      "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
       "description": "First name of the Party (Name Type)."
     },
     "FspId": {
@@ -1394,7 +1412,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 128,
-      "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+      "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
       "description": "Last name of the Party (Name Type)."
     },
     "Latitude": {
@@ -1420,7 +1438,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 128,
-      "pattern": "^(?!\\s*$)[\\w .,'-]{1,128}$",
+      "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
       "description": "Middle name of the Party (Name Type)."
     },
     "Name": {
@@ -1501,8 +1519,9 @@
     "QuoteId": {
       "title": "QuoteId",
       "type": "string",
+      "minLength": 1,
       "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-      "description": "Quote Identifier. The API data type UUID (Universally Unique Identifier) is a JSON String in canonical format, conforming to RFC 4122, that is restricted by a regular expression for interoperability reasons. An UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘)."
+      "description": "Quote Identifier. The API data type UUID (Universally Unique Identifier) is a JSON String in canonical format, conforming to RFC 4122, that is restricted by a regular expression for interoperability reasons. An UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘). A minLength of 1 has been specified due to the regex not being validated on empty strings, this should be removed once the enjoi module has been fixed."
     },
     "QRCODE": {
       "title": "QRCODE",
@@ -1527,8 +1546,9 @@
     "TransactionId": {
       "title": "TransactionId",
       "type": "string",
+      "minLength": 1,
       "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-      "description": "Transaction Identifier. The API data type UUID (Universally Unique Identifier) is a JSON String in canonical format, conforming to RFC 4122, that is restricted by a regular expression for interoperability reasons. An UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘)."
+      "description": "Transaction Identifier. The API data type UUID (Universally Unique Identifier) is a JSON String in canonical format, conforming to RFC 4122, that is restricted by a regular expression for interoperability reasons. An UUID is always 36 characters long, 32 hexadecimal symbols and 4 dashes (‘-‘). A minLength of 1 has been specified due to the regex not being validated on empty strings, this should be removed once the enjoi module has been fixed."
     },
     "TransactionInitiator": {
       "title": "TransactionInitiatorEnum",
@@ -1794,7 +1814,8 @@
       "properties": {
         "errorCode": {
           "type": "string",
-          "description": "Specific error number."
+          "description": "Specific error number.",
+          "pattern": "^(10|20|3[0-4]|4[0-4]|5[0-4])[0-9]{2}$"
         },
         "errorDescription": {
           "type": "string",
@@ -1877,11 +1898,11 @@
       "description": "Data model for the complex type GeoCode. Indicates the geographic location from where the transaction was initiated.",
       "properties": {
         "latitude": {
-          "type": "string",
+          "$ref": "#/definitions/Latitude",
           "description": "Latitude of the Party."
         },
         "longitude": {
-          "type": "string",
+          "$ref": "#/definitions/Longitude",
           "description": "Longitude of the   Party."
         }
       },
@@ -2159,7 +2180,7 @@
           "description": "Party Id type, id, sub id or type, and FSP Id."
         },
         "merchantClassificationCode": {
-          "type": "string",
+          "$ref": "#/definitions/MerchantClassificationCode",
           "description": "Used in the context of Payee Information, where the Payee happens to be a merchant accepting merchant payments."
         },
         "name": {
@@ -2182,15 +2203,24 @@
       "properties": {
         "firstName": {
           "type": "string",
-          "description": "Party’s first name."
+          "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
+          "description": "Party’s first name.",
+          "minLength": 1,
+          "maxLength": 128
         },
         "middleName": {
           "type": "string",
-          "description": "Party’s middle name."
+          "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
+          "description": "Party’s middle name.",
+          "minLength": 1,
+          "maxLength": 128
         },
         "lastName": {
           "type": "string",
-          "description": "Party’s last name."
+          "pattern": "^(?!\\s*$)[\\p{L}\\p{gc=Mark}\\p{digit}\\p{gc=Connector_Punctuation}\\p{Join_Control} .,''-]{1,128}$",
+          "description": "Party’s last name.",
+          "minLength": 1,
+          "maxLength": 128
         }
       }
     },
@@ -2214,6 +2244,10 @@
         "fspId": {
           "type": "string",
           "description": "FSP id (if known)"
+        },
+        "extensionList": {
+          "$ref": "#/definitions/ExtensionList",
+          "description": "Optional extension, specific to deployment."
         }
       },
       "required": [
@@ -2245,7 +2279,7 @@
           "description": "First, middle and last name for the Party."
         },
         "dateOfBirth": {
-          "type": "string",
+          "$ref": "#/definitions/DateOfBirth",
           "description": "Date of birth for the Party."
         }
       }
@@ -2282,7 +2316,7 @@
           "description": "Common id (decided by the Payer FSP) between the FSPs for the future transaction object. The actual transaction will be created as part of a successful transfer process. The id should be reused for resends of the same quote for a transaction. A new id should be generated for each new quote for a transaction."
         },
         "transactionRequestId": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionId",
           "description": "Identifies an optional previously-sent transaction request."
         },
         "payee": {
@@ -2294,7 +2328,7 @@
           "description": "Information about the Payer in the proposed financial transaction."
         },
         "amountType": {
-          "type": "string",
+          "$ref": "#/definitions/AmountType",
           "description": "SEND for send amount, RECEIVE for receive amount."
         },
         "amount": {
@@ -2318,7 +2352,7 @@
           "description": "A memo that will be attached to the transaction."
         },
         "expiration": {
-          "type": "string",
+          "$ref": "#/definitions/DateTime",
           "description": "Expiration is optional. It can be set to get a quick failure in case the peer FSP takes too long to respond. Also, it may be beneficial for Consumer, Agent, and Merchant to know that their request has a time limit."
         },
         "extensionList": {
@@ -2391,7 +2425,7 @@
       "description": "Data model for the complex type Refund.",
       "properties": {
         "originalTransactionId": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionId",
           "description": "Reference to the original transaction id that is requested to be refunded."
         },
         "refundReason": {
@@ -2515,19 +2549,19 @@
       "description": "Data model for the complex type TransactionType.",
       "properties": {
         "scenario": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionScenario",
           "description": "Deposit, withdrawal, refund, …"
         },
         "subScenario": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionSubScenario",
           "description": "Possible sub-scenario, defined locally within the scheme."
         },
         "initiator": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionInitiator",
           "description": "Who is initiating the transaction - Payer or Payee"
         },
         "initiatorType": {
-          "type": "string",
+          "$ref": "#/definitions/TransactionInitiatorType",
           "description": "Consumer, agent, business, …"
         },
         "refundInfo": {
@@ -2535,7 +2569,7 @@
           "description": "Extra information specific to a refund scenario. Should only be populated if scenario is REFUND"
         },
         "balanceOfPayments": {
-          "type": "string",
+          "$ref": "#/definitions/BalanceOfPayments",
           "description": "Balance of Payments code."
         }
       },
@@ -2863,7 +2897,7 @@
       "name": "fspiop-destination",
       "in": "header",
       "type": "string",
-      "required": false,
+      "required": true,
       "description": "The FSPIOP-Destination header field is a non-HTTP standard field used by the API for HTTP header based routing of requests and responses to the destination. The field should be set by the original sender of the request (if known), so that any entities between the client and the server do not need to parse the payload for routing purposes."
     },
     "FSPIOP-Encryption": {
@@ -2898,7 +2932,8 @@
       "name": "id",
       "in": "path",
       "required": true,
-      "type": "string"
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
     },
     "Type": {
       "name": "Type",

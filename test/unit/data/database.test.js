@@ -30,13 +30,20 @@
 ******/
 
 jest.mock('knex')
+jest.mock('@mojaloop/central-services-logger')
 
 const Knex = require('knex')
 const crypto = require('crypto')
+const ENUM = require('@mojaloop/central-services-shared').Enum
 
 const Database = require('../../../src/data/database')
 const Config = require('../../../src/lib/config')
 const LibEnum = require('../../../src/lib/enum')
+const Logger = require('@mojaloop/central-services-logger')
+
+Logger.isDebugEnabled = jest.fn(() => true)
+Logger.isErrorEnabled = jest.fn(() => true)
+Logger.isInfoEnabled = jest.fn(() => true)
 
 let database
 
@@ -157,50 +164,6 @@ describe('/database', () => {
 
       database = new Database(defaultConfig)
       await database.connect()
-    })
-
-    describe('getTransferRules', () => {
-      it('gets the initiator', async () => {
-        // Arrange
-        const mockList = mockKnexBuilder(
-          mockKnex,
-          [
-            { rule: '{"testRule1": true}' },
-            { rule: '{"testRule2": true}' }
-          ],
-          ['where', 'select']
-        )
-        const expected = [
-          { testRule1: true },
-          { testRule2: true }
-        ]
-
-        // Act
-        const result = await database.getTransferRules()
-
-        // Assert
-        expect(result).toStrictEqual(expected)
-        expect(mockList[0]).toHaveBeenCalledWith('transferRules')
-        expect(mockList[1]).toHaveBeenCalledWith('enabled', true)
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('handles a JSON.parse error', async () => {
-        // Arrange
-        mockKnexBuilder(
-          mockKnex,
-          [
-            { rule: '{"invalidJSON: true}' }
-          ],
-          ['where', 'select']
-        )
-
-        // Act
-        const action = async () => database.getTransferRules()
-
-        // Assert
-        await expect(action()).rejects.toThrowError('Unexpected end of JSON input')
-      })
     })
 
     describe('getInitiatorType', () => {
@@ -786,6 +749,87 @@ describe('/database', () => {
         // Arrange
         const participantName = 'dfsp1'
         const participantType = LibEnum.PAYEE_DFSP
+        const currency = 'USD'
+        const ledgerAccountType = ENUM.Accounts.LedgerAccountType.POSITION
+        const mockList = mockKnexBuilder(
+          mockKnex,
+          [{ participantId: 123 }],
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
+        )
+
+        // Act
+        const result = await database.getParticipant(participantName, participantType, currency, ledgerAccountType)
+
+        // Assert
+        expect(result).toBe(123)
+        expect(mockList[0]).toHaveBeenCalledWith('participant')
+        expect(mockList[1]).toHaveBeenCalledWith('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an undefined response with a participantType of PAYEE_DFSP', async () => {
+        // Arrange
+        const participantName = 'dfsp1'
+        const participantType = LibEnum.PAYEE_DFSP
+        const currency = 'USD'
+        const ledgerAccountType = ENUM.Accounts.LedgerAccountType.POSITION
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
+        )
+
+        // Act
+        const action = async () => database.getParticipant(participantName, participantType, currency, ledgerAccountType)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Unsupported participant')
+      })
+
+      it('handles an undefined response with a participantType of PAYER_DFSP', async () => {
+        // Arrange
+        const participantName = 'dfsp1'
+        const participantType = LibEnum.PAYER_DFSP
+        const currency = 'USD'
+        const ledgerAccountType = ENUM.Accounts.LedgerAccountType.POSITION
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
+        )
+
+        // Act
+        const action = async () => database.getParticipant(participantName, participantType, currency, ledgerAccountType)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Unsupported participant')
+      })
+
+      it('handles an empty response with no participantType', async () => {
+        // Arrange
+        const participantName = 'dfsp1'
+        const currency = 'USD'
+        const ledgerAccountType = ENUM.Accounts.LedgerAccountType.POSITION
+        mockKnexBuilder(
+          mockKnex,
+          [],
+          ['innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'andWhere', 'select']
+        )
+
+        // Act
+        const action = async () => database.getParticipant(participantName, undefined, currency, ledgerAccountType)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Unsupported participant')
+      })
+    })
+
+    describe('getParticipantByName', () => {
+      it('gets the participant for PAYEE_DFSP', async () => {
+        // Arrange
+        const participantName = 'dfsp1'
+        const participantType = LibEnum.PAYEE_DFSP
+
         const mockList = mockKnexBuilder(
           mockKnex,
           [{ participantId: 123 }],
@@ -793,13 +837,13 @@ describe('/database', () => {
         )
 
         // Act
-        const result = await database.getParticipant(participantName, participantType)
+        const result = await database.getParticipantByName(participantName, participantType)
 
         // Assert
         expect(result).toBe(123)
         expect(mockList[0]).toHaveBeenCalledWith('participant')
-        expect(mockList[1]).toHaveBeenCalledWith({ name: participantName, isActive: 1 })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
+        // expect(mockList[1]).toHaveBeenCalledWith('participantCurrency', 'participantCurrency.participantId', 'participant.participantId')
+        expect(mockList[1]).toHaveBeenCalledTimes(1)
       })
 
       it('handles an undefined response with a participantType of PAYEE_DFSP', async () => {
@@ -813,7 +857,7 @@ describe('/database', () => {
         )
 
         // Act
-        const action = async () => database.getParticipant(participantName, participantType)
+        const action = async () => database.getParticipantByName(participantName, participantType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported participant')
@@ -830,7 +874,7 @@ describe('/database', () => {
         )
 
         // Act
-        const action = async () => database.getParticipant(participantName, participantType)
+        const action = async () => database.getParticipantByName(participantName, participantType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported participant')
@@ -846,7 +890,7 @@ describe('/database', () => {
         )
 
         // Act
-        const action = async () => database.getParticipant(participantName)
+        const action = async () => database.getParticipantByName(participantName)
 
         // Assert
         await expect(action()).rejects.toThrowError('Unsupported participant')
@@ -991,21 +1035,27 @@ describe('/database', () => {
         const party = {}
         const amount = 100
         const currency = 'AUD'
+        const enumVals = [
+          'testPartyTypeId',
+          'testPartyIdentifierTypeId',
+          'testParticipantId',
+          'testTransferParticipantRoleTypeId',
+          'testLedgerEntryTypeId'
+        ]
         database.createQuoteParty = jest.fn()
 
         // Act
-        database.createPayerQuoteParty(txn, quoteId, party, amount, currency)
+        database.createPayerQuoteParty(txn, quoteId, party, amount, currency, enumVals)
 
         // Assert
         expect(database.createQuoteParty).toHaveBeenCalledWith(
           txn,
           quoteId,
           LibEnum.PAYER,
-          LibEnum.PAYER_DFSP,
-          LibEnum.PRINCIPLE_VALUE,
           party,
           100,
-          'AUD'
+          'AUD',
+          enumVals
         )
       })
     })
@@ -1018,21 +1068,27 @@ describe('/database', () => {
         const party = {}
         const amount = 100
         const currency = 'AUD'
+        const enumVals = [
+          'testPartyTypeId',
+          'testPartyIdentifierTypeId',
+          'testParticipantId',
+          'testTransferParticipantRoleTypeId',
+          'testLedgerEntryTypeId'
+        ]
         database.createQuoteParty = jest.fn()
 
         // Act
-        database.createPayeeQuoteParty(txn, quoteId, party, amount, currency)
+        database.createPayeeQuoteParty(txn, quoteId, party, amount, currency, enumVals)
 
         // Assert
         expect(database.createQuoteParty).toHaveBeenCalledWith(
           txn,
           quoteId,
           LibEnum.PAYEE,
-          LibEnum.PAYEE_DFSP,
-          LibEnum.PRINCIPLE_VALUE,
           party,
           -100,
-          'AUD'
+          'AUD',
+          enumVals
         )
       })
     })
@@ -1040,17 +1096,27 @@ describe('/database', () => {
     describe('createQuoteParty', () => {
       const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
       const partyType = LibEnum.PAYEE
-      const participantType = LibEnum.PAYEE_DFSP
-      const ledgerEntryType = LibEnum.PRINCIPLE_VALUE
       const amount = 100
       const currency = 'AUD'
-
+      const quoteParty = {
+        quotePartyId: 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+      }
+      const enumVals = [
+        'testPartyTypeId',
+        'testPartyIdentifierTypeId',
+        'testParticipantId',
+        'testTransferParticipantRoleTypeId',
+        'testLedgerEntryTypeId'
+      ]
       beforeEach(() => {
         database.getPartyType = jest.fn().mockResolvedValueOnce('testPartyTypeId')
         database.getPartyIdentifierType = jest.fn().mockResolvedValueOnce('testPartyIdentifierTypeId')
         database.getParticipant = jest.fn().mockResolvedValueOnce('testParticipantId')
+        database.getParticipantByName = jest.fn().mockResolvedValueOnce('testParticipantId')
         database.getTransferParticipantRoleType = jest.fn().mockResolvedValueOnce('testTransferParticipantRoleTypeId')
         database.getLedgerEntryType = jest.fn().mockResolvedValueOnce('testLedgerEntryTypeId')
+        database.getTxnQuoteParty = jest.fn().mockResolvedValueOnce(quoteParty)
+        database.createQuotePartyIdInfoExtensions = jest.fn().mockResolvedValueOnce(true)
       })
 
       it('Creates a quote party', async () => {
@@ -1061,7 +1127,15 @@ describe('/database', () => {
           partyIdInfo: {
             partyIdentifier: 'testPartyIdentifier',
             partyIdType: 'MSISDN',
-            fspId: 'payeeFsp'
+            fspId: 'payeeFsp',
+            extensionList: {
+              extension: [
+                {
+                  key: 'Test',
+                  value: 'Data'
+                }
+              ]
+            }
           },
           merchantClassificationCode: '0'
         }
@@ -1087,7 +1161,7 @@ describe('/database', () => {
         }
 
         // Act
-        const result = await database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
+        const result = await database.createQuoteParty(txn, quoteId, partyType, party, amount, currency, enumVals)
 
         // Assert
         expect(result).toBe('12345')
@@ -1111,7 +1185,6 @@ describe('/database', () => {
         }
         database.getPartyIdentifierType = jest.fn()
           .mockResolvedValueOnce('testPartyIdentifierTypeId')
-          .mockResolvedValueOnce('testPartySubIdOrTypeId')
         const mockList = mockKnexBuilder(
           mockKnex,
           ['12345'],
@@ -1122,7 +1195,7 @@ describe('/database', () => {
           partyTypeId: 'testPartyTypeId',
           partyIdentifierTypeId: 'testPartyIdentifierTypeId',
           partyIdentifierValue: 'testPartyIdentifier',
-          partySubIdOrTypeId: 'testPartySubIdOrTypeId',
+          partySubIdOrTypeId: 'testSubId',
           fspId: 'payeeFsp',
           participantId: 'testParticipantId',
           merchantClassificationCode: '0',
@@ -1134,7 +1207,7 @@ describe('/database', () => {
         }
 
         // Act
-        const result = await database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
+        const result = await database.createQuoteParty(txn, quoteId, partyType, party, amount, currency, enumVals)
 
         // Assert
         expect(result).toBe('12345')
@@ -1192,7 +1265,7 @@ describe('/database', () => {
         }
 
         // Act
-        const result = await database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
+        const result = await database.createQuoteParty(txn, quoteId, partyType, party, amount, currency, enumVals)
 
         // Assert
         expect(result).toBe('12345')
@@ -1217,193 +1290,10 @@ describe('/database', () => {
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => database.createQuoteParty(txn, quoteId, partyType, participantType, ledgerEntryType, party, amount, currency)
+        const action = async () => database.createQuoteParty(txn, quoteId, partyType, party, amount, currency, enumVals)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
-      })
-    })
-
-    describe('getQuotePartyView', () => {
-      it('gets the quotePartyView', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(
-          mockKnex,
-          ['12345'],
-          ['where', 'select']
-        )
-
-        // Act
-        const result = await database.getQuotePartyView(quoteId)
-
-        // Assert
-        expect(result).toStrictEqual(['12345'])
-        expect(mockList[0]).toHaveBeenCalledWith('quotePartyView')
-        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('handles an exception', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
-
-        // Act
-        const action = async () => database.getQuotePartyView(quoteId)
-
-        // Assert
-        await expect(action()).rejects.toThrowError('Test Error')
-      })
-    })
-
-    describe('getQuoteView', () => {
-      it('gets the getQuoteView', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(
-          mockKnex,
-          ['12345'],
-          ['where', 'select']
-        )
-
-        // Act
-        const result = await database.getQuoteView(quoteId)
-
-        // Assert
-        expect(result).toStrictEqual('12345')
-        expect(mockList[0]).toHaveBeenCalledWith('quoteView')
-        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('handles the case where the return rows are undefined', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(
-          mockKnex,
-          undefined,
-          ['where', 'select']
-        )
-
-        // Act
-        const result = await database.getQuoteView(quoteId)
-
-        // Assert
-        expect(result).toStrictEqual(null)
-        expect(mockList[0]).toHaveBeenCalledWith('quoteView')
-        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('handles the case where the return rows are empty', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(
-          mockKnex,
-          [],
-          ['where', 'select']
-        )
-
-        // Act
-        const result = await database.getQuoteView(quoteId)
-
-        // Assert
-        expect(result).toStrictEqual(null)
-        expect(mockList[0]).toHaveBeenCalledWith('quoteView')
-        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('handles the case where there is more than 1 row', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        mockKnexBuilder(
-          mockKnex,
-          ['12345', '67890'],
-          ['where', 'select']
-        )
-
-        // Act
-        const action = async () => database.getQuoteView(quoteId)
-
-        // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 row for quoteId .*'))
-      })
-    })
-
-    describe('getQuoteResponseView', () => {
-      it('gets the quoteResponseView', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(
-          mockKnex,
-          ['12345'],
-          ['where', 'select']
-        )
-
-        // Act
-        const result = await database.getQuoteResponseView(quoteId)
-
-        // Assert
-        expect(result).toStrictEqual('12345')
-        expect(mockList[0]).toHaveBeenCalledWith('quoteResponseView')
-        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('handles the case where the return rows are undefined', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(
-          mockKnex,
-          undefined,
-          ['where', 'select']
-        )
-
-        // Act
-        const result = await database.getQuoteResponseView(quoteId)
-
-        // Assert
-        expect(result).toStrictEqual(null)
-        expect(mockList[0]).toHaveBeenCalledWith('quoteResponseView')
-        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('handles the case where the return rows are empty', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(
-          mockKnex,
-          [],
-          ['where', 'select']
-        )
-
-        // Act
-        const result = await database.getQuoteResponseView(quoteId)
-
-        // Assert
-        expect(result).toStrictEqual(null)
-        expect(mockList[0]).toHaveBeenCalledWith('quoteResponseView')
-        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('handles the case where there is more than 1 row', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        mockKnexBuilder(
-          mockKnex,
-          ['12345', '67890'],
-          ['where', 'select']
-        )
-
-        // Act
-        const action = async () => database.getQuoteResponseView(quoteId)
-
-        // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 row for quoteId .*'))
       })
     })
 
@@ -1506,6 +1396,65 @@ describe('/database', () => {
       })
     })
 
+    describe('createQuotePartyIdInfoExtensions', () => {
+      const extensions = [
+        {
+          key: 'Test',
+          value: 'data'
+        },
+        {
+          key: 'Test1',
+          value: 'data1'
+        }
+      ]
+      const quoteParty = {
+        quotePartyId: 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+      }
+
+      it('creates a quote partyId info extension', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const mockList = mockKnexBuilder(
+          mockKnex,
+          null,
+          ['transacting', 'insert']
+        )
+        const expectedInsert = [
+          {
+            quotePartyId: quoteParty.quotePartyId,
+            key: 'Test',
+            value: 'data'
+          },
+          {
+            quotePartyId: quoteParty.quotePartyId,
+            key: 'Test1',
+            value: 'data1'
+          }
+        ]
+
+        // Act
+        const result = await database.createQuotePartyIdInfoExtensions(txn, extensions, quoteParty)
+
+        // Assert
+        expect(result).toEqual(true)
+        expect(mockList[0]).toHaveBeenCalledWith('quotePartyIdInfoExtension')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledWith(expectedInsert)
+      })
+
+      it('handles an error creating the quote', async () => {
+        // Arrange
+        const txn = jest.fn()
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createQuotePartyIdInfoExtensions(txn, extensions, quoteParty)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
     describe('getQuoteParty', () => {
       it('gets the quote party', async () => {
         // Arrange
@@ -1590,84 +1539,100 @@ describe('/database', () => {
         const action = async () => database.getQuoteParty(quoteId, partyType)
 
         // Assert
-        await expect(action()).rejects.toThrowError(new RegExp('Expected 1 quoteParty .*'))
+        await expect(action()).rejects.toThrowError(/Expected 1 quoteParty .*/)
       })
     })
 
-    describe('getQuotePartyEndpoint', () => {
-      it('gets the quote party endpoint', async () => {
+    describe('getTxnQuoteParty', () => {
+      it('gets the txn quote party', async () => {
         // Arrange
+        const txn = jest.fn()
         const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
         const partyType = 'PAYEE'
         const mockList = mockKnexBuilder(
           mockKnex,
-          [{ value: 'http://localhost:3000/testEndpoint' }],
-          ['innerJoin', 'innerJoin', 'innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'select']
+          [{ value: 'mockQuoteParty' }],
+          ['transacting', 'innerJoin', 'where', 'andWhere', 'select']
         )
 
         // Act
-        const result = await database.getQuotePartyEndpoint(quoteId, endpointType, partyType)
+        const result = await database.getTxnQuoteParty(txn, quoteId, partyType)
 
         // Assert
-        expect(result).toBe('http://localhost:3000/testEndpoint')
-        expect(mockList[0]).toHaveBeenCalledWith('participantEndpoint')
-        expect(mockList[1]).toHaveBeenCalledWith('endpointType', 'participantEndpoint.endpointTypeId', 'endpointType.endpointTypeId')
-        expect(mockList[2]).toHaveBeenCalledWith('quoteParty', 'quoteParty.participantId', 'participantEndpoint.participantId')
-        expect(mockList[3]).toHaveBeenCalledWith('partyType', 'partyType.partyTypeId', 'quoteParty.partyTypeId')
-        expect(mockList[4]).toHaveBeenCalledWith('quote', 'quote.quoteId', 'quoteParty.quoteId')
-        expect(mockList[5]).toHaveBeenCalledWith('endpointType.name', endpointType)
-        expect(mockList[6]).toHaveBeenCalledWith('partyType.name', partyType)
-        expect(mockList[7]).toHaveBeenCalledWith('quote.quoteId', quoteId)
-        expect(mockList[8]).toHaveBeenCalledWith('participantEndpoint.isActive', 1)
-        expect(mockList[9]).toHaveBeenCalledWith('participantEndpoint.value')
+        expect(result).toStrictEqual({ value: 'mockQuoteParty' })
+        expect(mockList[0]).toHaveBeenCalledWith('quoteParty')
+        expect(mockList[2]).toHaveBeenCalledWith('partyType', 'partyType.partyTypeId', 'quoteParty.partyTypeId')
+        expect(mockList[3]).toHaveBeenCalledWith('quoteParty.quoteId', quoteId)
+        expect(mockList[4]).toHaveBeenCalledWith('partyType.name', partyType)
+        expect(mockList[5]).toHaveBeenCalledWith('quoteParty.*')
       })
 
       it('returns null when the query returns undefined', async () => {
         // Arrange
-        const participantName = 'fsp1'
-        const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
+        const txn = jest.fn()
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        const partyType = 'PAYEE'
         mockKnexBuilder(
           mockKnex,
           undefined,
-          ['innerJoin', 'innerJoin', 'innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'select']
+          ['transacting', 'innerJoin', 'where', 'andWhere', 'select']
         )
 
         // Act
-        const result = await database.getQuotePartyEndpoint(participantName, endpointType)
+        const result = await database.getTxnQuoteParty(txn, quoteId, partyType)
 
         // Assert
-        expect(result).toBe(null)
+        expect(result).toStrictEqual(null)
       })
 
-      it('returns null when there are no rows found', async () => {
+      it('returns null when the query returns no rows', async () => {
         // Arrange
-        const participantName = 'fsp1'
-        const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
+        const txn = jest.fn()
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        const partyType = 'PAYEE'
         mockKnexBuilder(
           mockKnex,
           [],
-          ['innerJoin', 'innerJoin', 'innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'andWhere', 'select']
+          ['transacting', 'innerJoin', 'where', 'andWhere', 'select']
         )
 
         // Act
-        const result = await database.getQuotePartyEndpoint(participantName, endpointType)
+        const result = await database.getTxnQuoteParty(txn, quoteId, partyType)
 
         // Assert
-        expect(result).toBe(null)
+        expect(result).toStrictEqual(null)
       })
 
       it('handles an exception', async () => {
         // Arrange
-        const participantName = 'fsp1'
-        const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
+        const txn = jest.fn()
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        const partyType = 'PAYEE'
         mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
 
         // Act
-        const action = async () => database.getQuotePartyEndpoint(participantName, endpointType)
+        const action = async () => database.getTxnQuoteParty(txn, quoteId, partyType)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
+      })
+
+      it('throws an exception when more than one quoteParty is found', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        const partyType = 'PAYEE'
+        mockKnexBuilder(
+          mockKnex,
+          [{ value: 'mockQuoteParty' }, { value: 'mockQuoteParty2' }],
+          ['transacting', 'innerJoin', 'where', 'andWhere', 'select']
+        )
+
+        // Act
+        const action = async () => database.getTxnQuoteParty(txn, quoteId, partyType)
+
+        // Assert
+        await expect(action()).rejects.toThrowError(/Expected 1 quoteParty .*/)
       })
     })
 
@@ -1862,65 +1827,6 @@ describe('/database', () => {
       })
     })
 
-    describe('getTransactionReference', () => {
-      it('gets the transaction reference', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(mockKnex, ['1'], ['where', 'select'])
-
-        // Act
-        const result = await database.getTransactionReference(quoteId)
-
-        // Assert
-        expect(result).toBe('1')
-        expect(mockList[0]).toHaveBeenCalledWith('transactionReference')
-        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('returns null when the query returns undefined', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(mockKnex, undefined, ['where', 'select'])
-
-        // Act
-        const result = await database.getTransactionReference(quoteId)
-
-        // Assert
-        expect(result).toBe(null)
-        expect(mockList[0]).toHaveBeenCalledWith('transactionReference')
-        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('returns null when there are no rows found', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        const mockList = mockKnexBuilder(mockKnex, [], ['where', 'select'])
-
-        // Act
-        const result = await database.getTransactionReference(quoteId)
-
-        // Assert
-        expect(result).toBe(null)
-        expect(mockList[0]).toHaveBeenCalledWith('transactionReference')
-        expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
-        expect(mockList[2]).toHaveBeenCalledTimes(1)
-      })
-
-      it('handles an exception', async () => {
-        // Arrange
-        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
-        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
-
-        // Act
-        const action = async () => database.getTransactionReference(quoteId)
-
-        // Assert
-        await expect(action()).rejects.toThrowError('Test Error')
-      })
-    })
-
     describe('createQuoteResponse', () => {
       const completeQuoteResponse = {
         transferAmount: {
@@ -2059,6 +1965,60 @@ describe('/database', () => {
 
         // Act
         const action = async () => database.createGeoCode(txn, geoCode)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('createQuoteExtensions', () => {
+      it('creates new quoteExtensions', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const extensions = [{
+          key: 'key1',
+          value: 'value1'
+        }, {
+          key: 'key2',
+          value: 'value2'
+        }]
+        const quoteId = '123'
+        const transactionId = '789'
+        const quoteResponseId = 456
+
+        const mockList = mockKnexBuilder(mockKnex, ['12345'], ['transacting', 'insert'])
+
+        // Act
+        const result = await database.createQuoteExtensions(txn, extensions, quoteId, transactionId, quoteResponseId)
+
+        // Assert
+        expect(result).toStrictEqual(['12345'])
+        expect(mockList[0]).toHaveBeenCalledWith('quoteExtension')
+        expect(mockList[1]).toHaveBeenCalledWith(txn)
+        expect(mockList[2]).toHaveBeenCalledWith(extensions.map(({ key, value }) => ({
+          key, value, quoteId, transactionId, quoteResponseId
+        })))
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('handles an exception in creating the quoteExtensions', async () => {
+        // Arrange
+        const txn = jest.fn()
+        const extensions = [{
+          quoteId: '123',
+          quoteResponseId: 456,
+          key: 'key1',
+          value: 'value1'
+        }, {
+          quoteId: '789',
+          quoteResponseId: 101112,
+          key: 'key2',
+          value: 'value2'
+        }]
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.createQuoteExtensions(txn, extensions)
 
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')

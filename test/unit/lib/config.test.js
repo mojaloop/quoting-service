@@ -1,4 +1,3 @@
-
 /*****
  License
  --------------
@@ -33,6 +32,22 @@ const mockDefaultFile = {
     PRECISION: 18,
     SCALE: 4
   },
+  PROTOCOL_VERSIONS: {
+    CONTENT: {
+      DEFAULT: '1.1',
+      VALIDATELIST: [
+        '1',
+        '1.1'
+      ]
+    },
+    ACCEPT: {
+      DEFAULT: '1',
+      VALIDATELIST: [
+        '1',
+        '1.1'
+      ]
+    }
+  },
   DATABASE: {
     DIALECT: 'mysql',
     HOST: 'localhost',
@@ -55,12 +70,42 @@ const mockDefaultFile = {
     includeCauseExtension: false,
     truncateExtensions: true
   },
-  SIMPLE_ROUTING_MODE: true
+  SIMPLE_ROUTING_MODE: true,
+  ENDPOINT_SECURITY: {
+    JWS: {
+      JWS_SIGN: true,
+      FSPIOP_SOURCE_TO_SIGN: 'switch',
+      JWS_SIGNING_KEY_PATH: 'secrets/jwsSigningKey.key'
+    }
+  },
+  INSTRUMENTATION: {
+    METRICS: {
+      DISABLED: false,
+      labels: {
+        fspId: '*'
+      },
+      config: {
+        timeout: 5000,
+        prefix: 'moja_qs_',
+        defaultLabels: {
+          serviceName: 'quoting-service'
+        }
+      }
+    }
+  },
+  CACHE: {
+    CACHE_ENABLED: true,
+    EXPIRES_IN_MS: 1000
+  }
 }
 
 describe('Config', () => {
   beforeEach(() => {
     jest.resetModules()
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
   })
 
   it('sets the default amounts', () => {
@@ -79,5 +124,60 @@ describe('Config', () => {
     expect(result.amount.precision).toBe(18)
     expect(result.amount.scale).toBe(4)
     expect(result.database.debug).toBe(true)
+  })
+
+  it('throws when JWS Signing key file is not provided', () => {
+    // Arrange
+    jest.mock('../../../config/default.json', () => ({
+      ...mockDefaultFile,
+      ENDPOINT_SECURITY: {
+        JWS: {
+          JWS_SIGN: true,
+          FSPIOP_SOURCE_TO_SIGN: 'switch',
+          JWS_SIGNING_KEY_PATH: '/fake/path'
+        }
+      }
+    }), { virtual: true })
+
+    const Config = require('../../../src/lib/config')
+
+    // Act
+    try {
+      const result = new Config()
+      expect(result).toBeUndefined()
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error)
+      expect(error).toHaveProperty('message', 'File /fake/path doesn\'t exist, can\'t enable JWS signing')
+    }
+  })
+
+  it('should parse ENV var QUOTE_PROTOCOL_VERSIONS__ACCEPT__VALIDATELIST as a string', async () => {
+    // Arrange
+    jest.mock('../../../config/default.json', () => ({
+      ...mockDefaultFile
+    }), { virtual: true })
+
+    // Setup
+    let result = null
+    let isSuccess
+    const validateList = ['1']
+    // set env var
+    process.env.QUOTE_PROTOCOL_VERSIONS__CONTENT__VALIDATELIST = JSON.stringify(validateList)
+    process.env.QUOTE_PROTOCOL_VERSIONS__ACCEPT__VALIDATELIST = JSON.stringify(validateList)
+
+    // Act
+    try {
+      const Config = require('../../../src/lib/config')
+      result = new Config()
+      isSuccess = true
+    } catch (e) {
+      isSuccess = false
+    }
+
+    // Assert
+    expect(result != null).toBe(true)
+    expect(isSuccess).toBe(true)
+    expect(result.protocolVersions.CONTENT.VALIDATELIST).toMatchObject(validateList)
+    expect(result.protocolVersions.ACCEPT.VALIDATELIST).toMatchObject(validateList)
   })
 })

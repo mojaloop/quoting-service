@@ -35,7 +35,7 @@
 
 'use strict'
 
-var Mockgen = require('../../test/util/mockgen.js')
+const Mockgen = require('../../test/util/mockgen.js')
 /**
  * Operations on /quotes
  */

@@ -1,27 +1,49 @@
-FROM node:10.15.3-alpine as builder
+# Arguments
+ARG NODE_VERSION=lts-alpine
 
-WORKDIR /opt/quoting-service
+# NOTE: Ensure you set NODE_VERSION Build Argument as follows...
+#
+#  export NODE_VERSION="$(cat .nvmrc)-alpine" \
+#  docker build \
+#    --build-arg NODE_VERSION=$NODE_VERSION \
+#    -t mojaloop/quoting-service:local \
+#    . \
+#
 
-RUN apk add --no-cache -t build-dependencies git make gcc g++ python libtool autoconf automake \
-    && cd $(npm root -g)/npm \
-    && npm config set unsafe-perm true \
-    && npm install -g node-gyp
+# Build Image
+FROM node:${NODE_VERSION} as builder
+USER root
 
-COPY package.json package-lock.json* /opt/quoting-service/
+WORKDIR /opt/app
 
-RUN npm install
+RUN apk --no-cache add git
+RUN apk add --no-cache -t build-dependencies make gcc g++ python3 libtool openssl-dev autoconf automake bash \
+    && cd $(npm root -g)/npm
+
+COPY package.json package-lock.json* /opt/app/
+
+RUN npm ci
 
 RUN apk del build-dependencies
 
-COPY config /opt/quoting-service/config
-COPY src /opt/quoting-service/src
+COPY src /opt/app/src
+COPY config /opt/app/config
 
-FROM node:10.15.3-alpine
+FROM node:${NODE_VERSION}
 
-WORKDIR /opt/quoting-service
+WORKDIR /opt/app
 
-COPY --from=builder /opt/quoting-service .
+# Create empty log file & link stdout to the application log file
+RUN mkdir ./logs && touch ./logs/combined.log
+# Links combined to stdout
+RUN ln -sf /dev/stdout ./logs/combined.log
+
+# Create a non-root user:app-user
+RUN adduser -D app-user
+USER app-user
+
+COPY --chown=app-user --from=builder /opt/app .
 RUN npm prune --production
 
 EXPOSE 3002
-CMD ["npm", "run", "start"]
+CMD ["npm", "start"]

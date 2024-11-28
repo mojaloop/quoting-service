@@ -33,11 +33,17 @@
 'use strict'
 
 const util = require('util')
-const Enum = require('@mojaloop/central-services-shared').Enum
+const crypto = require('crypto')
+const axios = require('axios')
 const Logger = require('@mojaloop/central-services-logger')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { Enum } = require('@mojaloop/central-services-shared')
+const { AuditEventAction } = require('@mojaloop/event-sdk')
+
+const Config = require('./config')
 
 const failActionHandler = async (request, h, err) => {
-  Logger.error(`validation failure: ${getStackOrInspect}`)
+  Logger.isErrorEnabled && Logger.error(`validation failure: ${err ? getStackOrInspect(err) : ''}`)
   throw err
 }
 
@@ -92,9 +98,164 @@ function getSafe (path, obj) {
   return path.reduce((xs, x) => (xs && xs[x]) ? xs[x] : undefined, obj)
 }
 
+/**
+ * Utility function to remove null and undefined keys from an object.
+ * This is useful for removing "nulls" that come back from database queries
+ * when projecting into API spec objects
+ *
+ * @returns {object}
+ */
+function removeEmptyKeys (originalObject) {
+  const obj = { ...originalObject }
+  Object.keys(obj).forEach(key => {
+    if (obj[key] && typeof obj[key] === 'object') {
+      if (Object.keys(obj[key]).length < 1) {
+        // remove empty object
+        delete obj[key]
+      } else {
+        // recurse
+        obj[key] = removeEmptyKeys(obj[key])
+      }
+    } else if (obj[key] == null) {
+      // null or undefined, remove it
+      delete obj[key]
+    }
+  })
+  return obj
+}
+
+function applyResourceVersionHeaders (headers, protocolVersions) {
+  let contentTypeHeader = headers['content-type'] || headers['Content-Type']
+  let acceptHeader = headers.accept || headers.Accept
+  if (Enum.Http.Headers.FSPIOP.SWITCH.regex.test(headers['fspiop-source'])) {
+    if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
+      contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.CONTENT.DEFAULT}`
+    }
+    if (Enum.Http.Headers.GENERAL.ACCEPT.regex.test(acceptHeader) && !!protocolVersions.ACCEPT.DEFAULT) {
+      acceptHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.ACCEPT.DEFAULT}`
+    }
+  }
+  return { contentTypeHeader, acceptHeader }
+}
+
+/**
+ * Generates and returns an object containing API spec compliant HTTP request headers
+ *
+ * @returns {object}
+ */
+function generateRequestHeaders (headers, protocolVersions, noAccept = false, additionalHeaders) {
+  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions)
+  let ret = {
+    'Content-Type': contentTypeHeader,
+    Date: headers.date,
+    'FSPIOP-Source': headers['fspiop-source'],
+    'FSPIOP-Destination': headers['fspiop-destination'],
+    'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
+    'FSPIOP-Signature': headers['fspiop-signature'],
+    'FSPIOP-URI': headers['fspiop-uri'],
+    Accept: null
+  }
+
+  if (!noAccept) {
+    ret.Accept = acceptHeader
+  }
+  // below are the non-standard headers added by the rules
+  if (additionalHeaders) {
+    ret = { ...ret, ...additionalHeaders }
+  }
+
+  return removeEmptyKeys(ret)
+}
+
+/**
+ * Generates and returns an object containing API spec compliant lowercase HTTP request headers for JWS Signing
+ *
+ * @returns {object}
+ */
+function generateRequestHeadersForJWS (headers, protocolVersions, noAccept = false) {
+  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions)
+  const ret = {
+    'Content-Type': contentTypeHeader,
+    date: headers.date,
+    'fspiop-source': headers['fspiop-source'],
+    'fspiop-destination': headers['fspiop-destination'],
+    'fspiop-http-method': headers['fspiop-http-method'],
+    'fspiop-signature': headers['fspiop-signature'],
+    'fspiop-uri': headers['fspiop-uri'],
+    Accept: null
+  }
+
+  if (!noAccept) {
+    ret.Accept = acceptHeader
+  }
+
+  return removeEmptyKeys(ret)
+}
+
+/**
+ * Returns the SHA-256 hash of the supplied request object
+ *
+ * @returns {undefined}
+ */
+function calculateRequestHash (request) {
+  // calculate a SHA-256 of the request
+  const requestStr = JSON.stringify(request)
+  return crypto.createHash('sha256').update(requestStr).digest('hex')
+}
+
+// Add caching to the participant endpoint
+const fetchParticipantInfo = async (source, destination, cache) => {
+  // Get quote participants from central ledger admin
+  const { switchEndpoint } = new Config()
+  const url = `${switchEndpoint}/participants`
+  let requestPayer
+  let requestPayee
+  const cachedPayer = cache && cache.get(`fetchParticipantInfo_${source}`)
+  const cachedPayee = cache && cache.get(`fetchParticipantInfo_${destination}`)
+
+  if (!cachedPayer) {
+    requestPayer = await axios.request({ url: `${url}/${source}` })
+    cache && cache.put(`fetchParticipantInfo_${source}`, requestPayer, Config.participantDataCacheExpiresInMs)
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
+  } else {
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payer ${source}`)
+  }
+  if (!cachedPayee) {
+    requestPayee = await axios.request({ url: `${url}/${destination}` })
+    cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
+  } else {
+    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payee ${destination}`)
+  }
+  const payer = cachedPayer || requestPayer.data
+  const payee = cachedPayee || requestPayee.data
+  return { payer, payee }
+}
+
+const auditSpan = async (request) => {
+  const { span, headers, payload } = request
+  await span.audit({
+    headers,
+    payload
+  }, AuditEventAction.start)
+}
+
+const rethrowFspiopError = (error) => {
+  const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
+  Logger.isErrorEnabled && Logger.error(fspiopError)
+  throw fspiopError
+}
+
 module.exports = {
+  auditSpan,
   failActionHandler,
   getSafe,
   getSpanTags,
-  getStackOrInspect
+  getStackOrInspect,
+  generateRequestHeaders,
+  generateRequestHeadersForJWS,
+  calculateRequestHash,
+  removeEmptyKeys,
+  rethrowFspiopError,
+  fetchParticipantInfo
 }

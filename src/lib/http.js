@@ -36,8 +36,11 @@
 const axios = require('axios')
 const util = require('util')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const http = require('http')
 
 const { getStackOrInspect } = require('../lib/util')
+
+axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
 
 // TODO: where httpRequest is called, there's a pretty common pattern of obtaining an endpoint from
 // the database, specialising a template string with that endpoint, then calling httpRequest. Is
@@ -60,8 +63,10 @@ async function httpRequest (opts, fspiopSource) {
     res = await axios.request(opts)
     body = await res.data
   } catch (e) {
-    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
-      'Network error',
+    const [fspiopErrorType, fspiopErrorDescr] = e.response && e.response.status === 404
+      ? [ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Not found']
+      : [ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error']
+    throw ErrorHandler.CreateFSPIOPError(fspiopErrorType, fspiopErrorDescr,
       `${getStackOrInspect(e)}. Opts: ${util.inspect(opts)}`,
       fspiopSource)
   }

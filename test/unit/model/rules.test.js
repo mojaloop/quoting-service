@@ -30,6 +30,8 @@
  --------------
  ******/
 
+jest.mock('@mojaloop/central-services-logger')
+
 // jest has a buggy system for mocking dependencies that can be overcome by mocking and then
 // requiring the module like below.
 // more info on https://github.com/facebook/jest/issues/2582#issuecomment-321607875
