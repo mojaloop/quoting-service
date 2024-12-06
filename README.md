@@ -109,10 +109,14 @@ Operators within the individual conditions can take the following values:
 
   - `equal:` fact must equal value (string or numeric value)
   - `notEqual:` fact must not equal value (string or numeric value)
+  - `arrayEqual:` fact (can be an array of 1 element) must equal value (string or numeric value)
+  - `arrayNotEqual:` fact (can be an array of 1 element) must not equal value (string or numeric value)
   - `in:` fact must be included in value (an array)
   - `notIn:` fact must not be included in value (an array)
   - `contains:` fact (an array) must include value
   - `doesNotContain:` fact (an array) must not include value
+
+NOTE: The `arrayEqual` and `arrayNotEqual` operators are used to compare a fact that is an array of one element to a value. This is useful when you want to compare a fact that can be an array containing a single element or a single value to a value. These operators are not part of the json-rules-engine library and have been added to the quoting-service to maintain the legacy behavior of the json-rules-engine up to v5.0.2
 
 ### Events
 Event objects must have a type property, and an optional params property. There are two types of events:
