@@ -124,7 +124,9 @@
     },
     "jsonwebtoken": "9.0.0",
     "jsonpointer": "5.0.0",
-    "cross-spawn": "6.0.6"
+    "cross-spawn": "6.0.6",
+    "path-to-regexp": "0.1.12",
+    "validator": "13.7.0"
   },
   "devDependencies": {
     "audit-ci": "^7.1.0",
