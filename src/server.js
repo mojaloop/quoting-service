@@ -52,7 +52,6 @@ const { failActionHandler, resolveOpenApiSpecPath } = require('../src/lib/util')
 const Config = require('./lib/config')
 const Handlers = require('./api')
 const Routes = require('./api/routes')
-const plugins = require('./api/plugins')
 const dto = require('./lib/dto')
 
 const { OpenapiBackend } = CentralServices.Util
@@ -61,7 +60,8 @@ const {
   FSPIOPHeaderValidation,
   HapiRawPayload,
   HapiEventPlugin,
-  OpenapiBackendValidator
+  OpenapiBackendValidator,
+  loggingPlugin
 } = CentralServices.Util.Hapi
 
 // load config
@@ -154,10 +154,6 @@ const initServer = async function (config, topicNames) {
   // add plugins to the server
   await server.register([
     {
-      plugin: plugins.loggingPlugin,
-      options: {}
-    },
-    {
       plugin: Good,
       options: {
         ops: {
@@ -187,7 +183,11 @@ const initServer = async function (config, topicNames) {
     ErrorHandler,
     HapiRawPayload,
     HapiEventPlugin,
-    Metrics.plugin
+    Metrics.plugin,
+    {
+      plugin: loggingPlugin,
+      options: { log: logger }
+    }
   ])
 
   server.route(Routes.APIRoutes(api))

@@ -102,6 +102,82 @@ describe('ISO format validation Tests -->', () => {
       expect(response.statusCode).toBe(200)
     })
 
+    test('should validate ISO payload for PUT /quotes/{id} callback SDK GP', async () => {
+      const payload = {
+        CdtTrfTxInf: {
+          Cdtr: {
+            Id: {
+              PrvtId: {
+                Othr: {
+                  Id: '17039811902',
+                  SchmeNm: { Prtry: 'MSISDN' }
+                }
+              }
+            }
+          },
+          CdtrAgt: {
+            FinInstnId: {
+              Othr: { Id: 'payeefsp' }
+            }
+          },
+          ChrgBr: 'CRED',
+          ChrgsInf: {
+            Amt: {
+              ActiveOrHistoricCurrencyAndAmount: '0',
+              Ccy: 'XXX'
+            },
+            Agt: {
+              FinInstnId: {
+                Othr: { Id: 'sourcefsp' }
+              }
+            }
+          },
+          Dbtr: {
+            Id: {
+              PrvtId: {
+                Othr: {
+                  Id: '17039811901',
+                  SchmeNm: { Prtry: 'MSISDN' }
+                }
+              }
+            }
+          },
+          DbtrAgt: {
+            FinInstnId: {
+              Othr: { Id: 'payerfsp' }
+            }
+          },
+          IntrBkSttlmAmt: {
+            ActiveCurrencyAndAmount: '5',
+            Ccy: 'XXX'
+          },
+          PmtId: {
+            TxId: '01JBEH4H1ZFFER80RZ9QJV38AY'
+          },
+          VrfctnOfTerms: {
+            IlpV4PrepPacket: 'DIICpgAAAAAAAAAFMjAyNDEwMzAxMDU3NTQ5OTAcHxvYGqwbG-kxRL7EpwlPRFhZIN3NJM59NCkz3yhHAApnLm1vamFsb29wggJfZXlKeGRXOTBaVWxrSWpvaU1ERktRa1ZJTkVneFdrWkdSVkk0TUZKYU9WRktWak00UVZraUxDSjBjbUZ1YzJGamRHbHZia2xrSWpvaU1ERktRa1ZJTkVneU1ERXpSakJTT1RnMVdFWXdNazVYTTFFaUxDSjBjbUZ1YzJGamRHbHZibFI1Y0dVaU9uc2ljMk5sYm1GeWFXOGlPaUpVVWtGT1UwWkZVaUlzSW1sdWFYUnBZWFJ2Y2lJNklsQkJXVVZTSWl3aWFXNXBkR2xoZEc5eVZIbHdaU0k2SWtKVlUwbE9SVk5USW4wc0luQmhlV1ZsSWpwN0luQmhjblI1U1dSSmJtWnZJanA3SW5CaGNuUjVTV1JVZVhCbElqb2lUVk5KVTBST0lpd2ljR0Z5ZEhsSlpHVnVkR2xtYVdWeUlqb2lNVGN3TXprNE1URTVNRElpTENKbWMzQkpaQ0k2SW5CaGVXVmxabk53SW4xOUxDSndZWGxsY2lJNmV5SndZWEowZVVsa1NXNW1ieUk2ZXlKd1lYSjBlVWxrVkhsd1pTSTZJazFUU1ZORVRpSXNJbkJoY25SNVNXUmxiblJwWm1sbGNpSTZJakUzTURNNU9ERXhPVEF4SWl3aVpuTndTV1FpT2lKd1lYbGxjbVp6Y0NKOWZTd2laWGh3YVhKaGRHbHZiaUk2SWpJd01qUXRNVEF0TXpCVU1UQTZOVGM2TlRRdU9Ua3dXaUlzSW1GdGIzVnVkQ0k2ZXlKaGJXOTFiblFpT2lJMUlpd2lZM1Z5Y21WdVkza2lPaUpZV0ZnaWZYMA'
+          }
+        },
+        GrpHdr: {
+          CreDtTm: '2024-10-30T10:56:54.996Z',
+          MsgId: '01JBEH4H6K5Z8H2A3N934V8G3C',
+          NbOfTxs: '1',
+          PmtInstrXpryDtTm: '2024-10-30T10:57:54.990Z',
+          SttlmInf: {
+            SttlmMtd: 'CLRG'
+          }
+        }
+      }
+      const request = {
+        method: 'PUT',
+        url: `/quotes/${mocks.generateULID()}`,
+        headers,
+        payload
+      }
+      const response = await server.inject(request)
+      expect(response.statusCode).toBe(200)
+    })
+
     test('should validate ISO payload for PUT /quotes/{id}/error callback', async () => {
       const { body } = await TransformFacades.FSPIOP.quotes.putError({
         body: mocks.errorPayloadDto()
