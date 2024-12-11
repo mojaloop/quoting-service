@@ -251,7 +251,7 @@ describe('FxQuotesModel Tests -->', () => {
         headers: expectedHeaders,
         method: ENUM.Http.RestMethods.POST,
         url: `${mockEndpoint}${ENUM.EndPoints.FspEndpointTemplates.FX_QUOTES_POST}`,
-        data: JSON.stringify(request)
+        data: expect.objectContaining(request)
       }, headers['fspiop-source'])
     })
 
@@ -394,7 +394,7 @@ describe('FxQuotesModel Tests -->', () => {
         },
         method: ENUM.Http.RestMethods.PUT,
         url: `${mockEndpoint}/fxQuotes/${conversionRequestId}`,
-        data: JSON.stringify(updateRequest)
+        data: expect.objectContaining(updateRequest)
       }, headers['fspiop-source'])
     })
 
@@ -665,7 +665,7 @@ describe('FxQuotesModel Tests -->', () => {
       expect(args.headers.Accept).toBeUndefined()
       expect(args.method).toBe(ENUM.Http.RestMethods.PUT)
       expect(args.url).toBe(`${mockEndpoint}/fxQuotes/${conversionRequestId}/error`)
-      expect(args.data).toBe(JSON.stringify(fspiopError.toApiErrorObject()))
+      expect(args.data).toStrictEqual(fspiopError.toApiErrorObject())
     })
 
     test('should reformat and re-throw http request error to fspiop error', async () => {

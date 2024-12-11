@@ -149,13 +149,14 @@ class BulkQuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.POST,
         url: fullCallbackUrl,
-        data: JSON.stringify(originalBulkQuoteRequest),
+        data: originalBulkQuoteRequest,
         headers: newHeaders
       }
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
-        span.audit(opts, EventSdk.AuditEventAction.egress)
+        const { data, ...rest } = opts
+        span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
 
       this.writeLog(`Forwarding request : ${util.inspect(opts)}`)
@@ -233,13 +234,14 @@ class BulkQuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
-        data: JSON.stringify(originalBulkQuoteResponse),
+        data: originalBulkQuoteResponse,
         headers: newHeaders
       }
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
-        span.audit(opts, EventSdk.AuditEventAction.egress)
+        const { data, ...rest } = opts
+        span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
 
       await httpRequest(opts, fspiopSource)
@@ -431,7 +433,7 @@ class BulkQuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
-        data: JSON.stringify(fspiopError.toApiErrorObject(envConfig.errorHandling), LibUtil.getCircularReplacer()),
+        data: fspiopError.toApiErrorObject(envConfig.errorHandling),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
         headers: formattedHeaders
@@ -439,7 +441,8 @@ class BulkQuotesModel {
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
-        span.audit(opts, EventSdk.AuditEventAction.egress)
+        const { data, ...rest } = opts
+        span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
 
       let res
