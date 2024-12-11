@@ -2,6 +2,5 @@
 reject: [
   "json-rules-engine",
   "eslint",
-  "@mojaloop/sdk-standard-components", # Version 17.4.0 introduced the bug: this.logger.isDebugEnabled is not a function
-  "@mojaloop/central-services-shared" # This should be removed as soon as all validations on the fx feature has been completed and cs-shared fx feature merged to main
+  "@mojaloop/sdk-standard-components" # Version 17.4.0 introduced the bug: this.logger.isDebugEnabled is not a function
 ]
