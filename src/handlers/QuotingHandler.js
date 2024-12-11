@@ -104,6 +104,7 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, quoteId, err, headers, span)
     } finally {
+      /* istanbul ignore next */
       if (span && !span.isFinished) {
         await span.finish()
       }
@@ -126,6 +127,7 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, quoteId, err, headers, span)
     } finally {
+      /* istanbul ignore next */
       if (span && !span.isFinished) {
         await span.finish()
       }
@@ -149,6 +151,7 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       await model.handleException(fspiopSource, payload.bulkQuoteId, fspiopError, headers, span)
     } finally {
+      /* istanbul ignore next */
       if (span && !span.isFinished) {
         await span.finish()
       }
