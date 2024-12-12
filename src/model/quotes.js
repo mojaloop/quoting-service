@@ -440,12 +440,13 @@ class QuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.POST,
         url: `${endpoint}/quotes`,
-        data: JSON.stringify(originalQuoteRequest),
+        data: originalQuoteRequest,
         headers: util.generateRequestHeaders(headers, this.envConfig.protocolVersions, false, RESOURCES.quotes, additionalHeaders)
       }
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
-        span.audit(opts, EventSdk.AuditEventAction.egress)
+        const { data, ...rest } = opts
+        span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
       log.debug('Forwarding quote request...', { opts })
 
@@ -696,12 +697,13 @@ class QuotesModel {
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: `${endpoint}/quotes/${quoteId}`,
-        data: JSON.stringify(originalQuoteResponse),
+        data: originalQuoteResponse,
         headers: util.generateRequestHeaders(headers, this.envConfig.protocolVersions, true, RESOURCES.quotes, null)
       }
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
-        span.audit(opts, EventSdk.AuditEventAction.egress)
+        const { data, ...rest } = opts
+        span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
       log.debug('Forwarding quote response...', { opts })
 
@@ -1018,7 +1020,8 @@ class QuotesModel {
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
-        span.audit(opts, EventSdk.AuditEventAction.egress)
+        const { data, ...rest } = opts
+        span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
 
       let res

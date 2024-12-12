@@ -54,7 +54,6 @@ const axios = require('axios')
 
 const clone = require('@mojaloop/central-services-shared').Util.clone
 const Enum = require('@mojaloop/central-services-shared').Enum
-const LibUtil = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const Logger = require('@mojaloop/central-services-logger')
@@ -2062,7 +2061,7 @@ describe('QuotesModel', () => {
       const expectedOptions = {
         method: Enum.Http.RestMethods.PUT,
         url: 'http://localhost:8444/payeefsp/quotes/test123/error',
-        data: JSON.stringify(fspiopError.toApiErrorObject(mockConfig.errorHandling), LibUtil.getCircularReplacer()),
+        data: fspiopError.toApiErrorObject(mockConfig.errorHandling),
         headers: {}
       }
 

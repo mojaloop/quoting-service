@@ -170,7 +170,7 @@ const makeErrorPayloadDto = async (errObject, headers, resource, log = logger) =
     : errObject
   log.verbose('makeErrorPayload is done', { errPayload })
 
-  return JSON.stringify(errPayload, Util.getCircularReplacer())
+  return errPayload
 }
 
 module.exports = {

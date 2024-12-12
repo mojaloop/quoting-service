@@ -792,7 +792,7 @@ describe('BulkQuotesModel', () => {
       const expectedOptions = {
         method: Enum.Http.RestMethods.PUT,
         url: 'http://localhost:8444/payeefsp/bulkQuotes/test123/error',
-        data: JSON.stringify(fspiopError.toApiErrorObject(mockConfig.errorHandling), LibUtil.getCircularReplacer()),
+        data: fspiopError.toApiErrorObject(mockConfig.errorHandling),
         headers: {}
       }
 
