@@ -35,6 +35,7 @@
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { Producer } = require('@mojaloop/central-services-stream').Util
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const { logger } = require('../../../src/lib')
 const bulkQuotesApi = require('../../../src/api/bulkQuotes')
@@ -46,7 +47,11 @@ const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.POST
 
 describe('POST /bulkQuotes endpoint Tests -->', () => {
   const mockContext = jest.fn()
-
+  Metrics.getCounter(
+    'errorCount',
+    'Error count',
+    ['code', 'system', 'operation', 'step']
+  )
   it('should publish a bulkQuote request message', async () => {
     // Arrange
     Producer.produceMessage = jest.fn()

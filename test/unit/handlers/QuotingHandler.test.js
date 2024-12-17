@@ -2,7 +2,13 @@ const { randomUUID } = require('node:crypto')
 const { Cache } = require('memory-cache')
 const { Tracer } = require('@mojaloop/event-sdk')
 const { encodePayload } = require('@mojaloop/central-services-shared').Util.StreamingProtocol
+const Metrics = require('@mojaloop/central-services-metrics')
 
+Metrics.getCounter(
+  'errorCount',
+  'Error count',
+  ['code', 'system', 'operation', 'step']
+)
 jest.mock('../../../src/model/quotes')
 jest.mock('../../../src/model/fxQuotes')
 jest.mock('../../../src/model/bulkQuotes')

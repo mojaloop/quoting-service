@@ -32,6 +32,7 @@
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { Producer } = require('@mojaloop/central-services-stream').Util
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const { logger } = require('../../../../src/lib')
 const quotesApi = require('../../../../src/api/quotes/{id}')
@@ -42,6 +43,11 @@ const { kafkaConfig } = new Config()
 
 describe('/quotes/{id} API Tests -->', () => {
   const mockContext = jest.fn()
+  Metrics.getCounter(
+    'errorCount',
+    'Error count',
+    ['code', 'system', 'operation', 'step']
+  )
 
   describe('GET /quotes/{id} Endpoint Tests', () => {
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.GET

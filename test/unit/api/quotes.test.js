@@ -32,6 +32,7 @@
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { Producer } = require('@mojaloop/central-services-stream').Util
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const { logger } = require('../../../src/lib')
 const quotesApi = require('../../../src/api/quotes')
@@ -43,7 +44,11 @@ const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
 
 describe('POST /quotes API Tests -->', () => {
   const mockContext = jest.fn()
-
+  Metrics.getCounter(
+    'errorCount',
+    'Error count',
+    ['code', 'system', 'operation', 'step']
+  )
   it('should publish a quote request message', async () => {
     // Arrange
     Producer.produceMessage = jest.fn()
