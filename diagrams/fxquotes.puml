@@ -52,7 +52,7 @@ box "Payer DFSP" #LightBlue
   participant "Payer\nMojaloop\nConnector" as D1
 end box
 
-participant "Mojaloop Switch" as S1
+participant "Quoting Service" as S1
 
 box "Discovery Service" #LightYellow
   participant "ALS Oracle" as ALS
