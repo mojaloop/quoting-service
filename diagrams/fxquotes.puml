@@ -85,48 +85,9 @@ note right of PayerCC
     "acceptParty": true
 }
 end note
-D1->D1:Hmmm. I can only send in $payerCurrency.\nI need to get some currency conversion
 !else
 PayerCC->PayerCC:Hmmm. I can only send in $payerCurrency.\nI need to get some currency conversion
-PayerCC->>D1:What FXPs do you know about?\n**GET /services/FXP**
 !endif
-
-D1->>Services:What FXPs do you know about?\n**GET /services/FXP**
-activate Services
-!if ($simplified != true)
-Services-->>D1:202 I'll get back to you
-!endif
-deactivate D1
-Services->ALSOracle:What FXPs do you know about?
-activate ALSOracle
-ALSOracle-->Services:FDH FX
-deactivate ALSOracle
-Services->>D1:Here are the available FXPs:FDH FX
-note left of Services
-    PUT /services/FXP
-    {
-        "providers": [
-            "$fxpID"
-        ]
-    }
-end note
-activate D1
-!if ($simplified != true)
-D1-->>Services:200 Gotcha
-!endif
-
-!if ($advancedCoreConnectorFlow != true)
-' TODO: We can pause the execution here if required to allow the core connector to select the FXP
-D1->D1:I'll ask FDH FX to perform my conversion
-!else
-D1->>PayerCC:Here are the available FXPs
-note right of PayerCC
-    {
-        "providers": [
-            "$fxpID"
-        ]
-    }
-end note
 
 PayerCC->PayerCC:I'll ask FDH FX to perform my conversion
 PayerCC->D1: I want to get a quote from this FXP\n**POST /fxQuotes**
@@ -153,11 +114,6 @@ PayerCC->D1: I want to get a quote from this FXP\n**POST /fxQuotes**
         end note
     !endif
 !endif
-
-
-!endif
-
-
 
 deactivate QS
 
