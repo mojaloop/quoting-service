@@ -16,6 +16,10 @@
     "Vassilis Barzokas <vassilis.barzokas@modusbox.com>",
     "Juan Correa <juan.correa@modusbox.com>"
   ],
+  "engines": {
+    "node": ">=18.x"
+  },
+  "main": "src/server.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/mojaloop/quoting-service.git"
@@ -38,8 +42,8 @@
       "postchangelog": "replace '\\[mojaloop/#(\\d+)\\]\\(https://github.com/mojaloop/(.*)/issues/(\\d+)\\)' '[mojaloop/#$1](https://github.com/mojaloop/project/issues/$1)' CHANGELOG.md"
     }
   },
-  "engines": {
-    "node": ">=18.x"
+  "generator-swaggerize": {
+    "version": "4.11.0"
   },
   "pre-commit": [
     "lint",
@@ -97,6 +101,9 @@
     "yargs": {
       "yargs-parser": "^21.1.1"
     },
+    "eslint-config-standard": {
+      "eslint": "$eslint"
+    },
     "jsonwebtoken": "9.0.0",
     "jsonpointer": "5.0.0"
   },
@@ -136,7 +143,7 @@
   },
   "devDependencies": {
     "audit-ci": "^7.1.0",
-    "eslint": "8.16.0",
+    "eslint": "9.17.0",
     "eslint-config-standard": "17.1.0",
     "eslint-plugin-jest": "28.9.0",
     "jest": "29.7.0",
@@ -150,9 +157,5 @@
     "standard": "17.1.2",
     "standard-version": "9.5.0",
     "swagmock": "1.0.0"
-  },
-  "generator-swaggerize": {
-    "version": "4.11.0"
-  },
-  "main": "src/server.js"
+  }
 }
