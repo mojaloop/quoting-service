@@ -30,21 +30,22 @@
  --------------
  ******/
 
-const util = require('util')
 const Database = require('./database.js')
 const Cache = require('memory-cache').Cache
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
 
-const { getStackOrInspect } = require('../lib/util')
+const { loggerFactory } = require('../lib/index.js')
 
 /**
  * An extension of the Database class that caches enum values in memory
  */
 class CachedDatabase extends Database {
-  constructor (config) {
+  constructor (config, logger) {
     super(config)
-
+    this.log = logger || loggerFactory({
+      context: this.constructor.name
+    })
     this.cache = new Cache()
   }
 
@@ -112,7 +113,7 @@ class CachedDatabase extends Database {
 
       if (!value) {
         // we need to get the value from the db and cache it
-        this.writeLog(`Cache miss for ${type}: ${util.inspect(params)}`)
+        this.log.debug('Cache miss for: ', { type, params })
         value = await super[type].apply(this, params)
         // cache participant with a shorter TTL than enums (participant data is more likely to change)
         if (
@@ -126,13 +127,13 @@ class CachedDatabase extends Database {
         }
         histTimer({ success: true, queryName: type, hit: false })
       } else {
-        this.writeLog(`Cache hit for ${type} ${util.inspect(params)}: ${value}`)
+        this.log.debug('Cache hit for : ', { type, params, value })
         histTimer({ success: true, queryName: type, hit: true })
       }
 
       return value
     } catch (err) {
-      this.writeLog(`Error in getCacheValue: ${getStackOrInspect(err)}`)
+      this.log.error('Error in getCacheValue: ', err)
       histTimer({ success: false, queryName: type, hit: false })
       throw ErrorHandler.Factory.reformatFSPIOPError(err)
     }

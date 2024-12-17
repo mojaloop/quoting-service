@@ -37,22 +37,24 @@ const crypto = require('crypto')
 const axios = require('axios')
 const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
-const { Enum } = require('@mojaloop/central-services-shared')
+const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
-
+const { RESOURCES, HEADERS } = require('../constants')
 const Config = require('./config')
+
+const config = new Config()
 
 const failActionHandler = async (request, h, err) => {
   Logger.isErrorEnabled && Logger.error(`validation failure: ${err ? getStackOrInspect(err) : ''}`)
   throw err
 }
 
-const getSpanTags = ({ payload, headers, params }, transactionType, transactionAction) => {
+const getSpanTags = ({ payload, headers, params, spanContext }, transactionType, transactionAction) => {
   const tags = {
     transactionType,
     transactionAction,
-    transactionId: (payload && payload.transactionId) || (params && params.id),
-    quoteId: (payload && payload.quoteId) || (params && params.id),
+    transactionId: (payload && payload.transactionId) || (params && params.id) || (spanContext?.tags?.transactionId),
+    quoteId: (payload && payload.quoteId) || (params && params.id) || (spanContext?.tags?.quoteId),
     source: headers[Enum.Http.Headers.FSPIOP.SOURCE],
     destination: headers[Enum.Http.Headers.FSPIOP.DESTINATION]
   }
@@ -124,18 +126,34 @@ function removeEmptyKeys (originalObject) {
   return obj
 }
 
-function applyResourceVersionHeaders (headers, protocolVersions) {
+const makeAppInteroperabilityHeader = (resource, version) => `application/vnd.interoperability.${resource}+json;version=${version}`
+
+function applyResourceVersionHeaders (headers, protocolVersions, resource) {
   let contentTypeHeader = headers['content-type'] || headers['Content-Type']
   let acceptHeader = headers.accept || headers.Accept
-  if (Enum.Http.Headers.FSPIOP.SWITCH.regex.test(headers['fspiop-source'])) {
+  if (Util.HeaderValidation.getHubNameRegex(config.hubName).test(headers['fspiop-source'])) {
     if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
-      contentTypeHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.CONTENT.DEFAULT}`
+      contentTypeHeader = makeAppInteroperabilityHeader(resource, protocolVersions.CONTENT.DEFAULT)
     }
     if (Enum.Http.Headers.GENERAL.ACCEPT.regex.test(acceptHeader) && !!protocolVersions.ACCEPT.DEFAULT) {
-      acceptHeader = `application/vnd.interoperability.quotes+json;version=${protocolVersions.ACCEPT.DEFAULT}`
+      acceptHeader = makeAppInteroperabilityHeader(resource, protocolVersions.ACCEPT.DEFAULT)
     }
   }
   return { contentTypeHeader, acceptHeader }
+}
+
+const headersMappingDto = (headers, protocolVersions, noAccept, resource) => {
+  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions, resource)
+  return {
+    [HEADERS.accept]: noAccept ? null : acceptHeader,
+    [HEADERS.contentType]: contentTypeHeader,
+    [HEADERS.date]: headers.date,
+    [HEADERS.fspiopSource]: headers['fspiop-source'],
+    [HEADERS.fspiopDestination]: headers['fspiop-destination'],
+    [HEADERS.fspiopHttpMethod]: headers['fspiop-http-method'],
+    [HEADERS.fspiopSignature]: headers['fspiop-signature'],
+    [HEADERS.fspiopUri]: headers['fspiop-uri']
+  }
 }
 
 /**
@@ -143,22 +161,15 @@ function applyResourceVersionHeaders (headers, protocolVersions) {
  *
  * @returns {object}
  */
-function generateRequestHeaders (headers, protocolVersions, noAccept = false, additionalHeaders) {
-  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions)
-  let ret = {
-    'Content-Type': contentTypeHeader,
-    Date: headers.date,
-    'FSPIOP-Source': headers['fspiop-source'],
-    'FSPIOP-Destination': headers['fspiop-destination'],
-    'FSPIOP-HTTP-Method': headers['fspiop-http-method'],
-    'FSPIOP-Signature': headers['fspiop-signature'],
-    'FSPIOP-URI': headers['fspiop-uri'],
-    Accept: null
-  }
+function generateRequestHeaders (
+  headers,
+  protocolVersions,
+  noAccept = false,
+  resource = RESOURCES.quotes,
+  additionalHeaders = null
+) {
+  let ret = headersMappingDto(headers, protocolVersions, noAccept, resource)
 
-  if (!noAccept) {
-    ret.Accept = acceptHeader
-  }
   // below are the non-standard headers added by the rules
   if (additionalHeaders) {
     ret = { ...ret, ...additionalHeaders }
@@ -172,22 +183,18 @@ function generateRequestHeaders (headers, protocolVersions, noAccept = false, ad
  *
  * @returns {object}
  */
-function generateRequestHeadersForJWS (headers, protocolVersions, noAccept = false) {
-  const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions)
-  const ret = {
-    'Content-Type': contentTypeHeader,
-    date: headers.date,
-    'fspiop-source': headers['fspiop-source'],
-    'fspiop-destination': headers['fspiop-destination'],
-    'fspiop-http-method': headers['fspiop-http-method'],
-    'fspiop-signature': headers['fspiop-signature'],
-    'fspiop-uri': headers['fspiop-uri'],
-    Accept: null
-  }
-
-  if (!noAccept) {
-    ret.Accept = acceptHeader
-  }
+function generateRequestHeadersForJWS (
+  headers,
+  protocolVersions,
+  noAccept = false,
+  resource = RESOURCES.quotes
+) {
+  const mappedHeaders = headersMappingDto(headers, protocolVersions, noAccept, resource)
+  // JWS Signer expects headers in lowercase
+  const ret = Object.fromEntries(
+    Object.entries(mappedHeaders).map(([key, value]) => [key.toLowerCase(), value])
+  )
+  // todo: clarify if we need additionalHeaders here (see generateRequestHeaders fn)
 
   return removeEmptyKeys(ret)
 }
@@ -204,36 +211,98 @@ function calculateRequestHash (request) {
 }
 
 // Add caching to the participant endpoint
-const fetchParticipantInfo = async (source, destination, cache) => {
+const fetchParticipantInfo = async (source, destination, cache, proxyClient) => {
   // Get quote participants from central ledger admin
-  const { switchEndpoint } = new Config()
+  const { switchEndpoint } = config
   const url = `${switchEndpoint}/participants`
   let requestPayer
   let requestPayee
-  const cachedPayer = cache && cache.get(`fetchParticipantInfo_${source}`)
-  const cachedPayee = cache && cache.get(`fetchParticipantInfo_${destination}`)
 
-  if (!cachedPayer) {
+  if (proxyClient) {
+    if (!proxyClient.isConnected) await proxyClient.connect()
+    const proxyIdSource = await proxyClient.lookupProxyByDfspId(source)
+    const proxyIdDestination = await proxyClient.lookupProxyByDfspId(destination)
+    if (proxyIdSource) {
+      // construct participant adjacent data structure that uses the original
+      // participant when they are proxied and out of scheme
+      requestPayer = {
+        data: {
+          name: source,
+          id: '',
+          // assume source is active
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        }
+      }
+    }
+    if (proxyIdDestination) {
+      // construct participant adjacent data structure that uses the original
+      // participant when they are proxied and out of scheme
+      requestPayee = {
+        data: {
+          name: destination,
+          id: '',
+          // assume destination is active
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        }
+      }
+    }
+  }
+
+  const cachedPayer = cache && !requestPayer && cache.get(`fetchParticipantInfo_${source}`)
+  const cachedPayee = cache && !requestPayee && cache.get(`fetchParticipantInfo_${destination}`)
+
+  if (!cachedPayer && !requestPayer) {
     requestPayer = await axios.request({ url: `${url}/${source}` })
     cache && cache.put(`fetchParticipantInfo_${source}`, requestPayer, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
   } else {
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payer ${source}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payer ${source}`)
   }
-  if (!cachedPayee) {
+  if (!cachedPayee && !requestPayee) {
     requestPayee = await axios.request({ url: `${url}/${destination}` })
     cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache miss for payer ${source}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payee ${destination}`)
   } else {
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, [fetchParticipantInfo]: cache hit for payee ${destination}`)
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payee ${destination}`)
   }
+
   const payer = cachedPayer || requestPayer.data
   const payee = cachedPayee || requestPayee.data
   return { payer, payee }
 }
 
+const getParticipantEndpoint = async ({ fspId, db, loggerFn, endpointType, proxyClient = null }) => {
+  if (!fspId || !db || !loggerFn || !endpointType) {
+    throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Missing required arguments for \'getParticipantEndpoint\'')
+  }
+
+  let endpoint = await db.getParticipantEndpoint(fspId, endpointType)
+
+  loggerFn(`DB lookup: resolved participant '${fspId}' ${endpointType} endpoint to: '${endpoint}'`)
+
+  // if endpoint is not found in db, check the proxy cache for a proxy representative for the fsp (this might be an inter-scheme request)
+  if (!endpoint && proxyClient) {
+    if (!proxyClient.isConnected) await proxyClient.connect()
+    const proxyId = await proxyClient.lookupProxyByDfspId(fspId)
+    if (proxyId) {
+      endpoint = await db.getParticipantEndpoint(proxyId, endpointType)
+    }
+
+    loggerFn(`Proxy lookup: resolved participant '${fspId}' ${endpointType} endpoint to: '${endpoint}', proxyId: ${proxyId} `)
+  }
+
+  return endpoint
+}
+
 const auditSpan = async (request) => {
-  const { span, headers, payload } = request
+  const { span, headers, payload, method } = request
+  span.setTags(getSpanTags(request, 'quote', method))
   await span.audit({
     headers,
     payload
@@ -257,5 +326,7 @@ module.exports = {
   calculateRequestHash,
   removeEmptyKeys,
   rethrowFspiopError,
-  fetchParticipantInfo
+  fetchParticipantInfo,
+  getParticipantEndpoint,
+  makeAppInteroperabilityHeader
 }

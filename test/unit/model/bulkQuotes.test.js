@@ -422,11 +422,20 @@ describe('BulkQuotesModel', () => {
     it('should get http status code 202 Accepted in simple routing mode', async () => {
       expect.assertions(1)
       mockConfig.simpleRoutingMode = true
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest, mockChildSpan)
 
-      expect(bulkQuotesModel.db.getParticipantEndpoint).toBeCalled()
+      expect(bulkQuotesModel._getParticipantEndpoint).toBeCalled()
+    })
+
+    it('should throw rethrow any errors', async () => {
+      expect.assertions(1)
+      bulkQuotesModel._getParticipantEndpoint.mockRejectedValueOnce(new Error('Test Error'))
+
+      await expect(bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest, mockChildSpan))
+        .rejects
+        .toThrowError()
     })
   })
 
@@ -485,19 +494,19 @@ describe('BulkQuotesModel', () => {
 
     it('should get http status code 200 OK in simple routing mode', async () => {
       expect.assertions(2)
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockChildSpan))
         .resolves
         .toBe(undefined)
 
-      expect(bulkQuotesModel.db.getParticipantEndpoint).toBeCalled()
+      expect(bulkQuotesModel._getParticipantEndpoint).toBeCalled()
     })
     it('should throw when participant endpoint is not found', async () => {
       expect.assertions(1)
 
       const endpoint = undefined
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(endpoint)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(endpoint)
       bulkQuotesModel.sendErrorCallback = jest.fn((_, fspiopError) => { throw fspiopError })
 
       await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockChildSpan))
@@ -507,7 +516,7 @@ describe('BulkQuotesModel', () => {
     it('should not use spans when undefined and should throw when participant endpoint is invalid', async () => {
       expect.assertions(3)
 
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
       Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
@@ -520,7 +529,7 @@ describe('BulkQuotesModel', () => {
     it('should throw when participant endpoint returns invalid response', async () => {
       expect.assertions(3)
 
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
       Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
@@ -535,7 +544,7 @@ describe('BulkQuotesModel', () => {
 
       const customErrorNoStack = new Error('Custom error')
       delete customErrorNoStack.stack
-      bulkQuotesModel.db.getParticipantEndpoint.mockRejectedValueOnce(customErrorNoStack)
+      bulkQuotesModel._getParticipantEndpoint.mockRejectedValueOnce(customErrorNoStack)
 
       await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
         .rejects
@@ -600,7 +609,7 @@ describe('BulkQuotesModel', () => {
     it('fails to forward if the database has no endpoint for the dfsp', async () => {
       // Arrange
       expect.assertions(1)
-      bulkQuotesModel.db.getParticipantEndpoint.mockImplementation(() => null)
+      bulkQuotesModel._getParticipantEndpoint.mockImplementation(() => null)
 
       // Act
       const action = async () => bulkQuotesModel.forwardBulkQuoteGet(mockData.headers, mockData.bulkQuoteId, mockSpan)
@@ -612,7 +621,7 @@ describe('BulkQuotesModel', () => {
     it('forwards the request to the payee dfsp without a span', async () => {
       // Arrange
       // expect.assertions(2)
-      bulkQuotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      bulkQuotesModel._getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
       const expectedOptions = {
         headers: {},
         method: 'GET',
@@ -632,7 +641,7 @@ describe('BulkQuotesModel', () => {
     it('forwards the request to the payee dfsp', async () => {
       // Arrange
       expect.assertions(4)
-      bulkQuotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      bulkQuotesModel._getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345'
@@ -658,7 +667,7 @@ describe('BulkQuotesModel', () => {
     it('handles a http error', async () => {
       // Arrange
       expect.assertions(1)
-      bulkQuotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      bulkQuotesModel._getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
       Http.httpRequest.mockImplementationOnce(() => { throw new Error('Test HTTP Error') })
 
       // Act
@@ -776,7 +785,7 @@ describe('BulkQuotesModel', () => {
     it('sends the error callback without a span', async () => {
       // Arrange
       expect.assertions(1)
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
@@ -797,7 +806,7 @@ describe('BulkQuotesModel', () => {
     it('sends the error callback and handles the span', async () => {
       // Arrange
       expect.assertions(3)
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
@@ -832,14 +841,14 @@ describe('BulkQuotesModel', () => {
       // Arrange
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       // expect.assertions(6)
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -865,14 +874,14 @@ describe('BulkQuotesModel', () => {
       // Arrange
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       expect.assertions(5)
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -886,7 +895,7 @@ describe('BulkQuotesModel', () => {
         data: {},
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         }
       }
@@ -906,14 +915,14 @@ describe('BulkQuotesModel', () => {
       // Arrange
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       expect.assertions(5)
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -927,7 +936,7 @@ describe('BulkQuotesModel', () => {
         data: {},
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         }
       }
@@ -946,7 +955,7 @@ describe('BulkQuotesModel', () => {
     it('handles when the endpoint could not be found', async () => {
       // Arrange
       expect.assertions(2)
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(undefined)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(undefined)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
@@ -962,7 +971,7 @@ describe('BulkQuotesModel', () => {
     it('handles a http exception', async () => {
       // Arrange
       expect.assertions(2)
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
@@ -979,7 +988,7 @@ describe('BulkQuotesModel', () => {
     it('handles a http bad status code', async () => {
       // Arrange
       expect.assertions(2)
-      bulkQuotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)

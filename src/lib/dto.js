@@ -20,7 +20,7 @@ const makeMessageMetadata = (id, type, action) => {
 const messageFromRequestDto = (request, type, action) => {
   const { headers, payload = {}, params = {} } = request
   const { spanContext } = request.span || {}
-  const id = params.id || payload.quoteId || payload.bulkQuoteId
+  const id = params.id || payload.quoteId || payload.bulkQuoteId || payload.conversionRequestId
   const encodedJson = encodePayload(JSON.stringify(payload), headers[Headers.GENERAL.CONTENT_TYPE.value])
 
   return Object.freeze({
@@ -43,12 +43,14 @@ const messageFromRequestDto = (request, type, action) => {
 }
 
 const requestDataFromMessageDto = (message) => {
-  const { topic, value } = message
+  const { topic, value, offset, partition } = message
 
   return Object.freeze({
     topic,
     requestData: {
       ...value.content,
+      offset,
+      partition,
       payload: decodePayload(value.content?.payload)
       // see messageFromRequestDto for details of "content" field
     }

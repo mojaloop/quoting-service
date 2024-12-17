@@ -1,6 +1,5 @@
 {
   "extends": "standard",
-  "plugins": ["jest"],
   "parserOptions": {
     "ecmaVersion": 13
   },

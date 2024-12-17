@@ -124,7 +124,7 @@ describe('QuotesModel', () => {
     })
     mockTransaction = {
       commit: jest.fn(),
-      rollback: jest.fn()
+      rollback: jest.fn(() => Promise.reject(new Error('DB error')))
     }
     mockChildSpan = {
       injectContextToHttpRequest: jest.fn(opts => opts),
@@ -356,6 +356,7 @@ describe('QuotesModel', () => {
       }
     }))
   })
+
   afterEach(() => {
     // Clears the mock.calls and mock.instances properties of all mocks.
     // Equivalent to calling .mockClear() on every mocked function.
@@ -564,7 +565,7 @@ describe('QuotesModel', () => {
     })
 
     it('should validate payer and payee fspId for simple routing mode', async () => {
-      expect.assertions(5)
+      expect.assertions(4)
 
       const fspiopSource = 'dfsp1'
       const fspiopDestination = 'dfsp2'
@@ -574,13 +575,12 @@ describe('QuotesModel', () => {
       await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest)
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(1)
 
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
     it('should validate payer and payee fspId and headers for simple routing mode', async () => {
-      expect.assertions(7)
+      expect.assertions(6)
 
       const fspiopSource = 'dfsp123'
       const fspiopDestination = 'dfsp234'
@@ -590,15 +590,10 @@ describe('QuotesModel', () => {
       await quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest)
 
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
-      if (mockConfig.simpleRoutingMode) {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(4)
-      } else {
-        expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
-      }
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopSource)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(fspiopDestination)
-      expect(quotesModel.db.getParticipant.mock.calls[2][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[3][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(3)
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(fspiopDestination)
+      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[2][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
     it('should throw internal error if no quoteRequest was supplied', async () => {
       expect.assertions(4)
@@ -632,26 +627,42 @@ describe('QuotesModel', () => {
       expect(quotesModel.db).toBeTruthy() // Constructor should have been called
       expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(1)
 
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
-    it('should throw DESTINATION_FSP_ERROR error if payee is not active or does not have active account', async () => {
-      expect.assertions(6)
 
+    it('should validate payer supported currencies if supplied', async () => {
       const fspiopSource = 'dfsp1'
       const fspiopDestination = 'dfsp2'
-      quotesModel.db.getParticipant.mockReturnValueOnce(mockData.payer)
+      const request = mockData.quoteRequest
+      request.payer.supportedCurrencies = ['ZMW', 'TZS']
+      quotesModel.db.getParticipant.mockResolvedValueOnce({ accounts: [{ currency: 'ZMW' }] })
+      quotesModel.db.getParticipant.mockResolvedValueOnce({ accounts: [{ currency: 'TZS' }] })
 
-      quotesModel.db.getParticipant.mockRejectedValue(ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `Unsupported participant '${fspiopDestination}'`))
-      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, request)).resolves.toBeUndefined()
 
-      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, mockData.quoteRequest))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
-
-      expect(quotesModel.db).toBeTruthy() // Constructor should have been called
       expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(2)
-      expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payer.partyIdInfo.fspId)
-      expect(quotesModel.db.getParticipant.mock.calls[1][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(fspiopSource, 'PAYER_DFSP', 'ZMW', Enum.Accounts.LedgerAccountType.POSITION)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(fspiopSource, 'PAYER_DFSP', 'TZS', Enum.Accounts.LedgerAccountType.POSITION)
+    })
+
+    it('should skip validating source if source is a proxied participant', async () => {
+      const fspiopSource = 'dfsp1'
+      const fspiopDestination = 'dfsp2'
+      const request = mockData.quoteRequest
+      request.payer.supportedCurrencies = ['ZMW', 'TZS']
+      quotesModel.proxyClient = {
+        isConnected: false,
+        connect: jest.fn().mockResolvedValue(true),
+        lookupProxyByDfspId: jest.fn().mockImplementation(fspid => {
+          return fspid === fspiopSource ? 'proxyId' : undefined
+        })
+      }
+
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, request)).resolves.toBeUndefined()
+
+      quotesModel.db.getParticipant.mock.calls.forEach(call => {
+        expect(call[0]).not.toBe(fspiopSource)
+      })
     })
   })
   describe('validateQuoteUpdate', () => {
@@ -661,8 +672,37 @@ describe('QuotesModel', () => {
     })
 
     it('should validate quote update', async () => {
-      const result = await quotesModel.validateQuoteUpdate()
-      expect(result).toBeNull()
+      quotesModel.db.getParticipant.mockReturnValueOnce(mockData.payer)
+      let promise = quotesModel.validateQuoteUpdate(mockData.headers, mockData.quoteUpdate)
+      await expect(promise).resolves.toBeUndefined()
+      expect(quotesModel.db.getParticipant.mock.calls[0][2]).toBe(mockData.quoteUpdate.payeeReceiveAmount.currency)
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(mockData.headers['fspiop-source'], 'PAYEE_DFSP', mockData.quoteUpdate.payeeReceiveAmount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+
+      delete mockData.quoteUpdate.payeeReceiveAmount
+      const altCurreny = 'EUR'
+      promise = quotesModel.validateQuoteUpdate(mockData.headers, { ...mockData.quoteUpdate, transferAmount: { amount: '95', currency: altCurreny } })
+      await expect(promise).resolves.toBeUndefined()
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(mockData.headers['fspiop-source'], 'PAYEE_DFSP', altCurreny, Enum.Accounts.LedgerAccountType.POSITION)
+    })
+
+    it('should skip validating quote update if source is proxied participant', async () => {
+      const proxyId = 'proxyId'
+      quotesModel.proxyClient = {
+        isConnected: false,
+        connect: jest.fn().mockResolvedValue(true),
+        lookupProxyByDfspId: jest.fn().mockResolvedValueOnce(proxyId)
+      }
+      const promise = quotesModel.validateQuoteUpdate(
+        mockData.headers,
+        mockData.quoteUpdate,
+        {
+          isConnected: false,
+          connect: jest.fn().mockResolvedValue(true),
+          lookupProxyByDfspId: jest.fn().mockResolvedValueOnce(proxyId)
+        }
+      )
+      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
+      await expect(promise).resolves.toBeUndefined()
     })
   })
   describe('handleQuoteRequest', () => {
@@ -1068,6 +1108,18 @@ describe('QuotesModel', () => {
             expect(quotesModel.handleException.mock.calls.length).toBe(1)
             expect(result).toEqual(expectedResult)
           })
+
+          it('calls handleQuoteRequestResend if request is duplicate and should resend', async () => {
+            expect.assertions(1)
+            quotesModel.checkDuplicateQuoteRequest = jest.fn(() => {
+              return {
+                isDuplicateId: true,
+                isResend: true
+              }
+            })
+            await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            expect(quotesModel.handleQuoteRequestResend).toHaveBeenCalledTimes(1)
+          })
         })
       })
     })
@@ -1260,21 +1312,21 @@ describe('QuotesModel', () => {
     it('should get http status code 202 Accepted in simple routing mode', async () => {
       expect.assertions(1)
       mockConfig.simpleRoutingMode = true
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan)
 
-      expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
+      expect(quotesModel._getParticipantEndpoint).toBeCalled()
     })
     it('should get http status code 202 Accepted in switch mode', async () => {
       expect.assertions(1)
 
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan)
 
-      expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
+      expect(quotesModel._getParticipantEndpoint).toBeCalled()
     })
     it('should throw when quoteRequest is undefined', async () => {
       expect.assertions(1)
@@ -1286,7 +1338,7 @@ describe('QuotesModel', () => {
     it('should not use spans when undefined and should throw when participant endpoint is invalid', async () => {
       expect.assertions(3)
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
       Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
@@ -1299,7 +1351,7 @@ describe('QuotesModel', () => {
     it('should throw when participant endpoint returns invalid response', async () => {
       expect.assertions(3)
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
       Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
@@ -1309,13 +1361,22 @@ describe('QuotesModel', () => {
       expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
       expect(mockChildSpan.audit).not.toHaveBeenCalled()
     })
+    it('should throw when participant endpoint is not found in db and proxy cache', async () => {
+      expect.assertions(1)
+      mockConfig.simpleRoutingMode = false
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(null)
+
+      await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
+    })
     it('should inspect and throw custom error as FSPIOPerror', async () => {
       expect.assertions(3)
 
       mockConfig.simpleRoutingMode = false
       const customErrorNoStack = new Error('Custom error')
       delete customErrorNoStack.stack
-      quotesModel.db.getParticipantEndpoint.mockRejectedValueOnce(customErrorNoStack)
+      quotesModel._getParticipantEndpoint.mockRejectedValueOnce(customErrorNoStack)
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
         .rejects
@@ -1372,32 +1433,10 @@ describe('QuotesModel', () => {
         .resolves
         .toBe(undefined)
 
-      expect(mockChildSpan.audit).toBeCalled()
+      expect(mockChildSpan.audit).toHaveBeenCalled()
       const args = [mockData.headers['fspiop-source'], mockData.quoteRequest.quoteId, customErrorNoStack, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
-      expect(mockChildSpan.finish).not.toBeCalled()
-    })
-    it('handle custom error without stack when writeLog fails', async () => {
-      expect.assertions(1)
-
-      const errorMessage = 'Custom error'
-      const customErrorNoStack = new Error(errorMessage)
-      delete customErrorNoStack.stack
-      quotesModel.writeLog = jest.fn(() => { throw customErrorNoStack })
-
-      await expect(quotesModel.handleQuoteRequestResend(mockData.headers, mockData.quoteRequest, mockSpan))
-        .rejects
-        .toHaveProperty('message', errorMessage)
-    })
-    it('handle custom error without stack when writeLog fails', async () => {
-      expect.assertions(1)
-
-      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
-      quotesModel.writeLog = jest.fn().mockImplementationOnce(cb => cb(fspiopError))
-
-      await expect(quotesModel.handleQuoteRequestResend(mockData.headers, mockData.quoteRequest, mockSpan))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+      expect(mockChildSpan.finish).not.toHaveBeenCalled()
     })
   })
   describe('handleQuoteUpdate', () => {
@@ -1415,9 +1454,8 @@ describe('QuotesModel', () => {
       const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
 
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: mockData.quoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
+      expect(mockChildSpan.audit).not.toBeCalled()
+      const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(refs).toEqual({})
     })
@@ -1432,9 +1470,8 @@ describe('QuotesModel', () => {
       const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
 
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: mockData.quoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
+      expect(mockChildSpan.audit).not.toBeCalled()
+      let args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       args = [mockData.headers['fspiop-source'], mockData.quoteId, fspiopError, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
@@ -1509,10 +1546,9 @@ describe('QuotesModel', () => {
         mockQuoteResponseId
       )
 
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: localQuoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
+      expect(mockChildSpan.audit).not.toBeCalled()
 
-      args = [mockData.headers, mockData.quoteId, localQuoteUpdate, mockChildSpan]
+      const args = [mockData.headers, mockData.quoteId, localQuoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toMatchObject(expected)
@@ -1540,9 +1576,8 @@ describe('QuotesModel', () => {
       expect(mockTransaction.rollback.mock.calls.length).toBe(0)
       expect(mockTransaction.commit.mock.calls.length).toBe(1)
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
-      let args = [{ headers: mockData.headers, params: { quoteId: mockData.quoteRequest.quoteId }, payload: mockData.quoteUpdate }, EventSdk.AuditEventAction.start]
-      expect(mockChildSpan.audit).toBeCalledWith(...args)
-      args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
+      expect(mockChildSpan.audit).not.toBeCalled()
+      const args = [mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
       expect(refs).toEqual(expected)
@@ -1638,25 +1673,25 @@ describe('QuotesModel', () => {
     it('should get http status code 200 OK in simple routing mode', async () => {
       expect.assertions(2)
       mockConfig.simpleRoutingMode = true
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan))
         .resolves
         .toBe(undefined)
 
-      expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
+      expect(quotesModel._getParticipantEndpoint).toBeCalled()
     })
     it('should get http status code 200 OK in switch mode', async () => {
       expect.assertions(2)
 
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockChildSpan))
         .resolves
         .toBe(undefined)
 
-      expect(quotesModel.db.getParticipantEndpoint).toBeCalled()
+      expect(quotesModel._getParticipantEndpoint).toBeCalled()
     })
     it('should throw when quoteUpdate is undefined', async () => {
       expect.assertions(1)
@@ -1669,7 +1704,7 @@ describe('QuotesModel', () => {
       expect.assertions(3)
 
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
       Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
@@ -1683,7 +1718,7 @@ describe('QuotesModel', () => {
       expect.assertions(3)
 
       mockConfig.simpleRoutingMode = false
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
       Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
@@ -1699,7 +1734,7 @@ describe('QuotesModel', () => {
       mockConfig.simpleRoutingMode = false
       const customErrorNoStack = new Error('Custom error')
       delete customErrorNoStack.stack
-      quotesModel.db.getParticipantEndpoint.mockRejectedValueOnce(customErrorNoStack)
+      quotesModel._getParticipantEndpoint.mockRejectedValueOnce(customErrorNoStack)
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
         .rejects
@@ -1762,28 +1797,6 @@ describe('QuotesModel', () => {
       const args = [mockData.headers['fspiop-source'], mockData.quoteId, customErrorNoStack, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
-    })
-    it('handle custom error without stack when writeLog fails', async () => {
-      expect.assertions(1)
-
-      const errorMessage = 'Custom error'
-      const customErrorNoStack = new Error(errorMessage)
-      delete customErrorNoStack.stack
-      quotesModel.writeLog = jest.fn(() => { throw customErrorNoStack })
-
-      await expect(quotesModel.handleQuoteUpdateResend(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan))
-        .rejects
-        .toHaveProperty('message', errorMessage)
-    })
-    it('handle custom error without stack when writeLog fails', async () => {
-      expect.assertions(1)
-
-      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
-      quotesModel.writeLog = jest.fn().mockImplementationOnce(cb => cb(fspiopError))
-
-      await expect(quotesModel.handleQuoteUpdateResend(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan))
-        .rejects
-        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
     })
   })
 
@@ -1922,22 +1935,10 @@ describe('QuotesModel', () => {
       quotesModel.forwardQuoteGet.mockRestore()
     })
 
-    it('fails to forward if the database has no endpoint for the dfsp', async () => {
-      // Arrange
-      expect.assertions(1)
-      quotesModel.db.getParticipantEndpoint.mockImplementation(() => null)
-
-      // Act
-      const action = async () => quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
-
-      // Assert
-      await expect(action()).rejects.toThrowError('No FSPIOP_CALLBACK_URL_QUOTES found for quote GET test123')
-    })
-
     it('forwards the request to the payee dfsp without a span', async () => {
       // Arrange
       // expect.assertions(2)
-      quotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      quotesModel._getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
       const expectedOptions = {
         headers: {},
         method: 'GET',
@@ -1957,7 +1958,7 @@ describe('QuotesModel', () => {
     it('forwards the request to the payee dfsp', async () => {
       // Arrange
       expect.assertions(4)
-      quotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      quotesModel._getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345'
@@ -1983,7 +1984,7 @@ describe('QuotesModel', () => {
     it('handles a http error', async () => {
       // Arrange
       expect.assertions(1)
-      quotesModel.db.getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      quotesModel._getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
       Http.httpRequest.mockImplementationOnce(() => { throw new Error('Test HTTP Error') })
 
       // Act
@@ -2002,17 +2003,15 @@ describe('QuotesModel', () => {
 
     it('handles the error and finishes the child span', async () => {
       // Arrange
-      expect.assertions(3)
       const error = new Error('Test Error')
       const expectedError = ErrorHandler.ReformatFSPIOPError(error)
       quotesModel.sendErrorCallback.mockImplementationOnce(() => true)
 
       // Act
-      const result = await quotesModel.handleException('payeefsp', mockData.quoteId, error, mockData.headers, mockSpan)
+      await quotesModel.handleException('payeefsp', mockData.quoteId, error, mockData.headers, mockSpan)
 
       // Assert
       expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan, true)
-      expect(result).toBe(true)
       expect(mockChildSpan.finish).toHaveBeenCalledTimes(1)
     })
 
@@ -2021,6 +2020,7 @@ describe('QuotesModel', () => {
       expect.assertions(3)
       const error = new Error('Test Error')
       const expectedError = ErrorHandler.ReformatFSPIOPError(error)
+      const spyLogError = jest.spyOn(quotesModel.log.mlLogger, 'error')
       quotesModel.sendErrorCallback.mockImplementationOnce(() => { throw new Error('Error sending callback.') })
 
       // Act
@@ -2028,7 +2028,7 @@ describe('QuotesModel', () => {
 
       // Assert
       expect(quotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.quoteId, mockData.headers, mockChildSpan, true)
-      expect(quotesModel.writeLog).toHaveBeenCalledTimes(1)
+      expect(spyLogError).toHaveBeenCalledTimes(1)
       expect(mockChildSpan.finish).toHaveBeenCalledTimes(1)
     })
   })
@@ -2042,7 +2042,7 @@ describe('QuotesModel', () => {
     it('sends the error callback without a span', async () => {
       // Arrange
       expect.assertions(1)
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
@@ -2063,7 +2063,7 @@ describe('QuotesModel', () => {
     it('sends the error callback and handles the span', async () => {
       // Arrange
       expect.assertions(3)
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
@@ -2098,14 +2098,14 @@ describe('QuotesModel', () => {
       // Arrange
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       // expect.assertions(6)
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -2131,7 +2131,7 @@ describe('QuotesModel', () => {
       // Arrange
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       // expect.assertions(6)
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
@@ -2140,7 +2140,7 @@ describe('QuotesModel', () => {
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2',
           'fspiop-signature': fspiopSignature
         },
@@ -2165,14 +2165,14 @@ describe('QuotesModel', () => {
       // Arrange
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       expect.assertions(5)
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -2186,7 +2186,7 @@ describe('QuotesModel', () => {
         data: {},
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         }
       }
@@ -2206,14 +2206,14 @@ describe('QuotesModel', () => {
       // Arrange
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       expect.assertions(5)
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -2227,7 +2227,7 @@ describe('QuotesModel', () => {
         data: {},
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         }
       }
@@ -2246,7 +2246,7 @@ describe('QuotesModel', () => {
     it('handles when the endpoint could not be found', async () => {
       // Arrange
       expect.assertions(2)
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(undefined)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(undefined)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
@@ -2262,7 +2262,7 @@ describe('QuotesModel', () => {
     it('handles a http exception', async () => {
       // Arrange
       expect.assertions(2)
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
@@ -2279,7 +2279,7 @@ describe('QuotesModel', () => {
     it('handles a http bad status code', async () => {
       // Arrange
       expect.assertions(2)
-      quotesModel.db.getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)

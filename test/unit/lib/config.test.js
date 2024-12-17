@@ -25,6 +25,10 @@
 'use strict'
 
 const mockDefaultFile = {
+  HUB_PARTICIPANT: {
+    ID: 1,
+    NAME: 'Hub'
+  },
   HOSTNAME: 'http://quoting-service',
   LISTEN_ADDRESS: '0.0.0.0',
   PORT: 3002,
@@ -74,7 +78,6 @@ const mockDefaultFile = {
   ENDPOINT_SECURITY: {
     JWS: {
       JWS_SIGN: true,
-      FSPIOP_SOURCE_TO_SIGN: 'switch',
       JWS_SIGNING_KEY_PATH: 'secrets/jwsSigningKey.key'
     }
   },
@@ -133,7 +136,7 @@ describe('Config', () => {
       ENDPOINT_SECURITY: {
         JWS: {
           JWS_SIGN: true,
-          FSPIOP_SOURCE_TO_SIGN: 'switch',
+          FSPIOP_SOURCE_TO_SIGN: 'Hub',
           JWS_SIGNING_KEY_PATH: '/fake/path'
         }
       }

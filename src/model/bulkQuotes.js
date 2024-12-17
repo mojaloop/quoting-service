@@ -42,7 +42,7 @@ const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
-const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders } = require('../lib/util')
+const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 
 delete axios.defaults.headers.common.Accept
@@ -55,10 +55,11 @@ delete axios.defaults.headers.common['Content-Type']
  */
 
 class BulkQuotesModel {
-  constructor (config) {
-    this.config = config
-    this.db = config.db
-    this.requestId = config.requestId
+  constructor (deps) {
+    this.db = deps.db
+    this.requestId = deps.requestId
+    this.proxyClient = deps.proxyClient
+    this.envConfig = deps.config || new Config()
   }
 
   /**
@@ -68,7 +69,13 @@ class BulkQuotesModel {
    */
   async validateBulkQuoteRequest (fspiopSource, fspiopDestination, bulkQuoteRequest) {
     await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
-    await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+
+    // Ensure the proxy client is connected
+    if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
+    // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
+    if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
+      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    }
   }
 
   /**
@@ -121,7 +128,7 @@ class BulkQuotesModel {
       // lookup payee dfsp callback endpoint
       // TODO: for MVP we assume initiator is always payer dfsp! this may not always be the
       // case if a xfer is requested by payee
-      endpoint = await this.db.getParticipantEndpoint(fspiopDest, ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES)
+      endpoint = await this._getParticipantEndpoint(fspiopDest)
 
       this.writeLog(`Resolved FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulkQuote ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
 
@@ -133,7 +140,7 @@ class BulkQuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
 
       this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)
@@ -203,7 +210,7 @@ class BulkQuotesModel {
 
     try {
       // lookup payer dfsp callback endpoint
-      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_BULK_QUOTES')
+      endpoint = await this._getParticipantEndpoint(fspiopDest)
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulk quote ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
 
       if (!endpoint) {
@@ -217,7 +224,7 @@ class BulkQuotesModel {
       // we need to strip off the 'accept' header
       // for all PUT requests as per the API Specification Document
       // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions, true)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, true)
 
       this.writeLog(`Forwarding bulk quote response to endpoint: ${fullCallbackUrl}`)
       this.writeLog(`Forwarding bulk quote response headers: ${JSON.stringify(newHeaders)}`)
@@ -279,7 +286,7 @@ class BulkQuotesModel {
       // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
-      endpoint = await this.db.getParticipantEndpoint(fspiopDest, 'FSPIOP_CALLBACK_URL_BULK_QUOTES')
+      endpoint = await this._getParticipantEndpoint(fspiopDest)
 
       this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulk quote GET ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
 
@@ -291,7 +298,7 @@ class BulkQuotesModel {
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
-      const newHeaders = generateRequestHeaders(headers, this.db.config.protocolVersions)
+      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
 
       this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
 
@@ -372,11 +379,11 @@ class BulkQuotesModel {
    * @returns {promise}
    */
   async sendErrorCallback (fspiopSource, fspiopError, bulkQuoteId, headers, span, modifyHeaders = true) {
-    const envConfig = new Config()
+    const { envConfig } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       // look up the callback base url
-      const endpoint = await this.db.getParticipantEndpoint(fspiopSource, ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES)
+      const endpoint = await this._getParticipantEndpoint(fspiopSource)
 
       this.writeLog(`Resolved participant '${fspiopSource}' '${ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES}' to: '${endpoint}'`)
 
@@ -405,7 +412,7 @@ class BulkQuotesModel {
         delete headers['fspiop-signature']
         fromSwitchHeaders = Object.assign({}, headers, {
           'fspiop-destination': fspiopSource,
-          'fspiop-source': ENUM.Http.Headers.FSPIOP.SWITCH.value,
+          'fspiop-source': envConfig.hubName,
           'fspiop-http-method': ENUM.Http.RestMethods.PUT,
           'fspiop-uri': fspiopUri
         })
@@ -415,9 +422,9 @@ class BulkQuotesModel {
 
       // JWS Signer expects headers in lowercase
       if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, this.db.config.protocolVersions, true)
+        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true)
       } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, this.db.config.protocolVersions, true)
+        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true)
       }
 
       let opts = {
@@ -436,7 +443,7 @@ class BulkQuotesModel {
 
       let res
       try {
-        // If JWS is enabled and the 'fspiop-source' matches the configured jws header value('switch')
+        // If JWS is enabled and the 'fspiop-source' matches the configured jws header value(i.e the hub name)
         // that means it's a switch generated message and we need to sign it
         if (envConfig.jws && envConfig.jws.jwsSign && opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
           this.writeLog('Getting the JWS Signer to sign the switch generated message')
@@ -483,6 +490,11 @@ class BulkQuotesModel {
       }
       throw fspiopError
     }
+  }
+
+  // wrapping this dependency here to allow for easier use and testing
+  async _getParticipantEndpoint (fspId, endpointType = ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES) {
+    return getParticipantEndpoint({ fspId, db: this.db, loggerFn: this.writeLog.bind(this), endpointType, proxyClient: this.proxyClient })
   }
 
   /**
