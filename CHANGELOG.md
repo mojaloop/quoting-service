@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.0.0](https://github.com/mojaloop/quoting-service/compare/v15.7.3...v16.0.0) (2024-12-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* fx and interscheme implementation (#353)
+
+### Features
+
+* fx and interscheme implementation ([#353](https://github.com/mojaloop/quoting-service/issues/353)) ([bc4e126](https://github.com/mojaloop/quoting-service/commit/bc4e126041180178ea69369b52b7f441526dbbd2))
+
+
+### Chore
+
+* **moja-tools-bot:** update license md ([#363](https://github.com/mojaloop/quoting-service/issues/363)) ([bad3fd9](https://github.com/mojaloop/quoting-service/commit/bad3fd959a31a8ef60f124ae6795e825a507aafe))
+
 ### [15.7.3](https://github.com/mojaloop/quoting-service/compare/v15.7.2...v15.7.3) (2024-06-17)
 
 
