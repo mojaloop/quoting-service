@@ -839,7 +839,7 @@ describe('BulkQuotesModel', () => {
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -872,7 +872,7 @@ describe('BulkQuotesModel', () => {
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -886,7 +886,7 @@ describe('BulkQuotesModel', () => {
         data: {},
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         }
       }
@@ -913,7 +913,7 @@ describe('BulkQuotesModel', () => {
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         },
         method: Enum.Http.RestMethods.PUT,
@@ -927,7 +927,7 @@ describe('BulkQuotesModel', () => {
         data: {},
         headers: {
           spanHeaders: '12345',
-          'fspiop-source': 'switch',
+          'fspiop-source': mockConfig.hubName,
           'fspiop-destination': 'dfsp2'
         }
       }

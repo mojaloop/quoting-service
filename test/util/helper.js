@@ -26,6 +26,7 @@
 const SwagMock = require('swagmock')
 const Path = require('path')
 const apiPath = Path.resolve(__dirname, '../../src/interface/swagger.json')
+const Logger = require('@mojaloop/central-services-logger')
 let mockGen
 
 /**
@@ -106,8 +107,42 @@ const mockRequest = () => {
   return mockGen
 }
 
+/**
+ * @function sleepPromise
+ *
+ * @description A hacky method to sleep in JS. For testing purposes only.
+ *
+ * @param {number} seconds - The number of seconds to sleep for
+ *
+ * @returns {Promise<>}
+ */
+async function sleepPromise (seconds) {
+  return new Promise(resolve => setTimeout(resolve, seconds * 1000))
+}
+
+async function wrapWithRetries (func, remainingRetries = 10, timeout = 2, condition) {
+  Logger.warn(`wrapWithRetries remainingRetries:${remainingRetries}, timeout:${timeout}`)
+
+  try {
+    const result = await func()
+    if (!condition(result)) {
+      throw new Error('wrapWithRetries returned false of undefined response')
+    }
+    return result
+  } catch (err) {
+    if (remainingRetries === 0) {
+      Logger.warn('wrapWithRetries ran out of retries')
+      throw err
+    }
+
+    await sleepPromise(timeout)
+    return wrapWithRetries(func, remainingRetries - 1, timeout, condition)
+  }
+}
+
 module.exports = {
   baseMockRequest,
   defaultHeaders,
-  mockRequest
+  mockRequest,
+  wrapWithRetries
 }

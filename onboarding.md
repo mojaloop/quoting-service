@@ -72,7 +72,7 @@ In this method, we will run all of the dependencies inside of docker containers,
 >*Note:* Before starting all of the containers, start the `mysql` container alone, to give it some more time to set up the necessary permissions (this only needs to be done once, or every time you remove and re-create the container). 
 
 ```bash
-docker-compose -f docker-compose.base.yml up mysql
+docker-compose -f docker-compose.yml up mysql
 ```
 
 **2. Run all of the dependencies in `docker-compose`:**
@@ -122,7 +122,7 @@ We use `docker-compose` to manage and run the `quoting-service` along with its d
 
 **1. First run the mysql container, then run the test of the containers**
 ```bash
-docker-compose -f docker-compose.base.yml up mysql #first time only - the initial mysql load takes a while, and if it's not up in time, the central-ledger will just crash
+docker-compose -f docker-compose.yml up mysql #first time only - the initial mysql load takes a while, and if it's not up in time, the central-ledger will just crash
 
 npm run docker:up
 ```

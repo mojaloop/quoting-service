@@ -59,6 +59,18 @@ const createEngine = () => {
     }
   }
 
+  engine.addOperator('arrayEqual', (factValue, ruleValue) => {
+    if (Array.isArray(factValue)) {
+      return factValue.length === 1 && factValue[0] === ruleValue
+    }
+    return factValue === ruleValue
+  })
+  engine.addOperator('arrayNotEqual', (factValue, ruleValue) => {
+    if (Array.isArray(factValue)) {
+      return !(factValue.length === 1 && factValue[0] === ruleValue)
+    }
+    return factValue !== ruleValue
+  })
   engine.addOperator('notDeepEqual', (factValue, ruleValue) => {
     return !deepEqual(factValue, ruleValue)
   })
