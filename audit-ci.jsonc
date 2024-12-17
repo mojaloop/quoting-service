@@ -8,6 +8,7 @@
     "GHSA-c429-5p7v-vgjp",  // https://github.com/advisories/GHSA-c429-5p7v-vgjp
     "GHSA-8hc4-vh64-cxmj",  // https://github.com/advisories/GHSA-8hc4-vh64-cxmj
     "GHSA-952p-6rrq-rcjv",  // https://github.com/advisories/GHSA-952p-6rrq-rcjv
-    "GHSA-pppg-cpfq-h7wr"  // https://github.com/advisories/GHSA-pppg-cpfq-h7wr Patch not released yet
+    "GHSA-pppg-cpfq-h7wr",  // https://github.com/advisories/GHSA-pppg-cpfq-h7wr Patch not released yet
+    "GHSA-3xgq-45jj-v275"   // https://github.com/advisories/GHSA-3xgq-45jj-v275
   ]
 }
