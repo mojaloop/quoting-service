@@ -33,6 +33,7 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
 const util = require('../../lib/util')
 const Config = require('../../lib/config')
@@ -57,6 +58,8 @@ module.exports = {
       'Publish HTTP GET /bulkQuotes/{id} request',
       ['success']
     ).startTimer()
+    const errorCounter = Metrics.getCounter('errorCount')
+    let step
 
     try {
       await util.auditSpan(request)
@@ -75,6 +78,15 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
+      const fspiopError = reformatFSPIOPError(err)
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: 'getBulkQuotesById',
+        step
+      })
       util.rethrowFspiopError(err)
     }
   },
@@ -91,6 +103,8 @@ module.exports = {
       'Publish HTTP PUT /bulkQuotes/{id} request',
       ['success']
     ).startTimer()
+    const errorCounter = Metrics.getCounter('errorCount')
+    let step
 
     try {
       await util.auditSpan(request)
@@ -109,6 +123,15 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
+      const fspiopError = reformatFSPIOPError(err)
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: 'putBulkQuotesById',
+        step
+      })
       util.rethrowFspiopError(err)
     }
   }
