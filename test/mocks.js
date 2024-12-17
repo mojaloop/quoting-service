@@ -1,8 +1,10 @@
 const Config = new (require('../src/lib/config'))()
 const CONTENT_TYPE = 'application/vnd.interoperability.quotes+json;version=1.0'
 
+const config = new Config()
+
 const kafkaMessagePayloadDto = ({
-  from = Config.hubName,
+  from = config.hubName,
   to = 'greenbank',
   id = 'aaab9c4d-2aac-42ef-8aad-2e76f2fac95a',
   type = 'quote',
