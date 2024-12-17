@@ -52,10 +52,11 @@ box "Payer DFSP" #LightBlue
   participant "Payer\nMojaloop\nConnector" as D1
 end box
 
-participant "Quoting Service" as S1
-
-box "Discovery Service" #LightYellow
-  participant "ALS Oracle" as ALS
+box "Mojaloop Switch" #White
+    participant "Quoting Service" as QS
+    participant "ALS" as ALS
+    participant "ALS Oracle" as ALSOracle
+    participant "Services" as Services
 end box
 
 box "FX provider"  
@@ -90,18 +91,18 @@ PayerCC->PayerCC:Hmmm. I can only send in $payerCurrency.\nI need to get some cu
 PayerCC->>D1:What FXPs do you know about?\n**GET /services/FXP**
 !endif
 
-D1->>S1:What FXPs do you know about?\n**GET /services/FXP**
-activate S1
+D1->>Services:What FXPs do you know about?\n**GET /services/FXP**
+activate Services
 !if ($simplified != true)
-S1-->>D1:202 I'll get back to you
+Services-->>D1:202 I'll get back to you
 !endif
 deactivate D1
-S1->ALS:What FXPs do you know about?
-activate ALS
-ALS-->S1:FDH FX
-deactivate ALS
-S1->>D1:Here are the available FXPs:FDH FX
-note left of S1
+Services->ALSOracle:What FXPs do you know about?
+activate ALSOracle
+ALSOracle-->Services:FDH FX
+deactivate ALSOracle
+Services->>D1:Here are the available FXPs:FDH FX
+note left of Services
     PUT /services/FXP
     {
         "providers": [
@@ -111,7 +112,7 @@ note left of S1
 end note
 activate D1
 !if ($simplified != true)
-D1-->>S1:200 Gotcha
+D1-->>Services:200 Gotcha
 !endif
 
 !if ($advancedCoreConnectorFlow != true)
@@ -158,11 +159,11 @@ PayerCC->D1: I want to get a quote from this FXP\n**POST /fxQuotes**
 
 
 
-deactivate S1
+deactivate QS
 
 
 !if ($shortCutSingleFXP != true)
-D1->>S1:Here is the initial version of the transfer.\nPlease quote me for the currency conversion.
+D1->>QS:Here is the initial version of the transfer.\nPlease quote me for the currency conversion.
 !else
 D1->>FXP:Here is the initial version of the transfer.\nPlease quote me for the currency conversion.
 !endif
@@ -187,17 +188,17 @@ note right of D1
     }
 end note
 !if ($shortCutSingleFXP != true)
-activate S1
+activate QS
 !if ($simplified != true)
-S1-->>D1:202 I'll get back to you
+QS-->>D1:202 I'll get back to you
 !endif
 deactivate D1
-S1->>FXP:Here is the initial version of the transfer.\nPlease quote me for the currency conversion.\n**POST /fxQuote**
+QS->>FXP:Here is the initial version of the transfer.\nPlease quote me for the currency conversion.\n**POST /fxQuote**
 activate FXP
 !if ($simplified != true)
-FXP-->>S1:202 I'll get back to you
+FXP-->>QS:202 I'll get back to you
 !endif
-deactivate S1
+deactivate QS
 !else
 !if ($simplified != true)
 FXP-->>D1:202 I'll get back to you
@@ -313,18 +314,18 @@ note left of FXP
     }
 end note
 !if ($shortCutSingleFXP != true)
-FXP->>S1:Here's the signed conversion object
-activate S1
+FXP->>QS:Here's the signed conversion object
+activate QS
 !if ($simplified != true)
-S1-->>FXP:200 Gotcha
+QS-->>FXP:200 Gotcha
 !endif
 deactivate FXP
-S1->>D1:Here's the signed conversion object\n**PUT /fxQuotes/$conversionRequestId**
+QS->>D1:Here's the signed conversion object\n**PUT /fxQuotes/$conversionRequestId**
 activate D1
 !if ($simplified != true)
-D1-->>S1:Gotcha
+D1-->>QS:Gotcha
 !endif
-deactivate S1
+deactivate QS
 !else
 FXP-->>D1:Here's the signed conversion object\n**PUT /fxQuotes/$conversionRequestId**
 !if ($simplified != true)
@@ -517,7 +518,7 @@ PayerCC->D1: I want to get a quote from the FSP\n**POST /quotes**
 !endif
 
 
-D1->>S1:Please quote for a transfer which sends $fxpTargetAmount $payeeCurrency.\n**POST /quotes**
+D1->>QS:Please quote for a transfer which sends $fxpTargetAmount $payeeCurrency.\n**POST /quotes**
 !if ($simplified != true)
 note right of D1
 POST /quotes
@@ -569,17 +570,17 @@ POST /quotes
     }
 end note
 !endif
-activate S1
+activate QS
 !if ($simplified != true)
-S1-->>D1:202 I'll get back to you
+QS-->>D1:202 I'll get back to you
 !endif
 
-S1->>D2:**POST /quotes**
+QS->>D2:**POST /quotes**
 activate D2
 !if ($simplified != true)
-D2-->>S1:202 I'll get back to you
+D2-->>QS:202 I'll get back to you
 !endif
-deactivate S1
+deactivate QS
 D2->PayeeCC:**POST /quoterequests**
 !if ($simplified != true)
 note right of D2
@@ -648,7 +649,7 @@ note right of D2
 end note
 !endif
 D2->D2:Now I will sign the transaction object
-D2->>S1:Here's the signed quote
+D2->>QS:Here's the signed quote
 note left of D2
     **put /quotes/$quoteId**
 
@@ -673,17 +674,17 @@ note left of D2
     }
 
 end note
-activate S1
+activate QS
 !if ($simplified != true)
-S1-->>D2:200 Gotcha
+QS-->>D2:200 Gotcha
 !endif
 deactivate D2
-S1->>D1:Here's the signed quote\n**PUT /quotes/382987a8-75ce-4037-b500-c475e08c1727**
+QS->>D1:Here's the signed quote\n**PUT /quotes/382987a8-75ce-4037-b500-c475e08c1727**
 activate D1
 !if ($simplified != true)
-D1-->>S1:200 Gotcha
+D1-->>QS:200 Gotcha
 !endif
-deactivate S1
+deactivate QS
 D1->D1:OK, I can see that there are going to be $payeeFee $payeeCurrency in charges.
 
 == Sender Confirmation ==
