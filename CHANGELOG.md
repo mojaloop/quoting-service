@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [16.0.1](https://github.com/mojaloop/quoting-service/compare/v16.0.0...v16.0.1) (2024-12-18)
+
+
+### Refactors
+
+* **csi-944:** refactor code for maintainability ([#379](https://github.com/mojaloop/quoting-service/issues/379)) ([80beb3f](https://github.com/mojaloop/quoting-service/commit/80beb3f04fc106903a88b01ea9aa78b5f45fff0c))
+
 ## [16.0.0](https://github.com/mojaloop/quoting-service/compare/v15.7.3...v16.0.0) (2024-12-17)
 
 
