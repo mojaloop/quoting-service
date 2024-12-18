@@ -119,7 +119,16 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in checkDuplicateFxQuoteRequest: ', err)
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -157,7 +166,16 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       log.error('Error in checkDuplicateFxQuoteResponse: ', err)
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -461,7 +479,16 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteUpdate' })
       log.error('error in forwardFxQuoteUpdate', err)
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http"]'
+      }]
+      throw ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -531,7 +558,16 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteGet' })
       this.log.error('error in forwardFxQuoteGet', err)
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http"]'
+      }]
+      throw ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -616,7 +652,16 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in handleFxQuoteRequestResend: ', err)
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http"]'
+      }]
+      throw ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -653,7 +698,16 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in handleQuoteUpdateResend: ', err)
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http"]'
+      }]
+      throw ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -774,7 +828,16 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'sendErrorCallback' })
       log.error('Error in sendErrorCallback', err)
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
@@ -809,6 +872,10 @@ class FxQuotesModel {
       return axios.request(options)
     } catch (err) {
       this.log.warn('error in sendHttpRequest', err)
+      const extensions = [{
+        key: 'system',
+        value: '["http"]'
+      }]
       throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, {
         error: err,
         method: options?.method,
@@ -816,7 +883,10 @@ class FxQuotesModel {
         sourceFsp: fspiopSource,
         destinationFsp: fspiopDest,
         request: JSON.stringify(options, LibUtil.getCircularReplacer())
-      }, fspiopSource)
+      },
+      fspiopSource,
+      extensions
+      )
     }
   }
 

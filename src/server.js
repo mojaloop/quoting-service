@@ -53,6 +53,7 @@ const Config = require('./lib/config')
 const Handlers = require('./api')
 const Routes = require('./api/routes')
 const dto = require('./lib/dto')
+const { version } = require('../package.json')
 
 const { OpenapiBackend } = CentralServices.Util
 const {
@@ -202,6 +203,9 @@ const initServer = async function (config, topicNames) {
 const initializeInstrumentation = (config) => {
   /* istanbul ignore next */
   if (!config.instrumentationMetricsDisabled) {
+    if (config.instrumentationMetricsConfig.defaultLabels) {
+      config.instrumentationMetricsConfig.defaultLabels.serviceVersion = version
+    }
     Metrics.setup(config.instrumentationMetricsConfig)
   }
 }

@@ -155,7 +155,17 @@ class QuotesModel {
     } catch (err) {
       log.warn('validateQuoteRequest is failed with error', err)
       histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
-      throw err
+      const extensions = [{
+        key: 'system',
+        value: '["proxyClient","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
+      throw fspiopError
     }
   }
 
@@ -354,8 +364,16 @@ class QuotesModel {
       if (txn) {
         await txn.rollback().catch(() => {})
       }
-
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (handleQuoteRequestSpan) {
         await handleQuoteRequestSpan.error(fspiopError, state)
@@ -456,7 +474,17 @@ class QuotesModel {
     } catch (err) {
       log.error('forwardQuoteRequest is failed with error:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteRequest' })
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
+      throw fspiopError
     }
   }
 
@@ -502,7 +530,17 @@ class QuotesModel {
     } catch (err) {
       log.error('Error in handleQuoteRequestResend: ', err)
       histTimer({ success: false, queryName: 'quote_handleQuoteRequestResend' })
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
+      throw fspiopError
     }
   }
 
@@ -648,7 +686,16 @@ class QuotesModel {
       if (txn) {
         await txn.rollback().catch(() => {})
       }
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (handleQuoteUpdateSpan) {
         await handleQuoteUpdateSpan.error(fspiopError, state)
@@ -761,7 +808,17 @@ class QuotesModel {
     } catch (err) {
       log.error('Error in handleQuoteUpdateResend: ', err)
       histTimer({ success: false, queryName: 'quote_handleQuoteUpdateResend' })
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
+      throw fspiopError
     }
   }
 
@@ -809,7 +866,16 @@ class QuotesModel {
       if (txn) {
         await txn.rollback().catch(() => {})
       }
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (childSpan) {
         await childSpan.error(fspiopError, state)
@@ -855,7 +921,17 @@ class QuotesModel {
     } catch (err) {
       log.error('error in handleQuoteGet:', err)
       histTimer({ success: false, queryName: 'quote_handleQuoteGet' })
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
+      throw fspiopError
     }
   }
 
@@ -912,7 +988,17 @@ class QuotesModel {
     } catch (err) {
       log.error('error in forwardQuoteGet:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteGet' })
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
+      throw fspiopError
     }
   }
 
@@ -1069,7 +1155,16 @@ class QuotesModel {
       }
     } catch (err) {
       log.error('error in sendErrorCallback:', err)
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
@@ -1127,7 +1222,17 @@ class QuotesModel {
     } catch (err) {
       log.error('error in checkDuplicateQuoteRequest: ', err)
       histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'error' })
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
+      throw fspiopError
     }
   }
 
@@ -1178,7 +1283,17 @@ class QuotesModel {
     } catch (err) {
       log.error('error in checkDuplicateQuoteResponse: ', err)
       histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteResponse', duplicateResult: 'error' })
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
+      throw fspiopError
     }
   }
 

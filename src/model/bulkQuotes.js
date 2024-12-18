@@ -136,7 +136,17 @@ class BulkQuotesModel {
         // internal-error
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for quote ${bulkQuoteId} PAYEE party`, null, fspiopSource)
+        const extensions = [{
+          key: 'system',
+          value: '["proxyClient","db"]'
+        }]
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
+          `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for quote ${bulkQuoteId} PAYEE party`,
+          null,
+          fspiopSource,
+          extensions
+        )
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
@@ -164,7 +174,16 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulkQuote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","proxyClient","db"]'
+      }]
+      throw ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -248,7 +267,16 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulk quote response to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","proxyClient","db"]'
+      }]
+      throw ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -296,7 +324,17 @@ class BulkQuotesModel {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
         // internal-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for bulk quote GET ${bulkQuoteId}`, null, fspiopSource)
+        const extensions = [{
+          key: 'system',
+          value: '["proxyClient","db"]'
+        }]
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
+          `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for bulk quote GET ${bulkQuoteId}`,
+          null,
+          fspiopSource,
+          extensions
+        )
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
@@ -319,7 +357,16 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
-      throw ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","proxyClient","db"]'
+      }]
+      throw ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -393,7 +440,17 @@ class BulkQuotesModel {
       if (!endpoint) {
         // oops, we cant make an error callback if we dont have an endpoint to call!
         // internal-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND, `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for ${fspiopSource} unable to make error callback`, null, fspiopSource)
+        const extensions = [{
+          key: 'system',
+          value: '["proxyClient","db"]'
+        }]
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND,
+          `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for ${fspiopSource} unable to make error callback`,
+          null,
+          fspiopSource,
+          extensions
+        )
       }
 
       const fspiopUri = `/bulkQuotes/${bulkQuoteId}/error`
@@ -461,32 +518,60 @@ class BulkQuotesModel {
         res = await axios.request(opts)
       } catch (err) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, {
-          error: err,
-          url: fullCallbackUrl,
-          sourceFsp: fspiopSource,
-          destinationFsp: fspiopDest,
-          method: opts && opts.method,
-          request: JSON.stringify(opts, LibUtil.getCircularReplacer())
-        }, fspiopSource)
+        const extensions = [{
+          key: 'system',
+          value: '["http","proxyClient","db"]'
+        }]
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+          `network error in sendErrorCallback: ${err.message}`,
+          {
+            error: err,
+            url: fullCallbackUrl,
+            sourceFsp: fspiopSource,
+            destinationFsp: fspiopDest,
+            method: opts && opts.method,
+            request: JSON.stringify(opts, LibUtil.getCircularReplacer())
+          },
+          fspiopSource,
+          extensions
+        )
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
       if (res.status !== ENUM.Http.ReturnCodes.OK.CODE) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response sending error callback', {
-          url: fullCallbackUrl,
-          sourceFsp: fspiopSource,
-          destinationFsp: fspiopDest,
-          method: opts && opts.method,
-          request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
-          response: JSON.stringify(res, LibUtil.getCircularReplacer())
-        }, fspiopSource)
+        const extensions = [{
+          key: 'system',
+          value: '["http"]'
+        }]
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+          'Got non-success response sending error callback', {
+            url: fullCallbackUrl,
+            sourceFsp: fspiopSource,
+            destinationFsp: fspiopDest,
+            method: opts && opts.method,
+            request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
+            response: JSON.stringify(res, LibUtil.getCircularReplacer())
+          },
+          fspiopSource,
+          extensions
+        )
       }
     } catch (err) {
       // any-error
       this.writeLog(`Error in sendErrorCallback: ${getStackOrInspect(err)}`)
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["http","proxyClient","db"]'
+      }]
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
