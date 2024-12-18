@@ -666,22 +666,10 @@ class QuotesModel {
             txn, quoteUpdateRequest.extensionList.extension, quoteId, null, refs.quoteResponseId)
         }
 
-        // todo: create any additional quoteParties e.g. for fees, comission etc...
-
         await txn.commit()
         this.writeLog(`create quote update transaction committed to db: ${util.inspect(refs)}`)
 
         /// if we got here, all entities have been created in db correctly to record the quote request
-
-        // check quote response rules
-        // let test = { ...quoteUpdateRequest };
-
-        // const failures = await quoteRules.getFailures(test);
-        // if (failures && failures.length > 0) {
-        // quote broke business rules, queue up an error callback to the caller
-        //    this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`);
-        // todo: make error callback
-        // }
       }
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       const childSpan = handleQuoteUpdateSpan.getChild('qs_quote_forwardQuoteUpdate')

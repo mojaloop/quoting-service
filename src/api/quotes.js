@@ -46,14 +46,14 @@ const { kafkaConfig } = new Config()
  */
 module.exports = {
   /**
-     * summary: Quotes
-     * description:
-     *  - The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.
-     *  - The HTTP request `POST /fxQuotes` is used to ask an FXP to provide a quotation for a currency conversion.
-     * parameters: body, Accept, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
-     * produces: application/json
-     * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
-     */
+   * summary: Quotes
+   * description:
+   *  - The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.
+   *  - The HTTP request `POST /fxQuotes` is used to ask an FXP to provide a quotation for a currency conversion.
+   * parameters: body, Accept, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
+   * produces: application/json
+   * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
+   */
   post: async function Quotes (context, request, h) {
     const isFX = !!request.payload.conversionRequestId
 

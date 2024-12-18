@@ -41,19 +41,19 @@ const Mockgen = require('../../test/util/mockgen.js')
  */
 module.exports = {
   /**
-     * summary: Quotes
-     * description: The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.
-     * parameters: body, Accept, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
-     * produces: application/json
-     * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
-     * operationId: Quotes
-     */
+   * summary: Quotes
+   * description: The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.
+   * parameters: body, Accept, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
+   * produces: application/json
+   * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
+   * operationId: Quotes
+   */
   post: {
     202: function (req, res, callback) {
       /**
-             * Using mock data generator module.
-             * Replace this by actual data for the api.
-             */
+       * Using mock data generator module.
+       * Replace this by actual data for the api.
+       */
       Mockgen().responses({
         path: '/quotes',
         operation: 'post',
@@ -62,9 +62,9 @@ module.exports = {
     },
     400: function (req, res, callback) {
       /**
-             * Using mock data generator module.
-             * Replace this by actual data for the api.
-             */
+       * Using mock data generator module.
+       * Replace this by actual data for the api.
+       */
       Mockgen().responses({
         path: '/quotes',
         operation: 'post',
@@ -73,9 +73,9 @@ module.exports = {
     },
     401: function (req, res, callback) {
       /**
-             * Using mock data generator module.
-             * Replace this by actual data for the api.
-             */
+       * Using mock data generator module.
+       * Replace this by actual data for the api.
+       */
       Mockgen().responses({
         path: '/quotes',
         operation: 'post',
@@ -84,9 +84,9 @@ module.exports = {
     },
     403: function (req, res, callback) {
       /**
-             * Using mock data generator module.
-             * Replace this by actual data for the api.
-             */
+       * Using mock data generator module.
+       * Replace this by actual data for the api.
+       */
       Mockgen().responses({
         path: '/quotes',
         operation: 'post',
@@ -95,9 +95,9 @@ module.exports = {
     },
     404: function (req, res, callback) {
       /**
-             * Using mock data generator module.
-             * Replace this by actual data for the api.
-             */
+       * Using mock data generator module.
+       * Replace this by actual data for the api.
+       */
       Mockgen().responses({
         path: '/quotes',
         operation: 'post',
@@ -106,9 +106,9 @@ module.exports = {
     },
     405: function (req, res, callback) {
       /**
-             * Using mock data generator module.
-             * Replace this by actual data for the api.
-             */
+       * Using mock data generator module.
+       * Replace this by actual data for the api.
+       */
       Mockgen().responses({
         path: '/quotes',
         operation: 'post',
@@ -117,9 +117,9 @@ module.exports = {
     },
     406: function (req, res, callback) {
       /**
-             * Using mock data generator module.
-             * Replace this by actual data for the api.
-             */
+       * Using mock data generator module.
+       * Replace this by actual data for the api.
+       */
       Mockgen().responses({
         path: '/quotes',
         operation: 'post',
@@ -128,9 +128,9 @@ module.exports = {
     },
     501: function (req, res, callback) {
       /**
-             * Using mock data generator module.
-             * Replace this by actual data for the api.
-             */
+       * Using mock data generator module.
+       * Replace this by actual data for the api.
+       */
       Mockgen().responses({
         path: '/quotes',
         operation: 'post',
@@ -139,9 +139,9 @@ module.exports = {
     },
     503: function (req, res, callback) {
       /**
-             * Using mock data generator module.
-             * Replace this by actual data for the api.
-             */
+       * Using mock data generator module.
+       * Replace this by actual data for the api.
+       */
       Mockgen().responses({
         path: '/quotes',
         operation: 'post',
