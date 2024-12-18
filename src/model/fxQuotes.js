@@ -287,8 +287,12 @@ class FxQuotesModel {
   }
 
   /**
-   * Logic for handling fxQuote update requests e.g. PUT /fxQuotes/{id} requests
+   * Handles an fxQuote response i.e PUT /fxQuotes/{id} requests
    *
+   * @param {object} headers
+   * @param {string} conversionRequestId
+   * @param {object} fxQuoteUpdateRequest
+   * @param {object} span
    * @returns {undefined}
    */
   async handleFxQuoteUpdate (headers, conversionRequestId, fxQuoteUpdateRequest, span) {
@@ -298,79 +302,22 @@ class FxQuotesModel {
       ['success', 'queryName']
     ).startTimer()
 
-    let txn
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteUpdate')
+    let txn
 
     try {
       await childSpan.audit({ headers, params: { conversionRequestId }, payload: fxQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
-      if ('accept' in headers) {
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
-          `Update for fx quote ${conversionRequestId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
-      }
+
+      this.validateHeaders(headers, conversionRequestId)
 
       if (!this.envConfig.simpleRoutingMode) {
-        // check if this is a resend or an erroneous duplicate
         const dupe = await this.checkDuplicateFxQuoteResponse(conversionRequestId, fxQuoteUpdateRequest)
 
-        // fail fast on duplicate
-        if (dupe.isDuplicateId && (!dupe.isResend)) {
-          // internal-error
-          // same conversionRequestId but a different request, this is an error!
-          throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-            `Update for fxQuote ${conversionRequestId} is a duplicate but hashes don't match`, null, fspiopSource)
-        }
+        this.handleDuplicate(dupe, conversionRequestId, fspiopSource, headers, fxQuoteUpdateRequest, span)
 
-        if (dupe.isResend && dupe.isDuplicateId) {
-          // this is a resend
-          // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-          return this.handleFxQuoteUpdateResend(
-            headers,
-            conversionRequestId,
-            fxQuoteUpdateRequest,
-            span
-          )
-        }
-
-        // do everything in a transaction so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
-
-        // create the fxQuote response row in the db
-        const newFxQuoteResponse = await this.db.createFxQuoteResponse(
-          txn,
-          conversionRequestId,
-          fxQuoteUpdateRequest
-        )
-
-        await this.db.createFxQuoteResponseConversionTerms(
-          txn,
-          conversionRequestId,
-          newFxQuoteResponse.fxQuoteResponseId,
-          fxQuoteUpdateRequest.conversionTerms
-        )
-
-        if (fxQuoteUpdateRequest.conversionTerms.charges &&
-          Array.isArray(fxQuoteUpdateRequest.conversionTerms.charges)) {
-          await this.db.createFxQuoteResponseFxCharge(
-            txn,
-            fxQuoteUpdateRequest.conversionTerms.conversionId,
-            fxQuoteUpdateRequest.conversionTerms.charges)
-        }
-
-        if (fxQuoteUpdateRequest.conversionTerms.extensionList &&
-          Array.isArray(fxQuoteUpdateRequest.conversionTerms.extensionList.extension)) {
-          await this.db.createFxQuoteResponseConversionTermsExtension(
-            txn,
-            fxQuoteUpdateRequest.conversionTerms.conversionId,
-            fxQuoteUpdateRequest.conversionTerms.extensionList.extension
-          )
-        }
-
-        // if we get here we need to create a duplicate check row
-        const hash = calculateRequestHash(fxQuoteUpdateRequest)
-        await this.db.createFxQuoteResponseDuplicateCheck(txn, newFxQuoteResponse.fxQuoteResponseId, conversionRequestId, hash)
-
-        await txn.commit()
+        await this.processFxQuoteUpdate(txn, conversionRequestId, fxQuoteUpdateRequest)
       }
 
       await this.forwardFxQuoteUpdate(headers, conversionRequestId, fxQuoteUpdateRequest, childSpan)
@@ -378,7 +325,6 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'handleFxQuoteUpdate' })
       this.log.error('error in handleFxQuoteUpdate', err)
-      const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       if (txn) {
         await txn.rollback().catch(() => {})
       }
@@ -388,6 +334,43 @@ class FxQuotesModel {
         await childSpan.finish()
       }
     }
+  }
+
+  validateHeaders (headers, conversionRequestId) {
+    if ('accept' in headers) {
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
+        `Update for fx quote ${conversionRequestId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
+    }
+  }
+
+  handleDuplicate (dupe, conversionRequestId, fspiopSource, headers, fxQuoteUpdateRequest, span) {
+    if (dupe.isDuplicateId && (!dupe.isResend)) {
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
+        `Update for fxQuote ${conversionRequestId} is a duplicate but hashes don't match`, null, fspiopSource)
+    }
+
+    if (dupe.isResend && dupe.isDuplicateId) {
+      return this.handleFxQuoteUpdateResend(headers, conversionRequestId, fxQuoteUpdateRequest, span)
+    }
+  }
+
+  async processFxQuoteUpdate (txn, conversionRequestId, fxQuoteUpdateRequest) {
+    const newFxQuoteResponse = await this.db.createFxQuoteResponse(txn, conversionRequestId, fxQuoteUpdateRequest)
+
+    await this.db.createFxQuoteResponseConversionTerms(txn, conversionRequestId, newFxQuoteResponse.fxQuoteResponseId, fxQuoteUpdateRequest.conversionTerms)
+
+    if (fxQuoteUpdateRequest.conversionTerms.charges && Array.isArray(fxQuoteUpdateRequest.conversionTerms.charges)) {
+      await this.db.createFxQuoteResponseFxCharge(txn, fxQuoteUpdateRequest.conversionTerms.conversionId, fxQuoteUpdateRequest.conversionTerms.charges)
+    }
+
+    if (fxQuoteUpdateRequest.conversionTerms.extensionList && Array.isArray(fxQuoteUpdateRequest.conversionTerms.extensionList.extension)) {
+      await this.db.createFxQuoteResponseConversionTermsExtension(txn, fxQuoteUpdateRequest.conversionTerms.conversionId, fxQuoteUpdateRequest.conversionTerms.extensionList.extension)
+    }
+
+    const hash = calculateRequestHash(fxQuoteUpdateRequest)
+    await this.db.createFxQuoteResponseDuplicateCheck(txn, newFxQuoteResponse.fxQuoteResponseId, conversionRequestId, hash)
+
+    await txn.commit()
   }
 
   /**
