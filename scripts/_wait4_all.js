@@ -88,8 +88,6 @@ async function updateServiceStatus (waitingMap) {
   const startingServices = getServicesForStatus(waitingMap, 'starting')
 
   Promise.all(startingServices.map(async serviceName => {
-    // TODO: This info may be useful in future!
-    // const currentStatus = waitingMap[serviceName]
     const progress = await getProgress(serviceName)
     waitingMap[serviceName] = progress
   }))

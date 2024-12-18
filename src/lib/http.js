@@ -44,9 +44,6 @@ const { getStackOrInspect } = require('../lib/util')
 axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
 axios.defaults.httpAgent.toJSON = () => ({})
 
-// TODO: where httpRequest is called, there's a pretty common pattern of obtaining an endpoint from
-// the database, specialising a template string with that endpoint, then calling httpRequest. Is
-// there common functionality in these places than can reasonably be factored out?
 /**
  * Encapsulates making an HTTP request and translating any error response into a domain-specific
  * error type.
