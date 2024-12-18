@@ -40,14 +40,11 @@ const Config = require('../../../../src/lib/config')
 const mocks = require('../../mocks')
 
 const { kafkaConfig } = new Config()
+const fileConfig = new Config()
 
 describe('/quotes/{id} API Tests -->', () => {
   const mockContext = jest.fn()
-  Metrics.getCounter(
-    'errorCount',
-    'Error count',
-    ['code', 'system', 'operation', 'step']
-  )
+  Metrics.setup(fileConfig.instrumentationMetricsConfig)
 
   describe('GET /quotes/{id} Endpoint Tests', () => {
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.GET

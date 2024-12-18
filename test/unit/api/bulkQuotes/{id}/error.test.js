@@ -40,15 +40,13 @@ const Config = require('../../../../../src/lib/config')
 const mocks = require('../../../mocks')
 
 const { kafkaConfig } = new Config()
+const fileConfig = new Config()
 
 describe('PUT /bulkQuotes/{id}/error API Tests -->', () => {
   const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
+  Metrics.setup(fileConfig.instrumentationMetricsConfig)
   const mockContext = jest.fn()
-  Metrics.getCounter(
-    'errorCount',
-    'Error count',
-    ['code', 'system', 'operation', 'step']
-  )
+
   it('should publish a message with bulkQuotes callback error payload', async () => {
     // Arrange
     Producer.produceMessage = jest.fn()

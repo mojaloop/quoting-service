@@ -3,16 +3,14 @@ jest.mock('../../../src/handlers/monitoringServer')
 jest.mock('../../../src/lib/proxy')
 
 const Metrics = require('@mojaloop/central-services-metrics')
-Metrics.getCounter(
-  'errorCount',
-  'Error count',
-  ['code', 'system', 'operation', 'step']
-)
+const Config = require('../../../src/lib/config')
+const fileConfig = new Config()
+
+Metrics.setup(fileConfig.instrumentationMetricsConfig)
 
 const init = require('../../../src/handlers/init')
 const Database = require('../../../src/data/cachedDatabase')
 const { Functionalities } = require('../../../src/lib/enum')
-const Config = require('../../../src/lib/config')
 const { createProxyClient } = require('../../../src/lib/proxy')
 
 const handlerList = [Functionalities.QUOTE]

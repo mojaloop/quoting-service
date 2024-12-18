@@ -41,14 +41,12 @@ const mocks = require('../mocks')
 
 const { kafkaConfig } = new Config()
 const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
+const fileConfig = new Config()
 
 describe('POST /quotes API Tests -->', () => {
   const mockContext = jest.fn()
-  Metrics.getCounter(
-    'errorCount',
-    'Error count',
-    ['code', 'system', 'operation', 'step']
-  )
+  Metrics.setup(fileConfig.instrumentationMetricsConfig)
+
   it('should publish a quote request message', async () => {
     // Arrange
     Producer.produceMessage = jest.fn()
