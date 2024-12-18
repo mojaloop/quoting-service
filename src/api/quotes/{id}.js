@@ -46,14 +46,14 @@ const { kafkaConfig } = new Config()
  */
 module.exports = {
   /**
-     * summary: QuotesById
-     * description:
-     *  - The HTTP request GET /quotes/&lt;id&gt; is used to get information regarding an earlier created or requested quote. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote.
-     *  - The HTTP request `GET /fxQuotes/{ID}` is used to request information regarding a request for quotation for a  currency conversion which the sender has previously issued. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the quote.
-     * parameters: Accept
-     * produces: application/json
-     * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
-     */
+   * summary: QuotesById
+   * description:
+   *  - The HTTP request GET /quotes/&lt;id&gt; is used to get information regarding an earlier created or requested quote. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote.
+   *  - The HTTP request `GET /fxQuotes/{ID}` is used to request information regarding a request for quotation for a  currency conversion which the sender has previously issued. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the quote.
+   * parameters: Accept
+   * produces: application/json
+   * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
+   */
   get: async function getQuotesById (context, request, h) {
     const isFX = request.headers['content-type'].includes('fxQuotes')
 
@@ -84,16 +84,16 @@ module.exports = {
   },
 
   /**
-     * summary: QuotesById and QuotesByIdAndError
-     * description:
-     *  - The callback PUT /quotes/&lt;id&gt; is used to inform the client of a requested or created quote. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;GET /quotes/&lt;id&gt;,
-     *  - The callback `PUT /fxQuotes/{ID}` is used to inform the requester about the  outcome of a request for quotation for a currency conversion. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the  creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.
-     *  - If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/&lt;id&gt;/error is used. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;.
-     *  - If the FXP is unable to find or create a FX quote, or some other processing error occurs, the error callback `PUT /fxQuotes/{ID}/error` is used. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.
-     * parameters: body, Content-Length
-     * produces: application/json
-     * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
-     */
+   * summary: QuotesById and QuotesByIdAndError
+   * description:
+   *  - The callback PUT /quotes/&lt;id&gt; is used to inform the client of a requested or created quote. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;GET /quotes/&lt;id&gt;,
+   *  - The callback `PUT /fxQuotes/{ID}` is used to inform the requester about the  outcome of a request for quotation for a currency conversion. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the  creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.
+   *  - If the server is unable to find or create a quote, or some other processing error occurs, the error callback PUT /quotes/&lt;id&gt;/error is used. The &lt;id&gt; in the URI should contain the quoteId that was used for the creation of the quote, or the &lt;id&gt; that was used in the GET /quotes/&lt;id&gt;.
+   *  - If the FXP is unable to find or create a FX quote, or some other processing error occurs, the error callback `PUT /fxQuotes/{ID}/error` is used. The `{ID}` in the URI should contain the `conversionRequestId` that was used for the creation of the FX quote, or the `{ID}` that was used in the `GET /fxQuotes/{ID}` request.
+   * parameters: body, Content-Length
+   * produces: application/json
+   * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
+   */
   put: async function putQuotesById (context, request, h) {
     const isFX = request.headers['content-type'].includes('fxQuotes')
     const isError = !!request.payload.errorInformation

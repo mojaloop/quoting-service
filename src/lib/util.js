@@ -27,6 +27,9 @@
 
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
+
+ * Infitx
+ - Steven Oderayi <steven.oderayi@infitx.com>
  --------------
  ******/
 

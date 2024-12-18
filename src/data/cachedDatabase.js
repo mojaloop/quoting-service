@@ -49,7 +49,7 @@ class CachedDatabase extends Database {
     this.cache = new Cache()
   }
 
-  /*
+  /**
     * The following enum lookup functions override those in the superclass with
     * versions that use an in-memory cache.
     */
@@ -140,30 +140,30 @@ class CachedDatabase extends Database {
   }
 
   /**
-     * Adds or replaces a value in the cache.
-     *
-     * @returns {undefined}
-     */
+   * Adds or replaces a value in the cache.
+   *
+   * @returns {undefined}
+   */
   cachePut (type, params, value, ttl) {
     const key = this.getCacheKey(type, params)
     this.cache.put(key, value, ttl)
   }
 
   /**
-     * Gets a value from the cache, or null if it is not present
-     *
-     * @returns {undefined}
-     */
+   * Gets a value from the cache, or null if it is not present
+   *
+   * @returns {undefined}
+   */
   cacheGet (type, params) {
     const key = this.getCacheKey(type, params)
     return this.cache.get(key)
   }
 
   /**
-     * Calculates a cache key for the given type and parameters
-     *
-     * @returns {undefined}
-     */
+   * Calculates a cache key for the given type and parameters
+   *
+   * @returns {undefined}
+   */
   getCacheKey (type, params) {
     return `${type}_${params.join('__')}`
   }

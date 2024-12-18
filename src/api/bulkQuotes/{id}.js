@@ -45,12 +45,12 @@ const { kafkaConfig } = new Config()
  */
 module.exports = {
   /**
-     * summary: getBulkQuotesById
-     * description: The HTTP request GET /bulkQuotes/&lt;id&gt; is used to get information regarding an earlier created or requested bulk quote. The &lt;id&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote.
-     * parameters: Accept
-     * produces: application/json
-     * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
-     */
+   * summary: getBulkQuotesById
+   * description: The HTTP request GET /bulkQuotes/&lt;id&gt; is used to get information regarding an earlier created or requested bulk quote. The &lt;id&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote.
+   * parameters: Accept
+   * produces: application/json
+   * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
+   */
   get: async function getBulkQuotesById (context, request, h) {
     const histTimerEnd = Metrics.getHistogram(
       'bulkQuotes_id_get',
@@ -75,12 +75,12 @@ module.exports = {
     }
   },
   /**
-     * summary: putBulkQuotesById
-     * description: The callback PUT /bulkQuotes/&lt;id&gt; is used to inform the client of a requested or created bulk quote. The &lt;id&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;id&gt; that was used in the GET /bulkQuotes/&lt;id&gt;.
-     * parameters: body, Content-Length
-     * produces: application/json
-     * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
-     */
+   * summary: putBulkQuotesById
+   * description: The callback PUT /bulkQuotes/&lt;id&gt; is used to inform the client of a requested or created bulk quote. The &lt;id&gt; in the URI should contain the bulkQuoteId that was used for the creation of the bulk quote, or the &lt;id&gt; that was used in the GET /bulkQuotes/&lt;id&gt;.
+   * parameters: body, Content-Length
+   * produces: application/json
+   * responses: 200, 400, 401, 403, 404, 405, 406, 501, 503
+   */
   put: async function putBulkQuotesById (context, request, h) {
     const histTimerEnd = Metrics.getHistogram(
       'bulkQuotes_id_put',
