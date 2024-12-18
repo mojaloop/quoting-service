@@ -612,7 +612,7 @@ describe('util', () => {
         .rejects
         .toHaveProperty('message', 'foo')
 
-      expect(axios.request.mock.calls.length).toBe(1)
+      expect(axios.request.mock.calls.length).toBe(2)
       expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
     })
 

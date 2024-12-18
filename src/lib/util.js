@@ -209,71 +209,93 @@ function calculateRequestHash (request) {
   return crypto.createHash('sha256').update(requestStr).digest('hex')
 }
 
-// Add caching to the participant endpoint
+/**
+ * Fetches participant information for both the source and destination participants
+ * and returns the information in the format:
+ *
+ *  {
+ *   payer: {
+ *    name: 'payerName',
+ *    id: 'payerId',
+ *    isActive: 1,
+ *    links: { self: 'payerUrl' },
+ *    accounts: [],
+ *    proxiedParticipant: boolean
+ *   },
+ *   payee: {
+ *    name: 'payeeName',
+ *    id: 'payeeId',
+ *    isActive: 1,
+ *    links: { self: 'payeeUrl' },
+ *    accounts: [],
+ *    proxiedParticipant: boolean
+ *   }
+ *  }
+ *
+ * If a cache is provided, it will be used to get and store the participant information for future use.
+ * If a proxyClient is provided, it will be used to check if the participant is a proxy participant.
+ *
+ * @param {string} source - the source participant ID
+ * @param {string} destination - the destination participant ID
+ * @param {Cache} cache - the cache to use for getting or storing participant information
+ * @param {ProxyClient} proxyClient - the proxy client to use for checking if a participant is a proxy participant
+ * @returns {object} - the participant information for the source and destination participants
+ */
 const fetchParticipantInfo = async (source, destination, cache, proxyClient) => {
-  // Get quote participants from central ledger admin
   const { switchEndpoint } = config
   const url = `${switchEndpoint}/participants`
-  let requestPayer
-  let requestPayee
+
+  const [payer, payee] = await Promise.all([
+    getParticipantData(source, cache, proxyClient, url),
+    getParticipantData(destination, cache, proxyClient, url)
+  ])
+
+  return { payer, payee }
+}
+
+const getParticipantData = async (participant, cache, proxyClient, url) => {
+  let requestParticipant = null
 
   if (proxyClient) {
-    if (!proxyClient.isConnected) await proxyClient.connect()
-    const proxyIdSource = await proxyClient.lookupProxyByDfspId(source)
-    const proxyIdDestination = await proxyClient.lookupProxyByDfspId(destination)
-    if (proxyIdSource) {
-      // construct participant adjacent data structure that uses the original
-      // participant when they are proxied and out of scheme
-      requestPayer = {
-        data: {
-          name: source,
-          id: '',
-          // assume source is active
-          isActive: 1,
-          links: { self: '' },
-          accounts: [],
-          proxiedParticipant: true
-        }
-      }
-    }
-    if (proxyIdDestination) {
-      // construct participant adjacent data structure that uses the original
-      // participant when they are proxied and out of scheme
-      requestPayee = {
-        data: {
-          name: destination,
-          id: '',
-          // assume destination is active
-          isActive: 1,
-          links: { self: '' },
-          accounts: [],
-          proxiedParticipant: true
-        }
+    requestParticipant = await getProxiedParticipant(participant, proxyClient)
+  }
+
+  const cachedParticipant = cache && !requestParticipant && cache.get(`fetchParticipantInfo_${participant}`)
+
+  if (!cachedParticipant && !requestParticipant) {
+    requestParticipant = await fetchParticipantFromServer(participant, url, cache)
+  } else {
+    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for participant ${participant}`)
+  }
+
+  return cachedParticipant || requestParticipant.data
+}
+
+const getProxiedParticipant = async (participant, proxyClient) => {
+  if (!proxyClient.isConnected) await proxyClient.connect()
+  const proxyId = await proxyClient.lookupProxyByDfspId(participant)
+
+  if (proxyId) {
+    return {
+      data: {
+        name: participant,
+        id: '',
+        isActive: 1,
+        links: { self: '' },
+        accounts: [],
+        proxiedParticipant: true
       }
     }
   }
 
-  const cachedPayer = cache && !requestPayer && cache.get(`fetchParticipantInfo_${source}`)
-  const cachedPayee = cache && !requestPayee && cache.get(`fetchParticipantInfo_${destination}`)
+  return null
+}
 
-  if (!cachedPayer && !requestPayer) {
-    requestPayer = await axios.request({ url: `${url}/${source}` })
-    cache && cache.put(`fetchParticipantInfo_${source}`, requestPayer, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
-  } else {
-    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payer ${source}`)
-  }
-  if (!cachedPayee && !requestPayee) {
-    requestPayee = await axios.request({ url: `${url}/${destination}` })
-    cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
-    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for payee ${destination}`)
-  } else {
-    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for payee ${destination}`)
-  }
-
-  const payer = cachedPayer || requestPayer.data
-  const payee = cachedPayee || requestPayee.data
-  return { payer, payee }
+const fetchParticipantFromServer = async (participant, url, cache) => {
+  const response = await axios.request({ url: `${url}/${participant}` })
+  cache && cache.put(`fetchParticipantInfo_${participant}`, response, Config.participantDataCacheExpiresInMs)
+  Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for participant ${participant}`)
+  return response
 }
 
 const getParticipantEndpoint = async ({ fspId, db, loggerFn, endpointType, proxyClient = null }) => {
