@@ -8,8 +8,6 @@ const { getSpanTags } = require('../lib/util')
 const dto = require('../lib/dto')
 
 const { FSPIOP } = Enum.Http.Headers
-const errorCounter = Metrics.getCounter('errorCount')
-
 class QuotingHandler {
   constructor (deps) {
     this.quotesModelFactory = deps.quotesModelFactory
@@ -21,6 +19,7 @@ class QuotingHandler {
     this.payloadCache = deps.payloadCache
     this.tracer = deps.tracer
     this.handleMessages = this.handleMessages.bind(this)
+    this.errorCounter = Metrics.getCounter('errorCount')
   }
 
   async handleMessages(error, messages) {
@@ -82,7 +81,7 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       const extensions = err.extensions || []
       const system = extensions.find((element) => element.key === 'system')?.value || ''
-      errorCounter.inc({
+      this.errorCounter.inc({
         code: fspiopError?.apiErrorCode.code,
         system,
         operation: 'handlePostQuotes',
@@ -117,7 +116,7 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       const extensions = err.extensions || []
       const system = extensions.find((element) => element.key === 'system')?.value || ''
-      errorCounter.inc({
+      this.errorCounter.inc({
         code: fspiopError?.apiErrorCode.code,
         system,
         operation: 'handlePutQuotes',
@@ -150,7 +149,7 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       const extensions = err.extensions || []
       const system = extensions.find((element) => element.key === 'system')?.value || ''
-      errorCounter.inc({
+      this.errorCounter.inc({
         code: fspiopError?.apiErrorCode.code,
         system,
         operation: 'handleGetQuotes',
@@ -183,7 +182,7 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       const extensions = err.extensions || []
       const system = extensions.find((element) => element.key === 'system')?.value || ''
-      errorCounter.inc({
+      this.errorCounter.inc({
         code: fspiopError?.apiErrorCode.code,
         system,
         operation: 'handlePostBulkQuotes',
@@ -219,7 +218,7 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       const extensions = err.extensions || []
       const system = extensions.find((element) => element.key === 'system')?.value || ''
-      errorCounter.inc({
+      this.errorCounter.inc({
         code: fspiopError?.apiErrorCode.code,
         system,
         operation: 'handlePutBulkQuotes',
@@ -251,7 +250,7 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       const extensions = err.extensions || []
       const system = extensions.find((element) => element.key === 'system')?.value || ''
-      errorCounter.inc({
+      this.errorCounter.inc({
         code: fspiopError?.apiErrorCode.code,
         system,
         operation: 'handleGetBulkQuotes',
@@ -283,10 +282,10 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       const extensions = err.extensions || []
       const system = extensions.find((element) => element.key === 'system')?.value || ''
-      errorCounter.inc({
+      this.errorCounter.inc({
         code: fspiopError?.apiErrorCode.code,
         system,
-        operation: '',
+        operation: 'handlePostFxQuotes',
         step
       })
       await model.handleException(fspiopSource, payload.conversionRequestId, fspiopError, headers, span)
@@ -318,10 +317,10 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       const extensions = err.extensions || []
       const system = extensions.find((element) => element.key === 'system')?.value || ''
-      errorCounter.inc({
+      this.errorCounter.inc({
         code: fspiopError?.apiErrorCode.code,
         system,
-        operation: '',
+        operation: 'handlePutFxQuotes',
         step
       })
       await model.handleException(fspiopSource, conversionRequestId, err, headers, span)
@@ -350,10 +349,10 @@ class QuotingHandler {
       const fspiopSource = headers[FSPIOP.SOURCE]
       const extensions = err.extensions || []
       const system = extensions.find((element) => element.key === 'system')?.value || ''
-      errorCounter.inc({
+      this.errorCounter.inc({
         code: fspiopError?.apiErrorCode.code,
         system,
-        operation: '',
+        operation: 'handleGetFxQuotes',
         step
       })
       await model.handleException(fspiopSource, conversionRequestId, err, headers, span)
