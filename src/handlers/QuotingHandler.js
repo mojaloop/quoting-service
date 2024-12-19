@@ -1,5 +1,4 @@
 /* eslint-disable space-before-function-paren */
-const Metrics = require('@mojaloop/central-services-metrics')
 const { Enum } = require('@mojaloop/central-services-shared')
 const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
@@ -8,6 +7,7 @@ const { getSpanTags } = require('../lib/util')
 const dto = require('../lib/dto')
 
 const { FSPIOP } = Enum.Http.Headers
+
 class QuotingHandler {
   constructor (deps) {
     this.quotesModelFactory = deps.quotesModelFactory
@@ -19,7 +19,6 @@ class QuotingHandler {
     this.payloadCache = deps.payloadCache
     this.tracer = deps.tracer
     this.handleMessages = this.handleMessages.bind(this)
-    this.errorCounter = Metrics.getCounter('errorCount')
   }
 
   async handleMessages(error, messages) {
@@ -69,7 +68,6 @@ class QuotingHandler {
     const { requestId, headers, payload, originalPayload } = requestData
     const model = this.quotesModelFactory(requestId)
     let span
-    let step
 
     try {
       span = await this.createSpan(requestData)
@@ -79,14 +77,6 @@ class QuotingHandler {
       this.logger.error(`error in handlePostQuotes partition:${requestData.partition}, offset:${requestData.offset}:`, err)
       const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handlePostQuotes',
-        step
-      })
       await model.handleException(fspiopSource, payload.quoteId, fspiopError, headers, span)
     } finally {
       if (span && !span.isFinished) {
@@ -102,7 +92,6 @@ class QuotingHandler {
     const model = this.quotesModelFactory(requestId)
     const isError = !!payload.errorInformation
     let span
-    let step
 
     try {
       span = await this.createSpan(requestData)
@@ -112,16 +101,7 @@ class QuotingHandler {
       this.logger.debug('handlePutQuotes is done', { result })
     } catch (err) {
       this.logger.error(`error in handlePutQuotes partition:${requestData.partition}, offset:${requestData.offset}:`, err)
-      const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handlePutQuotes',
-        step
-      })
       await model.handleException(fspiopSource, quoteId, err, headers, span)
     } finally {
       /* istanbul ignore next */
@@ -137,7 +117,6 @@ class QuotingHandler {
     const { id: quoteId, requestId, headers } = requestData
     const model = this.quotesModelFactory(requestId)
     let span
-    let step
 
     try {
       span = await this.createSpan(requestData)
@@ -145,16 +124,7 @@ class QuotingHandler {
       this.logger.debug('handleGetQuotes is done')
     } catch (err) {
       this.logger.error(`error in handleGetQuotes partition:${requestData.partition}, offset:${requestData.offset}:`, err)
-      const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handleGetQuotes',
-        step
-      })
       await model.handleException(fspiopSource, quoteId, err, headers, span)
     } finally {
       /* istanbul ignore next */
@@ -170,7 +140,6 @@ class QuotingHandler {
     const { requestId, payload, headers } = requestData
     const model = this.bulkQuotesModelFactory(requestId)
     let span
-    let step
 
     try {
       span = await this.createSpan(requestData)
@@ -180,14 +149,6 @@ class QuotingHandler {
       this.logger.error(`error in handlePostBulkQuotes partition:${requestData.partition}, offset:${requestData.offset}:`, err)
       const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handlePostBulkQuotes',
-        step
-      })
       await model.handleException(fspiopSource, payload.bulkQuoteId, fspiopError, headers, span)
     } finally {
       /* istanbul ignore next */
@@ -204,7 +165,6 @@ class QuotingHandler {
     const model = this.bulkQuotesModelFactory(requestId)
     const isError = !!payload.errorInformation
     let span
-    let step
 
     try {
       span = await this.createSpan(requestData)
@@ -214,16 +174,7 @@ class QuotingHandler {
       this.logger.isDebugEnabled && this.logger.debug(`handlePutBulkQuotes is done: ${JSON.stringify(result)}`)
     } catch (err) {
       this.logger.error(`error in handlePutBulkQuotes partition:${requestData.partition}, offset:${requestData.offset}:`, err)
-      const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handlePutBulkQuotes',
-        step
-      })
       await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
     } finally {
       if (span && !span.isFinished) {
@@ -238,7 +189,6 @@ class QuotingHandler {
     const { id: bulkQuoteId, requestId, headers } = requestData
     const model = this.bulkQuotesModelFactory(requestId)
     let span
-    let step
 
     try {
       span = await this.createSpan(requestData)
@@ -246,16 +196,7 @@ class QuotingHandler {
       this.logger.debug('handleGetBulkQuotes is done')
     } catch (err) {
       this.logger.error(`error in handleGetBulkQuotes partition:${requestData.partition}, offset:${requestData.offset}:`, err)
-      const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handleGetBulkQuotes',
-        step
-      })
       await model.handleException(fspiopSource, bulkQuoteId, err, headers, span)
     } finally {
       if (span && !span.isFinished) {
@@ -270,7 +211,6 @@ class QuotingHandler {
     const { requestId, headers, payload, originalPayload } = requestData
     const model = this.fxQuotesModelFactory(requestId)
     let span
-    let step
 
     try {
       span = await this.createSpan(requestData)
@@ -280,14 +220,6 @@ class QuotingHandler {
       this.logger.error('error in handlePostFxQuotes:', err)
       const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handlePostFxQuotes',
-        step
-      })
       await model.handleException(fspiopSource, payload.conversionRequestId, fspiopError, headers, span)
     } finally {
       if (span && !span.isFinished) {
@@ -303,7 +235,6 @@ class QuotingHandler {
     const model = this.fxQuotesModelFactory(requestId)
     const isError = !!payload.errorInformation
     let span
-    let step
 
     try {
       span = await this.createSpan(requestData)
@@ -313,16 +244,7 @@ class QuotingHandler {
       this.logger.debug('handlePutFxQuotes is done: ', { result })
     } catch (err) {
       this.logger.error('error in handlePutFxQuotes:', err)
-      const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handlePutFxQuotes',
-        step
-      })
       await model.handleException(fspiopSource, conversionRequestId, err, headers, span)
     } finally {
       if (span && !span.isFinished) {
@@ -337,7 +259,6 @@ class QuotingHandler {
     const { id: conversionRequestId, requestId, headers } = requestData
     const model = this.fxQuotesModelFactory(requestId)
     let span
-    let step
 
     try {
       span = await this.createSpan(requestData)
@@ -345,16 +266,7 @@ class QuotingHandler {
       this.logger.debug('handleGetBulkQuotes is done')
     } catch (err) {
       this.logger.error('error in handleGetBulkQuotes:', err)
-      const fspiopError = reformatFSPIOPError(err)
       const fspiopSource = headers[FSPIOP.SOURCE]
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handleGetFxQuotes',
-        step
-      })
       await model.handleException(fspiopSource, conversionRequestId, err, headers, span)
     } finally {
       if (span && !span.isFinished) {

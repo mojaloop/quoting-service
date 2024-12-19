@@ -48,6 +48,7 @@ class FxQuotesModel {
       context: this.constructor.name,
       requestId: this.requestId
     })
+    this.errorCounter = Metrics.getCounter('errorCount')
   }
 
   executeRules = executeRules
@@ -84,14 +85,14 @@ class FxQuotesModel {
   }
 
   async checkDuplicateFxQuoteRequest (fxQuoteRequest) {
+    let step
     try {
       const conversionRequestId = fxQuoteRequest.conversionRequestId
       const log = this.log.child({ conversionRequestId })
-
       // calculate a SHA-256 of the request
       const hash = calculateRequestHash(fxQuoteRequest)
       log.debug('Calculated sha256 hash of fxQuote as: ', { hash })
-
+      step = 'getFxQuoteDuplicateCheck-1'
       const dupchk = await this.db.getFxQuoteDuplicateCheck(fxQuoteRequest.conversionRequestId)
       log.debug('DB query for fxQuote duplicate check returned: ', { dupchk })
 
@@ -119,26 +120,32 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in checkDuplicateFxQuoteRequest: ', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.ReformatFSPIOPError(
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: 'checkDuplicateFxQuoteRequest',
+        step
+      })
+      throw fspiopError
     }
   }
 
   async checkDuplicateFxQuoteResponse (conversionRequestId, fxQuoteResponse) {
     const log = this.log.child({ conversionRequestId })
+    let step
     try {
       // calculate a SHA-256 of the request
       const hash = calculateRequestHash(fxQuoteResponse)
       log.debug('Calculated sha256 hash of fxQuote response as: ', { hash })
-
+      step = 'getFxQuoteResponseDuplicateCheck-1'
       const dupchk = await this.db.getFxQuoteResponseDuplicateCheck(conversionRequestId)
       log.debug('DB query for fxQuote response duplicate check returned: ', { dupchk })
 
@@ -166,16 +173,21 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       log.error('Error in checkDuplicateFxQuoteResponse: ', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.ReformatFSPIOPError(
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: '',
+        step
+      })
+      throw fspiopError
     }
   }
 
@@ -440,12 +452,12 @@ class FxQuotesModel {
       ['success', 'queryName']
     ).startTimer()
     const log = this.log.child({ conversionRequestId })
-
+    let step
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
       log.verbose('forwardFxQuoteUpdate request:', { fspiopSource, fspiopDest })
-
+      step = 'getParticipantEndpoint-1'
       const endpoint = await this._getParticipantEndpoint(fspiopDest)
       if (!endpoint) {
         const fspiopError = ErrorHandler.CreateFSPIOPError(
@@ -454,6 +466,7 @@ class FxQuotesModel {
           null,
           fspiopSource
         )
+        step = 'sendErrorCallback-2'
         return this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, span, true)
       }
 
@@ -473,22 +486,27 @@ class FxQuotesModel {
         const { data, ...rest } = opts
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
-
+      step = 'httpRequest-3'
       await this.httpRequest(opts, fspiopSource)
       histTimer({ success: true, queryName: 'forwardFxQuoteUpdate' })
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteUpdate' })
       log.error('error in forwardFxQuoteUpdate', err)
-      const extensions = [{
-        key: 'system',
-        value: '["http"]'
-      }]
-      throw ErrorHandler.ReformatFSPIOPError(
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: '',
+        step
+      })
+      throw fspiopError
     }
   }
 
@@ -531,11 +549,13 @@ class FxQuotesModel {
       'forwardFxQuoteGet - Metrics for fx quote model',
       ['success', 'queryName']
     ).startTimer()
+    let step
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
       this.log.verbose('forwardFxQuoteGet request', { conversionRequestId, fspiopSource, fspiopDest })
       // lookup fxp callback endpoint
+      step = 'getParticipantEndpoint-1'
       const endpoint = await this._getParticipantEndpoint(fspiopDest)
       if (!endpoint) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, ERROR_MESSAGES.NO_FX_CALLBACK_ENDPOINT(fspiopDest, conversionRequestId), null, fspiopSource)
@@ -552,22 +572,27 @@ class FxQuotesModel {
         opts = span.injectContextToHttpRequest(opts)
         span.audit(opts, EventSdk.AuditEventAction.egress)
       }
-
+      step = 'httpRequest-2'
       await this.httpRequest(opts, fspiopSource)
       histTimer({ success: true, queryName: 'forwardFxQuoteGet' })
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteGet' })
       this.log.error('error in forwardFxQuoteGet', err)
-      const extensions = [{
-        key: 'system',
-        value: '["http"]'
-      }]
-      throw ErrorHandler.ReformatFSPIOPError(
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: '',
+        step
+      })
+      throw fspiopError
     }
   }
 
@@ -623,9 +648,11 @@ class FxQuotesModel {
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
   async handleFxQuoteRequestResend (headers, payload, span, originalPayload) {
+    let step
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+
       this.log.debug(`Handling resend of fxQuoteRequest from ${fspiopSource} to ${fspiopDestination}: `, payload)
 
       // we are ok to assume the payload object passed to us is the same as the original...
@@ -636,6 +663,7 @@ class FxQuotesModel {
       const childSpan = span.getChild('qs_fxQuote_forwardQuoteRequestResend')
       try {
         await childSpan.audit({ headers, payload }, EventSdk.AuditEventAction.start)
+        step = 'forwardFxQuoteRequest-1'
         await this.forwardFxQuoteRequest(headers, payload.conversionRequestId, originalPayload, childSpan)
       } catch (err) {
         // any-error
@@ -652,16 +680,21 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in handleFxQuoteRequestResend: ', err)
-      const extensions = [{
-        key: 'system',
-        value: '["http"]'
-      }]
-      throw ErrorHandler.ReformatFSPIOPError(
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: '',
+        step
+      })
+      throw fspiopError
     }
   }
 
@@ -670,6 +703,7 @@ class FxQuotesModel {
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
   async handleFxQuoteUpdateResend (headers, conversionRequestId, originalPayload, span) {
+    let step
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -683,6 +717,7 @@ class FxQuotesModel {
       const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteUpdateResend')
       try {
         await childSpan.audit({ headers, params: { conversionRequestId }, payload: originalPayload }, EventSdk.AuditEventAction.start)
+        step = 'forwardFxQuoteUpdate-1'
         await this.forwardFxQuoteUpdate(headers, conversionRequestId, originalPayload, childSpan)
       } catch (err) {
         // any-error
@@ -698,16 +733,21 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in handleQuoteUpdateResend: ', err)
-      const extensions = [{
-        key: 'system',
-        value: '["http"]'
-      }]
-      throw ErrorHandler.ReformatFSPIOPError(
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: '',
+        step
+      })
+      throw fspiopError
     }
   }
 
@@ -755,8 +795,9 @@ class FxQuotesModel {
     const { envConfig } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     const log = this.log.child({ conversionRequestId, fspiopDest })
-
+    let step
     try {
+      step = 'getParticipantEndpoint-1'
       const endpoint = await this._getParticipantEndpoint(fspiopSource)
       log.debug(`Resolved participant '${fspiopSource}' FSPIOP_CALLBACK_URL_FX_QUOTES to: '${endpoint}'`)
 
@@ -809,7 +850,7 @@ class FxQuotesModel {
         const { data, ...rest } = opts
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
-
+      step = 'sendHttpRequest-2'
       const res = await this.sendHttpRequest(opts, fspiopSource, fspiopDest)
       const statusCode = res.status
       log.info('got errorCallback response with statusCode:', { statusCode })
@@ -828,16 +869,20 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'sendErrorCallback' })
       log.error('Error in sendErrorCallback', err)
-      const extensions = [{
-        key: 'system',
-        value: '["http"]'
-      }]
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
       const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: '',
+        step
+      })
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
@@ -868,25 +913,35 @@ class FxQuotesModel {
    * @returns {AxiosResponse}
    */
   async sendHttpRequest (options, fspiopSource, fspiopDest) {
+    let step
     try {
+      step = 'axios-request-1'
       return axios.request(options)
     } catch (err) {
       this.log.warn('error in sendHttpRequest', err)
-      const extensions = [{
-        key: 'system',
-        value: '["http"]'
-      }]
-      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, {
-        error: err,
-        method: options?.method,
-        url: options?.url,
-        sourceFsp: fspiopSource,
-        destinationFsp: fspiopDest,
-        request: JSON.stringify(options, LibUtil.getCircularReplacer())
-      },
-      fspiopSource,
-      extensions
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      const fspiopError = ErrorHandler.CreateFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+        `network error in sendErrorCallback: ${err.message}`,
+        {
+          error: err,
+          method: options?.method,
+          url: options?.url,
+          sourceFsp: fspiopSource,
+          destinationFsp: fspiopDest,
+          request: JSON.stringify(options, LibUtil.getCircularReplacer())
+        },
+        fspiopSource,
+        extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: '',
+        step
+      })
+      throw fspiopError
     }
   }
 

@@ -2,12 +2,6 @@ const { randomUUID } = require('node:crypto')
 const { Cache } = require('memory-cache')
 const { Tracer } = require('@mojaloop/event-sdk')
 const { encodePayload } = require('@mojaloop/central-services-shared').Util.StreamingProtocol
-const Metrics = require('@mojaloop/central-services-metrics')
-
-const Config = require('../../../src/lib/config')
-const fileConfig = new Config()
-
-Metrics.setup(fileConfig.instrumentationMetricsConfig)
 
 jest.mock('../../../src/model/quotes')
 jest.mock('../../../src/model/fxQuotes')
@@ -17,6 +11,7 @@ const QuotingHandler = require('../../../src/handlers/QuotingHandler')
 const QuotesModel = require('../../../src/model/quotes')
 const FxQuotesModel = require('../../../src/model/fxQuotes')
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')
+const Config = require('../../../src/lib/config')
 const { logger } = require('../../../src/lib')
 const { PAYLOAD_STORAGES } = require('../../../src/constants')
 

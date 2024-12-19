@@ -35,15 +35,18 @@ jest.mock('axios')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const ENUM = require('@mojaloop/central-services-shared').Enum
 const { FSPIOPError } = require('@mojaloop/central-services-error-handling/src/factory')
+const Metrics = require('@mojaloop/central-services-metrics')
+
+const Config = require('../../../src/lib/config')
+const config = new Config()
+
+Metrics.setup(config.instrumentationMetricsConfig)
 const LOCAL_ENUM = require('../../../src/lib/enum')
 const FxQuotesModel = require('../../../src/model/fxQuotes')
-const Config = require('../../../src/lib/config')
 const { logger } = require('../../../src/lib')
 const { makeAppInteroperabilityHeader } = require('../../../src/lib/util')
 const { HEADERS, RESOURCES, ERROR_MESSAGES } = require('../../../src/constants')
 const { fxQuoteMocks } = require('../mocks')
-
-const config = new Config()
 
 describe('FxQuotesModel Tests -->', () => {
   let fxQuotesModel

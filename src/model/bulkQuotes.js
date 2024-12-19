@@ -39,6 +39,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('@mojaloop/central-services-shared').Util
 const Logger = require('@mojaloop/central-services-logger')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
@@ -60,6 +61,7 @@ class BulkQuotesModel {
     this.requestId = deps.requestId
     this.proxyClient = deps.proxyClient
     this.envConfig = deps.config || new Config()
+    this.errorCounter = Metrics.getCounter('errorCount')
   }
 
   /**
@@ -121,6 +123,7 @@ class BulkQuotesModel {
    */
   async forwardBulkQuoteRequest (headers, bulkQuoteId, originalBulkQuoteRequest, span) {
     let endpoint
+    let step
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
@@ -128,6 +131,7 @@ class BulkQuotesModel {
       // lookup payee dfsp callback endpoint
       // TODO: for MVP we assume initiator is always payer dfsp! this may not always be the
       // case if a xfer is requested by payee
+      step = 'getParticipantEndpoint-1'
       endpoint = await this._getParticipantEndpoint(fspiopDest)
 
       this.writeLog(`Resolved FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulkQuote ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
@@ -136,17 +140,19 @@ class BulkQuotesModel {
         // internal-error
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
-        const extensions = [{
-          key: 'system',
-          value: '["proxyClient","db"]'
-        }]
-        throw ErrorHandler.CreateFSPIOPError(
+        const fspiopError = ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
           `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for quote ${bulkQuoteId} PAYEE party`,
           null,
-          fspiopSource,
-          extensions
+          fspiopSource
         )
+        this.errorCounter.inc({
+          code: fspiopError?.apiErrorCode.code,
+          system: undefined,
+          operation: 'forwardBulkQuoteRequest',
+          step
+        })
+        throw fspiopError
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
@@ -170,20 +176,26 @@ class BulkQuotesModel {
       }
 
       this.writeLog(`Forwarding request : ${util.inspect(opts)}`)
+      step = 'httpRequest-2'
       await httpRequest(opts, fspiopSource)
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulkQuote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      const extensions = [{
-        key: 'system',
-        value: '["http","proxyClient","db"]'
-      }]
-      throw ErrorHandler.ReformatFSPIOPError(
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: 'forwardBulkQuoteRequest',
+        step
+      })
+      throw fspiopError
     }
   }
 
@@ -225,11 +237,13 @@ class BulkQuotesModel {
    */
   async forwardBulkQuoteUpdate (headers, bulkQuoteId, originalBulkQuoteResponse, span) {
     let endpoint = null
+    let step
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
     try {
       // lookup payer dfsp callback endpoint
+      step = 'getParticipantEndpoint-1'
       endpoint = await this._getParticipantEndpoint(fspiopDest)
       this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulk quote ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
 
@@ -237,6 +251,7 @@ class BulkQuotesModel {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
         const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for quote ${bulkQuoteId} PAYER party`, null, fspiopSource)
+        step = 'sendErrorCallback-2'
         return this.sendErrorCallback(fspiopSource, fspiopError, bulkQuoteId, headers, true)
       }
 
@@ -262,21 +277,26 @@ class BulkQuotesModel {
         const { data, ...rest } = opts
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
-
+      step = 'httpRequest-3'
       await httpRequest(opts, fspiopSource)
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulk quote response to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      const extensions = [{
-        key: 'system',
-        value: '["http","proxyClient","db"]'
-      }]
-      throw ErrorHandler.ReformatFSPIOPError(
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: 'forwardBulkQuoteUpdate',
+        step
+      })
+      throw fspiopError
     }
   }
 
@@ -311,11 +331,13 @@ class BulkQuotesModel {
    */
   async forwardBulkQuoteGet (headers, bulkQuoteId, span) {
     let endpoint
+    let step
     try {
       // lookup payee dfsp callback endpoint
       // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+      step = 'getParticipantEndpoint-1'
       endpoint = await this._getParticipantEndpoint(fspiopDest)
 
       this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulk quote GET ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
@@ -324,17 +346,19 @@ class BulkQuotesModel {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
         // internal-error
-        const extensions = [{
-          key: 'system',
-          value: '["proxyClient","db"]'
-        }]
-        throw ErrorHandler.CreateFSPIOPError(
+        const fspiopError = ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
           `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for bulk quote GET ${bulkQuoteId}`,
           null,
-          fspiopSource,
-          extensions
+          fspiopSource
         )
+        this.errorCounter.inc({
+          code: fspiopError?.apiErrorCode.code,
+          system: undefined,
+          operation: 'forwardBulkQuoteGet',
+          step
+        })
+        throw fspiopError
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
@@ -352,21 +376,26 @@ class BulkQuotesModel {
         opts = span.injectContextToHttpRequest(opts)
         span.audit(opts, EventSdk.AuditEventAction.egress)
       }
-
+      step = 'httpRequest-2'
       await httpRequest(opts, fspiopSource)
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
-      const extensions = [{
-        key: 'system',
-        value: '["http","proxyClient","db"]'
-      }]
-      throw ErrorHandler.ReformatFSPIOPError(
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: 'forwardBulkQuoteGet',
+        step
+      })
+      throw fspiopError
     }
   }
 
@@ -429,10 +458,12 @@ class BulkQuotesModel {
    */
   async sendErrorCallback (fspiopSource, fspiopError, bulkQuoteId, headers, span, modifyHeaders = true) {
     // todo: refactor to remove lots of code duplication from QuotesModel/FxQuotesModel!!
+    let step
     const { envConfig } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     try {
       // look up the callback base url
+      step = 'getParticipantEndpoint-1'
       const endpoint = await this._getParticipantEndpoint(fspiopSource)
 
       this.writeLog(`Resolved participant '${fspiopSource}' '${ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES}' to: '${endpoint}'`)
@@ -440,17 +471,19 @@ class BulkQuotesModel {
       if (!endpoint) {
         // oops, we cant make an error callback if we dont have an endpoint to call!
         // internal-error
-        const extensions = [{
-          key: 'system',
-          value: '["proxyClient","db"]'
-        }]
-        throw ErrorHandler.CreateFSPIOPError(
+        const fspiopError = ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.PARTY_NOT_FOUND,
           `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for ${fspiopSource} unable to make error callback`,
           null,
-          fspiopSource,
-          extensions
+          fspiopSource
         )
+        this.errorCounter.inc({
+          code: fspiopError?.apiErrorCode.code,
+          system: undefined,
+          operation: 'sendErrorCallback',
+          step
+        })
+        throw fspiopError
       }
 
       const fspiopUri = `/bulkQuotes/${bulkQuoteId}/error`
@@ -514,15 +547,13 @@ class BulkQuotesModel {
           })
           opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
         }
-
+        step = 'axios-request-2'
         res = await axios.request(opts)
       } catch (err) {
         // external-error
-        const extensions = [{
-          key: 'system',
-          value: '["http","proxyClient","db"]'
-        }]
-        throw ErrorHandler.CreateFSPIOPError(
+        const extensions = err.extensions || []
+        const system = extensions.find((element) => element.key === 'system')?.value || ''
+        const fspiopError = ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
           `network error in sendErrorCallback: ${err.message}`,
           {
@@ -536,16 +567,19 @@ class BulkQuotesModel {
           fspiopSource,
           extensions
         )
+        this.errorCounter.inc({
+          code: fspiopError?.apiErrorCode.code,
+          system,
+          operation: 'sendErrorCallback',
+          step
+        })
+        throw fspiopError
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
       if (res.status !== ENUM.Http.ReturnCodes.OK.CODE) {
         // external-error
-        const extensions = [{
-          key: 'system',
-          value: '["http"]'
-        }]
-        throw ErrorHandler.CreateFSPIOPError(
+        const fspiopError = ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
           'Got non-success response sending error callback', {
             url: fullCallbackUrl,
@@ -555,23 +589,33 @@ class BulkQuotesModel {
             request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
             response: JSON.stringify(res, LibUtil.getCircularReplacer())
           },
-          fspiopSource,
-          extensions
+          fspiopSource
         )
+        this.errorCounter.inc({
+          code: fspiopError?.apiErrorCode.code,
+          system: undefined,
+          operation: 'sendErrorCallback',
+          step
+        })
+        throw fspiopError
       }
     } catch (err) {
       // any-error
       this.writeLog(`Error in sendErrorCallback: ${getStackOrInspect(err)}`)
-      const extensions = [{
-        key: 'system',
-        value: '["http","proxyClient","db"]'
-      }]
+      const extensions = err.extensions || []
+      const system = extensions.find((element) => element.key === 'system')?.value || ''
       const fspiopError = ErrorHandler.ReformatFSPIOPError(
         err,
         undefined,
         undefined,
         extensions
       )
+      this.errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system,
+        operation: 'sendErrorCallback',
+        step
+      })
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)

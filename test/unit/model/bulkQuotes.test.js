@@ -52,9 +52,13 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const Logger = require('@mojaloop/central-services-logger')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
+const Metrics = require('@mojaloop/central-services-metrics')
 
-const Db = require('../../../src/data/database')
 const Config = jest.requireActual('../../../src/lib/config')
+const fileConfig = new Config()
+
+Metrics.setup(fileConfig.instrumentationMetricsConfig)
+const Db = require('../../../src/data/database')
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')
 const Http = require('../../../src/lib/http')
 const Util = require('../../../src/lib/util')
