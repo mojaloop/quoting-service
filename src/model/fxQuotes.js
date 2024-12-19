@@ -648,7 +648,6 @@ class FxQuotesModel {
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
   async handleFxQuoteRequestResend (headers, payload, span, originalPayload) {
-    let step
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -663,7 +662,6 @@ class FxQuotesModel {
       const childSpan = span.getChild('qs_fxQuote_forwardQuoteRequestResend')
       try {
         await childSpan.audit({ headers, payload }, EventSdk.AuditEventAction.start)
-        step = 'forwardFxQuoteRequest-1'
         await this.forwardFxQuoteRequest(headers, payload.conversionRequestId, originalPayload, childSpan)
       } catch (err) {
         // any-error
@@ -680,21 +678,7 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in handleFxQuoteRequestResend: ', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
-      throw fspiopError
+      throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
 
@@ -703,7 +687,6 @@ class FxQuotesModel {
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
   async handleFxQuoteUpdateResend (headers, conversionRequestId, originalPayload, span) {
-    let step
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -717,7 +700,6 @@ class FxQuotesModel {
       const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteUpdateResend')
       try {
         await childSpan.audit({ headers, params: { conversionRequestId }, payload: originalPayload }, EventSdk.AuditEventAction.start)
-        step = 'forwardFxQuoteUpdate-1'
         await this.forwardFxQuoteUpdate(headers, conversionRequestId, originalPayload, childSpan)
       } catch (err) {
         // any-error
@@ -733,21 +715,7 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in handleQuoteUpdateResend: ', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
-      throw fspiopError
+      throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
 

@@ -537,8 +537,12 @@ class QuotesModel {
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     const log = this.log.child({ quoteId: quoteRequest?.quoteId })
-    let step
     try {
+      if (!headers[ENUM.Http.Headers.FSPIOP.SOURCE]) {
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+          'Missing FSPIOP headers')
+      }
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       log.debug('handleQuoteRequestResend...', { fspiopSource, quoteRequest, headers })
 
@@ -550,7 +554,6 @@ class QuotesModel {
       const childSpan = span.getChild('qs_quote_forwardQuoteRequestResend')
       try {
         await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
-        step = 'forwardQuoteRequest-1'
         await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan, additionalHeaders)
         histTimer({ success: true, queryName: 'quote_handleQuoteRequestResend' })
         log.info('handleQuoteRequestResend is done')
@@ -560,7 +563,6 @@ class QuotesModel {
         // get the model to handle it
         log.error('error in handleQuoteRequestResend', err)
         const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
-        step = 'handleException-2'
         await this.handleException(fspiopSource, quoteRequest.quoteId, fspiopError, headers, childSpan)
         histTimer({ success: false, queryName: 'quote_handleQuoteRequestResend' })
       } finally {
@@ -571,21 +573,7 @@ class QuotesModel {
     } catch (err) {
       log.error('Error in handleQuoteRequestResend: ', err)
       histTimer({ success: false, queryName: 'quote_handleQuoteRequestResend' })
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handleQuoteRequestResend',
-        step
-      })
-      throw fspiopError
+      throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
 
@@ -834,8 +822,12 @@ class QuotesModel {
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     const log = this.log.child({ quoteId })
-    let step
     try {
+      if (!headers[ENUM.Http.Headers.FSPIOP.SOURCE] || !headers[ENUM.Http.Headers.FSPIOP.DESTINATION]) {
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+          'Missing FSPIOP headers')
+      }
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
       log.debug('handleQuoteUpdateResend...', { fspiopSource, fspiopDest, quoteUpdate: payload })
@@ -848,7 +840,6 @@ class QuotesModel {
       const childSpan = span.getChild('qs_quote_forwardQuoteUpdateResend')
       try {
         await childSpan.audit({ headers, params: { quoteId }, payload }, EventSdk.AuditEventAction.start)
-        step = 'forwardQuoteUpdate-1'
         await this.forwardQuoteUpdate(headers, quoteId, payload, childSpan)
         histTimer({ success: true, queryName: 'quote_handleQuoteUpdateResend' })
         log.info('handleQuoteUpdateResend is done')
@@ -868,21 +859,7 @@ class QuotesModel {
     } catch (err) {
       log.error('Error in handleQuoteUpdateResend: ', err)
       histTimer({ success: false, queryName: 'quote_handleQuoteUpdateResend' })
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handleQuoteUpdateResend',
-        step
-      })
-      throw fspiopError
+      throw ErrorHandler.ReformatFSPIOPError(err)
     }
   }
 

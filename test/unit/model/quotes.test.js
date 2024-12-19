@@ -729,7 +729,12 @@ describe('QuotesModel', () => {
         it('throws an exception if `executeRules` fails', async () => {
           expect.assertions(1)
 
-          const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+          const fspiopError = ErrorHandler.CreateFSPIOPError(
+            ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+            undefined,
+            undefined,
+            [{ key: 'system', value: '["test"]' }]
+          )
 
           quotesModel.executeRules = jest.fn(() => { throw fspiopError })
 
@@ -740,7 +745,12 @@ describe('QuotesModel', () => {
         it('throws an exception if `handleRuleEvents` fails', async () => {
           expect.assertions(1)
 
-          const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+          const fspiopError = ErrorHandler.CreateFSPIOPError(
+            ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR,
+            undefined,
+            undefined,
+            [{ key: 'system', value: '["test"]' }]
+          )
 
           quotesModel.handleRuleEvents = jest.fn(() => { throw fspiopError })
 
@@ -1356,7 +1366,14 @@ describe('QuotesModel', () => {
       expect.assertions(3)
       mockConfig.simpleRoutingMode = false
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
-      Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
+      Http.httpRequest.mockImplementationOnce(() => {
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+          'Error communicating with destination FSP',
+          undefined,
+          [{ key: 'system', value: '["test"]' }]
+        )
+      })
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
         .rejects
@@ -1369,7 +1386,14 @@ describe('QuotesModel', () => {
       expect.assertions(3)
       mockConfig.simpleRoutingMode = false
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
-      Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
+      Http.httpRequest.mockImplementationOnce(() => {
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+          'Error communicating with destination FSP',
+          undefined,
+          [{ key: 'system', value: '["test"]' }]
+        )
+      })
 
       await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest))
         .rejects
@@ -1426,7 +1450,12 @@ describe('QuotesModel', () => {
     it('handle fspiopError when forward quote fails', async () => {
       expect.assertions(4)
       mockChildSpan.isFinished = true
-      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR)
+      const fspiopError = ErrorHandler.CreateFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+        'Error communicating with destination FSP',
+        undefined,
+        [{ key: 'system', value: '["test"]' }]
+      )
       quotesModel.forwardQuoteRequest = jest.fn(() => { throw fspiopError })
 
       await expect(quotesModel.handleQuoteRequestResend(mockData.headers, mockData.quoteRequest, mockSpan))
@@ -1455,6 +1484,15 @@ describe('QuotesModel', () => {
       expect(quotesModel.handleException).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toHaveBeenCalled()
     })
+    it('handles erroneous headers', async () => {
+      expect.assertions(3)
+      await expect(quotesModel.handleQuoteRequestResend({}, mockData.quoteId, mockData.quoteUpdate, mockSpan))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+
+      expect(mockChildSpan.audit).not.toBeCalled()
+      expect(quotesModel.forwardQuoteUpdate).not.toBeCalled()
+    })
   })
   describe('handleQuoteUpdate', () => {
     beforeEach(() => {
@@ -1480,7 +1518,12 @@ describe('QuotesModel', () => {
       expect.assertions(6)
 
       mockConfig.simpleRoutingMode = true
-      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR)
+      const fspiopError = ErrorHandler.CreateFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+        'Error communicating with destination FSP',
+        undefined,
+        [{ key: 'system', value: '["test"]' }]
+      )
       quotesModel.forwardQuoteUpdate = jest.fn(() => { throw fspiopError })
       mockChildSpan.isFinished = false
 
@@ -1722,7 +1765,14 @@ describe('QuotesModel', () => {
 
       mockConfig.simpleRoutingMode = false
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalid)
-      Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
+      Http.httpRequest.mockImplementationOnce(() => {
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+          'Error communicating with destination FSP',
+          undefined,
+          [{ key: 'system', value: '["test"]' }]
+        )
+      })
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
         .rejects
@@ -1736,7 +1786,14 @@ describe('QuotesModel', () => {
 
       mockConfig.simpleRoutingMode = false
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.invalidResponse)
-      Http.httpRequest.mockImplementationOnce(() => { throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR) })
+      Http.httpRequest.mockImplementationOnce(() => {
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+          'Error communicating with destination FSP',
+          undefined,
+          [{ key: 'system', value: '["test"]' }]
+        )
+      })
 
       await expect(quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate))
         .rejects
@@ -1759,6 +1816,14 @@ describe('QuotesModel', () => {
 
       expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
       expect(mockChildSpan.audit).not.toHaveBeenCalled()
+    })
+    it('should throw error when getParticipant error returns nullish value', async () => {
+      expect.assertions(1)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(null)
+      quotesModel.sendErrorCallback = jest.fn()
+
+      await quotesModel.forwardQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
+      expect(quotesModel.sendErrorCallback).toBeCalled()
     })
   })
   describe('handleQuoteUpdateResend', () => {
@@ -1814,6 +1879,15 @@ describe('QuotesModel', () => {
       const args = [mockData.headers['fspiop-source'], mockData.quoteId, customErrorNoStack, mockData.headers, mockChildSpan]
       expect(quotesModel.handleException).toBeCalledWith(...args)
       expect(mockChildSpan.finish).not.toBeCalled()
+    })
+    it('handles erroneous headers', async () => {
+      expect.assertions(3)
+      await expect(quotesModel.handleQuoteUpdateResend({}, mockData.quoteId, mockData.quoteUpdate, mockSpan))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+
+      expect(mockChildSpan.audit).not.toBeCalled()
+      expect(quotesModel.forwardQuoteUpdate).not.toBeCalled()
     })
   })
 
@@ -2009,6 +2083,16 @@ describe('QuotesModel', () => {
 
       // Assert
       await expect(action()).rejects.toThrowError('Test HTTP Error')
+    })
+
+    it('should throw error when getParticipant error returns nullish value', async () => {
+      expect.assertions(1)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(null)
+      quotesModel.sendErrorCallback = jest.fn()
+
+      await expect(quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId))
+        .rejects
+        .toThrow('No FSPIOP_CALLBACK_URL_QUOTES found for quote GET test123')
     })
   })
 
@@ -2477,6 +2561,24 @@ describe('QuotesModel', () => {
       quotesModel.writeLog('test message')
       // Assert
       expect(Logger.debug).toBeCalledTimes(1)
+    })
+  })
+
+  describe('_getParticipantEndpoint', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      quotesModel._getParticipantEndpoint.mockRestore()
+      Util.getParticipantEndpoint.mockRestore()
+    })
+
+    it('should call util.getParticipantEndpoint', async () => {
+      // Arrange
+      const endpoint = 'http://localhost:8444/payeefsp'
+      Util.getParticipantEndpoint.mockReturnValueOnce(endpoint)
+      // Act
+      await quotesModel._getParticipantEndpoint('payeefsp')
+      // Assert
+      expect(Util.getParticipantEndpoint).toBeCalledTimes(1)
     })
   })
 })

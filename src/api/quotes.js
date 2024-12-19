@@ -89,11 +89,9 @@ module.exports = {
     } catch (err) {
       histTimerEnd({ success: false })
       const fspiopError = reformatFSPIOPError(err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
       errorCounter.inc({
         code: fspiopError?.apiErrorCode.code,
-        system,
+        system: undefined,
         operation: 'postQuotes',
         step
       })

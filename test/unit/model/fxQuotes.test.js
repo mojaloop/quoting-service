@@ -738,4 +738,20 @@ describe('FxQuotesModel Tests -->', () => {
       expect(args.headers[HEADERS.fspiopSource]).toBe(config.hubName)
     })
   })
+
+  describe('sendHttpRequest', () => {
+    it('should rethrow an error if error is thrown', async () => {
+      const options = { method: 'GET', url: 'https://example.com' }
+      const fspiopSource = 'source'
+      const fspiopDest = 'destination'
+      const error = new Error('Network Error')
+
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      jest.spyOn(axios, 'request').mockRejectedValue(error)
+
+      await expect(fxQuotesModel.sendHttpRequest(options, fspiopSource, fspiopDest)).rejects.toThrow('Network Error')
+
+      expect(axios.request).toBeCalledWith(options)
+    })
+  })
 })
