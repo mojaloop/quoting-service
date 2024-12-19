@@ -121,7 +121,16 @@ class Database {
       return rows[0].transactionInitiatorTypeId
     } catch (err) {
       this.log.error('Error in getInitiatorType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -143,7 +152,16 @@ class Database {
       return rows[0].transactionInitiatorId
     } catch (err) {
       this.log.error('Error in getInitiator:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -165,7 +183,16 @@ class Database {
       return rows[0].transactionScenarioId
     } catch (err) {
       this.log.error('Error in getScenario:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -187,7 +214,16 @@ class Database {
       return rows[0].transactionSubScenarioId
     } catch (err) {
       this.log.error('Error in getSubScenario:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -209,7 +245,16 @@ class Database {
       return rows[0].amountTypeId
     } catch (err) {
       this.log.error('Error in getAmountType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -231,7 +276,16 @@ class Database {
       return transactionReferenceId
     } catch (err) {
       this.log.error('Error in createTransactionReference:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -253,7 +307,16 @@ class Database {
       return quoteId
     } catch (err) {
       this.log.error('Error in createQuoteDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -276,7 +339,16 @@ class Database {
       return quoteId
     } catch (err) {
       this.log.error('Error in createQuoteUpdateDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -299,7 +371,16 @@ class Database {
       return rows[0].partyTypeId
     } catch (err) {
       this.log.error('Error in getPartyType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -322,7 +403,16 @@ class Database {
       return rows[0].partyIdentifierTypeId
     } catch (err) {
       this.log.error('Error in getPartyIdentifierType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -359,7 +449,16 @@ class Database {
       return rows[0].participantId
     } catch (err) {
       this.log.error('Error in getParticipant:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -391,7 +490,16 @@ class Database {
       return rows[0].participantId
     } catch (err) {
       this.log.error('Error in getParticipantByName:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -417,7 +525,16 @@ class Database {
       return rows[0].transferParticipantRoleTypeId
     } catch (err) {
       this.log.error('Error in getTransferParticipantRoleType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -443,7 +560,16 @@ class Database {
       return rows[0].ledgerEntryTypeId
     } catch (err) {
       this.log.error('Error in getLedgerEntryType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -535,7 +661,16 @@ class Database {
       return quotePartyId
     } catch (err) {
       this.log.error('Error in createQuoteParty:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -559,7 +694,16 @@ class Database {
       return newParty
     } catch (err) {
       this.log.error('Error in createParty:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -592,7 +736,16 @@ class Database {
       return quote.quoteId
     } catch (err) {
       this.log.error('Error in createQuote:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -610,7 +763,16 @@ class Database {
       return true
     } catch (err) {
       this.log.error('Error in createQuotePartyIdInfoExtensions:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -638,7 +800,16 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteParty:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -662,7 +833,16 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteParty:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -688,7 +868,16 @@ class Database {
       return rows[0].value
     } catch (err) {
       this.log.error('Error in getParticipantEndpoint:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -712,7 +901,16 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -736,7 +934,16 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteResponseDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -772,7 +979,16 @@ class Database {
       return newQuoteResponse
     } catch (err) {
       this.log.error('Error in createQuoteResponse:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -796,7 +1012,16 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createIlpPacket:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -823,7 +1048,16 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createGeoCode:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -850,7 +1084,16 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createQuoteError:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -878,7 +1121,16 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createQuoteExtensions:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -898,7 +1150,16 @@ class Database {
       return newFxQuote
     } catch (err) {
       this.log.error('Error in createFxQuote:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -919,7 +1180,16 @@ class Database {
       return newFxQuoteResponse
     } catch (err) {
       this.log.error('Error in createFxQuoteResponse:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -941,7 +1211,16 @@ class Database {
       return newFxQuoteError
     } catch (err) {
       this.log.error('Error in createFxQuoteError:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -962,7 +1241,16 @@ class Database {
       return newFxQuoteDuplicateCheck
     } catch (err) {
       this.log.error('Error in createFxQuoteDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -984,7 +1272,16 @@ class Database {
       return newFxQuoteResponseDuplicateCheck
     } catch (err) {
       this.log.error('Error in createFxQuoteResponseDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -1014,7 +1311,16 @@ class Database {
       return newFxQuoteConversionTerms
     } catch (err) {
       this.log.error('Error in createFxQuoteConversionTerms:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -1037,7 +1343,16 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in fxCharge:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -1057,7 +1372,16 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createFxQuoteConversionTermsExtension:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -1090,7 +1414,16 @@ class Database {
       return newFxQuoteResponseConversionTerms
     } catch (err) {
       this.log.error('Error in createFxQuoteResponseConversionTerms:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -1110,7 +1443,16 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createFxQuoteResponseConversionTermsExtension:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -1122,7 +1464,16 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in getFxQuoteDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -1134,7 +1485,16 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in getFxQuoteResponseDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -1159,7 +1519,16 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteDetails:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -1188,7 +1557,16 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteDetails:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 
@@ -1200,7 +1578,16 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteErrorDetails:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["db"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 

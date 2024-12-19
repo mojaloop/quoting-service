@@ -17,6 +17,7 @@ let monitoringServer
 
 const startFn = async (handlerList, appConfig = undefined) => {
   const config = appConfig || new Config()
+  monitoringServer = await createMonitoringServer(config.monitoringPort, consumersMap, db)
 
   db = new Database(config)
   await db.connect()
@@ -44,7 +45,6 @@ const startFn = async (handlerList, appConfig = undefined) => {
   })
 
   consumersMap = await createConsumers(handler.handleMessages, handlerList)
-  monitoringServer = await createMonitoringServer(config.monitoringPort, consumersMap, db)
   return handler
 }
 

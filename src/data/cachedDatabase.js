@@ -135,7 +135,16 @@ class CachedDatabase extends Database {
     } catch (err) {
       this.log.error('Error in getCacheValue: ', err)
       histTimer({ success: false, queryName: type, hit: false })
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      const extensions = [{
+        key: 'system',
+        value: '["cachedDb"]'
+      }]
+      throw ErrorHandler.Factory.reformatFSPIOPError(
+        err,
+        undefined,
+        undefined,
+        extensions
+      )
     }
   }
 

@@ -1,3 +1,9 @@
+const Metrics = require('@mojaloop/central-services-metrics')
+
+const Config = require('../../../src/lib/config')
+const fileConfig = new Config()
+
+Metrics.setup(fileConfig.instrumentationMetricsConfig)
 const modelFactory = require('../../../src/model')
 const QuotesModel = require('../../../src/model/quotes')
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')

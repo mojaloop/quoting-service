@@ -51,7 +51,9 @@ describe('Monitoring Server', () => {
     it('should initialize metrics if instrumentation is enabled', () => {
       const config = {
         instrumentationMetricsDisabled: false,
-        instrumentationMetricsConfig: {}
+        instrumentationMetricsConfig: {
+          defaultLabels: {}
+        }
       }
       Metrics.setup = jest.fn()
       initializeInstrumentation(config)
