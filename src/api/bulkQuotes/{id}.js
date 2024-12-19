@@ -66,12 +66,13 @@ module.exports = {
 
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.GET
       const topicConfig = dto.topicConfigDto({ topicName: topic })
+      step = 'messageFromRequestDto-1'
       const message = await dto.messageFromRequestDto({
         request,
         type: Events.Event.Type.BULK_QUOTE,
         action: Events.Event.Action.GET
       })
-
+      step = 'produceMessage-2'
       await Producer.produceMessage(message, topicConfig, config)
 
       histTimerEnd({ success: true })
@@ -111,12 +112,13 @@ module.exports = {
 
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: topic })
+      step = 'messageFromRequestDto-1'
       const message = await dto.messageFromRequestDto({
         request,
         type: Events.Event.Type.BULK_QUOTE,
         action: Events.Event.Action.PUT
       })
-
+      step = 'produceMessage-2'
       await Producer.produceMessage(message, topicConfig, config)
 
       histTimerEnd({ success: true })

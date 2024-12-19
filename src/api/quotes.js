@@ -69,6 +69,7 @@ module.exports = {
       await util.auditSpan(request)
       const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
 
+      step = 'messageFromRequestDto-1'
       const message = await dto.messageFromRequestDto({
         request,
         type,
@@ -80,6 +81,7 @@ module.exports = {
 
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.POST : kafkaConfig.PRODUCER.QUOTE.POST
       const topicConfig = dto.topicConfigDto({ topicName: producerConfig.topic })
+      step = 'produceMessage-2'
       await Producer.produceMessage(message, topicConfig, producerConfig.config)
 
       histTimerEnd({ success: true })
