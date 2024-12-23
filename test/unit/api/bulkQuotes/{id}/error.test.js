@@ -32,6 +32,7 @@
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { Producer } = require('@mojaloop/central-services-stream').Util
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const { logger } = require('../../../../../src/lib')
 const bulkQuotesApi = require('../../../../../src/api/bulkQuotes/{id}/error')
@@ -39,9 +40,11 @@ const Config = require('../../../../../src/lib/config')
 const mocks = require('../../../mocks')
 
 const { kafkaConfig } = new Config()
+const fileConfig = new Config()
 
 describe('PUT /bulkQuotes/{id}/error API Tests -->', () => {
   const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
+  Metrics.setup(fileConfig.instrumentationMetricsConfig)
   const mockContext = jest.fn()
 
   it('should publish a message with bulkQuotes callback error payload', async () => {

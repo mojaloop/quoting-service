@@ -34,6 +34,7 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
 const util = require('../lib/util')
 const dto = require('../lib/dto')
@@ -61,11 +62,14 @@ module.exports = {
       isFX ? 'Publish HTTP POST fxQuotes request' : 'Publish HTTP POST quotes request',
       ['success']
     ).startTimer()
+    const errorCounter = Metrics.getCounter('errorCount')
+    let step
 
     try {
       await util.auditSpan(request)
       const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
 
+      step = 'messageFromRequestDto-1'
       const message = await dto.messageFromRequestDto({
         request,
         type,
@@ -77,12 +81,20 @@ module.exports = {
 
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.POST : kafkaConfig.PRODUCER.QUOTE.POST
       const topicConfig = dto.topicConfigDto({ topicName: producerConfig.topic })
+      step = 'produceMessage-2'
       await Producer.produceMessage(message, topicConfig, producerConfig.config)
 
       histTimerEnd({ success: true })
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
+      const fspiopError = reformatFSPIOPError(err)
+      errorCounter.inc({
+        code: fspiopError?.apiErrorCode.code,
+        system: undefined,
+        operation: 'postQuotes',
+        step
+      })
       util.rethrowFspiopError(err)
     }
   }

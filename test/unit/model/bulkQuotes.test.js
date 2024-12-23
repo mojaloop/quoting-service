@@ -52,9 +52,13 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const Logger = require('@mojaloop/central-services-logger')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
+const Metrics = require('@mojaloop/central-services-metrics')
 
-const Db = require('../../../src/data/database')
 const Config = jest.requireActual('../../../src/lib/config')
+const fileConfig = new Config()
+
+Metrics.setup(fileConfig.instrumentationMetricsConfig)
+const Db = require('../../../src/data/database')
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')
 const Http = require('../../../src/lib/http')
 const Util = require('../../../src/lib/util')
@@ -431,7 +435,26 @@ describe('BulkQuotesModel', () => {
 
     it('should throw rethrow any errors', async () => {
       expect.assertions(1)
-      bulkQuotesModel._getParticipantEndpoint.mockRejectedValueOnce(new Error('Test Error'))
+      const extensions = [{
+        key: 'system',
+        value: '["test"]'
+      }]
+      const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(
+        new Error('Test Error'),
+        undefined,
+        undefined,
+        extensions
+      )
+      bulkQuotesModel._getParticipantEndpoint.mockRejectedValueOnce(fspiopError)
+
+      await expect(bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest, mockChildSpan))
+        .rejects
+        .toThrowError()
+    })
+
+    it('should throw an error if the participant endpoint is not found', async () => {
+      expect.assertions(1)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(undefined)
 
       await expect(bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest, mockChildSpan))
         .rejects
@@ -457,8 +480,16 @@ describe('BulkQuotesModel', () => {
     })
     it('should handle exception', async () => {
       expect.assertions(5)
-
-      const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR)
+      const extensions = [{
+        key: 'system',
+        value: '["test"]'
+      }]
+      const fspiopError = ErrorHandler.CreateFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
+        undefined,
+        undefined,
+        extensions
+      )
       bulkQuotesModel.forwardBulkQuoteUpdate = jest.fn(() => { throw fspiopError })
       mockChildSpan.isFinished = false
       await bulkQuotesModel.handleBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate, mockSpan)
@@ -549,6 +580,23 @@ describe('BulkQuotesModel', () => {
       await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
         .rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+
+      expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
+      expect(mockChildSpan.audit).not.toHaveBeenCalled()
+    })
+    it('should handle FSPIOPerrors and rethrow them', async () => {
+      expect.assertions(3)
+      const fspiopError = ErrorHandler.CreateFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
+        undefined,
+        undefined,
+        [{ key: 'system', value: '["test"]' }]
+      )
+      bulkQuotesModel._getParticipantEndpoint.mockRejectedValueOnce(fspiopError)
+
+      await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
 
       expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
       expect(mockChildSpan.audit).not.toHaveBeenCalled()
@@ -1017,6 +1065,24 @@ describe('BulkQuotesModel', () => {
       bulkQuotesModel.writeLog('test message')
       // Assert
       expect(Logger.debug).toBeCalledTimes(1)
+    })
+  })
+
+  describe('_getParticipantEndpoint', () => {
+    beforeEach(() => {
+      // restore the current method in test to its original implementation
+      bulkQuotesModel._getParticipantEndpoint.mockRestore()
+      Util.getParticipantEndpoint.mockRestore()
+    })
+
+    it('should call util.getParticipantEndpoint', async () => {
+      // Arrange
+      const endpoint = 'http://localhost:8444/payeefsp'
+      Util.getParticipantEndpoint.mockReturnValueOnce(endpoint)
+      // Act
+      await bulkQuotesModel._getParticipantEndpoint('payeefsp')
+      // Assert
+      expect(Util.getParticipantEndpoint).toBeCalledTimes(1)
     })
   })
 })
