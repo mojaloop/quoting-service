@@ -83,3 +83,5 @@ typings/
 # https://devspace.sh/
 devspace*
 .devspace/**.*
+
+.rush
