@@ -47,7 +47,17 @@ jest.mock('../../../src/model/rules')
 jest.mock('../../../src/lib/config', () => {
   return jest.fn().mockImplementation(() => mockConfig)
 })
-jest.mock('../../../src/lib/util')
+jest.mock('../../../src/lib/util', () => {
+  const originalUtil = jest.requireActual('../../../src/lib/util')
+  const partialMock = Object.keys(originalUtil).reduce((pre, methodName) => {
+    pre[methodName] = jest.fn()
+    return pre
+  }, {})
+  return {
+    ...partialMock,
+    rethrowFspiopError: originalUtil.rethrowFspiopError
+  }
+})
 jest.mock('../../../src/lib/http')
 
 const axios = require('axios')
