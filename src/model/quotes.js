@@ -165,15 +165,7 @@ class QuotesModel {
     } catch (err) {
       log.warn('validateQuoteRequest is failed with error', err)
       histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      util.rethrowFspiopError(fspiopError, system, 'validateQuoteRequest', step)
+      util.rethrowFspiopError(err, 'validateQuoteRequest', step)
     }
   }
 
@@ -387,21 +379,14 @@ class QuotesModel {
       if (txn) {
         await txn.rollback().catch(() => {})
       }
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (handleQuoteRequestSpan) {
         await handleQuoteRequestSpan.error(fspiopError, state)
         await handleQuoteRequestSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
-      util.rethrowFspiopError(fspiopError, system, 'handleQuoteRequest', step)
+      util.rethrowFspiopError(fspiopError, 'handleQuoteRequest', step)
     }
 
     let forwardQuoteRequestSpan
@@ -496,15 +481,7 @@ class QuotesModel {
     } catch (err) {
       log.error('forwardQuoteRequest is failed with error:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteRequest' })
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      util.rethrowFspiopError(fspiopError, system, 'forwardQuoteRequest', step)
+      util.rethrowFspiopError(err, 'forwardQuoteRequest', step)
     }
   }
 
@@ -711,21 +688,14 @@ class QuotesModel {
       if (txn) {
         await txn.rollback().catch(() => {})
       }
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (handleQuoteUpdateSpan) {
         await handleQuoteUpdateSpan.error(fspiopError, state)
         await handleQuoteUpdateSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteUpdate' })
-      util.rethrowFspiopError(fspiopError, system, 'handleQuoteUpdate', step)
+      util.rethrowFspiopError(fspiopError, 'handleQuoteUpdate', step)
     }
   }
 
@@ -888,21 +858,14 @@ class QuotesModel {
       if (txn) {
         await txn.rollback().catch(() => {})
       }
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (childSpan) {
         await childSpan.error(fspiopError, state)
         await childSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteError' })
-      util.rethrowFspiopError(fspiopError, system, 'handleQuoteError', step)
+      util.rethrowFspiopError(fspiopError, 'handleQuoteError', step)
     }
   }
 
@@ -943,15 +906,7 @@ class QuotesModel {
     } catch (err) {
       log.error('error in handleQuoteGet:', err)
       histTimer({ success: false, queryName: 'quote_handleQuoteGet' })
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      util.rethrowFspiopError(fspiopError, system, 'handleQuoteGet', step)
+      util.rethrowFspiopError(err, 'handleQuoteGet', step)
     }
   }
 
@@ -1009,15 +964,7 @@ class QuotesModel {
     } catch (err) {
       log.error('error in forwardQuoteGet:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteGet' })
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      util.rethrowFspiopError(fspiopError, system, 'forwardQuoteGet', step)
+      util.rethrowFspiopError(err, 'forwardQuoteGet', step)
     }
   }
 
@@ -1175,21 +1122,14 @@ class QuotesModel {
       }
     } catch (err) {
       log.error('error in sendErrorCallback:', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_sendErrorCallback' })
-      util.rethrowFspiopError(fspiopError, system, 'sendErrorCallback', step)
+      util.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
     }
   }
 
@@ -1242,15 +1182,7 @@ class QuotesModel {
     } catch (err) {
       log.error('error in checkDuplicateQuoteRequest: ', err)
       histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'error' })
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      util.rethrowFspiopError(fspiopError, system, 'validateQuoteRequest', step)
+      util.rethrowFspiopError(err, 'validateQuoteRequest', step)
     }
   }
 
@@ -1303,15 +1235,7 @@ class QuotesModel {
     } catch (err) {
       log.error('error in checkDuplicateQuoteResponse: ', err)
       histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteResponse', duplicateResult: 'error' })
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      util.rethrowFspiopError(fspiopError, system, 'validateQuoteRequest', step)
+      util.rethrowFspiopError(err, 'validateQuoteRequest', step)
     }
   }
 

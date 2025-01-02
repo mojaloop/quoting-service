@@ -86,7 +86,7 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowFspiopError(err, undefined, 'postQuotes', step)
+      util.rethrowFspiopError(err, 'postQuotes', step)
     }
   }
 }

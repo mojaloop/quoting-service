@@ -78,7 +78,7 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowFspiopError(err, undefined, 'putBulkQuotesByIdError', step)
+      util.rethrowFspiopError(err, 'putBulkQuotesByIdError', step)
     }
   }
 }

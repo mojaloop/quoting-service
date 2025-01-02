@@ -121,15 +121,7 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in checkDuplicateFxQuoteRequest: ', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      util.rethrowFspiopError(fspiopError, system, 'checkDuplicateFxQuoteRequest', step)
+      util.rethrowFspiopError(err, 'checkDuplicateFxQuoteRequest', step)
     }
   }
 
@@ -168,15 +160,7 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       log.error('Error in checkDuplicateFxQuoteResponse: ', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      util.rethrowFspiopError(fspiopError, system, 'checkDuplicateFxQuoteResponse', step)
+      util.rethrowFspiopError(err, 'checkDuplicateFxQuoteResponse', step)
     }
   }
 
@@ -481,15 +465,7 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteUpdate' })
       log.error('error in forwardFxQuoteUpdate', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      util.rethrowFspiopError(fspiopError, system, 'forwardFxQuoteUpdate', step)
+      util.rethrowFspiopError(err, 'forwardFxQuoteUpdate', step)
     }
   }
 
@@ -561,15 +537,7 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteGet' })
       this.log.error('error in forwardFxQuoteGet', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      util.rethrowFspiopError(fspiopError, system, 'forwardFxQuoteGet', step)
+      util.rethrowFspiopError(err, 'forwardFxQuoteGet', step)
     }
   }
 
@@ -814,20 +782,13 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'sendErrorCallback' })
       log.error('Error in sendErrorCallback', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
-      util.rethrowFspiopError(fspiopError, system, 'sendErrorCallback', step)
+      util.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
     }
   }
 
@@ -859,7 +820,6 @@ class FxQuotesModel {
     } catch (err) {
       this.log.warn('error in sendHttpRequest', err)
       const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
       const fspiopError = ErrorHandler.CreateFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
         `network error in sendErrorCallback: ${err.message}`,
@@ -874,7 +834,7 @@ class FxQuotesModel {
         fspiopSource,
         extensions
       )
-      util.rethrowFspiopError(fspiopError, system, 'sendHttpRequest', step)
+      util.rethrowFspiopError(fspiopError, 'sendHttpRequest', step)
     }
   }
 

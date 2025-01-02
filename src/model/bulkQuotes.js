@@ -147,7 +147,7 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowFspiopError(fspiopError, undefined, 'forwardBulkQuoteRequest', step)
+        libUtil.rethrowFspiopError(fspiopError, 'forwardBulkQuoteRequest', step)
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
@@ -176,15 +176,7 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulkQuote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      libUtil.rethrowFspiopError(fspiopError, system, 'forwardBulkQuoteRequest', step)
+      libUtil.rethrowFspiopError(err, 'forwardBulkQuoteRequest', step)
     }
   }
 
@@ -271,15 +263,7 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulk quote response to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      libUtil.rethrowFspiopError(fspiopError, system, 'forwardBulkQuoteUpdate', step)
+      libUtil.rethrowFspiopError(err, 'forwardBulkQuoteUpdate', step)
     }
   }
 
@@ -335,7 +319,7 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowFspiopError(fspiopError, undefined, 'forwardBulkQuoteGet', step)
+        libUtil.rethrowFspiopError(fspiopError, 'forwardBulkQuoteGet', step)
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
@@ -358,15 +342,7 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      libUtil.rethrowFspiopError(fspiopError, system, 'forwardBulkQuoteGet', step)
+      libUtil.rethrowFspiopError(err, 'forwardBulkQuoteGet', step)
     }
   }
 
@@ -448,7 +424,7 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowFspiopError(fspiopError, undefined, 'sendErrorCallback', step)
+        libUtil.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
       }
 
       const fspiopUri = `/bulkQuotes/${bulkQuoteId}/error`
@@ -517,7 +493,6 @@ class BulkQuotesModel {
       } catch (err) {
         // external-error
         const extensions = err.extensions || []
-        const system = extensions.find((element) => element.key === 'system')?.value || ''
         const fspiopError = ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
           `network error in sendErrorCallback: ${err.message}`,
@@ -532,7 +507,7 @@ class BulkQuotesModel {
           fspiopSource,
           extensions
         )
-        libUtil.rethrowFspiopError(fspiopError, system, 'sendErrorCallback', step)
+        libUtil.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
@@ -550,25 +525,18 @@ class BulkQuotesModel {
           },
           fspiopSource
         )
-        libUtil.rethrowFspiopError(fspiopError, undefined, 'sendErrorCallback', step)
+        libUtil.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
       }
     } catch (err) {
       // any-error
       this.writeLog(`Error in sendErrorCallback: ${getStackOrInspect(err)}`)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
-      libUtil.rethrowFspiopError(fspiopError, system, 'sendErrorCallback', step)
+      libUtil.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
     }
   }
 

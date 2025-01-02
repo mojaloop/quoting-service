@@ -312,9 +312,11 @@ const auditSpan = async (request) => {
   }, AuditEventAction.start)
 }
 
-const rethrowFspiopError = (error, system = undefined, operation = undefined, step = undefined) => {
+const rethrowFspiopError = (error, operation = undefined, step = undefined) => {
   const errorCounter = Metrics.getCounter('errorCount')
   const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
+  const extensions = fspiopError.extensions || []
+  const system = extensions.find((element) => element.key === 'system')?.value || ''
   errorCounter.inc({
     code: fspiopError?.apiErrorCode.code,
     system,
