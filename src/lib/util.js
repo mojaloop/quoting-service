@@ -39,6 +39,7 @@ const axios = require('axios')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const { RESOURCES, HEADERS, ISO_HEADER_PART } = require('../constants')
 const { logger } = require('../lib')
@@ -311,8 +312,15 @@ const auditSpan = async (request) => {
   }, AuditEventAction.start)
 }
 
-const rethrowFspiopError = (error) => {
+const rethrowFspiopError = (error, system = undefined, operation = undefined, step = undefined) => {
+  const errorCounter = Metrics.getCounter('errorCount')
   const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
+  errorCounter.inc({
+    code: fspiopError?.apiErrorCode.code,
+    system,
+    operation,
+    step
+  })
   logger.error(`rethrowFspiopError: ${error?.message}`, { fspiopError })
   throw fspiopError
 }

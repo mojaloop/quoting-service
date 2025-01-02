@@ -29,6 +29,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../lib/config')
 const LOCAL_ENUM = require('../lib/enum')
 const dto = require('../lib/dto')
+const util = require('../lib/util')
 const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
@@ -128,13 +129,7 @@ class FxQuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'checkDuplicateFxQuoteRequest',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'checkDuplicateFxQuoteRequest', step)
     }
   }
 
@@ -181,13 +176,7 @@ class FxQuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'checkDuplicateFxQuoteResponse', step)
     }
   }
 
@@ -500,13 +489,7 @@ class FxQuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'forwardFxQuoteUpdate', step)
     }
   }
 
@@ -586,13 +569,7 @@ class FxQuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'forwardFxQuoteGet', step)
     }
   }
 
@@ -845,18 +822,12 @@ class FxQuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'sendErrorCallback', step)
     }
   }
 
@@ -903,13 +874,7 @@ class FxQuotesModel {
         fspiopSource,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'sendHttpRequest', step)
     }
   }
 

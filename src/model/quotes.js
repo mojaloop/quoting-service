@@ -173,13 +173,7 @@ class QuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'validateQuoteRequest',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'validateQuoteRequest', step)
     }
   }
 
@@ -401,19 +395,13 @@ class QuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handleQuoteRequest',
-        step
-      })
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (handleQuoteRequestSpan) {
         await handleQuoteRequestSpan.error(fspiopError, state)
         await handleQuoteRequestSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'handleQuoteRequest', step)
     }
 
     let forwardQuoteRequestSpan
@@ -516,13 +504,7 @@ class QuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'forwardQuoteRequest',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'forwardQuoteRequest', step)
     }
   }
 
@@ -737,19 +719,13 @@ class QuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handleQuoteUpdate',
-        step
-      })
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (handleQuoteUpdateSpan) {
         await handleQuoteUpdateSpan.error(fspiopError, state)
         await handleQuoteUpdateSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteUpdate' })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'handleQuoteUpdate', step)
     }
   }
 
@@ -920,19 +896,13 @@ class QuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handleQuoteError',
-        step
-      })
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (childSpan) {
         await childSpan.error(fspiopError, state)
         await childSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteError' })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'handleQuoteError', step)
     }
   }
 
@@ -981,13 +951,7 @@ class QuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'handleQuoteGet',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'handleQuoteGet', step)
     }
   }
 
@@ -1053,13 +1017,7 @@ class QuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'validateQuoteRequest',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'forwardQuoteGet', step)
     }
   }
 
@@ -1225,19 +1183,13 @@ class QuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'validateQuoteRequest',
-        step
-      })
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_sendErrorCallback' })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'sendErrorCallback', step)
     }
   }
 
@@ -1298,13 +1250,7 @@ class QuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'validateQuoteRequest',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'validateQuoteRequest', step)
     }
   }
 
@@ -1365,13 +1311,7 @@ class QuotesModel {
         undefined,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'validateQuoteRequest',
-        step
-      })
-      throw fspiopError
+      util.rethrowFspiopError(fspiopError, system, 'validateQuoteRequest', step)
     }
   }
 
