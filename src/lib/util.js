@@ -327,6 +327,34 @@ const rethrowFspiopError = (error, operation = undefined, step = undefined) => {
   throw fspiopError
 }
 
+const rethrowDatabaseError = (error) => {
+  logger.error(error)
+  const extensions = [{
+    key: 'system',
+    value: '["db"]'
+  }]
+  throw ErrorHandler.Factory.reformatFSPIOPError(
+    error,
+    undefined,
+    undefined,
+    extensions
+  )
+}
+
+const rethrowCachedDatabaseError = (error) => {
+  logger.error(error)
+  const extensions = [{
+    key: 'system',
+    value: '["db","cache"]'
+  }]
+  throw ErrorHandler.Factory.reformatFSPIOPError(
+    error,
+    undefined,
+    undefined,
+    extensions
+  )
+}
+
 const resolveOpenApiSpecPath = (isIsoApi) => {
   const specFile = isIsoApi
     ? 'QuotingService-swagger_iso20022.yaml'
@@ -347,6 +375,8 @@ module.exports = {
   calculateRequestHash,
   removeEmptyKeys,
   rethrowFspiopError,
+  rethrowDatabaseError,
+  rethrowCachedDatabaseError,
   fetchParticipantInfo,
   getParticipantEndpoint,
   makeAppInteroperabilityHeader,
