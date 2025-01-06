@@ -20,12 +20,17 @@ const Logger = require('@mojaloop/central-services-logger')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../lib/config')
 const { plugin: HealthPlugin } = require('./plugins/health')
+const { version } = require('../../package.json')
 
 const config = new Config()
 
 const initializeInstrumentation = (config) => {
   /* istanbul ignore next */
   if (!config.instrumentationMetricsDisabled) {
+    if (config.instrumentationMetricsConfig) {
+      console.log(config)
+      config.instrumentationMetricsConfig.defaultLabels.serviceVersion = version
+    }
     Metrics.setup(config.instrumentationMetricsConfig)
   }
 }
