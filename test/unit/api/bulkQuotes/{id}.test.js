@@ -95,8 +95,8 @@ describe('/bulkQuotes/{id} API Tests -->', () => {
         .rejects.toThrowError(error.message)
 
       // Assert
-      expect(spyErrorLog).toHaveBeenCalledTimes(2)
-      expect(spyErrorLog.mock.calls[1][0]).toContain(error.message)
+      expect(spyErrorLog).toHaveBeenCalledTimes(1)
+      expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
     })
   })
 
@@ -142,8 +142,8 @@ describe('/bulkQuotes/{id} API Tests -->', () => {
         .rejects.toThrowError(error.message)
 
       // Assert
-      expect(spyErrorLog).toHaveBeenCalledTimes(2)
-      expect(spyErrorLog.mock.calls[1][0]).toContain(error.message)
+      expect(spyErrorLog).toHaveBeenCalledTimes(1)
+      expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
     })
   })
 })
