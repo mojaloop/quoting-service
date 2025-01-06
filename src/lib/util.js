@@ -39,12 +39,12 @@ const axios = require('axios')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
-const Metrics = require('@mojaloop/central-services-metrics')
 
 const { RESOURCES, HEADERS, ISO_HEADER_PART } = require('../constants')
 const { logger } = require('../lib')
 const Config = require('./config')
 
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 const config = new Config()
 
 const failActionHandler = async (request, h, err) => {
@@ -312,47 +312,17 @@ const auditSpan = async (request) => {
   }, AuditEventAction.start)
 }
 
-const rethrowFspiopError = (error, operation = undefined, step = undefined) => {
-  const errorCounter = Metrics.getCounter('errorCount')
-  const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
-  const extensions = fspiopError.extensions || []
-  const system = extensions.find((element) => element.key === 'system')?.value || ''
-  errorCounter.inc({
-    code: fspiopError?.apiErrorCode.code,
-    system,
-    operation,
-    step
-  })
-  logger.error(`rethrowFspiopError: ${error?.message}`, { fspiopError })
-  throw fspiopError
+const rethrowAndCountFspiopError = (error, options) => {
+  options.loggerOverride = logger
+  rethrow.rethrowAndCountFspiopError(error, options)
 }
 
 const rethrowDatabaseError = (error) => {
-  logger.error(error)
-  const extensions = [{
-    key: 'system',
-    value: '["db"]'
-  }]
-  throw ErrorHandler.Factory.reformatFSPIOPError(
-    error,
-    undefined,
-    undefined,
-    extensions
-  )
+  rethrow.rethrowDatabaseError(error, { loggerOverride: logger })
 }
 
 const rethrowCachedDatabaseError = (error) => {
-  logger.error(error)
-  const extensions = [{
-    key: 'system',
-    value: '["db","cache"]'
-  }]
-  throw ErrorHandler.Factory.reformatFSPIOPError(
-    error,
-    undefined,
-    undefined,
-    extensions
-  )
+  rethrow.rethrowCachedDatabaseError(error, { loggerOverride: logger })
 }
 
 const resolveOpenApiSpecPath = (isIsoApi) => {
@@ -374,7 +344,7 @@ module.exports = {
   generateRequestHeadersForJWS,
   calculateRequestHash,
   removeEmptyKeys,
-  rethrowFspiopError,
+  rethrowAndCountFspiopError,
   rethrowDatabaseError,
   rethrowCachedDatabaseError,
   fetchParticipantInfo,

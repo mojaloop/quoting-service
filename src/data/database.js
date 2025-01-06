@@ -39,9 +39,8 @@ const util = require('util')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const MLNumber = require('@mojaloop/ml-number')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const libUtil = require('../lib/util')
 const { logger } = require('../lib/')
-
+const libUtil = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 
 /**

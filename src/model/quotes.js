@@ -48,6 +48,7 @@ const Config = require('../lib/config')
 const LOCAL_ENUM = require('../lib/enum')
 const dto = require('../lib/dto')
 const util = require('../lib/util')
+
 const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { RESOURCES } = require('../constants')
@@ -165,7 +166,7 @@ class QuotesModel {
     } catch (err) {
       log.warn('validateQuoteRequest is failed with error', err)
       histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
-      util.rethrowFspiopError(err, 'validateQuoteRequest', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
     }
   }
 
@@ -386,7 +387,7 @@ class QuotesModel {
         await handleQuoteRequestSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
-      util.rethrowFspiopError(fspiopError, 'handleQuoteRequest', step)
+      util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteRequest', step })
     }
 
     let forwardQuoteRequestSpan
@@ -481,7 +482,7 @@ class QuotesModel {
     } catch (err) {
       log.error('forwardQuoteRequest is failed with error:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteRequest' })
-      util.rethrowFspiopError(err, 'forwardQuoteRequest', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'forwardQuoteRequest', step })
     }
   }
 
@@ -695,7 +696,7 @@ class QuotesModel {
         await handleQuoteUpdateSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteUpdate' })
-      util.rethrowFspiopError(fspiopError, 'handleQuoteUpdate', step)
+      util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteUpdate', step })
     }
   }
 
@@ -865,7 +866,7 @@ class QuotesModel {
         await childSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteError' })
-      util.rethrowFspiopError(fspiopError, 'handleQuoteError', step)
+      util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteError', step })
     }
   }
 
@@ -906,7 +907,7 @@ class QuotesModel {
     } catch (err) {
       log.error('error in handleQuoteGet:', err)
       histTimer({ success: false, queryName: 'quote_handleQuoteGet' })
-      util.rethrowFspiopError(err, 'handleQuoteGet', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'handleQuoteGet', step })
     }
   }
 
@@ -964,7 +965,7 @@ class QuotesModel {
     } catch (err) {
       log.error('error in forwardQuoteGet:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteGet' })
-      util.rethrowFspiopError(err, 'forwardQuoteGet', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'forwardQuoteGet', step })
     }
   }
 
@@ -1129,7 +1130,7 @@ class QuotesModel {
         await span.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_sendErrorCallback' })
-      util.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
+      util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
     }
   }
 
@@ -1182,7 +1183,7 @@ class QuotesModel {
     } catch (err) {
       log.error('error in checkDuplicateQuoteRequest: ', err)
       histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'error' })
-      util.rethrowFspiopError(err, 'validateQuoteRequest', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
     }
   }
 
@@ -1235,7 +1236,7 @@ class QuotesModel {
     } catch (err) {
       log.error('error in checkDuplicateQuoteResponse: ', err)
       histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteResponse', duplicateResult: 'error' })
-      util.rethrowFspiopError(err, 'validateQuoteRequest', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
     }
   }
 

@@ -77,7 +77,7 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowFspiopError(err, 'getBulkQuotesById', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'getBulkQuotesById', step })
     }
   },
   /**
@@ -113,7 +113,7 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowFspiopError(err, 'putBulkQuotesById', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'putBulkQuotesById', step })
     }
   }
 }

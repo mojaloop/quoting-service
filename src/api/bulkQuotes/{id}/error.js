@@ -34,9 +34,9 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 
-const util = require('../../../lib/util')
 const Config = require('../../../lib/config')
 const dto = require('../../../lib/dto')
+const util = require('../../../lib/util')
 
 const { kafkaConfig } = new Config()
 
@@ -78,7 +78,7 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowFspiopError(err, 'putBulkQuotesByIdError', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'putBulkQuotesByIdError', step })
     }
   }
 }

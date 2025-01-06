@@ -30,6 +30,7 @@ const Config = require('../lib/config')
 const LOCAL_ENUM = require('../lib/enum')
 const dto = require('../lib/dto')
 const util = require('../lib/util')
+
 const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
@@ -121,7 +122,7 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in checkDuplicateFxQuoteRequest: ', err)
-      util.rethrowFspiopError(err, 'checkDuplicateFxQuoteRequest', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'checkDuplicateFxQuoteRequest', step })
     }
   }
 
@@ -160,7 +161,7 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       log.error('Error in checkDuplicateFxQuoteResponse: ', err)
-      util.rethrowFspiopError(err, 'checkDuplicateFxQuoteResponse', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'checkDuplicateFxQuoteResponse', step })
     }
   }
 
@@ -465,7 +466,7 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteUpdate' })
       log.error('error in forwardFxQuoteUpdate', err)
-      util.rethrowFspiopError(err, 'forwardFxQuoteUpdate', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'forwardFxQuoteUpdate', step })
     }
   }
 
@@ -537,7 +538,7 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteGet' })
       this.log.error('error in forwardFxQuoteGet', err)
-      util.rethrowFspiopError(err, 'forwardFxQuoteGet', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'forwardFxQuoteGet', step })
     }
   }
 
@@ -788,7 +789,7 @@ class FxQuotesModel {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
-      util.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
+      util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
     }
   }
 
@@ -834,7 +835,7 @@ class FxQuotesModel {
         fspiopSource,
         extensions
       )
-      util.rethrowFspiopError(fspiopError, 'sendHttpRequest', step)
+      util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendHttpRequest', step })
     }
   }
 

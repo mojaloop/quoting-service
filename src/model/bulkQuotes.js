@@ -147,7 +147,7 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowFspiopError(fspiopError, 'forwardBulkQuoteRequest', step)
+        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteRequest', step })
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
@@ -176,7 +176,7 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulkQuote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      libUtil.rethrowFspiopError(err, 'forwardBulkQuoteRequest', step)
+      libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteRequest', step })
     }
   }
 
@@ -263,7 +263,7 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulk quote response to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      libUtil.rethrowFspiopError(err, 'forwardBulkQuoteUpdate', step)
+      libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteUpdate', step })
     }
   }
 
@@ -319,7 +319,7 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowFspiopError(fspiopError, 'forwardBulkQuoteGet', step)
+        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteGet', step })
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
@@ -342,7 +342,7 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
-      libUtil.rethrowFspiopError(err, 'forwardBulkQuoteGet', step)
+      libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteGet', step })
     }
   }
 
@@ -424,7 +424,7 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
+        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
       }
 
       const fspiopUri = `/bulkQuotes/${bulkQuoteId}/error`
@@ -507,7 +507,7 @@ class BulkQuotesModel {
           fspiopSource,
           extensions
         )
-        libUtil.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
+        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
@@ -525,7 +525,7 @@ class BulkQuotesModel {
           },
           fspiopSource
         )
-        libUtil.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
+        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
       }
     } catch (err) {
       // any-error
@@ -536,7 +536,7 @@ class BulkQuotesModel {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
-      libUtil.rethrowFspiopError(fspiopError, 'sendErrorCallback', step)
+      libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
     }
   }
 

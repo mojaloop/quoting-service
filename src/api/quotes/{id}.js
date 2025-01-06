@@ -86,7 +86,7 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowFspiopError(err, 'getQuotesById', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'getQuotesById', step })
     }
   },
 
@@ -141,7 +141,7 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowFspiopError(err, 'putQuotesById', step)
+      util.rethrowAndCountFspiopError(err, { operation: 'putQuotesById', step })
     }
   }
 }

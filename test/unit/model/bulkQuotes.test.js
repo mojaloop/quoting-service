@@ -49,7 +49,7 @@ jest.mock('../../../src/lib/util', () => {
   }, {})
   return {
     ...partialMock,
-    rethrowFspiopError: originalUtil.rethrowFspiopError
+    rethrowAndCountFspiopError: originalUtil.rethrowAndCountFspiopError
   }
 })
 jest.mock('../../../src/lib/http')
