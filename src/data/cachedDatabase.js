@@ -32,9 +32,9 @@
 
 const Database = require('./database.js')
 const Cache = require('memory-cache').Cache
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
 
+const util = require('../lib/util')
 const { logger } = require('../lib/')
 
 /**
@@ -135,16 +135,7 @@ class CachedDatabase extends Database {
     } catch (err) {
       this.log.error('Error in getCacheValue: ', err)
       histTimer({ success: false, queryName: type, hit: false })
-      const extensions = [{
-        key: 'system',
-        value: '["cachedDb"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      util.rethrowCachedDatabaseError(err)
     }
   }
 

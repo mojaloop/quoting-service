@@ -40,7 +40,7 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const MLNumber = require('@mojaloop/ml-number')
 const Enum = require('@mojaloop/central-services-shared').Enum
 const { logger } = require('../lib/')
-
+const libUtil = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 
 /**
@@ -121,16 +121,7 @@ class Database {
       return rows[0].transactionInitiatorTypeId
     } catch (err) {
       this.log.error('Error in getInitiatorType:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -152,16 +143,7 @@ class Database {
       return rows[0].transactionInitiatorId
     } catch (err) {
       this.log.error('Error in getInitiator:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -183,16 +165,7 @@ class Database {
       return rows[0].transactionScenarioId
     } catch (err) {
       this.log.error('Error in getScenario:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -214,16 +187,7 @@ class Database {
       return rows[0].transactionSubScenarioId
     } catch (err) {
       this.log.error('Error in getSubScenario:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -245,16 +209,7 @@ class Database {
       return rows[0].amountTypeId
     } catch (err) {
       this.log.error('Error in getAmountType:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -276,16 +231,7 @@ class Database {
       return transactionReferenceId
     } catch (err) {
       this.log.error('Error in createTransactionReference:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -307,16 +253,7 @@ class Database {
       return quoteId
     } catch (err) {
       this.log.error('Error in createQuoteDuplicateCheck:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -339,16 +276,7 @@ class Database {
       return quoteId
     } catch (err) {
       this.log.error('Error in createQuoteUpdateDuplicateCheck:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -371,16 +299,7 @@ class Database {
       return rows[0].partyTypeId
     } catch (err) {
       this.log.error('Error in getPartyType:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -403,16 +322,7 @@ class Database {
       return rows[0].partyIdentifierTypeId
     } catch (err) {
       this.log.error('Error in getPartyIdentifierType:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -449,16 +359,7 @@ class Database {
       return rows[0].participantId
     } catch (err) {
       this.log.error('Error in getParticipant:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -490,16 +391,7 @@ class Database {
       return rows[0].participantId
     } catch (err) {
       this.log.error('Error in getParticipantByName:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -525,16 +417,7 @@ class Database {
       return rows[0].transferParticipantRoleTypeId
     } catch (err) {
       this.log.error('Error in getTransferParticipantRoleType:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -560,16 +443,7 @@ class Database {
       return rows[0].ledgerEntryTypeId
     } catch (err) {
       this.log.error('Error in getLedgerEntryType:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -661,16 +535,7 @@ class Database {
       return quotePartyId
     } catch (err) {
       this.log.error('Error in createQuoteParty:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -694,16 +559,7 @@ class Database {
       return newParty
     } catch (err) {
       this.log.error('Error in createParty:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -736,16 +592,7 @@ class Database {
       return quote.quoteId
     } catch (err) {
       this.log.error('Error in createQuote:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -763,16 +610,7 @@ class Database {
       return true
     } catch (err) {
       this.log.error('Error in createQuotePartyIdInfoExtensions:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -800,16 +638,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteParty:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -833,16 +662,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteParty:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -868,16 +688,7 @@ class Database {
       return rows[0].value
     } catch (err) {
       this.log.error('Error in getParticipantEndpoint:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -901,16 +712,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteDuplicateCheck:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -934,16 +736,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteResponseDuplicateCheck:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -979,16 +772,7 @@ class Database {
       return newQuoteResponse
     } catch (err) {
       this.log.error('Error in createQuoteResponse:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1012,16 +796,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createIlpPacket:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1048,16 +823,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createGeoCode:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1084,16 +850,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createQuoteError:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1121,16 +878,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createQuoteExtensions:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1150,16 +898,7 @@ class Database {
       return newFxQuote
     } catch (err) {
       this.log.error('Error in createFxQuote:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1180,16 +919,7 @@ class Database {
       return newFxQuoteResponse
     } catch (err) {
       this.log.error('Error in createFxQuoteResponse:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1211,16 +941,7 @@ class Database {
       return newFxQuoteError
     } catch (err) {
       this.log.error('Error in createFxQuoteError:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1241,16 +962,7 @@ class Database {
       return newFxQuoteDuplicateCheck
     } catch (err) {
       this.log.error('Error in createFxQuoteDuplicateCheck:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1272,16 +984,7 @@ class Database {
       return newFxQuoteResponseDuplicateCheck
     } catch (err) {
       this.log.error('Error in createFxQuoteResponseDuplicateCheck:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1311,16 +1014,7 @@ class Database {
       return newFxQuoteConversionTerms
     } catch (err) {
       this.log.error('Error in createFxQuoteConversionTerms:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1343,16 +1037,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in fxCharge:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1372,16 +1057,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createFxQuoteConversionTermsExtension:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1414,16 +1090,7 @@ class Database {
       return newFxQuoteResponseConversionTerms
     } catch (err) {
       this.log.error('Error in createFxQuoteResponseConversionTerms:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1443,16 +1110,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createFxQuoteResponseConversionTermsExtension:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1464,16 +1122,7 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in getFxQuoteDuplicateCheck:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1485,16 +1134,7 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in getFxQuoteResponseDuplicateCheck:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1519,16 +1159,7 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteDetails:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1557,16 +1188,7 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteDetails:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1578,16 +1200,7 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteErrorDetails:', err)
-      const extensions = [{
-        key: 'system',
-        value: '["db"]'
-      }]
-      throw ErrorHandler.Factory.reformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
+      libUtil.rethrowDatabaseError(err)
     }
   }
 

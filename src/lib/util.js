@@ -44,6 +44,7 @@ const { RESOURCES, HEADERS, ISO_HEADER_PART } = require('../constants')
 const { logger } = require('../lib')
 const Config = require('./config')
 
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 const config = new Config()
 
 const failActionHandler = async (request, h, err) => {
@@ -311,10 +312,17 @@ const auditSpan = async (request) => {
   }, AuditEventAction.start)
 }
 
-const rethrowFspiopError = (error) => {
-  const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
-  logger.error(`rethrowFspiopError: ${error?.message}`, { fspiopError })
-  throw fspiopError
+const rethrowAndCountFspiopError = (error, options) => {
+  options.loggerOverride = logger
+  rethrow.rethrowAndCountFspiopError(error, options)
+}
+
+const rethrowDatabaseError = (error) => {
+  rethrow.rethrowDatabaseError(error, { loggerOverride: logger })
+}
+
+const rethrowCachedDatabaseError = (error) => {
+  rethrow.rethrowCachedDatabaseError(error, { loggerOverride: logger })
 }
 
 const resolveOpenApiSpecPath = (isIsoApi) => {
@@ -336,7 +344,9 @@ module.exports = {
   generateRequestHeadersForJWS,
   calculateRequestHash,
   removeEmptyKeys,
-  rethrowFspiopError,
+  rethrowAndCountFspiopError,
+  rethrowDatabaseError,
+  rethrowCachedDatabaseError,
   fetchParticipantInfo,
   getParticipantEndpoint,
   makeAppInteroperabilityHeader,

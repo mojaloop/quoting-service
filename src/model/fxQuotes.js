@@ -29,6 +29,8 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../lib/config')
 const LOCAL_ENUM = require('../lib/enum')
 const dto = require('../lib/dto')
+const util = require('../lib/util')
+
 const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
@@ -120,21 +122,7 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in checkDuplicateFxQuoteRequest: ', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: 'checkDuplicateFxQuoteRequest',
-        step
-      })
-      throw fspiopError
+      util.rethrowAndCountFspiopError(err, { operation: 'checkDuplicateFxQuoteRequest', step })
     }
   }
 
@@ -173,21 +161,7 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       log.error('Error in checkDuplicateFxQuoteResponse: ', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
-      throw fspiopError
+      util.rethrowAndCountFspiopError(err, { operation: 'checkDuplicateFxQuoteResponse', step })
     }
   }
 
@@ -492,21 +466,7 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteUpdate' })
       log.error('error in forwardFxQuoteUpdate', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
-      throw fspiopError
+      util.rethrowAndCountFspiopError(err, { operation: 'forwardFxQuoteUpdate', step })
     }
   }
 
@@ -578,21 +538,7 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteGet' })
       this.log.error('error in forwardFxQuoteGet', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
-      throw fspiopError
+      util.rethrowAndCountFspiopError(err, { operation: 'forwardFxQuoteGet', step })
     }
   }
 
@@ -837,26 +783,13 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'sendErrorCallback' })
       log.error('Error in sendErrorCallback', err)
-      const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(
-        err,
-        undefined,
-        undefined,
-        extensions
-      )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
-      throw fspiopError
+      util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
     }
   }
 
@@ -888,7 +821,6 @@ class FxQuotesModel {
     } catch (err) {
       this.log.warn('error in sendHttpRequest', err)
       const extensions = err.extensions || []
-      const system = extensions.find((element) => element.key === 'system')?.value || ''
       const fspiopError = ErrorHandler.CreateFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
         `network error in sendErrorCallback: ${err.message}`,
@@ -903,13 +835,7 @@ class FxQuotesModel {
         fspiopSource,
         extensions
       )
-      this.errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system,
-        operation: '',
-        step
-      })
-      throw fspiopError
+      util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendHttpRequest', step })
     }
   }
 
