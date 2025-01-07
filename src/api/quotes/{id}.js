@@ -34,7 +34,6 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
-const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
 const util = require('../../lib/util')
 const dto = require('../../lib/dto')
@@ -62,7 +61,6 @@ module.exports = {
       isFX ? 'Publish HTTP GET /fxQuotes/{ID} request' : 'Publish HTTP GET /quotes/{id} request',
       ['success']
     ).startTimer()
-    const errorCounter = Metrics.getCounter('errorCount')
     let step
 
     try {
@@ -88,14 +86,7 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      const fspiopError = reformatFSPIOPError(err)
-      errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system: undefined,
-        operation: 'getQuotesById',
-        step
-      })
-      util.rethrowFspiopError(err)
+      util.rethrowAndCountFspiopError(err, { operation: 'getQuotesById', step })
     }
   },
 
@@ -127,7 +118,6 @@ module.exports = {
       isFX ? `Publish HTTP PUT /fxQuotes/{id}${pathSuffix} request` : `Publish HTTP PUT /quotes/{id}${pathSuffix} request`,
       ['success']
     ).startTimer()
-    const errorCounter = Metrics.getCounter('errorCount')
     let step
 
     try {
@@ -151,14 +141,7 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      const fspiopError = reformatFSPIOPError(err)
-      errorCounter.inc({
-        code: fspiopError?.apiErrorCode.code,
-        system: undefined,
-        operation: 'putQuotesById',
-        step
-      })
-      util.rethrowFspiopError(err)
+      util.rethrowAndCountFspiopError(err, { operation: 'putQuotesById', step })
     }
   }
 }
