@@ -42,7 +42,7 @@ const mockRules = [
         {
           fact: 'payload',
           path: '$.extensionList[?(@.key == "KYCPayerTier")].value',
-          operator: 'equal',
+          operator: 'arrayEqual',
           value: '1'
         },
         {
@@ -69,7 +69,7 @@ const mockRules = [
         {
           fact: 'payload',
           path: '$.extensionList[?(@.key == "KYCPayerTier")].value',
-          operator: 'notEqual',
+          operator: 'arrayNotEqual',
           value: '1'
         },
         {
@@ -228,7 +228,7 @@ describe('RulesEngine', () => {
         any: [{
           fact: 'payload',
           path: '$.extensionList[?(@.key === \'KYCPayerTier\')].value',
-          operator: 'equal',
+          operator: 'arrayEqual',
           value: '1'
         }]
       }

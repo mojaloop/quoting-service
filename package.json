@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "15.9.0-iso.23",
+  "version": "15.9.0-iso-depdency-updates-pi26.5",
   "author": "ModusBox",
   "contributors": [
     "Georgi Georgiev <georgi.georgiev@modusbox.com>",
@@ -100,7 +100,10 @@
       "yargs-parser": "^21.1.1"
     },
     "jsonwebtoken": "9.0.0",
-    "jsonpointer": "5.0.0"
+    "jsonpointer": "5.0.0",
+    "cross-spawn": "6.0.6",
+    "path-to-regexp": "0.1.12",
+    "validator": "13.7.0"
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
@@ -125,10 +128,8 @@
     "commander": "13.0.0",
     "event-stream": "4.0.1",
     "fast-safe-stringify": "^2.1.1",
-    "good-console": "8.0.0",
-    "good-squeeze": "5.1.0",
     "joi": "17.13.3",
-    "json-rules-engine": "5.0.2",
+    "json-rules-engine": "7.2.1",
     "knex": "3.1.0",
     "memory-cache": "0.2.0",
     "minimist": "1.2.8",
