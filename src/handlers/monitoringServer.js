@@ -45,7 +45,7 @@ const createMonitoringServer = async (port, consumersMap, db) => {
   server.app.db = db
   server.app.consumersMap = consumersMap
 
-  await server.register([HealthPlugin, Metrics.plugin])
+  await server.register([HealthPlugin, !config.instrumentationMetricsDisabled && Metrics.plugin].filter(Boolean))
   await server.start()
 
   Logger.info(`Monitoring server running at: ${server.info.uri}`)
