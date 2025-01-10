@@ -28,7 +28,6 @@ const initializeInstrumentation = (config) => {
   /* istanbul ignore next */
   if (!config.instrumentationMetricsDisabled) {
     if (config.instrumentationMetricsConfig) {
-      console.log(config)
       config.instrumentationMetricsConfig.defaultLabels.serviceVersion = version
     }
     Metrics.setup(config.instrumentationMetricsConfig)
