@@ -15,7 +15,6 @@ const HEADERS = Object.freeze({
   fspiopSignature: 'FSPIOP-Signature',
   fspiopUri: 'FSPIOP-URI'
 })
-// todo: think, if it's better to use all headers keys in lowercase
 
 const ERROR_MESSAGES = {
   CALLBACK_UNSUCCESSFUL_HTTP_RESPONSE: 'Got non-success response sending error callback',

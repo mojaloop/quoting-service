@@ -37,7 +37,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const { logger } = require('../../../src/lib')
 const quotesApi = require('../../../src/api/quotes')
 const Config = require('../../../src/lib/config')
-const mocks = require('../mocks')
+const mocks = require('../../mocks')
 
 const { kafkaConfig } = new Config()
 const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST

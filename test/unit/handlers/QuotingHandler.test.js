@@ -16,7 +16,7 @@ const { logger } = require('../../../src/lib')
 const { PAYLOAD_STORAGES } = require('../../../src/constants')
 
 const dto = require('../../../src/lib/dto')
-const mocks = require('../mocks')
+const mocks = require('../../mocks')
 
 const createRequestData = async ({
   payload,

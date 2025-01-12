@@ -8,7 +8,6 @@ const { TransformFacades, logger } = require('../../../src/lib')
 const { createPayloadCache } = require('../../../src/lib/payloadCache')
 const { PAYLOAD_STORAGES } = require('../../../src/constants')
 const mocks = require('../../mocks')
-const { mockHttpRequest } = require('../mocks') // todo: combine 2 mocks files
 
 TransformFacades.FSPIOP.configure({ isTestingMode: true, logger })
 
@@ -51,7 +50,7 @@ describe('dto Tests -->', () => {
       })
 
       const requestId = `requestId-${Date.now()}`
-      const request = mockHttpRequest({
+      const request = mocks.mockHttpRequest({
         requestId,
         payload: isoPayload.body,
         app: {
@@ -87,7 +86,7 @@ describe('dto Tests -->', () => {
       })
 
       const requestId = `requestId-${Date.now()}`
-      const request = mockHttpRequest({
+      const request = mocks.mockHttpRequest({
         requestId,
         payload: isoPayload.body,
         app: { config }

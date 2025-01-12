@@ -1,5 +1,4 @@
 /* istanbul ignore file */
-// todo: add to Utils export
 const RedisCache = require('@mojaloop/central-services-shared/src/util/redis/redisCache')
 const safeStringify = require('fast-safe-stringify')
 
@@ -40,7 +39,6 @@ class PayloadCache extends RedisCache {
       return false
     }
   }
-  // todo: think, if we need deletePayload method
 
   static formatPayloadCacheKey (requestId) {
     // const reqIdInBase64 = Buffer.from(requestId).toString('base64url')

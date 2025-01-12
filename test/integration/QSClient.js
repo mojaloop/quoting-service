@@ -152,17 +152,6 @@ class QSClient {
       data: payload
     })
   }
-
-  // todo: add other methods
-
-  // static makeHeaders(fspiopPayload, resource, isIsoApi = false) {
-  //   return mocks.headersDto({
-  //     resource,
-  //     source: fspiopPayload.from,
-  //     destination: fspiopPayload.to,
-  //     isIsoApi
-  //   })
-  // }
 }
 
 module.exports = QSClient

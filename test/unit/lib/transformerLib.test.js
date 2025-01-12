@@ -12,7 +12,6 @@ describe('transformerLib Tests -->', () => {
     expect(isoPayload.body).toBeTruthy()
     expect(isoPayload.body.GrpHdr).toBeTruthy()
     expect(isoPayload.body.CdtTrfTxInf).toBeTruthy()
-    // todo: add validation of required fields
   })
 
   test('should transform putQuotes payload to ISO format', async () => {

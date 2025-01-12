@@ -94,7 +94,6 @@ const extractOriginalPayload = async (context, payloadCache) => {
   return result
 }
 
-// todo: move to domain folder
 const messageFromRequestDto = async ({
   request,
   type,

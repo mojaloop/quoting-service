@@ -61,9 +61,8 @@ describe('ISO API Tests -->', () => {
   })
 
   describe('PUT /quotes ISO Tests -->', () => {
-    // todo: add PUT /quotes tests
     test('should validate ISO PUT /quotes/{id}/error payload, but send error callback due to not existing id in DB', async () => {
-      const expectedErrorCode = '2001' // todo: clarify, what code should be sent
+      const expectedErrorCode = '2001'
       const fspiopPayload = mocks.errorPayloadDto()
       const id = mocks.generateULID()
       const from = 'pinkbank'

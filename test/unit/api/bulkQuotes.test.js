@@ -40,7 +40,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const { logger } = require('../../../src/lib')
 const bulkQuotesApi = require('../../../src/api/bulkQuotes')
 const Config = require('../../../src/lib/config')
-const mocks = require('../mocks')
+const mocks = require('../../mocks')
 
 const { kafkaConfig } = new Config()
 const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.POST

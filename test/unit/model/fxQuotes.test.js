@@ -46,7 +46,7 @@ const FxQuotesModel = require('../../../src/model/fxQuotes')
 const { logger } = require('../../../src/lib')
 const { makeAppInteroperabilityHeader } = require('../../../src/lib/util')
 const { HEADERS, RESOURCES, ERROR_MESSAGES } = require('../../../src/constants')
-const { fxQuoteMocks } = require('../mocks')
+const { fxQuoteMocks } = require('../../mocks')
 
 describe('FxQuotesModel Tests -->', () => {
   let fxQuotesModel

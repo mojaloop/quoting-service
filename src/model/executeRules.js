@@ -25,7 +25,6 @@ module.exports.executeRules = async function executeRules (headers, quoteRequest
 
 module.exports.handleRuleEvents = async function handleRuleEvents (events, headers, payload, originalPayload) {
   const quoteRequest = originalPayload || payload
-  // todo: pass only originalPayload (added this logic only for passing tests)
 
   // At the time of writing, all events cause the "normal" flow of execution to be interrupted.
   // So we'll return false when there have been no events whatsoever.
@@ -39,7 +38,6 @@ module.exports.handleRuleEvents = async function handleRuleEvents (events, heade
 
   if (unhandledEvents.length > 0) {
     // The rules configuration contains events not handled in the code
-    // TODO: validate supplied rules at startup and fail if any invalid rules are discovered.
     throw new Error('Unhandled event returned by rules engine')
   }
 
@@ -56,7 +54,6 @@ module.exports.handleRuleEvents = async function handleRuleEvents (events, heade
 
   const interceptQuoteEvents = events.filter(ev => ev.type === INTERCEPT_QUOTE)
   if (interceptQuoteEvents.length > 1) {
-    // TODO: handle priority. Can we stream events?
     throw new Error('Multiple intercept quote events received')
   }
   if (interceptQuoteEvents.length > 0) {
