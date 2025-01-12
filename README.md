@@ -30,6 +30,8 @@ Both the Payer and Payee FSP should calculate their part of the quote to be able
 
 > [Quoting Service Sequence diagram](diagrams/quotingServiceSequences.puml)
 
+> [FX Quotes Sequence diagram](diagrams/fx-quotes.puml)
+
 ## Running Locally
 
 Please follow the instruction in [Onboarding Document](onboarding.md) to setup and run the service locally.

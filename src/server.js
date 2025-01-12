@@ -52,6 +52,7 @@ const { failActionHandler, resolveOpenApiSpecPath } = require('../src/lib/util')
 const Config = require('./lib/config')
 const Handlers = require('./api')
 const Routes = require('./api/routes')
+const plugins = require('./api/plugins')
 const dto = require('./lib/dto')
 const { version } = require('../package.json')
 
@@ -155,23 +156,15 @@ const initServer = async function (config, topicNames) {
   // add plugins to the server
   await server.register([
     {
+      plugin: plugins.loggingPlugin,
+      options: {}
+    },
+    {
       plugin: Good,
       options: {
         ops: {
           interval: 1000
         }
-        // TODO: hapi good is deprecated per https://www.npmjs.com/package/@hapi/good/v/9.0.1 and is
-        // suggesting we consider another plugin from https://hapi.dev/plugins/#logging
-        // reporters: {
-        //   console: [{
-        //     module: 'good-squeeze',
-        //     name: 'Squeeze',
-        //     args: [{ log: '*', response: '*' }]
-        //   }, {
-        //     module: 'good-console',
-        //     args: [{ format: '' }]
-        //   }, 'stdout']
-        // }
       }
     },
     {
@@ -192,7 +185,6 @@ const initServer = async function (config, topicNames) {
   ])
 
   server.route(Routes.APIRoutes(api))
-  // TODO: follow instructions https://github.com/anttiviljami/openapi-backend/blob/master/DOCS.md#postresponsehandler-handler
 
   // start the server
   await server.start()
