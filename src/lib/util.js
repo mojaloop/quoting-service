@@ -205,7 +205,6 @@ function generateRequestHeadersForJWS (
   const ret = Object.fromEntries(
     Object.entries(mappedHeaders).map(([key, value]) => [key.toLowerCase(), value])
   )
-  // clarify, if we need additionalHeaders here (see generateRequestHeaders fn)
 
   return removeEmptyKeys(ret)
 }
