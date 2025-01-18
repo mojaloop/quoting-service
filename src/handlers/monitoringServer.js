@@ -20,13 +20,16 @@ const Logger = require('@mojaloop/central-services-logger')
 const Metrics = require('@mojaloop/central-services-metrics')
 const Config = require('../lib/config')
 const { plugin: HealthPlugin } = require('./plugins/health')
-const { plugin: MetricsPlugin } = require('./plugins/metrics')
+const { version } = require('../../package.json')
 
 const config = new Config()
 
 const initializeInstrumentation = (config) => {
   /* istanbul ignore next */
   if (!config.instrumentationMetricsDisabled) {
+    if (config.instrumentationMetricsConfig) {
+      config.instrumentationMetricsConfig.defaultLabels.serviceVersion = version
+    }
     Metrics.setup(config.instrumentationMetricsConfig)
   }
 }
@@ -41,7 +44,7 @@ const createMonitoringServer = async (port, consumersMap, db) => {
   server.app.db = db
   server.app.consumersMap = consumersMap
 
-  await server.register([HealthPlugin, MetricsPlugin])
+  await server.register([HealthPlugin, !config.instrumentationMetricsDisabled && Metrics.plugin].filter(Boolean))
   await server.start()
 
   Logger.info(`Monitoring server running at: ${server.info.uri}`)

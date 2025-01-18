@@ -34,9 +34,9 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 
-const util = require('../../../lib/util')
 const Config = require('../../../lib/config')
 const dto = require('../../../lib/dto')
+const util = require('../../../lib/util')
 
 const { kafkaConfig } = new Config()
 
@@ -58,21 +58,27 @@ module.exports = {
       'Process HTTP PUT /bulkQuotes/{id}/error request',
       ['success']
     ).startTimer()
+    let step
 
     try {
       await util.auditSpan(request)
 
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.PUT)
-
+      step = 'messageFromRequestDto-1'
+      const message = await dto.messageFromRequestDto({
+        request,
+        type: Events.Event.Type.BULK_QUOTE,
+        action: Events.Event.Action.PUT
+      })
+      step = 'produceMessage-2'
       await Producer.produceMessage(message, topicConfig, config)
 
       histTimerEnd({ success: true })
       return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowFspiopError(err)
+      util.rethrowAndCountFspiopError(err, { operation: 'putBulkQuotesByIdError', step })
     }
   }
 }

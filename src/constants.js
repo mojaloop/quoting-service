@@ -1,3 +1,5 @@
+const { API_TYPES } = require('@mojaloop/central-services-shared').Util.Hapi
+
 const RESOURCES = Object.freeze({
   quotes: 'quotes',
   fxQuotes: 'fxQuotes'
@@ -20,8 +22,19 @@ const ERROR_MESSAGES = {
   NO_FX_CALLBACK_ENDPOINT: (fspiopSource, conversionRequestId) => `No FSPIOP_CALLBACK_URL_FX_QUOTES endpoint found for FSP '${fspiopSource}' while processing fxquote ${conversionRequestId}`
 }
 
+const PAYLOAD_STORAGES = Object.freeze({
+  none: '',
+  kafka: 'kafka',
+  redis: 'redis'
+})
+
+const ISO_HEADER_PART = 'iso20022'
+
 module.exports = {
+  API_TYPES,
+  ISO_HEADER_PART,
   RESOURCES,
   HEADERS,
-  ERROR_MESSAGES
+  ERROR_MESSAGES,
+  PAYLOAD_STORAGES
 }

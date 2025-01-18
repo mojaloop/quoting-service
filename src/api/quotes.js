@@ -36,50 +36,57 @@ const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 
 const util = require('../lib/util')
-const Config = require('../lib/config')
 const dto = require('../lib/dto')
-
-const { kafkaConfig } = new Config()
 
 /**
  * Operations on /quotes
  */
 module.exports = {
   /**
-   * summary: Quotes
-   * description:
-   *  - The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.
-   *  - The HTTP request `POST /fxQuotes` is used to ask an FXP to provide a quotation for a currency conversion.
-   * parameters: body, Accept, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
-   * produces: application/json
-   * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
-   */
+     * summary: Quotes
+     * description:
+     *  - The HTTP request POST /quotes is used to request the creation of a quote for the provided financial transaction in the server.
+     *  - The HTTP request `POST /fxQuotes` is used to ask an FXP to provide a quotation for a currency conversion.
+     * parameters: body, Accept, Content-Length, Content-Type, Date, X-Forwarded-For, FSPIOP-Source, FSPIOP-Destination, FSPIOP-Encryption, FSPIOP-Signature, FSPIOP-URI, FSPIOP-HTTP-Method
+     * produces: application/json
+     * responses: 202, 400, 401, 403, 404, 405, 406, 501, 503
+     */
   post: async function Quotes (context, request, h) {
-    const isFX = !!request.payload.conversionRequestId
+    const { config, payloadCache } = request.server.app
+    const { kafkaConfig, isIsoApi, originalPayloadStorage } = config
+    const isFX = util.isFxRequest(request.headers)
 
     const histTimerEnd = Metrics.getHistogram(
       isFX ? 'fxQuotes_post' : 'quotes_post',
       isFX ? 'Publish HTTP POST fxQuotes request' : 'Publish HTTP POST quotes request',
       ['success']
     ).startTimer()
+    let step
 
     try {
       await util.auditSpan(request)
+      const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
 
-      const eventType = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
+      step = 'messageFromRequestDto-1'
+      const message = await dto.messageFromRequestDto({
+        request,
+        type,
+        action: Events.Event.Action.POST,
+        isIsoApi,
+        originalPayloadStorage,
+        payloadCache
+      })
+
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.POST : kafkaConfig.PRODUCER.QUOTE.POST
-
-      const { topic, config } = producerConfig
-      const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = dto.messageFromRequestDto(request, eventType, Events.Event.Action.POST)
-
-      await Producer.produceMessage(message, topicConfig, config)
+      const topicConfig = dto.topicConfigDto({ topicName: producerConfig.topic })
+      step = 'produceMessage-2'
+      await Producer.produceMessage(message, topicConfig, producerConfig.config)
 
       histTimerEnd({ success: true })
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowFspiopError(err)
+      util.rethrowAndCountFspiopError(err, { operation: 'postQuotes', step })
     }
   }
 }

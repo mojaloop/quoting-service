@@ -122,7 +122,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
-      expect(response.data.history.length).toBe(1)
+      expect(response.data.history.length).toBe(2) // count 1 extra call to redbank
 
       // assert that the request was received by the proxy
       const request = response.data.history[0]
@@ -137,13 +137,13 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(fxQuoteDetails).toEqual({
         conversionRequestId: payload.conversionRequestId,
         conversionId: payload.conversionTerms.conversionId,
-        determiningTransferId: null,
+        determiningTransferId: payload.conversionTerms.determiningTransferId,
         amountTypeId: 1,
         initiatingFsp: payload.conversionTerms.initiatingFsp,
         counterPartyFsp: payload.conversionTerms.counterPartyFsp,
         sourceAmount: payload.conversionTerms.sourceAmount.amount,
         sourceCurrency: payload.conversionTerms.sourceAmount.currency,
-        targetAmount: null,
+        targetAmount: 0,
         targetCurrency: payload.conversionTerms.targetAmount.currency,
         extensions: expect.anything(),
         expirationDate: expect.anything(),
@@ -194,6 +194,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
+      if (response.data.history.length !== 1) console.log(response.data.history)
       expect(response.data.history.length).toBe(1)
 
       // assert that the callback was received by the payer dfsp
@@ -212,7 +213,7 @@ describe('POST /fxQuotes request tests --> ', () => {
         ilpCondition: payload.condition,
         conversionId: payload.conversionTerms.conversionId,
         amountTypeId: 1,
-        determiningTransferId: null,
+        determiningTransferId: payload.conversionTerms.determiningTransferId,
         counterPartyFsp: payload.conversionTerms.counterPartyFsp,
         initiatingFsp: payload.conversionTerms.initiatingFsp,
         sourceAmount: payload.conversionTerms.sourceAmount.amount,
@@ -266,7 +267,7 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await getResponseWithRetry()
-    expect(response.data.history.length).toBe(1)
+    expect(response.data.history.length).toBe(2) // count 1 extra call to greenbank
 
     // assert that the request was received by the payee dfsp
     const request = response.data.history[0]

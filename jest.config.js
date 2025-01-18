@@ -1,7 +1,9 @@
-const path = require('path')
+process.env.LOG_LEVEL = 'debug'
 
 module.exports = {
   verbose: true,
+  clearMocks: true, // to avoid jest.clearAllMocks() in afterEach
+
   collectCoverageFrom: [
     '**/src/**/**/*.js'
   ],
@@ -15,9 +17,5 @@ module.exports = {
       branches: 90,
       lines: 90
     }
-  },
-  globals: {
-    __SRC__: path.resolve(__dirname, 'src'),
-    __ROOT__: path.resolve(__dirname)
   }
 }

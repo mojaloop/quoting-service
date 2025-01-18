@@ -32,24 +32,24 @@
 
 const Database = require('./database.js')
 const Cache = require('memory-cache').Cache
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Metrics = require('@mojaloop/central-services-metrics')
 
-const { loggerFactory } = require('../lib/index.js')
+const util = require('../lib/util')
+const { logger } = require('../lib/')
 
 /**
  * An extension of the Database class that caches enum values in memory
  */
 class CachedDatabase extends Database {
-  constructor (config, logger) {
+  constructor (config, log) {
     super(config)
-    this.log = logger || loggerFactory({
+    this.log = log || logger.child({
       context: this.constructor.name
     })
     this.cache = new Cache()
   }
 
-  /**
+  /*
     * The following enum lookup functions override those in the superclass with
     * versions that use an in-memory cache.
     */
@@ -135,35 +135,35 @@ class CachedDatabase extends Database {
     } catch (err) {
       this.log.error('Error in getCacheValue: ', err)
       histTimer({ success: false, queryName: type, hit: false })
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      util.rethrowCachedDatabaseError(err)
     }
   }
 
   /**
-   * Adds or replaces a value in the cache.
-   *
-   * @returns {undefined}
-   */
+     * Adds or replaces a value in the cache.
+     *
+     * @returns {undefined}
+     */
   cachePut (type, params, value, ttl) {
     const key = this.getCacheKey(type, params)
     this.cache.put(key, value, ttl)
   }
 
   /**
-   * Gets a value from the cache, or null if it is not present
-   *
-   * @returns {undefined}
-   */
+     * Gets a value from the cache, or null if it is not present
+     *
+     * @returns {undefined}
+     */
   cacheGet (type, params) {
     const key = this.getCacheKey(type, params)
     return this.cache.get(key)
   }
 
   /**
-   * Calculates a cache key for the given type and parameters
-   *
-   * @returns {undefined}
-   */
+     * Calculates a cache key for the given type and parameters
+     *
+     * @returns {undefined}
+     */
   getCacheKey (type, params) {
     return `${type}_${params.join('__')}`
   }

@@ -32,16 +32,19 @@
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { Producer } = require('@mojaloop/central-services-stream').Util
-const Logger = require('@mojaloop/central-services-logger')
+const Metrics = require('@mojaloop/central-services-metrics')
 
+const { logger } = require('../../../../../src/lib')
 const bulkQuotesApi = require('../../../../../src/api/bulkQuotes/{id}/error')
 const Config = require('../../../../../src/lib/config')
-const mocks = require('../../../mocks')
+const mocks = require('../../../../mocks')
 
 const { kafkaConfig } = new Config()
+const fileConfig = new Config()
 
 describe('PUT /bulkQuotes/{id}/error API Tests -->', () => {
   const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
+  Metrics.setup(fileConfig.instrumentationMetricsConfig)
   const mockContext = jest.fn()
 
   it('should publish a message with bulkQuotes callback error payload', async () => {
@@ -77,7 +80,7 @@ describe('PUT /bulkQuotes/{id}/error API Tests -->', () => {
 
     const mockRequest = mocks.mockHttpRequest()
     const { handler } = mocks.createMockHapiHandler()
-    const spyErrorLog = jest.spyOn(Logger, 'error')
+    const spyErrorLog = jest.spyOn(logger, 'error')
 
     // Act
     await expect(() => bulkQuotesApi.put(mockContext, mockRequest, handler))
@@ -85,6 +88,6 @@ describe('PUT /bulkQuotes/{id}/error API Tests -->', () => {
 
     // Assert
     expect(spyErrorLog).toHaveBeenCalledTimes(1)
-    expect(spyErrorLog.mock.calls[0][0].message).toContain(error.message)
+    expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
   })
 })

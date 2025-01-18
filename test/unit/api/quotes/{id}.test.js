@@ -32,20 +32,19 @@
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { Producer } = require('@mojaloop/central-services-stream').Util
-const Logger = require('@mojaloop/central-services-logger')
+const Metrics = require('@mojaloop/central-services-metrics')
 
+const { logger } = require('../../../../src/lib')
 const quotesApi = require('../../../../src/api/quotes/{id}')
 const Config = require('../../../../src/lib/config')
-const mocks = require('../../mocks')
+const mocks = require('../../../mocks')
 
 const { kafkaConfig } = new Config()
+const fileConfig = new Config()
 
 describe('/quotes/{id} API Tests -->', () => {
   const mockContext = jest.fn()
-
-  afterEach(() => {
-    jest.clearAllMocks()
-  })
+  Metrics.setup(fileConfig.instrumentationMetricsConfig)
 
   describe('GET /quotes/{id} Endpoint Tests', () => {
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.GET
@@ -110,7 +109,7 @@ describe('/quotes/{id} API Tests -->', () => {
 
       const mockRequest = mocks.mockHttpRequest()
       const { handler } = mocks.createMockHapiHandler()
-      const spyErrorLog = jest.spyOn(Logger, 'error')
+      const spyErrorLog = jest.spyOn(logger, 'error')
 
       // Act
       await expect(() => quotesApi.get(mockContext, mockRequest, handler))
@@ -118,7 +117,7 @@ describe('/quotes/{id} API Tests -->', () => {
 
       // Assert
       expect(spyErrorLog).toHaveBeenCalledTimes(1)
-      expect(spyErrorLog.mock.calls[0][0].message).toContain(error.message)
+      expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
     })
   })
 
@@ -185,7 +184,7 @@ describe('/quotes/{id} API Tests -->', () => {
 
       const mockRequest = mocks.mockHttpRequest()
       const { handler } = mocks.createMockHapiHandler()
-      const spyErrorLog = jest.spyOn(Logger, 'error')
+      const spyErrorLog = jest.spyOn(logger, 'error')
 
       // Act
       await expect(() => quotesApi.put(mockContext, mockRequest, handler))
@@ -193,7 +192,7 @@ describe('/quotes/{id} API Tests -->', () => {
 
       // Assert
       expect(spyErrorLog).toHaveBeenCalledTimes(1)
-      expect(spyErrorLog.mock.calls[0][0].message).toContain(error.message)
+      expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
     })
   })
 
@@ -263,7 +262,7 @@ describe('/quotes/{id} API Tests -->', () => {
 
       const mockRequest = mocks.mockHttpRequest()
       const { handler } = mocks.createMockHapiHandler()
-      const spyErrorLog = jest.spyOn(Logger, 'error')
+      const spyErrorLog = jest.spyOn(logger, 'error')
 
       // Act
       await expect(() => quotesApi.put(mockContext, mockRequest, handler))
@@ -271,7 +270,7 @@ describe('/quotes/{id} API Tests -->', () => {
 
       // Assert
       expect(spyErrorLog).toHaveBeenCalledTimes(1)
-      expect(spyErrorLog.mock.calls[0][0].message).toContain(error.message)
+      expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
     })
   })
 })

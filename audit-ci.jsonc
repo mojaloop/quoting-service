@@ -4,11 +4,6 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [
-    "GHSA-qgmg-gppg-76g5",  // https://github.com/advisories/GHSA-qgmg-gppg-76g5 Mock data generator for swagger api, not a security concern at this time.
-    "GHSA-c429-5p7v-vgjp",  // https://github.com/advisories/GHSA-c429-5p7v-vgjp
-    "GHSA-8hc4-vh64-cxmj",  // https://github.com/advisories/GHSA-8hc4-vh64-cxmj
-    "GHSA-952p-6rrq-rcjv",  // https://github.com/advisories/GHSA-952p-6rrq-rcjv
-    "GHSA-pppg-cpfq-h7wr",  // https://github.com/advisories/GHSA-pppg-cpfq-h7wr Patch not released yet
-    "GHSA-3xgq-45jj-v275"   // https://github.com/advisories/GHSA-3xgq-45jj-v275
+    "GHSA-mwcw-c2x4-8c55"  // https://github.com/advisories/GHSA-mwcw-c2x4-8c55
   ]
 }

@@ -1,7 +1,7 @@
 const { randomUUID } = require('node:crypto')
 const { Cache } = require('memory-cache')
 const { Tracer } = require('@mojaloop/event-sdk')
-const Logger = require('@mojaloop/central-services-logger')
+const { encodePayload } = require('@mojaloop/central-services-shared').Util.StreamingProtocol
 
 jest.mock('../../../src/model/quotes')
 jest.mock('../../../src/model/fxQuotes')
@@ -12,17 +12,20 @@ const QuotesModel = require('../../../src/model/quotes')
 const FxQuotesModel = require('../../../src/model/fxQuotes')
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')
 const Config = require('../../../src/lib/config')
+const { logger } = require('../../../src/lib')
+const { PAYLOAD_STORAGES } = require('../../../src/constants')
 
 const dto = require('../../../src/lib/dto')
-const mocks = require('../mocks')
+const mocks = require('../../mocks')
 
-const createRequestData = ({
+const createRequestData = async ({
   payload,
   type = 'type',
-  action = 'action'
+  action = 'action',
+  isIsoApi = false
 } = {}) => {
-  const httpRequest = mocks.mockHttpRequest({ payload })
-  const messageValue = dto.messageFromRequestDto(httpRequest, type, action)
+  const request = mocks.mockHttpRequest({ payload })
+  const messageValue = await dto.messageFromRequestDto({ request, type, action, isIsoApi })
   const { requestData } = dto.requestDataFromMessageDto({ value: messageValue })
 
   return requestData
@@ -34,8 +37,6 @@ const createKafkaMessage = (topic) => ({
     content: { payload: '{}' }
   }
 })
-
-Logger.isDebugEnabled = jest.fn(() => true)
 
 describe('QuotingHandler Tests -->', () => {
   let handler
@@ -59,8 +60,9 @@ describe('QuotingHandler Tests -->', () => {
       bulkQuotesModelFactory,
       fxQuotesModelFactory,
       config,
-      logger: Logger,
+      logger,
       cache: new Cache(),
+      payloadCache: null,
       tracer: Tracer
     })
   })
@@ -71,7 +73,7 @@ describe('QuotingHandler Tests -->', () => {
 
   describe('handlePostQuotes method Tests', () => {
     it('should create a quote', async () => {
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePostQuotes(requestData)
       expect(result).toBe(true)
@@ -85,7 +87,7 @@ describe('QuotingHandler Tests -->', () => {
       quotesModel.handleQuoteRequest = jest.fn(() => { throw throwError })
 
       const payload = { quoteId: randomUUID() }
-      const requestData = createRequestData({ payload })
+      const requestData = await createRequestData({ payload })
       const result = await handler.handlePostQuotes(requestData)
       expect(result).toBe(true)
 
@@ -98,7 +100,7 @@ describe('QuotingHandler Tests -->', () => {
 
   describe('handlePutQuotes method Tests', () => {
     it('should process success PUT /quotes payload', async () => {
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePutQuotes(requestData)
       expect(result).toBe(true)
@@ -108,7 +110,7 @@ describe('QuotingHandler Tests -->', () => {
     })
 
     it('should process error PUT /quotes payload', async () => {
-      const requestData = createRequestData({
+      const requestData = await createRequestData({
         payload: { errorInformation: {} }
       })
 
@@ -121,7 +123,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should call handleException in case of error', async () => {
       quotesModel.handleQuoteUpdate = jest.fn(async () => { throw new Error('Test Error') })
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePutQuotes(requestData)
       expect(result).toBe(true)
@@ -131,7 +133,7 @@ describe('QuotingHandler Tests -->', () => {
 
   describe('handleGetQuotes method Tests', () => {
     it('should process GET /quotes payload', async () => {
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handleGetQuotes(requestData)
       expect(result).toBe(true)
@@ -142,7 +144,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should call handleException in case of error in handleQuoteGet', async () => {
       quotesModel.handleQuoteGet = jest.fn(async () => { throw new Error('Test Error') })
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handleGetQuotes(requestData)
       expect(result).toBe(true)
@@ -152,7 +154,7 @@ describe('QuotingHandler Tests -->', () => {
 
   describe('handlePostBulkQuotes method Tests', () => {
     it('should process POST /bulkQuotes payload', async () => {
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePostBulkQuotes(requestData)
       expect(result).toBe(true)
@@ -163,7 +165,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should call handleException in case of error in handleBulkQuoteRequest', async () => {
       bulkQuotesModel.handleBulkQuoteRequest = jest.fn(async () => { throw new Error('Test Error') })
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePostBulkQuotes(requestData)
       expect(result).toBe(true)
@@ -173,7 +175,7 @@ describe('QuotingHandler Tests -->', () => {
 
   describe('handlePutBulkQuotes method Tests', () => {
     it('should process success PUT /bulkQuotes payload', async () => {
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePutBulkQuotes(requestData)
       expect(result).toBe(true)
@@ -183,7 +185,7 @@ describe('QuotingHandler Tests -->', () => {
     })
 
     it('should process error PUT /bulkQuotes payload', async () => {
-      const requestData = createRequestData({
+      const requestData = await createRequestData({
         payload: { errorInformation: {} }
       })
 
@@ -197,7 +199,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should call handleException in case of error in handleBulkQuoteUpdate', async () => {
       bulkQuotesModel.handleBulkQuoteUpdate = jest.fn(async () => { throw new Error('Test Error') })
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePutBulkQuotes(requestData)
       expect(result).toBe(true)
@@ -207,7 +209,7 @@ describe('QuotingHandler Tests -->', () => {
 
   describe('handleGetBulkQuotes method Tests', () => {
     it('should process GET /bulkQuotes payload', async () => {
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handleGetBulkQuotes(requestData)
       expect(result).toBe(true)
@@ -218,7 +220,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should call handleException in case of error in handleBulkQuoteGet', async () => {
       bulkQuotesModel.handleBulkQuoteGet = jest.fn(async () => { throw new Error('Test Error') })
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handleGetBulkQuotes(requestData)
       expect(result).toBe(true)
@@ -228,7 +230,7 @@ describe('QuotingHandler Tests -->', () => {
 
   describe('handlePostFxQuotes method Tests', () => {
     it('should process POST /fxQuotes payload', async () => {
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePostFxQuotes(requestData)
       expect(result).toBe(true)
@@ -239,7 +241,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should call handleException in case of error in handleFxQuoteRequest', async () => {
       fxQuotesModel.handleFxQuoteRequest = jest.fn(async () => { throw new Error('Test Error') })
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePostFxQuotes(requestData)
       expect(result).toBe(true)
@@ -249,7 +251,7 @@ describe('QuotingHandler Tests -->', () => {
 
   describe('handlePutFxQuotes method Tests', () => {
     it('should process success PUT /fxQuotes payload', async () => {
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePutFxQuotes(requestData)
       expect(result).toBe(true)
@@ -259,7 +261,7 @@ describe('QuotingHandler Tests -->', () => {
     })
 
     it('should process error PUT /fxQuotes payload', async () => {
-      const requestData = createRequestData({
+      const requestData = await createRequestData({
         payload: { errorInformation: {} }
       })
 
@@ -273,7 +275,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should call handleException in case of error in handleFxQuoteUpdate', async () => {
       fxQuotesModel.handleFxQuoteUpdate = jest.fn(async () => { throw new Error('Test Error') })
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handlePutFxQuotes(requestData)
       expect(result).toBe(true)
@@ -283,7 +285,7 @@ describe('QuotingHandler Tests -->', () => {
 
   describe('handleGetFxQuotes method Tests', () => {
     it('should process GET /fxQuotes payload', async () => {
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handleGetFxQuotes(requestData)
       expect(result).toBe(true)
@@ -294,7 +296,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should call handleException in case of error in handleFxQuoteGet', async () => {
       fxQuotesModel.handleFxQuoteGet = jest.fn(async () => { throw new Error('Test Error') })
-      const requestData = createRequestData()
+      const requestData = await createRequestData()
 
       const result = await handler.handleGetFxQuotes(requestData)
       expect(result).toBe(true)
@@ -307,7 +309,7 @@ describe('QuotingHandler Tests -->', () => {
 
     it('should skip message processing and log warn on incorrect topic name', async () => {
       const message = createKafkaMessage('wrong-topic')
-      const warnLogSpy = jest.spyOn(Logger, 'warn')
+      const warnLogSpy = jest.spyOn(logger, 'warn')
 
       const result = await handler.defineHandlerByTopic(message)
       expect(result).toBeUndefined()
@@ -398,6 +400,48 @@ describe('QuotingHandler Tests -->', () => {
       const error = new Error('Kafka Error')
       await expect(() => handler.handleMessages(error, []))
         .rejects.toThrowError(error.message)
+    })
+  })
+
+  describe('addOriginalPayload method Tests', () => {
+    const toBase64 = (json, mimeType = 'application/json') => encodePayload(JSON.stringify(json), mimeType)
+
+    it('should add originalPayload from kafka message to requestData', async () => {
+      const payload = { quoteId: randomUUID() }
+      const requestData = {
+        context: {
+          originalRequestPayload: toBase64(payload)
+        }
+      }
+      handler.config.originalPayloadStorage = PAYLOAD_STORAGES.kafka
+
+      await handler.addOriginalPayload(requestData)
+      expect(requestData.originalPayload).toEqual(payload)
+    })
+
+    it('should add originalPayload from redis message to requestData', async () => {
+      const payload = { quoteId: randomUUID() }
+      const requestId = randomUUID()
+      const requestData = {
+        context: {
+          originalRequestId: requestId
+        }
+      }
+      handler.config.originalPayloadStorage = PAYLOAD_STORAGES.redis
+      handler.payloadCache = {
+        getPayload: async (reqId) => (reqId === requestId ? toBase64(payload) : null)
+      }
+
+      await handler.addOriginalPayload(requestData)
+      expect(requestData.originalPayload).toEqual(payload)
+    })
+
+    it('should use content.payload in no content.context field in kafka', async () => {
+      const payload = { quoteId: randomUUID() }
+      const requestData = { payload }
+
+      await handler.addOriginalPayload(requestData)
+      expect(requestData.originalPayload).toEqual(payload)
     })
   })
 })

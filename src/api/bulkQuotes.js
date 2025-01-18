@@ -58,21 +58,27 @@ module.exports = {
       'Publish HTTP POST bulkQuotes request',
       ['success']
     ).startTimer()
+    let step
 
     try {
       await util.auditSpan(request)
 
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.POST
       const topicConfig = dto.topicConfigDto({ topicName: topic })
-      const message = dto.messageFromRequestDto(request, Events.Event.Type.BULK_QUOTE, Events.Event.Action.POST)
-
+      step = 'messageFromRequestDto-1'
+      const message = await dto.messageFromRequestDto({
+        request,
+        type: Events.Event.Type.BULK_QUOTE,
+        action: Events.Event.Action.POST
+      })
+      step = 'produceMessage-2'
       await Producer.produceMessage(message, topicConfig, config)
 
       histTimerEnd({ success: true })
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowFspiopError(err)
+      util.rethrowAndCountFspiopError(err, { operation: 'postBulkQuotes', step })
     }
   }
 }

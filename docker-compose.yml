@@ -20,7 +20,6 @@ x-quoting-service: &quotingServiceBase
     - CSL_LOG_TRANSPORT=file
   volumes:
     - ./docker/quoting-service/default.json:/opt/app/config/default.json
-    #  think, how to use ./config/default.json inside docker-compose
     - ./secrets/:/opt/app/secrets/
   depends_on:
     <<: *dependsOnMysqlAndKafka
@@ -58,9 +57,24 @@ services:
       - "19229:9229"
     container_name: qs_quoting-service
 
+  quoting-service-iso:
+    <<: *quotingServiceBase
+    command: npm start
+    environment:
+      - LOG_LEVEL=debug
+      - QUOTE_API_TYPE=iso20022
+#      - QUOTE_ORIGINAL_PAYLOAD_STORAGE=redis
+      - QUOTE_ORIGINAL_PAYLOAD_STORAGE=kafka
+    ports:
+      - "13002:3002"
+      - "39229:9229"
+    container_name: qs_quoting-service-iso
+
   quoting-service-handler:
     <<: *quotingServiceBase
     command: npm run start:handlers:debug
+    environment:
+      - LOG_LEVEL=debug
     ports:
       - "3003:3003"
       - "29229:9229"
@@ -113,6 +127,7 @@ services:
 
 #  To use with proxyCache.type === 'redis-cluster'
   redis-node-0:
+    container_name: redis-node-0
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
@@ -125,6 +140,7 @@ services:
       - redis-node-4
       - redis-node-5
   redis-node-1:
+    container_name: redis-node-1
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
@@ -132,6 +148,7 @@ services:
     ports:
       - "16380:16380"
   redis-node-2:
+    container_name: redis-node-2
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
@@ -139,6 +156,7 @@ services:
     ports:
       - "16381:16381"
   redis-node-3:
+    container_name: redis-node-3
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
@@ -146,6 +164,7 @@ services:
     ports:
       - "16382:16382"
   redis-node-4:
+    container_name: redis-node-4
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS
@@ -153,6 +172,7 @@ services:
     ports:
       - "16383:16383"
   redis-node-5:
+    container_name: redis-node-5
     <<: *REDIS_NODE
     environment:
       <<: *REDIS_ENVS

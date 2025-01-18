@@ -39,26 +39,26 @@ const util = require('util')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const MLNumber = require('@mojaloop/ml-number')
 const Enum = require('@mojaloop/central-services-shared').Enum
-const { loggerFactory } = require('../lib')
-
+const { logger } = require('../lib/')
+const libUtil = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 
 /**
  * Abstracts operations against the database
  */
 class Database {
-  constructor (config, logger) {
+  constructor (config, log) {
     this.config = config
-    this.log = logger || loggerFactory({
+    this.log = log || logger.child({
       context: this.constructor.name
     })
   }
 
   /**
-   * Connects to the database and returns a self reference
-   *
-   * @returns {promise}
-   */
+     * Connects to the database and returns a self reference
+     *
+     * @returns {promise}
+     */
   async connect () {
     this.queryBuilder = new Knex(this.config.database)
 
@@ -70,10 +70,10 @@ class Database {
   }
 
   /**
-   * async utility for getting a transaction object from knex
-   *
-   * @returns {undefined}
-   */
+     * async utility for getting a transaction object from knex
+     *
+     * @returns {undefined}
+     */
   async newTransaction () {
     return new Promise((resolve, reject) => {
       try {
@@ -87,10 +87,10 @@ class Database {
   }
 
   /**
-   * Check whether the database connection has basic functionality
-   *
-   * @returns {boolean}
-   */
+     * Check whether the database connection has basic functionality
+     *
+     * @returns {boolean}
+     */
   async isConnected () {
     try {
       const result = await this.queryBuilder.raw('SELECT 1 + 1 AS result')
@@ -104,10 +104,10 @@ class Database {
   }
 
   /**
-   * Gets the id of the specified transaction initiator type
-   *
-   * @returns {promise} - id of the transactionInitiatorType
-   */
+     * Gets the id of the specified transaction initiator type
+     *
+     * @returns {promise} - id of the transactionInitiatorType
+     */
   async getInitiatorType (initiatorType) {
     try {
       const rows = await this.queryBuilder('transactionInitiatorType')
@@ -121,15 +121,15 @@ class Database {
       return rows[0].transactionInitiatorTypeId
     } catch (err) {
       this.log.error('Error in getInitiatorType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the id of the specified transaction initiator
-   *
-   * @returns {promise} - id of the transactionInitiator
-   */
+     * Gets the id of the specified transaction initiator
+     *
+     * @returns {promise} - id of the transactionInitiator
+     */
   async getInitiator (initiator) {
     try {
       const rows = await this.queryBuilder('transactionInitiator')
@@ -143,15 +143,15 @@ class Database {
       return rows[0].transactionInitiatorId
     } catch (err) {
       this.log.error('Error in getInitiator:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the id of the specified transaction scenario
-   *
-   * @returns {promise} - id of the transactionScenario
-   */
+     * Gets the id of the specified transaction scenario
+     *
+     * @returns {promise} - id of the transactionScenario
+     */
   async getScenario (scenario) {
     try {
       const rows = await this.queryBuilder('transactionScenario')
@@ -165,15 +165,15 @@ class Database {
       return rows[0].transactionScenarioId
     } catch (err) {
       this.log.error('Error in getScenario:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the id of the specified transaction sub-scenario
-   *
-   * @returns {promise} - id of the transactionSubScenario
-   */
+     * Gets the id of the specified transaction sub-scenario
+     *
+     * @returns {promise} - id of the transactionSubScenario
+     */
   async getSubScenario (subScenario) {
     try {
       const rows = await this.queryBuilder('transactionSubScenario')
@@ -187,15 +187,15 @@ class Database {
       return rows[0].transactionSubScenarioId
     } catch (err) {
       this.log.error('Error in getSubScenario:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the id of the specified amount type
-   *
-   * @returns {promise} - id of the amountType
-   */
+     * Gets the id of the specified amount type
+     *
+     * @returns {promise} - id of the amountType
+     */
   async getAmountType (amountType) {
     try {
       const rows = await this.queryBuilder('amountType')
@@ -209,15 +209,15 @@ class Database {
       return rows[0].amountTypeId
     } catch (err) {
       this.log.error('Error in getAmountType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates a transaction reference in the database
-   *
-   * @returns {promise}
-   */
+     * Creates a transaction reference in the database
+     *
+     * @returns {promise}
+     */
   async createTransactionReference (txn, quoteId, transactionReferenceId) {
     try {
       await this.queryBuilder('transactionReference')
@@ -231,15 +231,15 @@ class Database {
       return transactionReferenceId
     } catch (err) {
       this.log.error('Error in createTransactionReference:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates an entry in quoteDuplicateCheck
-   *
-   * @returns {promise} - quoteId
-   */
+     * Creates an entry in quoteDuplicateCheck
+     *
+     * @returns {promise} - quoteId
+     */
   async createQuoteDuplicateCheck (txn, quoteId, hash) {
     try {
       await this.queryBuilder('quoteDuplicateCheck')
@@ -253,15 +253,15 @@ class Database {
       return quoteId
     } catch (err) {
       this.log.error('Error in createQuoteDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates an entry in quoteResponseDuplicateCheck
-   *
-   * @returns {promise} - quoteResponseId
-   */
+     * Creates an entry in quoteResponseDuplicateCheck
+     *
+     * @returns {promise} - quoteResponseId
+     */
   async createQuoteUpdateDuplicateCheck (txn, quoteId, quoteResponseId, hash) {
     try {
       await this.queryBuilder('quoteResponseDuplicateCheck')
@@ -276,15 +276,15 @@ class Database {
       return quoteId
     } catch (err) {
       this.log.error('Error in createQuoteUpdateDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the id of the specified party type
-   *
-   * @returns {promise} - id of the partyType
-   */
+     * Gets the id of the specified party type
+     *
+     * @returns {promise} - id of the partyType
+     */
   async getPartyType (partyType) {
     try {
       const rows = await this.queryBuilder('partyType')
@@ -299,15 +299,15 @@ class Database {
       return rows[0].partyTypeId
     } catch (err) {
       this.log.error('Error in getPartyType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the id of the specified party identifier type
-   *
-   * @returns {promise} - id of the partyIdentifierType
-   */
+     * Gets the id of the specified party identifier type
+     *
+     * @returns {promise} - id of the partyIdentifierType
+     */
   async getPartyIdentifierType (partyIdentifierType) {
     try {
       const rows = await this.queryBuilder('partyIdentifierType')
@@ -322,15 +322,15 @@ class Database {
       return rows[0].partyIdentifierTypeId
     } catch (err) {
       this.log.error('Error in getPartyIdentifierType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the id of the specified participant
-   *
-   * @returns {promise} - id of the participant
-   */
+     * Gets the id of the specified participant
+     *
+     * @returns {promise} - id of the participant
+     */
   async getParticipant (participantName, participantType, currencyId, ledgerAccountTypeId = Enum.Accounts.LedgerAccountType.POSITION) {
     try {
       const rows = await this.queryBuilder('participant')
@@ -359,15 +359,15 @@ class Database {
       return rows[0].participantId
     } catch (err) {
       this.log.error('Error in getParticipant:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the id of the specified participant name
-   *
-   * @returns {promise} - id of the participant
-   */
+     * Gets the id of the specified participant name
+     *
+     * @returns {promise} - id of the participant
+     */
   async getParticipantByName (participantName, participantType) {
     try {
       const rows = await this.queryBuilder('participant')
@@ -391,15 +391,15 @@ class Database {
       return rows[0].participantId
     } catch (err) {
       this.log.error('Error in getParticipantByName:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the id of the specified transfer participant role type
-   *
-   * @returns {promise} - id of the transfer participant role type
-   */
+     * Gets the id of the specified transfer participant role type
+     *
+     * @returns {promise} - id of the transfer participant role type
+     */
   async getTransferParticipantRoleType (name) {
     try {
       const rows = await this.queryBuilder('transferParticipantRoleType')
@@ -417,15 +417,15 @@ class Database {
       return rows[0].transferParticipantRoleTypeId
     } catch (err) {
       this.log.error('Error in getTransferParticipantRoleType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the id of the specified ledger entry type
-   *
-   * @returns {promise} - id of the ledger entry type
-   */
+     * Gets the id of the specified ledger entry type
+     *
+     * @returns {promise} - id of the ledger entry type
+     */
   async getLedgerEntryType (name) {
     try {
       const rows = await this.queryBuilder('ledgerEntryType')
@@ -443,35 +443,35 @@ class Database {
       return rows[0].ledgerEntryTypeId
     } catch (err) {
       this.log.error('Error in getLedgerEntryType:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates a payer quote party
-   *
-   * @returns {promise}
-   */
+     * Creates a payer quote party
+     *
+     * @returns {promise}
+     */
   async createPayerQuoteParty (txn, quoteId, party, amount, currency, enumVals) {
     // note amount is negative for payee and positive for payer
     return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYER, party, amount, currency, enumVals)
   }
 
   /**
-   * Creates a payee quote party
-   *
-   * @returns {promise}
-   */
+     * Creates a payee quote party
+     *
+     * @returns {promise}
+     */
   async createPayeeQuoteParty (txn, quoteId, party, amount, currency, enumVals) {
     // note amount is negative for payee and positive for payer
     return this.createQuoteParty(txn, quoteId, LOCAL_ENUM.PAYEE, party, -amount, currency, enumVals)
   }
 
   /**
-   * Creates a quote party
-   *
-   * @returns {integer} - id of created quoteParty
-   */
+     * Creates a quote party
+     *
+     * @returns {integer} - id of created quoteParty
+     */
   async createQuoteParty (txn, quoteId, partyType, party, amount, currency, enumVals) {
     try {
       const refs = {}
@@ -535,15 +535,15 @@ class Database {
       return quotePartyId
     } catch (err) {
       this.log.error('Error in createQuoteParty:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates the specific party and returns its id
-   *
-   * @returns {promise} - id of party
-   */
+     * Creates the specific party and returns its id
+     *
+     * @returns {promise} - id of party
+     */
   async createParty (txn, quotePartyId, party) {
     try {
       const newParty = {
@@ -559,15 +559,15 @@ class Database {
       return newParty
     } catch (err) {
       this.log.error('Error in createParty:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates a quote in the database
-   *
-   * @returns {promise}
-   */
+     * Creates a quote in the database
+     *
+     * @returns {promise}
+     */
   async createQuote (txn, quote) {
     try {
       await this.queryBuilder('quote')
@@ -592,7 +592,7 @@ class Database {
       return quote.quoteId
     } catch (err) {
       this.log.error('Error in createQuote:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -610,15 +610,15 @@ class Database {
       return true
     } catch (err) {
       this.log.error('Error in createQuotePartyIdInfoExtensions:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the specified party for the specified quote
-   *
-   * @returns {object}
-   */
+     * Gets the specified party for the specified quote
+     *
+     * @returns {object}
+     */
   async getQuoteParty (quoteId, partyType) {
     try {
       const rows = await this.queryBuilder('quoteParty')
@@ -638,7 +638,7 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteParty:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -662,15 +662,15 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteParty:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets the specified endpoint of the specified type for the specified participant
-   *
-   * @returns {promise} - resolves to the endpoint base url
-   */
+     * Gets the specified endpoint of the specified type for the specified participant
+     *
+     * @returns {promise} - resolves to the endpoint base url
+     */
   async getParticipantEndpoint (participantName, endpointType) {
     try {
       const rows = await this.queryBuilder('participantEndpoint')
@@ -688,15 +688,15 @@ class Database {
       return rows[0].value
     } catch (err) {
       this.log.error('Error in getParticipantEndpoint:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets a quote duplicate check row
-   *
-   * @returns {object} - quote duplicate check or null if none found
-   */
+     * Gets a quote duplicate check row
+     *
+     * @returns {object} - quote duplicate check or null if none found
+     */
   async getQuoteDuplicateCheck (quoteId) {
     try {
       const rows = await this.queryBuilder('quoteDuplicateCheck')
@@ -712,15 +712,15 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Gets a quote response duplicate check row
-   *
-   * @returns {object} - quote duplicate check or null if none found
-   */
+     * Gets a quote response duplicate check row
+     *
+     * @returns {object} - quote duplicate check or null if none found
+     */
   async getQuoteResponseDuplicateCheck (quoteId) {
     try {
       const rows = await this.queryBuilder('quoteResponseDuplicateCheck')
@@ -736,15 +736,15 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteResponseDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates a quoteResponse object in the database
-   *
-   * @returns {object} - created object
-   */
+     * Creates a quoteResponse object in the database
+     *
+     * @returns {object} - created object
+     */
   async createQuoteResponse (txn, quoteId, quoteResponse) {
     try {
       const newQuoteResponse = {
@@ -772,15 +772,15 @@ class Database {
       return newQuoteResponse
     } catch (err) {
       this.log.error('Error in createQuoteResponse:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates a new quote response ILP packet row
-   *
-   * @returns {object}
-   */
+     * Creates a new quote response ILP packet row
+     *
+     * @returns {object}
+     */
   async createQuoteResponseIlpPacket (txn, quoteResponseId, ilpPacket) {
     try {
       const newPacket = {
@@ -796,15 +796,15 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createIlpPacket:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates a new geoCode row
-   *
-   * @returns {object}
-   */
+     * Creates a new geoCode row
+     *
+     * @returns {object}
+     */
   async createGeoCode (txn, geoCode) {
     try {
       const newGeoCode = {
@@ -823,15 +823,15 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createGeoCode:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates a new quoteError row
-   *
-   * @returns {object}
-   */
+     * Creates a new quoteError row
+     *
+     * @returns {object}
+     */
   async createQuoteError (txn, error) {
     try {
       const newError = {
@@ -850,16 +850,16 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createQuoteError:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
   /**
-   * Creates quoteExtensions rows
-   *
-   * @returns {object}
-   * @param   {Array[{object}]} extensions - array of extension objects with quoteId, key and value properties
-   */
+     * Creates quoteExtensions rows
+     *
+     * @returns {object}
+     * @param   {Array[{object}]} extensions - array of extension objects with quoteId, key and value properties
+     */
   async createQuoteExtensions (txn, extensions, quoteId, transactionId = undefined, quoteResponseId = undefined) {
     try {
       const newExtensions = extensions.map(({ key, value }) => ({
@@ -878,7 +878,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createQuoteExtensions:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -898,7 +898,7 @@ class Database {
       return newFxQuote
     } catch (err) {
       this.log.error('Error in createFxQuote:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -919,7 +919,7 @@ class Database {
       return newFxQuoteResponse
     } catch (err) {
       this.log.error('Error in createFxQuoteResponse:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -941,7 +941,7 @@ class Database {
       return newFxQuoteError
     } catch (err) {
       this.log.error('Error in createFxQuoteError:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -962,7 +962,7 @@ class Database {
       return newFxQuoteDuplicateCheck
     } catch (err) {
       this.log.error('Error in createFxQuoteDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -984,7 +984,7 @@ class Database {
       return newFxQuoteResponseDuplicateCheck
     } catch (err) {
       this.log.error('Error in createFxQuoteResponseDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1014,7 +1014,7 @@ class Database {
       return newFxQuoteConversionTerms
     } catch (err) {
       this.log.error('Error in createFxQuoteConversionTerms:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1037,7 +1037,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in fxCharge:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1057,7 +1057,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createFxQuoteConversionTermsExtension:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1090,7 +1090,7 @@ class Database {
       return newFxQuoteResponseConversionTerms
     } catch (err) {
       this.log.error('Error in createFxQuoteResponseConversionTerms:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1110,7 +1110,7 @@ class Database {
       return res
     } catch (err) {
       this.log.error('Error in createFxQuoteResponseConversionTermsExtension:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1122,7 +1122,7 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in getFxQuoteDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1134,7 +1134,7 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in getFxQuoteResponseDuplicateCheck:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1159,7 +1159,7 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteDetails:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1188,7 +1188,7 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteDetails:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 
@@ -1200,7 +1200,7 @@ class Database {
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteErrorDetails:', err)
-      throw ErrorHandler.Factory.reformatFSPIOPError(err)
+      libUtil.rethrowDatabaseError(err)
     }
   }
 

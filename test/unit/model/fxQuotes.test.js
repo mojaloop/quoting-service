@@ -34,15 +34,19 @@ jest.mock('axios')
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const ENUM = require('@mojaloop/central-services-shared').Enum
+const { FSPIOPError } = require('@mojaloop/central-services-error-handling/src/factory')
+const Metrics = require('@mojaloop/central-services-metrics')
+
+const Config = require('../../../src/lib/config')
+const config = new Config()
+
+Metrics.setup(config.instrumentationMetricsConfig)
 const LOCAL_ENUM = require('../../../src/lib/enum')
 const FxQuotesModel = require('../../../src/model/fxQuotes')
-const Config = require('../../../src/lib/config')
-const { FSPIOPError } = require('@mojaloop/central-services-error-handling/src/factory')
+const { logger } = require('../../../src/lib')
 const { makeAppInteroperabilityHeader } = require('../../../src/lib/util')
 const { HEADERS, RESOURCES, ERROR_MESSAGES } = require('../../../src/constants')
-const { fxQuoteMocks } = require('../mocks')
-
-const config = new Config()
+const { fxQuoteMocks } = require('../../mocks')
 
 describe('FxQuotesModel Tests -->', () => {
   let fxQuotesModel
@@ -72,7 +76,7 @@ describe('FxQuotesModel Tests -->', () => {
   beforeEach(() => {
     db = fxQuoteMocks.db()
     proxyClient = fxQuoteMocks.proxyClient()
-    log = fxQuoteMocks.logger()
+    log = logger
     requestId = randomUUID()
     headers = fxQuoteMocks.headers()
     request = fxQuoteMocks.fxQuoteRequest()
@@ -136,10 +140,11 @@ describe('FxQuotesModel Tests -->', () => {
   describe('handleFxQuoteRequest', () => {
     test('should handle fx quote request', async () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel._fetchParticipantInfo = jest.fn(() => ({ payer: 'payer', payee: 'payee' }))
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest').mockResolvedValue()
       jest.spyOn(fxQuotesModel, 'validateFxQuoteRequest')
 
-      await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span, request)).resolves.toBeUndefined()
 
       expect(fxQuotesModel.validateFxQuoteRequest).toBeCalledWith(headers['fspiop-destination'], request)
       expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
@@ -175,6 +180,7 @@ describe('FxQuotesModel Tests -->', () => {
 
     test('should handle fx quote request in persistent mode', async () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel._fetchParticipantInfo = jest.fn(() => ({ payer: 'payer', payee: 'payee' }))
       fxQuotesModel.envConfig.simpleRoutingMode = false
 
       jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteRequest').mockResolvedValue({
@@ -189,7 +195,7 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(db, 'createFxQuoteConversionTermsExtension')
       jest.spyOn(db, 'createFxQuoteDuplicateCheck')
 
-      await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span, request)).resolves.toBeUndefined()
 
       expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
       expect(db.createFxQuote).toBeCalled()
@@ -215,11 +221,13 @@ describe('FxQuotesModel Tests -->', () => {
 
     test('should handle error thrown', async () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      fxQuotesModel._fetchParticipantInfo = jest.fn(() => ({ payer: 'payer', payee: 'payee' }))
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest').mockRejectedValue(new Error('Forward Error'))
       jest.spyOn(fxQuotesModel, 'validateFxQuoteRequest')
       jest.spyOn(fxQuotesModel, 'handleException').mockResolvedValue()
 
-      await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span, request))
+        .resolves.toBeUndefined()
 
       expect(fxQuotesModel.validateFxQuoteRequest).toBeCalledWith(headers['fspiop-destination'], request)
       expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
@@ -246,7 +254,7 @@ describe('FxQuotesModel Tests -->', () => {
         headers: expectedHeaders,
         method: ENUM.Http.RestMethods.POST,
         url: `${mockEndpoint}${ENUM.EndPoints.FspEndpointTemplates.FX_QUOTES_POST}`,
-        data: JSON.stringify(request)
+        data: expect.objectContaining(request)
       }, headers['fspiop-source'])
     })
 
@@ -344,7 +352,8 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(db, 'createFxQuoteResponseConversionTermsExtension')
       jest.spyOn(db, 'createFxQuoteResponseDuplicateCheck')
 
-      await expect(fxQuotesModel.handleFxQuoteUpdate(headers, conversionRequestId, updateRequest, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteUpdate(headers, conversionRequestId, updateRequest, span, updateRequest))
+        .resolves.toBeUndefined()
 
       expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalledWith(headers, conversionRequestId, updateRequest, span.getChild())
       expect(db.createFxQuoteResponse).toBeCalled()
@@ -388,7 +397,7 @@ describe('FxQuotesModel Tests -->', () => {
         },
         method: ENUM.Http.RestMethods.PUT,
         url: `${mockEndpoint}/fxQuotes/${conversionRequestId}`,
-        data: JSON.stringify(updateRequest)
+        data: expect.objectContaining(updateRequest)
       }, headers['fspiop-source'])
     })
 
@@ -408,7 +417,8 @@ describe('FxQuotesModel Tests -->', () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log, httpRequest })
       fxQuotesModel._getParticipantEndpoint = jest.fn().mockResolvedValue(mockEndpoint)
 
-      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, conversionRequestId, updateRequest, childSpan)).rejects.toThrow(FSPIOPError)
+      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, conversionRequestId, updateRequest, childSpan))
+        .rejects.toThrow(FSPIOPError)
     })
   })
 
@@ -470,10 +480,10 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(fxQuotesModel, 'sendErrorCallback').mockResolvedValue()
 
       const error = { errorCode: '3201', errorDescription: 'Destination FSP error' }
-      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span, error)).resolves.toBeUndefined()
 
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
-      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false)
+      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false, error)
     })
 
     test('should handle fx quote error in persistent mode', async () => {
@@ -483,10 +493,10 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(db, 'createFxQuoteError')
 
       const error = { errorCode: '3201', errorDescription: 'Destination FSP error' }
-      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span, error)).resolves.toBeUndefined()
 
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
-      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false)
+      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false, error)
       expect(db.createFxQuoteError).toBeCalledWith(expect.anything(), conversionRequestId, {
         errorCode: Number(error.errorCode),
         errorDescription: error.errorDescription
@@ -510,10 +520,10 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(fxQuotesModel, 'handleException').mockResolvedValue()
 
       const error = { errorCode: '3201', errorDescription: 'Destination FSP error' }
-      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteError(headers, conversionRequestId, error, span, error)).resolves.toBeUndefined()
 
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
-      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false)
+      expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-destination'], fspiopError, conversionRequestId, headers, childSpan, false, error)
       expect(fxQuotesModel.handleException).toBeCalledWith(headers['fspiop-source'], conversionRequestId, expect.any(Error), headers, childSpan)
     })
   })
@@ -534,6 +544,7 @@ describe('FxQuotesModel Tests -->', () => {
       const error = new Error('Send Error Callback Error')
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
       jest.spyOn(fxQuotesModel, 'sendErrorCallback').mockRejectedValue(error)
+      jest.spyOn(log, 'error')
 
       await expect(fxQuotesModel.handleException(headers['fspiop-source'], conversionRequestId, error, headers, span)).resolves.toBeUndefined()
 
@@ -657,7 +668,7 @@ describe('FxQuotesModel Tests -->', () => {
       expect(args.headers.Accept).toBeUndefined()
       expect(args.method).toBe(ENUM.Http.RestMethods.PUT)
       expect(args.url).toBe(`${mockEndpoint}/fxQuotes/${conversionRequestId}/error`)
-      expect(args.data).toBe(JSON.stringify(fspiopError.toApiErrorObject()))
+      expect(args.data).toStrictEqual(fspiopError.toApiErrorObject())
     })
 
     test('should reformat and re-throw http request error to fspiop error', async () => {
@@ -725,6 +736,22 @@ describe('FxQuotesModel Tests -->', () => {
       const [args] = fxQuotesModel.sendHttpRequest.mock.calls[0]
       expect(args.headers[HEADERS.contentType]).toBe(headers[HEADERS.contentType])
       expect(args.headers[HEADERS.fspiopSource]).toBe(config.hubName)
+    })
+  })
+
+  describe('sendHttpRequest', () => {
+    it('should rethrow an error if error is thrown', async () => {
+      const options = { method: 'GET', url: 'https://example.com' }
+      const fspiopSource = 'source'
+      const fspiopDest = 'destination'
+      const error = new Error('Network Error')
+
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      jest.spyOn(axios, 'request').mockRejectedValue(error)
+
+      await expect(fxQuotesModel.sendHttpRequest(options, fspiopSource, fspiopDest)).rejects.toThrow('Network Error')
+
+      expect(axios.request).toBeCalledWith(options)
     })
   })
 })

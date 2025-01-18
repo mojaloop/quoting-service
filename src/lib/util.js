@@ -27,28 +27,28 @@
 
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
-
- * Infitx
- - Steven Oderayi <steven.oderayi@infitx.com>
  --------------
  ******/
 
 'use strict'
 
-const util = require('util')
-const crypto = require('crypto')
+const crypto = require('node:crypto')
+const path = require('node:path')
+const util = require('node:util')
 const axios = require('axios')
-const Logger = require('@mojaloop/central-services-logger')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
-const { RESOURCES, HEADERS } = require('../constants')
+
+const { RESOURCES, HEADERS, ISO_HEADER_PART } = require('../constants')
+const { logger } = require('../lib')
 const Config = require('./config')
 
+const { rethrow } = require('@mojaloop/central-services-shared').Util
 const config = new Config()
 
 const failActionHandler = async (request, h, err) => {
-  Logger.isErrorEnabled && Logger.error(`validation failure: ${err ? getStackOrInspect(err) : ''}`)
+  logger.error('validation failure: ', err)
   throw err
 }
 
@@ -129,21 +129,29 @@ function removeEmptyKeys (originalObject) {
   return obj
 }
 
-const makeAppInteroperabilityHeader = (resource, version) => `application/vnd.interoperability.${resource}+json;version=${version}`
+const makeAppInteroperabilityHeader = (resource, version, isIsoApi) => {
+  const isoPart = isIsoApi ? `.${ISO_HEADER_PART}` : ''
+  return `application/vnd.interoperability${isoPart}.${resource}+json;version=${version}`
+}
 
 function applyResourceVersionHeaders (headers, protocolVersions, resource) {
-  let contentTypeHeader = headers['content-type'] || headers['Content-Type']
-  let acceptHeader = headers.accept || headers.Accept
+  const isIsoApi = isIso20022ApiRequest(headers)
+  let contentTypeHeader = getContentTypeHeader(headers)
+  let acceptHeader = getAcceptHeader(headers)
+
   if (Util.HeaderValidation.getHubNameRegex(config.hubName).test(headers['fspiop-source'])) {
     if (Enum.Http.Headers.GENERAL.CONTENT_TYPE.regex.test(contentTypeHeader) && !!protocolVersions.CONTENT.DEFAULT) {
-      contentTypeHeader = makeAppInteroperabilityHeader(resource, protocolVersions.CONTENT.DEFAULT)
+      contentTypeHeader = makeAppInteroperabilityHeader(resource, protocolVersions.CONTENT.DEFAULT, isIsoApi)
     }
     if (Enum.Http.Headers.GENERAL.ACCEPT.regex.test(acceptHeader) && !!protocolVersions.ACCEPT.DEFAULT) {
-      acceptHeader = makeAppInteroperabilityHeader(resource, protocolVersions.ACCEPT.DEFAULT)
+      acceptHeader = makeAppInteroperabilityHeader(resource, protocolVersions.ACCEPT.DEFAULT, isIsoApi)
     }
   }
   return { contentTypeHeader, acceptHeader }
 }
+
+const getAcceptHeader = (headers = {}) => (headers.accept || headers.Accept)
+const getContentTypeHeader = (headers = {}) => (headers['content-type'] || headers['Content-Type'])
 
 const headersMappingDto = (headers, protocolVersions, noAccept, resource) => {
   const { contentTypeHeader, acceptHeader } = applyResourceVersionHeaders(headers, protocolVersions, resource)
@@ -212,93 +220,63 @@ function calculateRequestHash (request) {
   return crypto.createHash('sha256').update(requestStr).digest('hex')
 }
 
-/**
- * Fetches participant information for both the source and destination participants
- * and returns the information in the format:
- *
- *  {
- *   payer: {
- *    name: 'payerName',
- *    id: 'payerId',
- *    isActive: 1,
- *    links: { self: 'payerUrl' },
- *    accounts: [],
- *    proxiedParticipant: boolean
- *   },
- *   payee: {
- *    name: 'payeeName',
- *    id: 'payeeId',
- *    isActive: 1,
- *    links: { self: 'payeeUrl' },
- *    accounts: [],
- *    proxiedParticipant: boolean
- *   }
- *  }
- *
- * If a cache is provided, it will be used to get and store the participant information for future use.
- * If a proxyClient is provided, it will be used to check if the participant is a proxy participant.
- *
- * @param {string} source - the source participant ID
- * @param {string} destination - the destination participant ID
- * @param {Cache} cache - the cache to use for getting or storing participant information
- * @param {ProxyClient} proxyClient - the proxy client to use for checking if a participant is a proxy participant
- * @returns {object} - the participant information for the source and destination participants
- */
+const proxyAdjacentParticipantDto = (name) => ({
+  data: {
+    name,
+    id: '',
+    // assume source is active
+    isActive: 1,
+    links: { self: '' },
+    accounts: [],
+    proxiedParticipant: true
+  }
+})
+
+// Add caching to the participant endpoint
 const fetchParticipantInfo = async (source, destination, cache, proxyClient) => {
+  // Get quote participants from central ledger admin
   const { switchEndpoint } = config
   const url = `${switchEndpoint}/participants`
-
-  const [payer, payee] = await Promise.all([
-    getParticipantData(source, cache, proxyClient, url),
-    getParticipantData(destination, cache, proxyClient, url)
-  ])
-
-  return { payer, payee }
-}
-
-const getParticipantData = async (participant, cache, proxyClient, url) => {
-  let requestParticipant = null
+  let requestPayer
+  let requestPayee
 
   if (proxyClient) {
-    requestParticipant = await getProxiedParticipant(participant, proxyClient)
-  }
-
-  const cachedParticipant = cache && !requestParticipant && cache.get(`fetchParticipantInfo_${participant}`)
-
-  if (!cachedParticipant && !requestParticipant) {
-    requestParticipant = await fetchParticipantFromServer(participant, url, cache)
-  } else {
-    Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache hit for participant ${participant}`)
-  }
-
-  return cachedParticipant || requestParticipant.data
-}
-
-const getProxiedParticipant = async (participant, proxyClient) => {
-  if (!proxyClient.isConnected) await proxyClient.connect()
-  const proxyId = await proxyClient.lookupProxyByDfspId(participant)
-
-  if (proxyId) {
-    return {
-      data: {
-        name: participant,
-        id: '',
-        isActive: 1,
-        links: { self: '' },
-        accounts: [],
-        proxiedParticipant: true
-      }
+    if (!proxyClient.isConnected) await proxyClient.connect()
+    const proxyIdSource = await proxyClient.lookupProxyByDfspId(source)
+    const proxyIdDestination = await proxyClient.lookupProxyByDfspId(destination)
+    if (proxyIdSource) {
+      // construct participant adjacent data structure that uses the original
+      // participant when they are proxied and out of scheme
+      requestPayer = proxyAdjacentParticipantDto(source)
+    }
+    if (proxyIdDestination) {
+      // construct participant adjacent data structure that uses the original
+      // participant when they are proxied and out of scheme
+      requestPayee = proxyAdjacentParticipantDto(destination)
     }
   }
 
-  return null
-}
+  const cachedPayer = cache && !requestPayer && cache.get(`fetchParticipantInfo_${source}`)
+  const cachedPayee = cache && !requestPayee && cache.get(`fetchParticipantInfo_${destination}`)
 
-const fetchParticipantFromServer = async (participant, url, cache) => {
-  const response = await axios.request({ url: `${url}/${participant}` })
-  cache && cache.put(`fetchParticipantInfo_${participant}`, response, Config.participantDataCacheExpiresInMs)
-  Logger.isDebugEnabled && Logger.debug(`[fetchParticipantInfo]: cache miss for participant ${participant}`)
-  return response
+  if (!cachedPayer && !requestPayer) {
+    requestPayer = await axios.request({ url: `${url}/${source}` })
+    cache && cache.put(`fetchParticipantInfo_${source}`, requestPayer, Config.participantDataCacheExpiresInMs)
+    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
+  } else {
+    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache hit for payer ${source}`)
+  }
+  if (!cachedPayee && !requestPayee) {
+    requestPayee = await axios.request({ url: `${url}/${destination}` })
+    cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
+    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache miss for payee ${destination}`)
+  } else {
+    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache hit for payee ${destination}`)
+  }
+
+  const payer = cachedPayer || requestPayer.data
+  const payee = cachedPayee || requestPayee.data
+  return { payer, payee }
 }
 
 const getParticipantEndpoint = async ({ fspId, db, loggerFn, endpointType, proxyClient = null }) => {
@@ -333,24 +311,45 @@ const auditSpan = async (request) => {
   }, AuditEventAction.start)
 }
 
-const rethrowFspiopError = (error) => {
-  const fspiopError = ErrorHandler.Factory.reformatFSPIOPError(error)
-  Logger.isErrorEnabled && Logger.error(fspiopError)
-  throw fspiopError
+const rethrowAndCountFspiopError = (error, options) => {
+  options.loggerOverride = logger
+  rethrow.rethrowAndCountFspiopError(error, options)
 }
+
+const rethrowDatabaseError = (error) => {
+  rethrow.rethrowDatabaseError(error, { loggerOverride: logger })
+}
+
+const rethrowCachedDatabaseError = (error) => {
+  rethrow.rethrowCachedDatabaseError(error, { loggerOverride: logger })
+}
+
+const resolveOpenApiSpecPath = (isIsoApi) => {
+  const specFile = isIsoApi
+    ? 'QuotingService-swagger_iso20022.yaml'
+    : 'QuotingService-swagger.yaml'
+  return path.resolve(__dirname, '../interface', specFile)
+}
+
+const isFxRequest = (headers) => getContentTypeHeader(headers)?.includes(RESOURCES.fxQuotes)
+const isIso20022ApiRequest = (headers) => getContentTypeHeader(headers)?.includes(ISO_HEADER_PART)
 
 module.exports = {
   auditSpan,
   failActionHandler,
-  getSafe,
   getSpanTags,
   getStackOrInspect,
   generateRequestHeaders,
   generateRequestHeadersForJWS,
   calculateRequestHash,
   removeEmptyKeys,
-  rethrowFspiopError,
+  rethrowAndCountFspiopError,
+  rethrowDatabaseError,
+  rethrowCachedDatabaseError,
   fetchParticipantInfo,
   getParticipantEndpoint,
-  makeAppInteroperabilityHeader
+  makeAppInteroperabilityHeader,
+  resolveOpenApiSpecPath,
+  isFxRequest,
+  isIso20022ApiRequest
 }
