@@ -170,8 +170,7 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  async handleFxQuoteRequest (headers, fxQuoteRequest, span, originalPayload = fxQuoteRequest, cache) {
-    // todo: remove default value for originalPayload (added just for passing tests)
+  async handleFxQuoteRequest (headers, fxQuoteRequest, span, originalPayload, cache) {
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'handleFxQuoteRequest - Metrics for fx quote model',

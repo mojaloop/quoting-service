@@ -194,8 +194,7 @@ class QuotesModel {
    *
    * @returns {object} - returns object containing keys for created database entities
    */
-  async handleQuoteRequest (headers, quoteRequest, span, cache, originalPayload) {
-    // todo: update method signature to use object destructuring
+  async handleQuoteRequest ({ headers, quoteRequest, span, cache, originalPayload }) {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteRequest - Metrics for quote model',
@@ -542,8 +541,7 @@ class QuotesModel {
    *
    * @returns {object} - object containing updated entities
    */
-  async handleQuoteUpdate (headers, quoteId, payload, span, originalPayload) {
-    // todo: update method signature to use object destructuring
+  async handleQuoteUpdate ({ headers, quoteId, payload, span, originalPayload }) {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteUpdate - Metrics for quote model',
