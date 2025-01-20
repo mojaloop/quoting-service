@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.1](https://github.com/mojaloop/quoting-service/compare/v17.0.0...v17.0.1) (2025-01-20)
+
+
+### Chore
+
+* address follow up iso comments ([#385](https://github.com/mojaloop/quoting-service/issues/385)) ([012907e](https://github.com/mojaloop/quoting-service/commit/012907e206059636126d392a843c87669afc372c))
+
 ## [17.0.0](https://github.com/mojaloop/quoting-service/compare/v16.0.1...v17.0.0) (2025-01-18)
 
 
