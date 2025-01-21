@@ -210,4 +210,7 @@ Event objects must have a type property, and an optional params property. There 
 ```
 ## Additional Notes
 
-N/A
+- Since the first pass ISO20022 support doesn't cover all resources at this time
+  `api-swagger-iso20022-parties.yaml` still uses fspiop for resources that
+  weren't in the iso scope on the first pass example `/bulkQuotes`.
+  This is to ensure no regression for resources that aren't yet covered.

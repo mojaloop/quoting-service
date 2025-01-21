@@ -97,7 +97,13 @@ class QuotingHandler {
 
     try {
       span = await this.createSpan(requestData)
-      await model.handleQuoteRequest(headers, payload, span, this.cache, originalPayload)
+      await model.handleQuoteRequest({
+        headers,
+        quoteRequest: payload,
+        span,
+        cache: this.cache,
+        originalPayload
+      })
       this.logger.debug('handlePostQuotes is done')
     } catch (err) {
       this.logger.error(`error in handlePostQuotes partition:${requestData.partition}, offset:${requestData.offset}:`, err)
@@ -123,7 +129,7 @@ class QuotingHandler {
       span = await this.createSpan(requestData)
       const result = isError
         ? await model.handleQuoteError(headers, quoteId, payload.errorInformation, span, originalPayload)
-        : await model.handleQuoteUpdate(headers, quoteId, payload, span, originalPayload)
+        : await model.handleQuoteUpdate({ headers, quoteId, payload, span, originalPayload })
       this.logger.debug('handlePutQuotes is done', { result })
     } catch (err) {
       this.logger.error(`error in handlePutQuotes partition:${requestData.partition}, offset:${requestData.offset}:`, err)

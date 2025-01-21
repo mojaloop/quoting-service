@@ -196,8 +196,7 @@ class QuotesModel {
    *
    * @returns {object} - returns object containing keys for created database entities
    */
-  async handleQuoteRequest (headers, quoteRequest, span, cache, originalPayload) {
-    // todo: update method signature to use object destructuring
+  async handleQuoteRequest ({ headers, quoteRequest, span, cache, originalPayload }) {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteRequest - Metrics for quote model',
@@ -544,8 +543,7 @@ class QuotesModel {
    *
    * @returns {object} - object containing updated entities
    */
-  async handleQuoteUpdate (headers, quoteId, payload, span, originalPayload) {
-    // todo: update method signature to use object destructuring
+  async handleQuoteUpdate ({ headers, quoteId, payload, span, originalPayload }) {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'handleQuoteUpdate - Metrics for quote model',
@@ -649,18 +647,6 @@ class QuotesModel {
 
         await txn.commit()
         log.debug('create quote update transaction committed to db:', { refs })
-
-        /// if we got here, all entities have been created in db correctly to record the quote request
-
-        // check quote response rules
-        // let test = { ...payload };
-
-        // const failures = await quoteRules.getFailures(test);
-        // if (failures && failures.length > 0) {
-        // quote broke business rules, queue up an error callback to the caller
-        //    this.writeLog(`Rules failed for quoteId ${refs.quoteId}: ${util.inspect(failures)}`);
-        // todo: make error callback
-        // }
       }
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       const childSpan = handleQuoteUpdateSpan.getChild('qs_quote_forwardQuoteUpdate')

@@ -750,8 +750,11 @@ describe('QuotesModel', () => {
           )
 
           quotesModel.executeRules = jest.fn(() => { throw fspiopError })
-
-          await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+          await expect(quotesModel.handleQuoteRequest({
+            headers: mockData.headers,
+            quoteRequest: mockData.quoteRequest,
+            span: mockSpan
+          }))
             .rejects
             .toBe(fspiopError)
         })
@@ -767,7 +770,11 @@ describe('QuotesModel', () => {
 
           quotesModel.handleRuleEvents = jest.fn(() => { throw fspiopError })
 
-          await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+          await expect(quotesModel.handleQuoteRequest({
+            headers: mockData.headers,
+            quoteRequest: mockData.quoteRequest,
+            span: mockSpan
+          }))
             .rejects
             .toBe(fspiopError)
         })
@@ -780,7 +787,11 @@ describe('QuotesModel', () => {
             }
           })
 
-          await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+          await expect(quotesModel.handleQuoteRequest({
+            headers: mockData.headers,
+            quoteRequest: mockData.quoteRequest,
+            span: mockSpan
+          }))
             .resolves
             .toBe(undefined)
           expect(quotesModel.validateQuoteRequest).toHaveBeenCalledTimes(1)
@@ -793,7 +804,11 @@ describe('QuotesModel', () => {
 
           quotesModel.validateQuoteRequest = jest.fn(() => { throw fspiopError })
 
-          await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+          await expect(quotesModel.handleQuoteRequest({
+            headers: mockData.headers,
+            quoteRequest: mockData.quoteRequest,
+            span: mockSpan
+          }))
             .rejects
             .toBe(fspiopError)
         })
@@ -810,7 +825,11 @@ describe('QuotesModel', () => {
 
             quotesModel.db.newTransaction = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
           })
@@ -820,7 +839,11 @@ describe('QuotesModel', () => {
             const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
             quotesModel.checkDuplicateQuoteRequest = jest.fn(() => { throw fspiopError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toBe(fspiopError)
           })
@@ -834,7 +857,11 @@ describe('QuotesModel', () => {
               }
             })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST.code)
           })
@@ -845,7 +872,11 @@ describe('QuotesModel', () => {
 
             Util.calculateRequestHash.mockImplementationOnce(() => { throw fspiopError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toBe(fspiopError)
           })
@@ -857,7 +888,11 @@ describe('QuotesModel', () => {
 
             quotesModel.db.createQuoteDuplicateCheck = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
           })
@@ -869,7 +904,11 @@ describe('QuotesModel', () => {
 
             quotesModel.db.createTransactionReference = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
           })
@@ -881,7 +920,11 @@ describe('QuotesModel', () => {
 
             quotesModel.db.getInitiatorType = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
           })
@@ -893,7 +936,11 @@ describe('QuotesModel', () => {
 
             quotesModel.db.getInitiator = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
           })
@@ -905,7 +952,11 @@ describe('QuotesModel', () => {
 
             quotesModel.db.getScenario = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
           })
@@ -920,7 +971,11 @@ describe('QuotesModel', () => {
 
               quotesModel.db.getSubScenario = jest.fn(() => { throw dbError })
 
-              await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+              await expect(quotesModel.handleQuoteRequest({
+                headers: mockData.headers,
+                quoteRequest: mockData.quoteRequest,
+                span: mockSpan
+              }))
                 .rejects
                 .toEqual(fspiopError)
             })
@@ -933,7 +988,11 @@ describe('QuotesModel', () => {
 
             quotesModel.db.getAmountType = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
           })
@@ -945,7 +1004,11 @@ describe('QuotesModel', () => {
 
             quotesModel.db.createQuote = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
           })
@@ -957,7 +1020,11 @@ describe('QuotesModel', () => {
 
             quotesModel.db.createPayerQuoteParty = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
           })
@@ -969,7 +1036,11 @@ describe('QuotesModel', () => {
 
             quotesModel.db.createPayeeQuoteParty = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
           })
@@ -987,7 +1058,11 @@ describe('QuotesModel', () => {
                 longitude: '23.32415'
               }
 
-              await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+              await expect(quotesModel.handleQuoteRequest({
+                headers: mockData.headers,
+                quoteRequest: mockData.quoteRequest,
+                span: mockSpan
+              }))
                 .rejects
                 .toEqual(fspiopError)
             })
@@ -1008,7 +1083,11 @@ describe('QuotesModel', () => {
                 }]
               }
 
-              await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+              await expect(quotesModel.handleQuoteRequest({
+                headers: mockData.headers,
+                quoteRequest: mockData.quoteRequest,
+                span: mockSpan
+              }))
                 .rejects
                 .toEqual(fspiopError)
             })
@@ -1020,7 +1099,11 @@ describe('QuotesModel', () => {
             const fspiopError = ErrorHandler.ReformatFSPIOPError(dbError)
             mockTransaction.commit = jest.fn(() => { throw dbError })
 
-            await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+            await expect(quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            }))
               .rejects
               .toEqual(fspiopError)
             expect(mockTransaction.commit.mock.calls.length).toBe(1)
@@ -1033,7 +1116,11 @@ describe('QuotesModel', () => {
           const fspiopError = ErrorHandler.ReformatFSPIOPError(spanError)
           mockSpan.getChild = jest.fn(() => { throw spanError })
 
-          await expect(quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan))
+          await expect(quotesModel.handleQuoteRequest({
+            headers: mockData.headers,
+            quoteRequest: mockData.quoteRequest,
+            span: mockSpan
+          }))
             .rejects
             .toEqual(fspiopError)
           expect(mockSpan.getChild.mock.calls.length).toBe(1)
@@ -1056,7 +1143,11 @@ describe('QuotesModel', () => {
             const expectedHandleExceptionArgs = [mockData.headers['fspiop-source'], mockData.quoteId, fspiopError, mockData.headers,
               mockChildSpan]
 
-            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            const result = await quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            })
 
             expect(mockChildSpan.audit.mock.calls.length).toBe(1)
             expect(quotesModel.handleException).toBeCalledWith(...expectedHandleExceptionArgs)
@@ -1075,7 +1166,11 @@ describe('QuotesModel', () => {
               mockChildSpan]
             const expectedForwardQuoteRequestArgs = [mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan]
 
-            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            const result = await quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            })
 
             expect(mockChildSpan.audit.mock.calls.length).toBe(1)
             expect(quotesModel.forwardQuoteRequest.mock.calls.length).toBe(1)
@@ -1114,7 +1209,11 @@ describe('QuotesModel', () => {
             const fspiopError = ErrorHandler.ReformatFSPIOPError(spanError)
             mockChildSpan.audit = jest.fn(() => { throw spanError })
 
-            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            const result = await quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            })
 
             const expectedHandleExceptionArgs = [mockData.headers['fspiop-source'], result.quoteId, fspiopError,
               mockData.headers, mockChildSpan]
@@ -1132,7 +1231,11 @@ describe('QuotesModel', () => {
 
             quotesModel.forwardQuoteRequest = jest.fn(() => { throw fspiopError })
 
-            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            const result = await quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            })
 
             const expectedHandleExceptionArgs = [mockData.headers['fspiop-source'], mockData.quoteId, fspiopError, mockData.headers,
               mockChildSpan]
@@ -1154,7 +1257,11 @@ describe('QuotesModel', () => {
                 isResend: true
               }
             })
-            await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            await quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            })
             expect(quotesModel.handleQuoteRequestResend).toHaveBeenCalledTimes(1)
           })
         })
@@ -1172,7 +1279,11 @@ describe('QuotesModel', () => {
           }))
 
           quotesModel.executeRules.mockRestore()
-          const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+          const result = await quotesModel.handleQuoteRequest({
+            headers: mockData.headers,
+            quoteRequest: mockData.quoteRequest,
+            span: mockSpan
+          })
 
           expect(quotesModel.db.createQuoteDuplicateCheck.mock.calls.length).toBe(0)
           expect(result).toBe(undefined)
@@ -1190,8 +1301,11 @@ describe('QuotesModel', () => {
             expect.assertions(5)
 
             mockChildSpan.isFinished = false
-            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
-
+            const result = await quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            })
             const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
             expect(mockSpan.getChild.mock.calls.length).toBe(1)
@@ -1278,7 +1392,11 @@ describe('QuotesModel', () => {
               longitude: mockData.quoteRequest.geoCode.longitude
             }]
 
-            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            const result = await quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            })
 
             expect(quotesModel.db.createQuoteDuplicateCheck).toBeCalledWith(...mockCreateQuoteDuplicateCheckArgs)
             expect(quotesModel.db.createTransactionReference).toBeCalledWith(...mockCreateTransactionReferenceArgs)
@@ -1295,7 +1413,11 @@ describe('QuotesModel', () => {
             expect.assertions(5)
 
             mockChildSpan.isFinished = false
-            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            const result = await quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            })
 
             const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
@@ -1326,7 +1448,11 @@ describe('QuotesModel', () => {
             })
 
             mockChildSpan.isFinished = false
-            const result = await quotesModel.handleQuoteRequest(mockData.headers, mockData.quoteRequest, mockSpan)
+            const result = await quotesModel.handleQuoteRequest({
+              headers: mockData.headers,
+              quoteRequest: mockData.quoteRequest,
+              span: mockSpan
+            })
 
             const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
@@ -1519,7 +1645,13 @@ describe('QuotesModel', () => {
       mockConfig.simpleRoutingMode = true
       mockChildSpan.isFinished = false
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan, mockData.quoteUpdate)
+      const refs = await quotesModel.handleQuoteUpdate({
+        headers: mockData.headers,
+        quoteId: mockData.quoteId,
+        payload: mockData.quoteUpdate,
+        span: mockSpan,
+        originalPayload: mockData.quoteUpdate
+      })
 
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
       expect(mockChildSpan.audit).not.toHaveBeenCalled()
@@ -1540,7 +1672,13 @@ describe('QuotesModel', () => {
       quotesModel.forwardQuoteUpdate = jest.fn(() => { throw fspiopError })
       mockChildSpan.isFinished = false
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan, mockData.quoteUpdate)
+      const refs = await quotesModel.handleQuoteUpdate({
+        headers: mockData.headers,
+        quoteId: mockData.quoteId,
+        payload: mockData.quoteUpdate,
+        span: mockSpan,
+        originalPayload: mockData.quoteUpdate
+      })
 
       expect(mockSpan.getChild.mock.calls.length).toBe(1)
       expect(mockChildSpan.audit).not.toBeCalled()
@@ -1559,7 +1697,12 @@ describe('QuotesModel', () => {
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: true, isResend: false } })
 
       try {
-        await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
+        await quotesModel.handleQuoteUpdate({
+          headers: mockData.headers,
+          quoteId: mockData.quoteId,
+          payload: mockData.quoteUpdate,
+          span: mockSpan
+        })
       } catch (err) {
         expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
         expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, mockData.quoteUpdate)
@@ -1575,7 +1718,13 @@ describe('QuotesModel', () => {
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { return { isDuplicateId: true, isResend: true } })
       quotesModel.handleQuoteUpdateResend = jest.fn(() => 'handleQuoteUpdateResendResult')
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan, mockData.quoteUpdate)
+      const refs = await quotesModel.handleQuoteUpdate({
+        headers: mockData.headers,
+        quoteId: mockData.quoteId,
+        payload: mockData.quoteUpdate,
+        span: mockSpan,
+        originalPayload: mockData.quoteUpdate
+      })
 
       expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
       expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, mockData.quoteUpdate)
@@ -1603,7 +1752,13 @@ describe('QuotesModel', () => {
       const localQuoteUpdate = clone(mockData.quoteUpdate)
       delete localQuoteUpdate.geoCode
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, localQuoteUpdate, mockSpan, localQuoteUpdate)
+      const refs = await quotesModel.handleQuoteUpdate({
+        headers: mockData.headers,
+        quoteId: mockData.quoteId,
+        payload: localQuoteUpdate,
+        span: mockSpan,
+        originalPayload: localQuoteUpdate
+      })
 
       expect(quotesModel.db.newTransaction.mock.calls.length).toBe(1)
       expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, localQuoteUpdate)
@@ -1642,7 +1797,13 @@ describe('QuotesModel', () => {
       quotesModel.db.getQuoteParty.mockReturnValueOnce('quotePartyRecord')
       mockChildSpan.isFinished = true
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan, mockData.quoteUpdate)
+      const refs = await quotesModel.handleQuoteUpdate({
+        headers: mockData.headers,
+        quoteId: mockData.quoteId,
+        payload: mockData.quoteUpdate,
+        span: mockSpan,
+        originalPayload: mockData.quoteUpdate
+      })
 
       expect(quotesModel.db.newTransaction.mock.calls.length).toBe(1)
       expect(quotesModel.checkDuplicateQuoteResponse).toBeCalledWith(mockData.quoteId, mockData.quoteUpdate)
@@ -1677,7 +1838,13 @@ describe('QuotesModel', () => {
       const localQuoteUpdate = clone(mockData.quoteUpdate)
       delete localQuoteUpdate.expiration
 
-      const refs = await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, localQuoteUpdate, mockSpan, localQuoteUpdate)
+      const refs = await quotesModel.handleQuoteUpdate({
+        headers: mockData.headers,
+        quoteId: mockData.quoteId,
+        payload: localQuoteUpdate,
+        span: mockSpan,
+        originalPayload: localQuoteUpdate
+      })
 
       let args = [mockData.headers, mockData.quoteId, localQuoteUpdate, mockChildSpan]
       expect(quotesModel.forwardQuoteUpdate).toBeCalledWith(...args)
@@ -1700,7 +1867,12 @@ describe('QuotesModel', () => {
       quotesModel.db.createGeoCode.mockReturnValueOnce(expected.geoCodeId)
 
       try {
-        await quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan)
+        await quotesModel.handleQuoteUpdate({
+          headers: mockData.headers,
+          quoteId: mockData.quoteId,
+          payload: mockData.quoteUpdate,
+          span: mockSpan
+        })
       } catch (err) {
         expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
         expect(mockTransaction.rollback.mock.calls.length).toBe(0)
@@ -1714,8 +1886,12 @@ describe('QuotesModel', () => {
       const localHeaders = clone(mockData.headers)
       localHeaders.accept = 'application/vnd.interoperability.quotes+json;version=1.1'
 
-      await expect(quotesModel.handleQuoteUpdate(localHeaders, mockData.quoteId, mockData.quoteUpdate, mockSpan))
-        .rejects
+      await expect(quotesModel.handleQuoteUpdate({
+        headers: localHeaders,
+        quoteId: mockData.quoteId,
+        payload: mockData.quoteUpdate,
+        span: mockSpan
+      })).rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code)
 
       expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
@@ -1729,8 +1905,12 @@ describe('QuotesModel', () => {
       delete customErrorNoStack.stack
       quotesModel.checkDuplicateQuoteResponse = jest.fn(() => { throw customErrorNoStack })
 
-      await expect(quotesModel.handleQuoteUpdate(mockData.headers, mockData.quoteId, mockData.quoteUpdate, mockSpan))
-        .rejects
+      await expect(quotesModel.handleQuoteUpdate({
+        headers: mockData.headers,
+        quoteId: mockData.quoteId,
+        payload: mockData.quoteUpdate,
+        span: mockSpan
+      })).rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
 
       expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)

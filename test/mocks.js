@@ -308,7 +308,7 @@ const headersDto = ({
 } = {}) => Object.freeze({
   accept: interoperabilityHeaderDto(resource, version, isIsoApi),
   'content-type': interoperabilityHeaderDto(resource, version, isIsoApi),
-  date: new Date().toISOString(),
+  date: new Date().toUTCString(),
   'fspiop-source': source,
   'fspiop-destination': destination
 })
