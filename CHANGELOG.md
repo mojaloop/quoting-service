@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.3](https://github.com/mojaloop/quoting-service/compare/v17.0.2...v17.0.3) (2025-01-22)
+
+
+### Tests
+
+* **csi-1130:** add date validation test for get quotes ([#387](https://github.com/mojaloop/quoting-service/issues/387)) ([bbd7e91](https://github.com/mojaloop/quoting-service/commit/bbd7e91a407ee9fdee184f06c3c1a1c7371f4f13))
+
 ### [17.0.2](https://github.com/mojaloop/quoting-service/compare/v17.0.1...v17.0.2) (2025-01-21)
 
 
