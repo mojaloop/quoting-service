@@ -173,6 +173,33 @@ describe('Server Start', () => {
     expect(response.statusCode).toBe(202)
   })
 
+  it('get /quotes/{id} throws error when missing mandatory header', async () => {
+    // Act
+
+    const requests = Mockgen().requestsAsync('/quotes/{id}', 'get')
+    const mock = await requests
+
+    // Arrange
+    const headers = defaultHeaders()
+    delete headers.date
+    const expectedResult = {
+      errorInformation: {
+        errorCode: '3101',
+        errorDescription: 'Malformed syntax - Invalid date header'
+      }
+    }
+
+    const options = {
+      method: 'get',
+      url: '' + mock.request.path,
+      headers
+    }
+    // Act
+    const response = await server.inject(options)
+    expect(response.statusCode).toBe(400)
+    expect(response.result).toEqual(expectedResult)
+  })
+
   it('post /quotes calls QuotesPost handler', async () => {
     // Act
     const payload = mocks.postQuotesPayloadDto()
