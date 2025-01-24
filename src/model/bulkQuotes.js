@@ -64,7 +64,13 @@ class BulkQuotesModel {
     this.requestId = deps.requestId
     this.proxyClient = deps.proxyClient
     this.envConfig = deps.config || new Config()
-    this.errorCounter = Metrics.getCounter('errorCount')
+    try {
+      if (this.envConfig.instrumentationMetricsDisabled === false) {
+        this.errorCounter = Metrics.getCounter('errorCount')
+      }
+    } catch (err) {
+      this.log.error('Error initializing metrics in BulkQuotesModel: ', err)
+    }
   }
 
   /**
@@ -149,7 +155,9 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteRequest', step })
+        if (!this.envConfig.instrumentationMetricsDisabled) {
+          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteRequest', step })
+        }
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
@@ -178,7 +186,9 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulkQuote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteRequest', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteRequest', step })
+      }
     }
   }
 
@@ -265,7 +275,9 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulk quote response to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteUpdate', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteUpdate', step })
+      }
     }
   }
 
@@ -321,7 +333,9 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteGet', step })
+        if (!this.envConfig.instrumentationMetricsDisabled) {
+          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteGet', step })
+        }
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
@@ -344,7 +358,9 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
-      libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteGet', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteGet', step })
+      }
     }
   }
 
@@ -425,7 +441,9 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        if (!this.envConfig.instrumentationMetricsDisabled) {
+          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        }
       }
 
       const fspiopUri = `/bulkQuotes/${bulkQuoteId}/error`
@@ -508,7 +526,9 @@ class BulkQuotesModel {
           fspiopSource,
           extensions
         )
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        if (!this.envConfig.instrumentationMetricsDisabled) {
+          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        }
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
@@ -526,7 +546,9 @@ class BulkQuotesModel {
           },
           fspiopSource
         )
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        if (!this.envConfig.instrumentationMetricsDisabled) {
+          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        }
       }
     } catch (err) {
       // any-error
@@ -537,7 +559,9 @@ class BulkQuotesModel {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
-      libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+      }
     }
   }
 

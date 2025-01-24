@@ -73,7 +73,13 @@ class QuotesModel {
       context: this.constructor.name,
       requestId: this.requestId
     })
-    this.errorCounter = Metrics.getCounter('errorCount')
+    try {
+      if (this.envConfig.instrumentationMetricsDisabled === false) {
+        this.errorCounter = Metrics.getCounter('errorCount')
+      }
+    } catch (err) {
+      this.log.error('Error initializing metrics in QuotesModel: ', err)
+    }
   }
 
   executeRules () {
@@ -168,7 +174,9 @@ class QuotesModel {
     } catch (err) {
       log.warn('validateQuoteRequest is failed with error', err)
       histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
-      util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
+      }
     }
   }
 
@@ -388,7 +396,9 @@ class QuotesModel {
         await handleQuoteRequestSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteRequest' })
-      util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteRequest', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteRequest', step })
+      }
     }
 
     let forwardQuoteRequestSpan
@@ -483,7 +493,9 @@ class QuotesModel {
     } catch (err) {
       log.error('forwardQuoteRequest is failed with error:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteRequest' })
-      util.rethrowAndCountFspiopError(err, { operation: 'forwardQuoteRequest', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'forwardQuoteRequest', step })
+      }
     }
   }
 
@@ -684,7 +696,9 @@ class QuotesModel {
         await handleQuoteUpdateSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteUpdate' })
-      util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteUpdate', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteUpdate', step })
+      }
     }
   }
 
@@ -854,7 +868,9 @@ class QuotesModel {
         await childSpan.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_handleQuoteError' })
-      util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteError', step })
+      if (this.envConfig.instrumentationMetricsDisabled === false) {
+        util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteError', step })
+      }
     }
   }
 
@@ -895,7 +911,9 @@ class QuotesModel {
     } catch (err) {
       log.error('error in handleQuoteGet:', err)
       histTimer({ success: false, queryName: 'quote_handleQuoteGet' })
-      util.rethrowAndCountFspiopError(err, { operation: 'handleQuoteGet', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'handleQuoteGet', step })
+      }
     }
   }
 
@@ -953,7 +971,9 @@ class QuotesModel {
     } catch (err) {
       log.error('error in forwardQuoteGet:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteGet' })
-      util.rethrowAndCountFspiopError(err, { operation: 'forwardQuoteGet', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'forwardQuoteGet', step })
+      }
     }
   }
 
@@ -1118,7 +1138,9 @@ class QuotesModel {
         await span.finish(fspiopError.message, state)
       }
       histTimer({ success: false, queryName: 'quote_sendErrorCallback' })
-      util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+      }
     }
   }
 
@@ -1171,7 +1193,9 @@ class QuotesModel {
     } catch (err) {
       log.error('error in checkDuplicateQuoteRequest: ', err)
       histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteRequest', duplicateResult: 'error' })
-      util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
+      }
     }
   }
 
@@ -1224,7 +1248,9 @@ class QuotesModel {
     } catch (err) {
       log.error('error in checkDuplicateQuoteResponse: ', err)
       histTimer({ success: false, queryName: 'quote_checkDuplicateQuoteResponse', duplicateResult: 'error' })
-      util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
+      }
     }
   }
 

@@ -41,7 +41,7 @@ const util = require('../lib/util')
 const Config = require('../lib/config')
 const dto = require('../lib/dto')
 
-const { kafkaConfig } = new Config()
+const { kafkaConfig, instrumentationMetricsDisabled } = new Config()
 
 /**
  * Operations on /bulkQuotes
@@ -80,7 +80,9 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowAndCountFspiopError(err, { operation: 'postBulkQuotes', step })
+      if (!instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'postBulkQuotes', step })
+      }
     }
   }
 }

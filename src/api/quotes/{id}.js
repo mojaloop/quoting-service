@@ -55,7 +55,7 @@ module.exports = {
      */
   get: async function getQuotesById (context, request, h) {
     const { config, payloadCache } = request.server.app
-    const { kafkaConfig, isIsoApi, originalPayloadStorage } = config
+    const { kafkaConfig, isIsoApi, originalPayloadStorage, instrumentationMetricsDisabled } = config
     const isFX = util.isFxRequest(request.headers)
 
     const histTimerEnd = Metrics.getHistogram(
@@ -88,7 +88,9 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowAndCountFspiopError(err, { operation: 'getQuotesById', step })
+      if (!instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'getQuotesById', step })
+      }
     }
   },
 
@@ -105,7 +107,7 @@ module.exports = {
      */
   put: async function putQuotesById (context, request, h) {
     const { config, payloadCache } = request.server.app
-    const { kafkaConfig, isIsoApi, originalPayloadStorage } = config
+    const { kafkaConfig, isIsoApi, originalPayloadStorage, instrumentationMetricsDisabled } = config
 
     const isFX = util.isFxRequest(request.headers)
     const isError = request.path?.endsWith('/error')
@@ -143,7 +145,9 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowAndCountFspiopError(err, { operation: 'putQuotesById', step })
+      if (!instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'putQuotesById', step })
+      }
     }
   }
 }

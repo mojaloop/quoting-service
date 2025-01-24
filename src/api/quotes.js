@@ -55,7 +55,7 @@ module.exports = {
      */
   post: async function Quotes (context, request, h) {
     const { config, payloadCache } = request.server.app
-    const { kafkaConfig, isIsoApi, originalPayloadStorage } = config
+    const { kafkaConfig, isIsoApi, originalPayloadStorage, instrumentationMetricsDisabled } = config
     const isFX = util.isFxRequest(request.headers)
 
     const histTimerEnd = Metrics.getHistogram(
@@ -88,7 +88,9 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowAndCountFspiopError(err, { operation: 'postQuotes', step })
+      if (!instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'postQuotes', step })
+      }
     }
   }
 }

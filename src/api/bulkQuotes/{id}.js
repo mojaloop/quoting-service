@@ -40,7 +40,7 @@ const util = require('../../lib/util')
 const Config = require('../../lib/config')
 const dto = require('../../lib/dto')
 
-const { kafkaConfig } = new Config()
+const { kafkaConfig, instrumentationMetricsDisabled } = new Config()
 
 /**
  * Operations on /bulkQuotes/{id}
@@ -79,7 +79,9 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowAndCountFspiopError(err, { operation: 'getBulkQuotesById', step })
+      if (!instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'getBulkQuotesById', step })
+      }
     }
   },
   /**
@@ -115,7 +117,9 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowAndCountFspiopError(err, { operation: 'putBulkQuotesById', step })
+      if (!instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'putBulkQuotesById', step })
+      }
     }
   }
 }
