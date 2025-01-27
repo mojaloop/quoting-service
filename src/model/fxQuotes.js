@@ -64,7 +64,7 @@ class FxQuotesModel {
       requestId: this.requestId
     })
     try {
-      if (this.envConfig.instrumentationMetricsDisabled === false) {
+      if (!this.envConfig.instrumentationMetricsDisabled) {
         this.errorCounter = Metrics.getCounter('errorCount')
       }
     } catch (err) {

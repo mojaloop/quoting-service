@@ -393,6 +393,20 @@ describe('QuotesModel', () => {
     })
   })
 
+  describe('constructor', () => {
+    it('should create a new instance of QuotesModel', () => {
+      expect(new QuotesModel({})).toBeInstanceOf(QuotesModel)
+    })
+    it('should catch and log metrics getCounter errors', () => {
+      const error = new Error('Error getting counter')
+      jest.spyOn(Metrics, 'getCounter').mockImplementation(() => { throw error })
+      const mockLog = { error: jest.fn() }
+      const model = new QuotesModel({ log: mockLog })
+      expect(model).toBeInstanceOf(QuotesModel)
+      expect(mockLog.error).toHaveBeenCalledWith('Error getting metrics errorCounter in QuotesModel: ', error)
+    })
+  })
+
   describe('executeRules', () => {
     beforeEach(() => {
       quotesModel.executeRules.mockRestore()
@@ -622,6 +636,23 @@ describe('QuotesModel', () => {
       const fspiopSource = 'dfsp1'
       const fspiopDestination = 'dfsp2'
       const quoteRequest = undefined
+      quotesModel.envConfig.instrumentationMetricsDisabled = true
+
+      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled()
+
+      await expect(quotesModel.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+
+      expect(quotesModel.db).toBeTruthy()
+      expect(quotesModel.db.getParticipant).not.toHaveBeenCalled()
+    })
+    it('should throw internal error if no quoteRequest was supplied and metrics is diabled', async () => {
+      expect.assertions(4)
+
+      const fspiopSource = 'dfsp1'
+      const fspiopDestination = 'dfsp2'
+      const quoteRequest = undefined
 
       expect(quotesModel.db.getParticipant).not.toHaveBeenCalled() // Validates mockClear()
 
@@ -650,7 +681,6 @@ describe('QuotesModel', () => {
 
       expect(quotesModel.db.getParticipant.mock.calls[0][0]).toBe(mockData.quoteRequest.payee.partyIdInfo.fspId)
     })
-
     it('should validate payer supported currencies if supplied', async () => {
       const fspiopSource = 'dfsp1'
       const fspiopDestination = 'dfsp2'
@@ -665,7 +695,6 @@ describe('QuotesModel', () => {
       expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(fspiopSource, 'PAYER_DFSP', 'ZMW', Enum.Accounts.LedgerAccountType.POSITION)
       expect(quotesModel.db.getParticipant).toHaveBeenCalledWith(fspiopSource, 'PAYER_DFSP', 'TZS', Enum.Accounts.LedgerAccountType.POSITION)
     })
-
     it('should skip validating source if source is a proxied participant', async () => {
       const fspiopSource = 'dfsp1'
       const fspiopDestination = 'dfsp2'
@@ -802,6 +831,21 @@ describe('QuotesModel', () => {
 
           const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
 
+          quotesModel.validateQuoteRequest = jest.fn(() => { throw fspiopError })
+
+          await expect(quotesModel.handleQuoteRequest({
+            headers: mockData.headers,
+            quoteRequest: mockData.quoteRequest,
+            span: mockSpan
+          }))
+            .rejects
+            .toBe(fspiopError)
+        })
+        it('throws an exception if `validateQuoteRequest` fails and metrics is disabled', async () => {
+          expect.assertions(1)
+
+          const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
+          quotesModel.envConfig.instrumentationMetricsDisabled = true
           quotesModel.validateQuoteRequest = jest.fn(() => { throw fspiopError })
 
           await expect(quotesModel.handleQuoteRequest({
@@ -1501,6 +1545,13 @@ describe('QuotesModel', () => {
         .rejects
         .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
     })
+    it('should throw when quoteRequest is undefined and metrics is disabled', async () => {
+      expect.assertions(1)
+      quotesModel.envConfig.instrumentationMetricsDisabled = true
+      await expect(quotesModel.forwardQuoteRequest(mockData.headers, mockData.quoteRequest.quoteId, undefined, mockChildSpan))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR.code)
+    })
     it('should not use spans when undefined and should throw when participant endpoint is invalid', async () => {
       expect.assertions(3)
       mockConfig.simpleRoutingMode = false
@@ -1897,6 +1948,26 @@ describe('QuotesModel', () => {
       expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
       expect(mockTransaction.rollback.mock.calls.length).toBe(0)
     })
+    it('should rethrow error if metrics is disabled', async () => {
+      expect.assertions(3)
+
+      quotesModel.envConfig.instrumentationMetricsDisabled = true
+
+      // error trigger
+      const localHeaders = clone(mockData.headers)
+      localHeaders.accept = 'application/vnd.interoperability.quotes+json;version=1.1'
+
+      await expect(quotesModel.handleQuoteUpdate({
+        headers: localHeaders,
+        quoteId: mockData.quoteId,
+        payload: mockData.quoteUpdate,
+        span: mockSpan
+      })).rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR.code)
+
+      expect(quotesModel.db.newTransaction.mock.calls.length).toBe(0)
+      expect(mockTransaction.rollback.mock.calls.length).toBe(0)
+    })
     it('should store to db and throw custom error without error stack in switch mode', async () => {
       expect.assertions(3)
 
@@ -2167,6 +2238,24 @@ describe('QuotesModel', () => {
       // Assert
       await expect(action()).rejects.toThrowError(`Factory function createFSPIOPError failed due to apiErrorCode being invalid - ${JSON.stringify(errorMessage)}.`)
     })
+
+    it('rethrows error when metrics is disabled and error occured', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel.envConfig.instrumentationMetricsDisabled = true
+      const error = {
+        errorCode: 3001,
+        errorDescription: 'Test Error'
+      }
+
+      quotesModel.sendErrorCallback = jest.fn(() => { throw new Error('Test Error') })
+
+      // Act
+      const action = async () => quotesModel.handleQuoteError(mockData.headers, mockData.quoteId, error, mockSpan)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('Test Error')
+    })
   })
 
   describe('handleQuoteGet', () => {
@@ -2210,6 +2299,19 @@ describe('QuotesModel', () => {
       // Assert
       expect(mockChildSpan.finish.mock.calls.length).toBe(1)
       expect(quotesModel.handleException.mock.calls.length).toBe(1)
+    })
+
+    it('rethrows error when metrics is disabled and error occured', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel.envConfig.instrumentationMetricsDisabled = true
+      mockSpan.getChild = jest.fn(() => { throw new Error('Test Error') })
+
+      // Act
+      const action = async () => quotesModel.handleQuoteGet(mockData.headers, mockData.quoteId, mockSpan)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('Test Error')
     })
   })
 
@@ -2286,6 +2388,19 @@ describe('QuotesModel', () => {
       await expect(quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId))
         .rejects
         .toThrow('No FSPIOP_CALLBACK_URL_QUOTES found for quote GET test123')
+    })
+
+    it('rethrows error when metrics is disabled and error occured', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel.envConfig.instrumentationMetricsDisabled = true
+      quotesModel._getParticipantEndpoint.mockImplementation(() => { throw new Error('Test Error') })
+
+      // Act
+      const action = async () => quotesModel.forwardQuoteGet(mockData.headers, mockData.quoteId)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('Test Error')
     })
   })
 
@@ -2588,6 +2703,23 @@ describe('QuotesModel', () => {
       await expect(action()).rejects.toThrow('Got non-success response sending error callback')
       expect(axios.request).toHaveBeenCalledTimes(1)
     })
+
+    it('rethrows error when metrics is disabled and error occured', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel.envConfig.instrumentationMetricsDisabled = true
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      Util.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      axios.request.mockImplementationOnce(() => { throw new Error('HTTP test error') })
+
+      // Act
+      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('HTTP test error')
+    })
   })
 
   describe('checkDuplicateQuoteRequest', () => {
@@ -2664,6 +2796,19 @@ describe('QuotesModel', () => {
       await expect(action()).rejects.toThrow('Duplicate check error')
       expect(quotesModel.db.getQuoteDuplicateCheck).toHaveBeenCalledTimes(1)
     })
+
+    it('rethrows error when metrics is disabled and error occured', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel.envConfig.instrumentationMetricsDisabled = true
+      quotesModel.db.getQuoteDuplicateCheck.mockImplementationOnce(() => { throw new Error('Duplicate check error') })
+
+      // Act
+      const action = async () => quotesModel.checkDuplicateQuoteRequest(mockData.quoteRequest)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('Duplicate check error')
+    })
   })
 
   describe('checkDuplicateQuoteResponse', () => {
@@ -2739,6 +2884,19 @@ describe('QuotesModel', () => {
       // Assert
       await expect(action()).rejects.toThrow('Duplicate check error')
       expect(quotesModel.db.getQuoteResponseDuplicateCheck).toHaveBeenCalledTimes(1)
+    })
+
+    it('rethrows error when metrics is disabled and error occured', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel.envConfig.instrumentationMetricsDisabled = true
+      quotesModel.db.getQuoteResponseDuplicateCheck.mockImplementationOnce(() => { throw new Error('Duplicate check error') })
+
+      // Act
+      const action = async () => quotesModel.checkDuplicateQuoteResponse(mockData.quoteId, mockData.quoteResponse)
+
+      // Assert
+      await expect(action()).rejects.toThrowError('Duplicate check error')
     })
   })
 

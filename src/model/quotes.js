@@ -75,11 +75,11 @@ class QuotesModel {
       requestId: this.requestId
     })
     try {
-      if (this.envConfig.instrumentationMetricsDisabled === false) {
+      if (!this.envConfig.instrumentationMetricsDisabled) {
         this.errorCounter = Metrics.getCounter('errorCount')
       }
     } catch (err) {
-      this.log.error('Error initializing metrics in QuotesModel: ', err)
+      this.log.error('Error getting metrics errorCounter in QuotesModel: ', err)
     }
   }
 

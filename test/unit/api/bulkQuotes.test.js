@@ -34,8 +34,11 @@
  - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
+let mockConfig
 
-jest.mock('../../../src/lib/config')
+jest.mock('../../../src/lib/config', () => {
+  return jest.fn().mockImplementation(() => mockConfig)
+})
 
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
@@ -46,23 +49,18 @@ const { logger } = require('../../../src/lib')
 const bulkQuotesApi = require('../../../src/api/bulkQuotes')
 const mocks = require('../../mocks')
 
-const Config = require('../../../src/lib/config')
-const ActualConfig = jest.requireActual('../../../src/lib/config')
-const configInstance = new ActualConfig()
-Config.mockImplementation(() => {
-  return configInstance
-})
+const Config = jest.requireActual('../../../src/lib/config')
 
-const { kafkaConfig } = new ActualConfig()
+const { kafkaConfig } = new Config()
 const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.POST
-const fileConfig = new ActualConfig()
+const fileConfig = new Config()
 
 describe('POST /bulkQuotes endpoint Tests -->', () => {
   const mockContext = jest.fn()
   Metrics.setup(fileConfig.instrumentationMetricsConfig)
 
   beforeEach(() => {
-    configInstance.instrumentationMetricsConfig = false
+    mockConfig = new Config()
   })
 
   it('should publish a bulkQuote request message', async () => {
@@ -110,7 +108,7 @@ describe('POST /bulkQuotes endpoint Tests -->', () => {
 
   it('should rethrow error when metrics is disabled', async () => {
     // Arrange
-    configInstance.instrumentationMetricsConfig = true
+    mockConfig.instrumentationMetricsDisabled = true
 
     const error = new Error('Create BulkQuote Test Error')
     Producer.produceMessage = jest.fn(async () => { throw error })

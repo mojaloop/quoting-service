@@ -67,7 +67,7 @@ class BulkQuotesModel {
     this.proxyClient = deps.proxyClient
     this.envConfig = deps.config || new Config()
     try {
-      if (this.envConfig.instrumentationMetricsDisabled === false) {
+      if (!this.envConfig.instrumentationMetricsDisabled) {
         this.errorCounter = Metrics.getCounter('errorCount')
       }
     } catch (err) {
