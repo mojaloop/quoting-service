@@ -35,6 +35,8 @@
  --------------
  ******/
 
+jest.mock('../../../../src/lib/config')
+
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { Producer } = require('@mojaloop/central-services-stream').Util
@@ -42,11 +44,18 @@ const Metrics = require('@mojaloop/central-services-metrics')
 
 const { logger } = require('../../../../src/lib')
 const bulkQuotesApi = require('../../../../src/api/bulkQuotes/{id}')
-const Config = require('../../../../src/lib/config')
 const mocks = require('../../../mocks')
 
-const { kafkaConfig } = new Config()
-const fileConfig = new Config()
+const Config = require('../../../../src/lib/config')
+const ActualConfig = jest.requireActual('../../../../src/lib/config')
+const configInstance = new ActualConfig()
+Config.mockImplementation(() => {
+  return configInstance
+})
+
+const { kafkaConfig } = new ActualConfig()
+const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.GET
+const fileConfig = new ActualConfig()
 
 describe('/bulkQuotes/{id} API Tests -->', () => {
   const mockContext = jest.fn()
@@ -54,11 +63,10 @@ describe('/bulkQuotes/{id} API Tests -->', () => {
 
   afterEach(() => {
     jest.clearAllMocks()
+    configInstance.instrumentationMetricsDisabled = false
   })
 
   describe('GET /bulkQuotes/{id} Endpoint Tests', () => {
-    const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.GET
-
     it('should publish a message to get a bulkQuote by id', async () => {
       // Arrange
       Producer.produceMessage = jest.fn()
@@ -100,6 +108,21 @@ describe('/bulkQuotes/{id} API Tests -->', () => {
       // Assert
       expect(spyErrorLog).toHaveBeenCalledTimes(1)
       expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
+    })
+
+    it('should rethrow error when metrics is disabled', async () => {
+      // Arrange
+      configInstance.instrumentationMetricsDisabled = true
+
+      const error = new Error('Get BulkQuote Test Error')
+      Producer.produceMessage = jest.fn(async () => { throw error })
+
+      const mockRequest = mocks.mockHttpRequest()
+      const { handler } = mocks.createMockHapiHandler()
+
+      // Act
+      await expect(() => bulkQuotesApi.get(mockContext, mockRequest, handler))
+        .rejects.toThrowError(error.message)
     })
   })
 
@@ -147,6 +170,21 @@ describe('/bulkQuotes/{id} API Tests -->', () => {
       // Assert
       expect(spyErrorLog).toHaveBeenCalledTimes(1)
       expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
+    })
+
+    it('should rethrow error when metrics is disabled', async () => {
+      // Arrange
+      configInstance.instrumentationMetricsDisabled = true
+
+      const error = new Error('Put BulkQuote Test Error')
+      Producer.produceMessage = jest.fn(async () => { throw error })
+
+      const mockRequest = mocks.mockHttpRequest()
+      const { handler } = mocks.createMockHapiHandler()
+
+      // Act
+      await expect(() => bulkQuotesApi.put(mockContext, mockRequest, handler))
+        .rejects.toThrowError(error.message)
     })
   })
 })

@@ -36,8 +36,6 @@ const Config = require('../../../lib/config')
 const dto = require('../../../lib/dto')
 const util = require('../../../lib/util')
 
-const { kafkaConfig, instrumentationMetricsDisabled } = new Config()
-
 /**
  * Operations on /bulkQuotes/{id}/error
  */
@@ -57,6 +55,8 @@ module.exports = {
       ['success']
     ).startTimer()
     let step
+
+    const { kafkaConfig, instrumentationMetricsDisabled } = new Config()
 
     try {
       await util.auditSpan(request)
