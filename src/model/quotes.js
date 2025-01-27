@@ -55,6 +55,7 @@ const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { RESOURCES } = require('../constants')
 const { executeRules, handleRuleEvents } = require('./executeRules')
+const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
 
 axios.defaults.headers.common = {}
 
@@ -177,6 +178,7 @@ class QuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -399,6 +401,7 @@ class QuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteRequest', step })
       }
+      throw fspiopError
     }
 
     let forwardQuoteRequestSpan
@@ -496,6 +499,7 @@ class QuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'forwardQuoteRequest', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -699,6 +703,7 @@ class QuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteUpdate', step })
       }
+      throw fspiopError
     }
   }
 
@@ -871,6 +876,7 @@ class QuotesModel {
       if (this.envConfig.instrumentationMetricsDisabled === false) {
         util.rethrowAndCountFspiopError(fspiopError, { operation: 'handleQuoteError', step })
       }
+      throw fspiopError
     }
   }
 
@@ -914,6 +920,7 @@ class QuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'handleQuoteGet', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -974,6 +981,7 @@ class QuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'forwardQuoteGet', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -1141,6 +1149,7 @@ class QuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
       }
+      throw fspiopError
     }
   }
 
@@ -1196,6 +1205,7 @@ class QuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -1251,6 +1261,7 @@ class QuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 

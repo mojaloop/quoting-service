@@ -35,6 +35,7 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
 const util = require('../../lib/util')
 const Config = require('../../lib/config')
@@ -82,6 +83,7 @@ module.exports = {
       if (!instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'getBulkQuotesById', step })
       }
+      throw reformatFSPIOPError(err)
     }
   },
   /**
@@ -120,6 +122,7 @@ module.exports = {
       if (!instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'putBulkQuotesById', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 }

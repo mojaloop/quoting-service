@@ -36,6 +36,7 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
 const util = require('../lib/util')
 const dto = require('../lib/dto')
@@ -91,6 +92,7 @@ module.exports = {
       if (!instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'postQuotes', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 }

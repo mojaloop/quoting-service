@@ -48,6 +48,8 @@ const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders,
 const { RESOURCES, ERROR_MESSAGES } = require('../constants')
 const { executeRules, handleRuleEvents } = require('./executeRules')
 
+const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
+
 axios.defaults.headers.common = {}
 
 class FxQuotesModel {
@@ -142,6 +144,7 @@ class FxQuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'checkDuplicateFxQuoteRequest', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -183,6 +186,7 @@ class FxQuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'checkDuplicateFxQuoteResponse', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -489,6 +493,7 @@ class FxQuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'forwardFxQuoteUpdate', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -563,6 +568,7 @@ class FxQuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'forwardFxQuoteGet', step })
       }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -816,6 +822,7 @@ class FxQuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
       }
+      throw fspiopError
     }
   }
 
@@ -864,6 +871,7 @@ class FxQuotesModel {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendHttpRequest', step })
       }
+      throw fspiopError
     }
   }
 
