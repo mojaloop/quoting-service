@@ -43,6 +43,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
+const { logger } = require('../lib')
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint } = require('../lib/util')
@@ -66,6 +67,10 @@ class BulkQuotesModel {
     this.requestId = deps.requestId
     this.proxyClient = deps.proxyClient
     this.envConfig = deps.config || new Config()
+    this.log = deps.log || logger.child({
+      context: this.constructor.name,
+      requestId: this.requestId
+    })
     try {
       if (!this.envConfig.instrumentationMetricsDisabled) {
         this.errorCounter = Metrics.getCounter('errorCount')
@@ -588,7 +593,7 @@ class BulkQuotesModel {
    */
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, (${this.requestId}) [bulkQuotesModel]: ${message}`)
+    this.log.debug(`${new Date().toISOString()}, (${this.requestId}) [bulkQuotesModel]: ${message}`)
   }
 }
 

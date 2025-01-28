@@ -579,6 +579,68 @@ describe('FxQuotesModel Tests -->', () => {
     })
   })
 
+  describe('handleFxQuoteRequestResend', () => {
+    test('should handle fx quote request resend', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest').mockResolvedValue()
+
+      await expect(fxQuotesModel.handleFxQuoteRequestResend(headers, request, span, request)).resolves.toBeUndefined()
+
+      expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
+    })
+
+    test('should handle error thrown', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest').mockRejectedValue(new Error('Forward Error'))
+      jest.spyOn(fxQuotesModel, 'handleException').mockResolvedValue()
+
+      await expect(fxQuotesModel.handleFxQuoteRequestResend(headers, request, span, request)).resolves.toBeUndefined()
+
+      expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
+      expect(fxQuotesModel.handleException).toBeCalledWith(headers['fspiop-source'], request.conversionRequestId, expect.any(Error), headers, span.getChild())
+    })
+
+    test('should rethrow internal errors', async () => {
+      log.error = jest.fn()
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      jest.spyOn(span, 'getChild').mockImplementation(() => { throw new Error('Span Error') })
+
+      await expect(fxQuotesModel.handleFxQuoteRequestResend(headers, request, span, request)).rejects.toThrow()
+      expect(log.error).toBeCalledWith(expect.any(String), expect.any(Error))
+    })
+  })
+
+  describe('handleFxQuoteUpdateResend', () => {
+    test('should handle fx quote update resend', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      jest.spyOn(fxQuotesModel, 'forwardFxQuoteUpdate').mockResolvedValue()
+
+      await expect(fxQuotesModel.handleFxQuoteUpdateResend(headers, request.conversionRequestId, request, span)).resolves.toBeUndefined()
+
+      expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
+    })
+
+    test('should handle error thrown', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      jest.spyOn(fxQuotesModel, 'forwardFxQuoteUpdate').mockRejectedValue(new Error('Forward Error'))
+      jest.spyOn(fxQuotesModel, 'handleException').mockResolvedValue()
+
+      await expect(fxQuotesModel.handleFxQuoteUpdateResend(headers, request.conversionRequestId, request, span)).resolves.toBeUndefined()
+
+      expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
+      expect(fxQuotesModel.handleException).toBeCalledWith(headers['fspiop-source'], request.conversionRequestId, expect.any(Error), headers, span.getChild())
+    })
+
+    test('should rethrow internal errors', async () => {
+      log.error = jest.fn()
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      jest.spyOn(span, 'getChild').mockImplementation(() => { throw new Error('Span Error') })
+
+      await expect(fxQuotesModel.handleFxQuoteUpdateResend(headers, request.conversionRequestId, request, span)).rejects.toThrow()
+      expect(log.error).toBeCalledWith(expect.any(String), expect.any(Error))
+    })
+  })
+
   describe('handleException', () => {
     test('should handle exception', async () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
@@ -805,21 +867,41 @@ describe('FxQuotesModel Tests -->', () => {
       expect(args.headers[HEADERS.contentType]).toBe(headers[HEADERS.contentType])
       expect(args.headers[HEADERS.fspiopSource]).toBe(config.hubName)
     })
+
+    test('should rethrow error if metrics is disabled', async () => {
+      fxQuotesModel.envConfig.instrumentationMetricsDisabled = true
+      const fspiopError = ErrorHandler.CreateFSPIOPError({ code: 2001, message: 'Generic server error' }, '', new Error('Test error'))
+      fxQuotesModel._getParticipantEndpoint = jest.fn().mockImplementation(() => { throw new Error('Test error') })
+      await expect(fxQuotesModel.sendErrorCallback(headers['fspiop-source'], fspiopError, conversionRequestId, headers, childSpan)).rejects.toThrow()
+    })
   })
 
   describe('sendHttpRequest', () => {
-    it('should rethrow an error if error is thrown', async () => {
+    test('should rethrow an error if error is thrown', async () => {
       const options = { method: 'GET', url: 'https://example.com' }
       const fspiopSource = 'source'
       const fspiopDest = 'destination'
       const error = new Error('Network Error')
 
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
-      jest.spyOn(axios, 'request').mockRejectedValue(error)
+      jest.spyOn(axios, 'request').mockImplementation(() => { throw error })
 
       await expect(fxQuotesModel.sendHttpRequest(options, fspiopSource, fspiopDest)).rejects.toThrow('Network Error')
 
       expect(axios.request).toBeCalledWith(options)
+    })
+
+    test('should rethrow error if metrics is disabled', async () => {
+      const options = { method: 'GET', url: 'https://example.com' }
+      const fspiopSource = 'source'
+      const fspiopDest = 'destination'
+      const error = new Error('Network Error')
+
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
+      jest.spyOn(axios, 'request').mockImplementation(() => { throw error })
+      fxQuotesModel.envConfig.instrumentationMetricsDisabled = true
+
+      await expect(fxQuotesModel.sendHttpRequest(options, fspiopSource, fspiopDest)).rejects.toThrow()
     })
   })
 })
