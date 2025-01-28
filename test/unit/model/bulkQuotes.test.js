@@ -66,6 +66,7 @@ const Logger = require('@mojaloop/central-services-logger')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
+const { logger } = require('../../../src/lib')
 const Config = jest.requireActual('../../../src/lib/config')
 const fileConfig = new Config()
 
@@ -295,6 +296,7 @@ describe('BulkQuotesModel', () => {
       })
     })
   })
+
   afterEach(() => {
     // Clears the mock.calls and mock.instances properties of all mocks.
     // Equivalent to calling .mockClear() on every mocked function.
@@ -302,6 +304,25 @@ describe('BulkQuotesModel', () => {
 
     // reset the configuration values to their initials
     mockConfig = new Config()
+  })
+
+  describe('constructor', () => {
+    it('should create a new instance of BulkQuotesModel', () => {
+      expect(new BulkQuotesModel({ db: new Db() })).toBeInstanceOf(BulkQuotesModel)
+    })
+
+    it('should catch and log any error thrown', async () => {
+      const log = logger.child({ context: 'test' })
+      log.error = jest.fn()
+      jest.spyOn(Metrics, 'getCounter').mockImplementation(() => { throw new Error('Test Metrics Error') })
+      try {
+        const model = new BulkQuotesModel({ db: new Db(), log })
+        expect(model).toBeInstanceOf(BulkQuotesModel)
+        expect(log.error).toHaveBeenCalledTimes(1)
+      } catch (err) {
+        throw new Error('This should not happen')
+      }
+    })
   })
 
   describe('validateBulkQuoteRequest', () => {
@@ -445,7 +466,7 @@ describe('BulkQuotesModel', () => {
       expect(bulkQuotesModel._getParticipantEndpoint).toBeCalled()
     })
 
-    it('should throw rethrow any errors', async () => {
+    it('should rethrow any errors', async () => {
       expect.assertions(1)
       const extensions = [{
         key: 'system',
@@ -464,8 +485,28 @@ describe('BulkQuotesModel', () => {
         .toThrowError()
     })
 
+    it('should rethrow any errors if metrics is diabled', async () => {
+      expect.assertions(1)
+      bulkQuotesModel.envConfig.instrumentationMetricsDisabled = true
+      bulkQuotesModel._getParticipantEndpoint.mockRejectedValueOnce(new Error('Test Error'))
+
+      await expect(bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest, mockChildSpan))
+        .rejects
+        .toThrowError()
+    })
+
     it('should throw an error if the participant endpoint is not found', async () => {
       expect.assertions(1)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(undefined)
+
+      await expect(bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest, mockChildSpan))
+        .rejects
+        .toThrowError()
+    })
+
+    it('should throw an error if the participant endpoint is not found with metrics disabled', async () => {
+      expect.assertions(1)
+      bulkQuotesModel.envConfig.instrumentationMetricsDisabled = true
       bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(undefined)
 
       await expect(bulkQuotesModel.forwardBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest.bulkQuoteId, mockData.bulkQuotePostRequest, mockChildSpan))
@@ -529,7 +570,7 @@ describe('BulkQuotesModel', () => {
     })
   })
 
-  describe('forwardQuoteUpdate', () => {
+  describe('forwardBulkQuoteUpdate', () => {
     beforeEach(() => {
       // restore the current method in test to its original implementation
       bulkQuotesModel.forwardBulkQuoteUpdate.mockRestore()
@@ -613,6 +654,24 @@ describe('BulkQuotesModel', () => {
       expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
       expect(mockChildSpan.audit).not.toHaveBeenCalled()
     })
+    it('should handle FSPIOPerrors and rethrow them with metrics disabled', async () => {
+      expect.assertions(3)
+      bulkQuotesModel.envConfig.instrumentationMetricsDisabled = true
+      const fspiopError = ErrorHandler.CreateFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
+        undefined,
+        undefined,
+        [{ key: 'system', value: '["test"]' }]
+      )
+      bulkQuotesModel._getParticipantEndpoint.mockRejectedValueOnce(fspiopError)
+
+      await expect(bulkQuotesModel.forwardBulkQuoteUpdate(mockData.headers, mockData.bulkQuoteId, mockData.bulkQuoteUpdate))
+        .rejects
+        .toHaveProperty('apiErrorCode.code', ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR.code)
+
+      expect(mockChildSpan.injectContextToHttpRequest).not.toHaveBeenCalled()
+      expect(mockChildSpan.audit).not.toHaveBeenCalled()
+    })
   })
 
   describe('handleBulkQuoteGet', () => {
@@ -660,7 +719,7 @@ describe('BulkQuotesModel', () => {
     })
   })
 
-  describe('forwardQuoteGet', () => {
+  describe('forwardBulkQuoteGet', () => {
     beforeEach(() => {
       // restore the current method in test to its original implementation
       bulkQuotesModel.forwardBulkQuoteGet.mockRestore()
@@ -676,6 +735,16 @@ describe('BulkQuotesModel', () => {
 
       // Assert
       await expect(action()).rejects.toThrowError('No FSPIOP_CALLBACK_URL_BULK_QUOTES found for bulk quote GET test123')
+    })
+
+    it('should throw error if the participant endpoint is not found and metrics is disabled', async () => {
+      expect.assertions(1)
+      bulkQuotesModel.envConfig.instrumentationMetricsDisabled = true
+      bulkQuotesModel._getParticipantEndpoint.mockImplementation(() => null)
+
+      await expect(bulkQuotesModel.forwardBulkQuoteGet(mockData.headers, mockData.bulkQuoteId, mockSpan))
+        .rejects
+        .toThrowError('No FSPIOP_CALLBACK_URL_BULK_QUOTES found for bulk quote GET test123')
     })
 
     it('forwards the request to the payee dfsp without a span', async () => {
@@ -735,6 +804,17 @@ describe('BulkQuotesModel', () => {
 
       // Assert
       await expect(action()).rejects.toThrowError('Test HTTP Error')
+    })
+
+    it('should rethrow any errors if metrics is diabled', async () => {
+      expect.assertions(1)
+      bulkQuotesModel.envConfig.instrumentationMetricsDisabled = true
+      bulkQuotesModel._getParticipantEndpoint.mockImplementation(() => 'http://localhost:3333')
+      Http.httpRequest.mockImplementationOnce(() => { throw new Error('Test HTTP Error') })
+
+      await expect(bulkQuotesModel.forwardBulkQuoteGet(mockData.headers, mockData.bulkQuoteId))
+        .rejects
+        .toThrowError()
     })
   })
 
@@ -1012,9 +1092,57 @@ describe('BulkQuotesModel', () => {
       jwsSignSpy.mockRestore()
     })
 
+    it('rethrows error thrown in JwsSigner with metrics disabled', async () => {
+      // Arrange
+      expect.assertions(1)
+      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      Util.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: {
+          spanHeaders: '12345',
+          'fspiop-source': mockConfig.hubName,
+          'fspiop-destination': 'dfsp2'
+        },
+        method: Enum.Http.RestMethods.PUT,
+        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
+        data: {}
+      }))
+      mockSpan.audit = jest.fn()
+      mockConfig.jws.jwsSign = true
+      mockConfig.jws.jwsSigningKey = jwsSigningKey
+      jwsSignSpy.mockImplementationOnce(() => { throw new Error('Test Error') })
+      bulkQuotesModel.envConfig.instrumentationMetricsDisabled = true
+      // Act
+      await expect(bulkQuotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.bulkQuoteId, mockData.headers, mockSpan, true))
+        .rejects
+        .toThrowError()
+      // Assert
+      jwsSignSpy.mockRestore()
+    })
+
     it('handles when the endpoint could not be found', async () => {
       // Arrange
       expect.assertions(2)
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(undefined)
+      Util.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+
+      // Act
+      const action = async () => bulkQuotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.bulkQuoteId, mockData.headers, mockSpan)
+
+      // Assert
+      await expect(action()).rejects.toThrow('No FSPIOP_CALLBACK_URL_BULK_QUOTES found for payeefsp unable to make error callback')
+      expect(axios.request).not.toHaveBeenCalled()
+    })
+
+    it('handles when the endpoint could not be found with metrics disabled', async () => {
+      // Arrange
+      expect.assertions(2)
+      bulkQuotesModel.envConfig.instrumentationMetricsDisabled = true
       bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(undefined)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
@@ -1063,6 +1191,26 @@ describe('BulkQuotesModel', () => {
       await expect(action()).rejects.toThrow('Got non-success response sending error callback')
       expect(axios.request).toHaveBeenCalledTimes(1)
     })
+
+    it('handles a http bad status code with metrics disabled', async () => {
+      // Arrange
+      expect.assertions(2)
+      bulkQuotesModel.envConfig.instrumentationMetricsDisabled = true
+      bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      Util.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      axios.request.mockReturnValueOnce({
+        status: Enum.Http.ReturnCodes.BADREQUEST.CODE
+      })
+
+      // Act
+      const action = async () => bulkQuotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.bulkQuoteId, mockData.headers)
+
+      // Assert
+      await expect(action()).rejects.toThrow('Got non-success response sending error callback')
+      expect(axios.request).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('writeLog', () => {
@@ -1073,10 +1221,11 @@ describe('BulkQuotesModel', () => {
 
     it('writes to the log', () => {
       // Arrange
+      bulkQuotesModel.log.debug = jest.fn()
       // Act
       bulkQuotesModel.writeLog('test message')
       // Assert
-      expect(Logger.debug).toBeCalledTimes(1)
+      expect(bulkQuotesModel.log.debug).toBeCalledTimes(1)
     })
   })
 

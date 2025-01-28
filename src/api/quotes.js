@@ -36,6 +36,7 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
 const util = require('../lib/util')
 const dto = require('../lib/dto')
@@ -55,7 +56,7 @@ module.exports = {
      */
   post: async function Quotes (context, request, h) {
     const { config, payloadCache } = request.server.app
-    const { kafkaConfig, isIsoApi, originalPayloadStorage } = config
+    const { kafkaConfig, isIsoApi, originalPayloadStorage, instrumentationMetricsDisabled } = config
     const isFX = util.isFxRequest(request.headers)
 
     const histTimerEnd = Metrics.getHistogram(
@@ -88,7 +89,10 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowAndCountFspiopError(err, { operation: 'postQuotes', step })
+      if (!instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'postQuotes', step })
+      }
+      throw reformatFSPIOPError(err)
     }
   }
 }

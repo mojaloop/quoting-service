@@ -31,6 +31,11 @@
  - Lewis Daly <lewisd@crosslaketech.com>
  --------------
  ******/
+let mockConfig
+
+jest.mock('../../../../../src/lib/config', () => {
+  return jest.fn().mockImplementation(() => mockConfig)
+})
 
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
@@ -39,16 +44,21 @@ const Metrics = require('@mojaloop/central-services-metrics')
 
 const { logger } = require('../../../../../src/lib')
 const bulkQuotesApi = require('../../../../../src/api/bulkQuotes/{id}/error')
-const Config = require('../../../../../src/lib/config')
 const mocks = require('../../../../mocks')
 
+const Config = jest.requireActual('../../../../../src/lib/config')
+
 const { kafkaConfig } = new Config()
+const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
 const fileConfig = new Config()
 
 describe('PUT /bulkQuotes/{id}/error API Tests -->', () => {
-  const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
   Metrics.setup(fileConfig.instrumentationMetricsConfig)
   const mockContext = jest.fn()
+
+  beforeEach(() => {
+    mockConfig = new Config()
+  })
 
   it('should publish a message with bulkQuotes callback error payload', async () => {
     // Arrange
@@ -92,5 +102,20 @@ describe('PUT /bulkQuotes/{id}/error API Tests -->', () => {
     // Assert
     expect(spyErrorLog).toHaveBeenCalledTimes(1)
     expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
+  })
+
+  it('should rethrow error when metrics is disabled', async () => {
+    // Arrange
+    mockConfig.instrumentationMetricsDisabled = true
+
+    const error = new Error('Put BulkQuote Test Error')
+    Producer.produceMessage = jest.fn(async () => { throw error })
+
+    const mockRequest = mocks.mockHttpRequest()
+    const { handler } = mocks.createMockHapiHandler()
+
+    // Act
+    await expect(() => bulkQuotesApi.put(mockContext, mockRequest, handler))
+      .rejects.toThrowError(error.message)
   })
 })

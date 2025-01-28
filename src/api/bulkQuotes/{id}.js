@@ -35,12 +35,11 @@
 const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
+const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
 
 const util = require('../../lib/util')
 const Config = require('../../lib/config')
 const dto = require('../../lib/dto')
-
-const { kafkaConfig } = new Config()
 
 /**
  * Operations on /bulkQuotes/{id}
@@ -61,6 +60,8 @@ module.exports = {
     ).startTimer()
     let step
 
+    const { kafkaConfig, instrumentationMetricsDisabled } = new Config()
+
     try {
       await util.auditSpan(request)
 
@@ -79,7 +80,10 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.ACCEPTED.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowAndCountFspiopError(err, { operation: 'getBulkQuotesById', step })
+      if (!instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'getBulkQuotesById', step })
+      }
+      throw reformatFSPIOPError(err)
     }
   },
   /**
@@ -96,6 +100,8 @@ module.exports = {
       ['success']
     ).startTimer()
     let step
+
+    const { kafkaConfig, instrumentationMetricsDisabled } = new Config()
 
     try {
       await util.auditSpan(request)
@@ -115,7 +121,10 @@ module.exports = {
       return h.response().code(Http.ReturnCodes.OK.CODE)
     } catch (err) {
       histTimerEnd({ success: false })
-      util.rethrowAndCountFspiopError(err, { operation: 'putBulkQuotesById', step })
+      if (!instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'putBulkQuotesById', step })
+      }
+      throw reformatFSPIOPError(err)
     }
   }
 }

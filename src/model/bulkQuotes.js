@@ -43,11 +43,14 @@ const Logger = require('@mojaloop/central-services-logger')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
+const { logger } = require('../lib')
 const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 const libUtil = require('../lib/util')
+
+const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
 
 delete axios.defaults.headers.common.Accept
 delete axios.defaults.headers.common['Content-Type']
@@ -64,7 +67,17 @@ class BulkQuotesModel {
     this.requestId = deps.requestId
     this.proxyClient = deps.proxyClient
     this.envConfig = deps.config || new Config()
-    this.errorCounter = Metrics.getCounter('errorCount')
+    this.log = deps.log || logger.child({
+      context: this.constructor.name,
+      requestId: this.requestId
+    })
+    try {
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        this.errorCounter = Metrics.getCounter('errorCount')
+      }
+    } catch (err) {
+      this.log.error('Error initializing metrics in BulkQuotesModel: ', err)
+    }
   }
 
   /**
@@ -149,7 +162,10 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteRequest', step })
+        if (!this.envConfig.instrumentationMetricsDisabled) {
+          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteRequest', step })
+        }
+        throw fspiopError
       }
 
       const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
@@ -178,7 +194,10 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulkQuote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteRequest', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteRequest', step })
+      }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -265,7 +284,10 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding bulk quote response to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
-      libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteUpdate', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteUpdate', step })
+      }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -321,7 +343,10 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteGet', step })
+        if (!this.envConfig.instrumentationMetricsDisabled) {
+          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteGet', step })
+        }
+        throw fspiopError
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
@@ -344,7 +369,10 @@ class BulkQuotesModel {
     } catch (err) {
       // any-error
       this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
-      libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteGet', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteGet', step })
+      }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -425,7 +453,10 @@ class BulkQuotesModel {
           null,
           fspiopSource
         )
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        if (!this.envConfig.instrumentationMetricsDisabled) {
+          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        }
+        throw fspiopError
       }
 
       const fspiopUri = `/bulkQuotes/${bulkQuoteId}/error`
@@ -508,7 +539,10 @@ class BulkQuotesModel {
           fspiopSource,
           extensions
         )
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        if (!this.envConfig.instrumentationMetricsDisabled) {
+          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        }
+        throw fspiopError
       }
       this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
 
@@ -526,7 +560,10 @@ class BulkQuotesModel {
           },
           fspiopSource
         )
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        if (!this.envConfig.instrumentationMetricsDisabled) {
+          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        }
+        throw fspiopError
       }
     } catch (err) {
       // any-error
@@ -537,7 +574,10 @@ class BulkQuotesModel {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
-      libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+      }
+      throw fspiopError
     }
   }
 
@@ -553,7 +593,7 @@ class BulkQuotesModel {
    */
   // eslint-disable-next-line no-unused-vars
   writeLog (message) {
-    Logger.isDebugEnabled && Logger.debug(`${new Date().toISOString()}, (${this.requestId}) [bulkQuotesModel]: ${message}`)
+    this.log.debug(`${new Date().toISOString()}, (${this.requestId}) [bulkQuotesModel]: ${message}`)
   }
 }
 

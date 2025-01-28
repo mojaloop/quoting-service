@@ -34,6 +34,11 @@
  - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
  --------------
  ******/
+let mockConfig
+
+jest.mock('../../../src/lib/config', () => {
+  return jest.fn().mockImplementation(() => mockConfig)
+})
 
 const { randomUUID } = require('node:crypto')
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
@@ -42,8 +47,9 @@ const Metrics = require('@mojaloop/central-services-metrics')
 
 const { logger } = require('../../../src/lib')
 const bulkQuotesApi = require('../../../src/api/bulkQuotes')
-const Config = require('../../../src/lib/config')
 const mocks = require('../../mocks')
+
+const Config = jest.requireActual('../../../src/lib/config')
 
 const { kafkaConfig } = new Config()
 const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.POST
@@ -52,6 +58,10 @@ const fileConfig = new Config()
 describe('POST /bulkQuotes endpoint Tests -->', () => {
   const mockContext = jest.fn()
   Metrics.setup(fileConfig.instrumentationMetricsConfig)
+
+  beforeEach(() => {
+    mockConfig = new Config()
+  })
 
   it('should publish a bulkQuote request message', async () => {
     // Arrange
@@ -94,5 +104,20 @@ describe('POST /bulkQuotes endpoint Tests -->', () => {
     // Assert
     expect(spyErrorLog).toHaveBeenCalledTimes(1)
     expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
+  })
+
+  it('should rethrow error when metrics is disabled', async () => {
+    // Arrange
+    mockConfig.instrumentationMetricsDisabled = true
+
+    const error = new Error('Create BulkQuote Test Error')
+    Producer.produceMessage = jest.fn(async () => { throw error })
+
+    const mockRequest = mocks.mockHttpRequest()
+    const { handler } = mocks.createMockHapiHandler()
+
+    // Act
+    await expect(() => bulkQuotesApi.post(mockContext, mockRequest, handler))
+      .rejects.toThrowError(error.message)
   })
 })

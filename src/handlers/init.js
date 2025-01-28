@@ -35,6 +35,8 @@ const createConsumers = require('./createConsumers')
 const { createMonitoringServer } = require('./monitoringServer')
 const { createProxyClient } = require('../lib/proxy')
 const { logger, initPayloadCache } = require('../lib')
+const { version } = require('../../package.json')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 let db
 let proxyClient
@@ -55,6 +57,8 @@ const startFn = async (handlerList, appConfig = undefined) => {
     if (!isProxyOk) throw new Error('Proxy is not connected')
     logger.info('Proxy cache is connected')
   }
+
+  initializeInstrumentation(config)
 
   const { quotesModelFactory, bulkQuotesModelFactory, fxQuotesModelFactory } = modelFactory(db, proxyClient)
 
@@ -84,6 +88,16 @@ const stopFn = async () => {
     await Promise.all(Object.values(consumersMap).map(consumer => consumer.disconnect()))
   }
   await db?.disconnect()
+}
+
+const initializeInstrumentation = (config) => {
+  /* istanbul ignore next */
+  if (!config.instrumentationMetricsDisabled) {
+    if (config.instrumentationMetricsConfig.defaultLabels) {
+      config.instrumentationMetricsConfig.defaultLabels.serviceVersion = version
+    }
+    Metrics.setup(config.instrumentationMetricsConfig)
+  }
 }
 
 module.exports = {

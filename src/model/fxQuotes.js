@@ -48,6 +48,8 @@ const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders,
 const { RESOURCES, ERROR_MESSAGES } = require('../constants')
 const { executeRules, handleRuleEvents } = require('./executeRules')
 
+const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
+
 axios.defaults.headers.common = {}
 
 class FxQuotesModel {
@@ -61,7 +63,13 @@ class FxQuotesModel {
       context: this.constructor.name,
       requestId: this.requestId
     })
-    this.errorCounter = Metrics.getCounter('errorCount')
+    try {
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        this.errorCounter = Metrics.getCounter('errorCount')
+      }
+    } catch (err) {
+      this.log.error('Error initializing metrics in FxQuotesModel: ', err)
+    }
   }
 
   executeRules = executeRules
@@ -133,7 +141,10 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       this.log.error('Error in checkDuplicateFxQuoteRequest: ', err)
-      util.rethrowAndCountFspiopError(err, { operation: 'checkDuplicateFxQuoteRequest', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'checkDuplicateFxQuoteRequest', step })
+      }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -172,7 +183,10 @@ class FxQuotesModel {
     } catch (err) {
       // internal-error
       log.error('Error in checkDuplicateFxQuoteResponse: ', err)
-      util.rethrowAndCountFspiopError(err, { operation: 'checkDuplicateFxQuoteResponse', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'checkDuplicateFxQuoteResponse', step })
+      }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -476,7 +490,10 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteUpdate' })
       log.error('error in forwardFxQuoteUpdate', err)
-      util.rethrowAndCountFspiopError(err, { operation: 'forwardFxQuoteUpdate', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'forwardFxQuoteUpdate', step })
+      }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -548,7 +565,10 @@ class FxQuotesModel {
     } catch (err) {
       histTimer({ success: false, queryName: 'forwardFxQuoteGet' })
       this.log.error('error in forwardFxQuoteGet', err)
-      util.rethrowAndCountFspiopError(err, { operation: 'forwardFxQuoteGet', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(err, { operation: 'forwardFxQuoteGet', step })
+      }
+      throw reformatFSPIOPError(err)
     }
   }
 
@@ -799,7 +819,10 @@ class FxQuotesModel {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
-      util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+      }
+      throw fspiopError
     }
   }
 
@@ -845,7 +868,10 @@ class FxQuotesModel {
         fspiopSource,
         extensions
       )
-      util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendHttpRequest', step })
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendHttpRequest', step })
+      }
+      throw fspiopError
     }
   }
 
