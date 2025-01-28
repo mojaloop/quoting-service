@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.4](https://github.com/mojaloop/quoting-service/compare/v17.0.3...v17.0.4) (2025-01-28)
+
+
+### Bug Fixes
+
+* **fix/csi-1130:** metrics and test coverage fixes ([#388](https://github.com/mojaloop/quoting-service/issues/388)) ([590d83f](https://github.com/mojaloop/quoting-service/commit/590d83f4645400c8a1bd0e4b091112b9a765f4cf))
+
 ### [17.0.3](https://github.com/mojaloop/quoting-service/compare/v17.0.2...v17.0.3) (2025-01-22)
 
 
