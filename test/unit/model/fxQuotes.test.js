@@ -97,6 +97,35 @@ describe('FxQuotesModel Tests -->', () => {
     jest.restoreAllMocks()
   })
 
+  describe('constructor', () => {
+    test('should create an instance of FXQuotesModel', async () => {
+      httpRequest = jest.fn().mockResolvedValue({ status: 200 })
+      log = logger
+      const envConfig = new Config()
+      const fxQuotesModelObj = new FxQuotesModel({ db, requestId, proxyClient, httpRequest, log, envConfig })
+      expect(fxQuotesModelObj).toBeInstanceOf(FxQuotesModel)
+      expect(fxQuotesModelObj.db).toBe(db)
+      expect(fxQuotesModelObj.requestId).toBe(requestId)
+      expect(fxQuotesModelObj.proxyClient).toBe(proxyClient)
+      expect(fxQuotesModelObj.httpRequest).toBe(httpRequest)
+      expect(fxQuotesModelObj.log).toBe(log)
+      expect(fxQuotesModelObj.envConfig).toBe(envConfig)
+    })
+    test('should catch and log error if Metrics.getCounter fails', async () => {
+      const envConfig = new Config()
+      const error = new Error('Metrics Error')
+      jest.spyOn(Metrics, 'getCounter').mockImplementation(() => { throw error })
+      try {
+        const logErrorSpy = jest.spyOn(log, 'error')
+        const fxQuotesModelObj = new FxQuotesModel({ db, requestId, proxyClient, httpRequest, log, envConfig })
+        expect(fxQuotesModelObj).toBeInstanceOf(FxQuotesModel)
+        expect(logErrorSpy).toBeCalledWith('Error initializing metrics in FxQuotesModel: ', error)
+      } catch (error) {
+        throw new Error('should not throw error', error)
+      }
+    })
+  })
+
   describe('validateFxQuoteRequest', () => {
     test('should not function correctly with proxy cache disabled', async () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient: undefined, log })
@@ -423,6 +452,17 @@ describe('FxQuotesModel Tests -->', () => {
       await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, conversionRequestId, updateRequest, childSpan))
         .rejects.toThrow(FSPIOPError)
     })
+
+    test('should rethrow error if metrics is disabled', async () => {
+      const httpRequest = jest.fn().mockRejectedValue(new Error('HTTP Error'))
+
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log, httpRequest })
+      fxQuotesModel._getParticipantEndpoint = jest.fn().mockResolvedValue(mockEndpoint)
+      fxQuotesModel.envConfig.instrumentationMetricsDisabled = true
+
+      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, conversionRequestId, updateRequest, childSpan))
+        .rejects.toThrow()
+    })
   })
 
   describe('handleFxQuoteGet', () => {
@@ -474,6 +514,14 @@ describe('FxQuotesModel Tests -->', () => {
       fxQuotesModel._getParticipantEndpoint = jest.fn().mockResolvedValue(undefined)
 
       await expect(fxQuotesModel.forwardFxQuoteGet(headers, conversionRequestId, updateRequest, childSpan)).rejects.toThrow(FSPIOPError)
+    })
+
+    test('should rethrow error if metrics is disabled', async () => {
+      fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log, httpRequest })
+      fxQuotesModel._getParticipantEndpoint = jest.fn().mockResolvedValue(mockEndpoint)
+      fxQuotesModel.envConfig.instrumentationMetricsDisabled = true
+
+      await expect(fxQuotesModel.forwardFxQuoteGet(headers, conversionRequestId, updateRequest, childSpan)).rejects.toThrow()
     })
   })
 
@@ -596,6 +644,14 @@ describe('FxQuotesModel Tests -->', () => {
 
       await expect(fxQuotesModel.checkDuplicateFxQuoteRequest(fxQuoteRequest)).rejects.toThrow()
     })
+
+    test('should rethrow error if metrics is disabled', async () => {
+      fxQuotesModel.envConfig.instrumentationMetricsDisabled = true
+      const fxQuoteRequest = { conversionRequestId: 1 }
+      fxQuotesModel.db.getFxQuoteDuplicateCheck = jest.fn().mockRejectedValue(new Error('DB Error'))
+
+      await expect(fxQuotesModel.checkDuplicateFxQuoteRequest(fxQuoteRequest)).rejects.toThrow()
+    })
   })
 
   describe('checkDuplicateFxQuoteResponse', () => {
@@ -641,9 +697,18 @@ describe('FxQuotesModel Tests -->', () => {
 
       await expect(fxQuotesModel.checkDuplicateFxQuoteResponse(conversionRequestId, fxQuoteResponse)).rejects.toThrow()
     })
+
+    test('should rethrow error if metrics is disabled', async () => {
+      fxQuotesModel.envConfig.instrumentationMetricsDisabled = true
+      const conversionRequestId = 1
+      const fxQuoteResponse = { conversionRequestId: 1 }
+      fxQuotesModel.db.getFxQuoteResponseDuplicateCheck = jest.fn().mockRejectedValue(new Error('DB Error'))
+
+      await expect(fxQuotesModel.checkDuplicateFxQuoteResponse(conversionRequestId, fxQuoteResponse)).rejects.toThrow()
+    })
   })
 
-  describe('sendErrorCallback method Tests', () => {
+  describe('sendErrorCallback', () => {
     test('should throw fspiop error if no destination found', async () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
       fxQuotesModel._getParticipantEndpoint = jest.fn().mockResolvedValue(undefined)
