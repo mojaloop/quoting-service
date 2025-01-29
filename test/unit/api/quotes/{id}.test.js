@@ -122,6 +122,19 @@ describe('/quotes/{id} API Tests -->', () => {
       expect(spyErrorLog).toHaveBeenCalledTimes(1)
       expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
     })
+
+    it('should rethrow error if mertics is diabled', async () => {
+      // Arrange
+      const error = new Error('Get Quote Test Error')
+      Producer.produceMessage = jest.fn(async () => { throw error })
+      const mockRequest = mocks.mockHttpRequest()
+      const { handler } = mocks.createMockHapiHandler()
+      mockRequest.server.app.config.instrumentationMetricsDisabled = true
+
+      // Act
+      await expect(() => quotesApi.get(mockContext, mockRequest, handler))
+        .rejects.toThrowError(error.message)
+    })
   })
 
   describe('PUT /quotes/{id} Endpoint Tests', () => {
@@ -196,6 +209,19 @@ describe('/quotes/{id} API Tests -->', () => {
       // Assert
       expect(spyErrorLog).toHaveBeenCalledTimes(1)
       expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
+    })
+
+    it('should rethrow error if mertics is diabled', async () => {
+      // Arrange
+      const error = new Error('Put Quote Test Error')
+      Producer.produceMessage = jest.fn(async () => { throw error })
+      const mockRequest = mocks.mockHttpRequest()
+      const { handler } = mocks.createMockHapiHandler()
+      mockRequest.server.app.config.instrumentationMetricsDisabled = true
+
+      // Act
+      await expect(() => quotesApi.put(mockContext, mockRequest, handler))
+        .rejects.toThrowError(error.message)
     })
   })
 

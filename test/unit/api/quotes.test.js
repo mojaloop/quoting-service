@@ -120,4 +120,18 @@ describe('POST /quotes API Tests -->', () => {
     expect(spyErrorLog).toHaveBeenCalledTimes(1)
     expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
   })
+
+  it('should rethrow errors if metrics are disabled', async () => {
+    // Arrange
+    const error = new Error('Create Quote Test Error')
+    Producer.produceMessage = jest.fn(async () => { throw error })
+
+    const mockRequest = mocks.mockHttpRequest()
+    const { handler } = mocks.createMockHapiHandler()
+    mockRequest.server.app.config.instrumentationMetricsDisabled = true
+
+    // Act / Assert
+    await expect(() => quotesApi.post(mockContext, mockRequest, handler))
+      .rejects.toThrowError(error.message)
+  })
 })

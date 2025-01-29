@@ -119,7 +119,7 @@
     "@mojaloop/event-sdk": "14.1.3",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.3.1",
     "@mojaloop/ml-number": "11.2.6",
-    "@mojaloop/ml-schema-transformer-lib": "^2.5.1",
+    "@mojaloop/ml-schema-transformer-lib": "^2.5.2",
     "@mojaloop/sdk-standard-components": "^19.6.4",
     "ajv": "8.17.1",
     "ajv-keywords": "5.1.0",

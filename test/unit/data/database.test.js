@@ -48,8 +48,6 @@ Logger.isDebugEnabled = jest.fn(() => true)
 Logger.isErrorEnabled = jest.fn(() => true)
 Logger.isInfoEnabled = jest.fn(() => true)
 
-let database
-
 /**
  * @function mockKnexBuilder
  * @description Stubs out a set of Knex calls in order
@@ -85,6 +83,8 @@ describe('/database', () => {
     raw: jest.fn()
   }
 
+  let database
+
   describe('raw queries', () => {
     const config = {}
 
@@ -103,18 +103,38 @@ describe('/database', () => {
       expect(database.queryBuilder).not.toBeUndefined()
     })
 
-    // describe('initializes a transaction', () => {
-    //   it('returns a transaction in a promise', async () => {
-    //     // Arrange
-    //     mockKnex.transaction.mockReturnValueOnce('testTx')
+    describe('transaction', () => {
+      it('should resolve with a transaction', async () => {
+        const mockTransaction = {}
+        const queryBuilder = { transaction: jest.fn() }
+        queryBuilder.transaction.mockImplementation((callback) => {
+          callback(mockTransaction)
+        })
+        const database = new Database(config, Logger, queryBuilder)
 
-    //     // Act
-    //     const result = await database.newTransaction()
+        const result = await database.newTransaction()
 
-    //     // Assert
-    //     expect(result).toBe('testTx')
-    //   })
-    // })
+        expect(result).toBe(mockTransaction)
+        expect(queryBuilder.transaction).toHaveBeenCalled()
+      })
+
+      it('should reject with an error', async () => {
+        const mockError = new Error('Transaction error')
+        const queryBuilder = { transaction: jest.fn() }
+        const mockTransaction = {}
+        queryBuilder.transaction.mockImplementation((callback) => {
+          callback(mockTransaction)
+        })
+        const database = new Database(config, Logger, queryBuilder)
+
+        queryBuilder.transaction.mockImplementation(() => {
+          throw mockError
+        })
+
+        await expect(database.newTransaction()).rejects.toThrow('Transaction error')
+        expect(queryBuilder.transaction).toHaveBeenCalled()
+      })
+    })
 
     describe('isConnected', () => {
       it('returns true when connected', async () => {

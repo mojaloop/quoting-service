@@ -49,11 +49,12 @@ const LOCAL_ENUM = require('../lib/enum')
  * Abstracts operations against the database
  */
 class Database {
-  constructor (config, log) {
+  constructor (config, log, queryBuilder) {
     this.config = config
     this.log = log || logger.child({
       context: this.constructor.name
     })
+    this.queryBuilder = queryBuilder
   }
 
   /**
@@ -62,7 +63,7 @@ class Database {
      * @returns {promise}
      */
   async connect () {
-    this.queryBuilder = new Knex(this.config.database)
+    this.queryBuilder = this.queryBuilder || new Knex(this.config.database)
 
     return this
   }
@@ -72,14 +73,14 @@ class Database {
   }
 
   /**
-     * async utility for getting a transaction object from knex
-     *
-     * @returns {undefined}
-     */
+   * async utility for getting a transaction object from knex
+   *
+   * @returns {undefined}
+   */
   async newTransaction () {
     return new Promise((resolve, reject) => {
       try {
-        this.queryBuilder.transaction(txn => {
+        return this.queryBuilder.transaction(txn => {
           return resolve(txn)
         })
       } catch (err) {
