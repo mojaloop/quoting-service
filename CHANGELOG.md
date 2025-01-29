@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.0.5](https://github.com/mojaloop/quoting-service/compare/v17.0.4...v17.0.5) (2025-01-29)
+
+
+### Tests
+
+* **csi-1130:** api and db lib tests ([#389](https://github.com/mojaloop/quoting-service/issues/389)) ([d57e428](https://github.com/mojaloop/quoting-service/commit/d57e4284b523def6970d8688ad57280502de9b4a))
+
 ### [17.0.4](https://github.com/mojaloop/quoting-service/compare/v17.0.3...v17.0.4) (2025-01-28)
 
 
