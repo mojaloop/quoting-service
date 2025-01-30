@@ -184,8 +184,8 @@ describe('Server Start', () => {
     delete headers.date
     const expectedResult = {
       errorInformation: {
-        errorCode: '3101',
-        errorDescription: 'Malformed syntax - Invalid date header'
+        errorCode: '3102',
+        errorDescription: 'Missing mandatory element - Missing required date header'
       }
     }
 
