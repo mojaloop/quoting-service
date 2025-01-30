@@ -593,7 +593,7 @@ class FxQuotesModel {
 
         // persist the error
         await this.db.createFxQuoteError(txn, conversionRequestId, {
-          errorCode: Number(error.errorCode),
+          errorCode: Number(error.errorCode) || 2001, // Internal Server Error: https://github.com/mojaloop/central-services-error-handling/blob/master/src/errors.js#L29
           errorDescription: error.errorDescription
         })
 
@@ -607,7 +607,7 @@ class FxQuotesModel {
       histTimer({ success: true, queryName: 'handleFxQuoteError' })
     } catch (err) {
       histTimer({ success: false, queryName: 'handleFxQuoteError' })
-      this.log.error('error in handleFxQuoteError', err)
+      this.log.child({ headers, conversionRequestId, error }).error('error in handleFxQuoteError', err)
       if (txn) {
         await txn.rollback().catch(() => {})
       }
