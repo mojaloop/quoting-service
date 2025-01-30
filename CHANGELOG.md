@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.1.0](https://github.com/mojaloop/quoting-service/compare/v17.0.5...v17.1.0) (2025-01-30)
+
+
+### Features
+
+* **csi-927:** fixed db error - ER_BAD_FIELD_ERROR: Unknown column 'NaN' in 'field list' ([#390](https://github.com/mojaloop/quoting-service/issues/390)) ([c9fb641](https://github.com/mojaloop/quoting-service/commit/c9fb64148a626890a973ce6b47515c1b61931196))
+
 ### [17.0.5](https://github.com/mojaloop/quoting-service/compare/v17.0.4...v17.0.5) (2025-01-29)
 
 
