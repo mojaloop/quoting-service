@@ -54,7 +54,6 @@ const { failActionHandler, resolveOpenApiSpecPath } = require('../src/lib/util')
 const Config = require('./lib/config')
 const Handlers = require('./api')
 const Routes = require('./api/routes')
-const plugins = require('./api/plugins')
 const dto = require('./lib/dto')
 const { version } = require('../package.json')
 
@@ -157,10 +156,6 @@ const initServer = async function (config, topicNames) {
 
   // add plugins to the server
   await server.register([
-    {
-      plugin: plugins.loggingPlugin,
-      options: {}
-    },
     {
       plugin: Good,
       options: {
