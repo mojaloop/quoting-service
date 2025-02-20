@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.1.3](https://github.com/mojaloop/quoting-service/compare/v17.1.2...v17.1.3) (2025-02-20)
+
+
+### Chore
+
+* update build orb to version 1.0.50 and add context to workflow ([#393](https://github.com/mojaloop/quoting-service/issues/393)) ([ae2d487](https://github.com/mojaloop/quoting-service/commit/ae2d4879177d5e8b18e9ca644a1fe94a988644ab))
+
 ### [17.1.2](https://github.com/mojaloop/quoting-service/compare/v17.1.1...v17.1.2) (2025-02-04)
 
 
