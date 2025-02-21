@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.2.0](https://github.com/mojaloop/quoting-service/compare/v17.1.3...v17.2.0) (2025-02-21)
+
+
+### Features
+
+* **csi-1161:** update streaming lib to use otel ([#394](https://github.com/mojaloop/quoting-service/issues/394)) ([25e0aa8](https://github.com/mojaloop/quoting-service/commit/25e0aa8546086c731ac9c406c9c7d3db00b809cf))
+
 ### [17.1.3](https://github.com/mojaloop/quoting-service/compare/v17.1.2...v17.1.3) (2025-02-20)
 
 
