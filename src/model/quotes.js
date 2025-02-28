@@ -496,7 +496,7 @@ class QuotesModel {
             httpMethod: opts.method,
             httpUrl: opts.url,
             quoteId: quoteRequest.quoteId,
-            transferId: quoteRequest.transactionId
+            transactionId: quoteRequest.transactionId
           }
         )
         span.setTags(queryTags)

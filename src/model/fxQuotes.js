@@ -333,7 +333,8 @@ class FxQuotesModel {
             httpUrl: opts.url,
             conversionRequestId: fxQuoteRequest.conversionRequestId,
             conversionId: fxQuoteRequest.conversionTerms.conversionId,
-            transferId: fxQuoteRequest.conversionTerms.determiningTransferId
+            determiningTransferId: fxQuoteRequest.conversionTerms.determiningTransferId,
+            transactionId: fxQuoteRequest.conversionTerms.determiningTransferId
           }
         )
         span.setTags(queryTags)
@@ -508,7 +509,8 @@ class FxQuotesModel {
             httpUrl: opts.url,
             conversionRequestId: fxQuoteUpdateRequest.conversionRequestId,
             conversionId: fxQuoteUpdateRequest.conversionTerms.conversionId,
-            transferId: fxQuoteUpdateRequest.conversionTerms.determiningTransferId
+            determiningTransferId: fxQuoteUpdateRequest.conversionTerms.determiningTransferId,
+            transactionId: fxQuoteUpdateRequest.conversionTerms.determiningTransferId
           }
         )
         span.setTags(queryTags)

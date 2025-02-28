@@ -171,13 +171,14 @@ module.exports = {
           contentSpecificTags = {
             conversionRequestId: message.content.payload.conversionRequestId,
             conversionId: message.content.payload.conversionTerms.conversionId,
-            transferId: message.content.payload.conversionTerms.determiningTransferId
+            transactionId: message.content.payload.conversionTerms.determiningTransferId,
+            determiningTransferId: message.content.payload.conversionTerms.determiningTransferId
           }
           operation = Enum.Tags.QueryTags.operation.putFxQuotesByID
         } else {
           contentSpecificTags = {
             quoteId: message.content.payload.quoteId,
-            transferId: message.content.payload.transactionId
+            transactionId: message.content.payload.transactionId
           }
           operation = Enum.Tags.QueryTags.operation.putQuotesByID
         }
