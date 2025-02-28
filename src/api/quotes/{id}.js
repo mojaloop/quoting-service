@@ -177,8 +177,7 @@ module.exports = {
           operation = Enum.Tags.QueryTags.operation.putFxQuotesByID
         } else {
           contentSpecificTags = {
-            quoteId: message.content.payload.quoteId,
-            transactionId: message.content.payload.transactionId
+            quoteId: request.params.id
           }
           operation = Enum.Tags.QueryTags.operation.putQuotesByID
         }
