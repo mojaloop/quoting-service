@@ -37,6 +37,8 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
+const EventFrameworkUtil = require('@mojaloop/central-services-shared').Util.EventFramework
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 const util = require('../../lib/util')
 const dto = require('../../lib/dto')
@@ -67,7 +69,6 @@ module.exports = {
     let step
 
     try {
-      await util.auditSpan(request)
       const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
 
       step = 'messageFromRequestDto-1'
@@ -79,6 +80,29 @@ module.exports = {
         originalPayloadStorage,
         payloadCache
       })
+
+      let contentSpecificTags = {}
+      if (isFX) {
+        contentSpecificTags = {
+          conversionRequestId: request.params.id
+        }
+      } else {
+        contentSpecificTags = {
+          quoteId: request.params.id
+        }
+      }
+      const queryTags = EventFrameworkUtil.Tags.getQueryTags(
+        Enum.Tags.QueryTags.serviceName.quotingService,
+        Enum.Tags.QueryTags.auditType.transactionFlow,
+        Enum.Tags.QueryTags.contentType.httpRequest,
+        isFX ? Enum.Tags.QueryTags.operation.getFxQuotesByID : Enum.Tags.QueryTags.operation.getQuotesByID,
+        {
+          httpMethod: request.method,
+          httpPath: request.path,
+          ...contentSpecificTags
+        }
+      )
+      await util.auditSpan(request, queryTags)
 
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.GET : kafkaConfig.PRODUCER.QUOTE.GET
       const topicConfig = dto.topicConfigDto({ topicName: producerConfig.topic })
@@ -127,7 +151,6 @@ module.exports = {
     let step
 
     try {
-      await util.auditSpan(request)
       const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
 
       const message = await dto.messageFromRequestDto({
@@ -138,6 +161,39 @@ module.exports = {
         originalPayloadStorage,
         payloadCache
       })
+
+      let contentSpecificTags = {}
+      let operation
+      if (isError) {
+        operation = isFX ? Enum.Tags.QueryTags.operation.putFxQuotesErrorByID : Enum.Tags.QueryTags.operation.putQuotesErrorByID
+      } else {
+        if (isFX) {
+          contentSpecificTags = {
+            conversionRequestId: message.content.payload.conversionRequestId,
+            conversionId: message.content.payload.conversionTerms.conversionId,
+            transferId: message.content.payload.conversionTerms.determiningTransferId
+          }
+          operation = Enum.Tags.QueryTags.operation.putFxQuotesByID
+        } else {
+          contentSpecificTags = {
+            quoteId: message.content.payload.quoteId,
+            transferId: message.content.payload.transactionId
+          }
+          operation = Enum.Tags.QueryTags.operation.putQuotesByID
+        }
+      }
+      const queryTags = EventFrameworkUtil.Tags.getQueryTags(
+        Enum.Tags.QueryTags.serviceName.quotingService,
+        Enum.Tags.QueryTags.auditType.transactionFlow,
+        Enum.Tags.QueryTags.contentType.httpRequest,
+        operation,
+        {
+          httpMethod: request.method,
+          httpPath: request.path,
+          ...contentSpecificTags
+        }
+      )
+      await util.auditSpan(request, queryTags, { transformedPayload: message.content.payload })
 
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.PUT : kafkaConfig.PRODUCER.QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: producerConfig.topic })

@@ -146,6 +146,7 @@ describe('QuotesModel', () => {
     mockChildSpan = {
       injectContextToHttpRequest: jest.fn(opts => opts),
       audit: jest.fn(),
+      setTags: jest.fn(),
       isFinished: undefined,
       finish: jest.fn(),
       error: jest.fn(),
@@ -154,6 +155,7 @@ describe('QuotesModel', () => {
     mockSpan = {
       getChild: jest.fn(() => mockChildSpan),
       error: jest.fn(),
+      setTags: jest.fn(),
       finish: jest.fn()
     }
     mockData = {
@@ -1208,7 +1210,7 @@ describe('QuotesModel', () => {
 
             const expectedHandleExceptionArgs = [mockData.headers['fspiop-source'], mockData.quoteId, fspiopError, mockData.headers,
               mockChildSpan]
-            const expectedForwardQuoteRequestArgs = [mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan]
+            const expectedForwardQuoteRequestArgs = [mockData.headers, mockData.quoteRequest, mockData.quoteRequest, mockChildSpan]
 
             const result = await quotesModel.handleQuoteRequest({
               headers: mockData.headers,
@@ -1283,7 +1285,7 @@ describe('QuotesModel', () => {
 
             const expectedHandleExceptionArgs = [mockData.headers['fspiop-source'], mockData.quoteId, fspiopError, mockData.headers,
               mockChildSpan]
-            const expectedForwardQuoteRequestArgs = [mockData.headers, result.quoteId, mockData.quoteRequest, mockChildSpan, undefined]
+            const expectedForwardQuoteRequestArgs = [mockData.headers, mockData.quoteRequest, mockData.quoteRequest, mockChildSpan, undefined]
 
             expect(mockChildSpan.audit.mock.calls.length).toBe(1)
             expect(quotesModel.forwardQuoteRequest.mock.calls.length).toBe(1)
@@ -1357,7 +1359,7 @@ describe('QuotesModel', () => {
             const expectedAuditArgs = [{ headers: mockData.headers, payload: mockData.quoteRequest }, EventSdk.AuditEventAction.start]
             expect(mockChildSpan.audit).toBeCalledWith(...expectedAuditArgs)
 
-            const expectedForwardRequestArgs = [mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan]
+            const expectedForwardRequestArgs = [mockData.headers, mockData.quoteRequest, mockData.quoteRequest, mockChildSpan]
             expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...expectedForwardRequestArgs)
             expect(result).toEqual({})
           })
@@ -1470,7 +1472,7 @@ describe('QuotesModel', () => {
             const expectedAuditArgs = [{ headers: mockData.headers, payload: expectedResult }, EventSdk.AuditEventAction.start]
             expect(mockChildSpan.audit).toBeCalledWith(...expectedAuditArgs)
 
-            const expectedForwardRequestArgs = [mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan, undefined]
+            const expectedForwardRequestArgs = [mockData.headers, mockData.quoteRequest, mockData.quoteRequest, mockChildSpan, undefined]
             expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...expectedForwardRequestArgs)
             expect(result).toEqual(expectedResult)
           })
@@ -1505,7 +1507,7 @@ describe('QuotesModel', () => {
             const expectedAuditArgs = [{ headers: mockData.headers, payload: expectedResult }, EventSdk.AuditEventAction.start]
             expect(mockChildSpan.audit).toBeCalledWith(...expectedAuditArgs)
 
-            const expectedForwardRequestArgs = [{ ...mockData.headers, 'fspiop-destination': mockData.rules[0].event.params.rerouteToFsp, ...mockData.rules[0].event.params.additionalHeaders }, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan, mockData.rules[0].event.params.additionalHeaders]
+            const expectedForwardRequestArgs = [{ ...mockData.headers, 'fspiop-destination': mockData.rules[0].event.params.rerouteToFsp, ...mockData.rules[0].event.params.additionalHeaders }, mockData.quoteRequest, mockData.quoteRequest, mockChildSpan, mockData.rules[0].event.params.additionalHeaders]
             expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...expectedForwardRequestArgs)
             expect(result).toEqual(expectedResult)
           })
@@ -1633,7 +1635,7 @@ describe('QuotesModel', () => {
 
       expect(mockSpan.getChild).toBeCalled()
       expect(mockChildSpan.audit).toBeCalled()
-      const args = [mockData.headers, mockData.quoteRequest.quoteId, mockData.quoteRequest, mockChildSpan, undefined]
+      const args = [mockData.headers, mockData.quoteRequest, mockData.quoteRequest, mockChildSpan, undefined]
       expect(quotesModel.forwardQuoteRequest).toBeCalledWith(...args)
       expect(mockChildSpan.finish).toBeCalled()
     })

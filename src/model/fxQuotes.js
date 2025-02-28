@@ -205,7 +205,7 @@ class FxQuotesModel {
     let txn
     const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteRequest')
     try {
-      await childSpan.audit({ headers, payload: fxQuoteRequest }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, payload: fxQuoteRequest }, EventSdk.AuditEventAction.start)
 
       fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -272,7 +272,7 @@ class FxQuotesModel {
         return
       }
 
-      await this.forwardFxQuoteRequest(headers, fxQuoteRequest.conversionRequestId, originalPayload, childSpan)
+      await this.forwardFxQuoteRequest(headers, fxQuoteRequest, originalPayload, childSpan)
       histTimer({ success: true, queryName: 'handleFxQuoteRequest' })
     } catch (err) {
       histTimer({ success: false, queryName: 'handleFxQuoteRequest' })
@@ -293,7 +293,8 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardFxQuoteRequest (headers, conversionRequestId, originalPayload, span) {
+  async forwardFxQuoteRequest (headers, fxQuoteRequest, originalPayload, span) {
+    const conversionRequestId = fxQuoteRequest.conversionRequestId
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'forwardFxQuoteRequest - Metrics for fx quote model',
@@ -322,6 +323,20 @@ class FxQuotesModel {
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
         const { data, ...rest } = opts
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.postFxQuotes,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url,
+            conversionRequestId: fxQuoteRequest.conversionRequestId,
+            conversionId: fxQuoteRequest.conversionTerms.conversionId,
+            transferId: fxQuoteRequest.conversionTerms.determiningTransferId
+          }
+        )
+        span.setTags(queryTags)
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
 
@@ -351,7 +366,7 @@ class FxQuotesModel {
     const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteUpdate')
 
     try {
-      await childSpan.audit({ headers, params: { conversionRequestId }, payload: fxQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { conversionRequestId }, payload: fxQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
       if ('accept' in headers) {
         throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.VALIDATION_ERROR,
           `Update for fx quote ${conversionRequestId} failed: "accept" header should not be sent in callbacks.`, null, headers['fspiop-source'])
@@ -421,7 +436,7 @@ class FxQuotesModel {
         await txn.commit()
       }
 
-      await this.forwardFxQuoteUpdate(headers, conversionRequestId, originalPayload, childSpan)
+      await this.forwardFxQuoteUpdate(headers, fxQuoteUpdateRequest, originalPayload, childSpan)
       histTimer({ success: true, queryName: 'handleFxQuoteUpdate' })
     } catch (err) {
       histTimer({ success: false, queryName: 'handleFxQuoteUpdate' })
@@ -443,7 +458,8 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardFxQuoteUpdate (headers, conversionRequestId, originalFxQuoteResponse, span) {
+  async forwardFxQuoteUpdate (headers, fxQuoteUpdateRequest, originalFxQuoteResponse, span) {
+    const conversionRequestId = fxQuoteUpdateRequest.conversionRequestId
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'forwardFxQuoteUpdate - Metrics for fx quote model',
@@ -482,6 +498,20 @@ class FxQuotesModel {
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
         const { data, ...rest } = opts
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.putFxQuotesByID,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url,
+            conversionRequestId: fxQuoteUpdateRequest.conversionRequestId,
+            conversionId: fxQuoteUpdateRequest.conversionTerms.conversionId,
+            transferId: fxQuoteUpdateRequest.conversionTerms.determiningTransferId
+          }
+        )
+        span.setTags(queryTags)
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
       step = 'httpRequest-3'
@@ -511,7 +541,7 @@ class FxQuotesModel {
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteGet')
     try {
-      await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
       await this.forwardFxQuoteGet(headers, conversionRequestId, childSpan)
       histTimer({ success: true, queryName: 'handleFxQuoteGet' })
     } catch (err) {
@@ -557,6 +587,18 @@ class FxQuotesModel {
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.getFxQuotesByID,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url,
+            conversionRequestId
+          }
+        )
+        span.setTags(queryTags)
         span.audit(opts, EventSdk.AuditEventAction.egress)
       }
       step = 'httpRequest-2'
@@ -601,7 +643,7 @@ class FxQuotesModel {
         await txn.commit()
       }
 
-      await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
       await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, conversionRequestId, headers, childSpan, false, originalPayload)
       histTimer({ success: true, queryName: 'handleFxQuoteError' })
@@ -637,7 +679,7 @@ class FxQuotesModel {
       // if we got here rules passed, so we can forward the fxQuote on to the recipient dfsp
       const childSpan = span.getChild('qs_fxQuote_forwardQuoteRequestResend')
       try {
-        await childSpan.audit({ headers, payload }, EventSdk.AuditEventAction.start)
+        this.envConfig.simpleAudit || await childSpan.audit({ headers, payload }, EventSdk.AuditEventAction.start)
         await this.forwardFxQuoteRequest(headers, payload.conversionRequestId, originalPayload, childSpan)
       } catch (err) {
         // any-error
@@ -675,7 +717,7 @@ class FxQuotesModel {
       // if we got here rules passed, so we can forward the fxQuote on to the recipient dfsp
       const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteUpdateResend')
       try {
-        await childSpan.audit({ headers, params: { conversionRequestId }, payload: originalPayload }, EventSdk.AuditEventAction.start)
+        this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { conversionRequestId }, payload: originalPayload }, EventSdk.AuditEventAction.start)
         await this.forwardFxQuoteUpdate(headers, conversionRequestId, originalPayload, childSpan)
       } catch (err) {
         // any-error
@@ -709,7 +751,7 @@ class FxQuotesModel {
     const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
     const childSpan = span.getChild('qs_fxQuote_sendErrorCallback')
     try {
-      await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
       await this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, childSpan, true)
       histTimer({ success: true, queryName: 'handleException' })
     } catch (err) {
@@ -792,6 +834,18 @@ class FxQuotesModel {
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
         const { data, ...rest } = opts
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.putFxQuotesErrorByID,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url,
+            conversionRequestId
+          }
+        )
+        span.setTags(queryTags)
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
       step = 'sendHttpRequest-2'

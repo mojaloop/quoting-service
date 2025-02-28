@@ -160,6 +160,7 @@ class Config {
     this.proxyCache = RC.PROXY_CACHE
     this.payloadCache = RC.PAYLOAD_CACHE
     this.originalPayloadStorage = RC.ORIGINAL_PAYLOAD_STORAGE || PAYLOAD_STORAGES.none
+    this.simpleAudit = RC.SIMPLE_AUDIT || false
   }
 }
 
