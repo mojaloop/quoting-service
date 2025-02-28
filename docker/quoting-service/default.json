@@ -55,6 +55,7 @@
     "truncateExtensions": true
   },
   "SIMPLE_ROUTING_MODE": false,
+  "SIMPLE_AUDIT": false,
   "ENDPOINT_SECURITY":{
     "JWS": {
       "JWS_SIGN": true,

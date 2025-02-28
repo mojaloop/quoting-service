@@ -305,12 +305,14 @@ const getParticipantEndpoint = async ({ fspId, db, loggerFn, endpointType, proxy
   return endpoint
 }
 
-const auditSpan = async (request) => {
+const auditSpan = async (request, additionalTags = {}, additionalContentFields = {}) => {
   const { span, headers, payload, method } = request
   span.setTags(getSpanTags(request, 'quote', method))
+  span.setTags(additionalTags)
   await span.audit({
     headers,
-    payload
+    payload,
+    ...additionalContentFields
   }, AuditEventAction.start)
 }
 

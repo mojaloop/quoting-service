@@ -114,7 +114,7 @@ class BulkQuotesModel {
       childSpan = span.getChild('qs_bulkquote_forwardBulkQuoteRequest')
       await this.validateBulkQuoteRequest(fspiopSource, fspiopDestination, bulkQuoteRequest)
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
-      await childSpan.audit({ headers, payload: bulkQuoteRequest }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, payload: bulkQuoteRequest }, EventSdk.AuditEventAction.start)
       await this.forwardBulkQuoteRequest(headers, bulkQuoteRequest.bulkQuoteId, bulkQuoteRequest, childSpan)
     } catch (err) {
       // any-error
@@ -185,6 +185,17 @@ class BulkQuotesModel {
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
         const { data, ...rest } = opts
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.postBulkQuotes,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url
+          }
+        )
+        span.setTags(queryTags)
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
 
@@ -216,7 +227,7 @@ class BulkQuotesModel {
     // if we got here rules passed, so we can forward the quote on to the recipient dfsp
     const childSpan = span.getChild('qs_quote_forwardBulkQuoteUpdate')
     try {
-      await childSpan.audit({ headers, params: { bulkQuoteId }, payload: bulkQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { bulkQuoteId }, payload: bulkQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
       await this.forwardBulkQuoteUpdate(headers, bulkQuoteId, bulkQuoteUpdateRequest, childSpan)
     } catch (err) {
       // any-error
@@ -277,6 +288,17 @@ class BulkQuotesModel {
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
         const { data, ...rest } = opts
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.putBulkQuotesByID,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url
+          }
+        )
+        span.setTags(queryTags)
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
       step = 'httpRequest-3'
@@ -300,7 +322,7 @@ class BulkQuotesModel {
     const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
     const childSpan = span.getChild('qs_quote_forwardBulkQuoteGet')
     try {
-      await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
       await this.forwardBulkQuoteGet(headers, bulkQuoteId, childSpan)
     } catch (err) {
       // any-error
@@ -362,6 +384,17 @@ class BulkQuotesModel {
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.getBulkQuotesByID,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url
+          }
+        )
+        span.setTags(queryTags)
         span.audit(opts, EventSdk.AuditEventAction.egress)
       }
       step = 'httpRequest-2'
@@ -388,7 +421,7 @@ class BulkQuotesModel {
     try {
       // create a new object to represent the error
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
-      await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
       // Needed to add await here to prevent 'span already finished' bug
       await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, bulkQuoteId, headers, childSpan, false)
       return newError
@@ -413,7 +446,7 @@ class BulkQuotesModel {
 
     const childSpan = span.getChild('qs_bulkQuote_sendErrorCallback')
     try {
-      await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
       return await this.sendErrorCallback(fspiopSource, fspiopError, bulkQuoteId, headers, childSpan, true)
     } catch (err) {
       // any-error
@@ -505,6 +538,17 @@ class BulkQuotesModel {
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
         const { data, ...rest } = opts
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.putBulkQuotesErrorByID,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url
+          }
+        )
+        span.setTags(queryTags)
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
 

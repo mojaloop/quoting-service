@@ -80,7 +80,7 @@ describe('POST /quotes API Tests -->', () => {
     Producer.produceMessage = jest.fn()
     const conversionRequestId = randomUUID()
     const mockRequest = mocks.mockHttpRequest({
-      payload: { conversionRequestId },
+      payload: { conversionRequestId, conversionTerms: { conversionId: randomUUID(), determiningTransferId: randomUUID() } },
       headers: {
         'content-type': 'application/vnd.interoperability.fxQuotes+json;version=1.0'
       }

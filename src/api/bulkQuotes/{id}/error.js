@@ -31,6 +31,8 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
+const EventFrameworkUtil = require('@mojaloop/central-services-shared').Util.EventFramework
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 const Config = require('../../../lib/config')
 const dto = require('../../../lib/dto')
@@ -59,7 +61,18 @@ module.exports = {
     const { kafkaConfig, instrumentationMetricsDisabled } = new Config()
 
     try {
-      await util.auditSpan(request)
+      const { path, method } = request
+      const queryTags = EventFrameworkUtil.Tags.getQueryTags(
+        Enum.Tags.QueryTags.serviceName.quotingService,
+        Enum.Tags.QueryTags.auditType.transactionFlow,
+        Enum.Tags.QueryTags.contentType.httpRequest,
+        Enum.Tags.QueryTags.operation.putBulkQuotesErrorByID,
+        {
+          httpMethod: method,
+          httpPath: path
+        }
+      )
+      await util.auditSpan(request, queryTags)
 
       const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: topic })
