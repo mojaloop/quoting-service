@@ -387,7 +387,7 @@ describe('FxQuotesModel Tests -->', () => {
       await expect(fxQuotesModel.handleFxQuoteUpdate(headers, conversionRequestId, updateRequest, span, updateRequest))
         .resolves.toBeUndefined()
 
-      expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalledWith(headers, updateRequest, updateRequest, span.getChild())
+      expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalledWith(headers, conversionRequestId, updateRequest, updateRequest, span.getChild())
       expect(db.createFxQuoteResponse).toBeCalled()
       expect(db.createFxQuoteResponseFxCharge).toBeCalled()
       expect(db.createFxQuoteResponseConversionTerms).toBeCalled()
@@ -408,7 +408,7 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteUpdate').mockResolvedValue()
       jest.spyOn(db, 'createFxQuoteResponse').mockRejectedValue(new Error('DB Error'))
 
-      await expect(fxQuotesModel.handleFxQuoteUpdate(headers, conversionRequestId, updateRequest, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteUpdate(headers, conversionRequestId, updateRequest, span, updateRequest)).resolves.toBeUndefined()
       expect(db.rollback).toBeCalled()
     })
   })
@@ -418,7 +418,7 @@ describe('FxQuotesModel Tests -->', () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log, httpRequest })
       jest.spyOn(fxQuotesModel, '_getParticipantEndpoint').mockResolvedValue(mockEndpoint)
 
-      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, updateRequest, updateRequest, childSpan)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, conversionRequestId, updateRequest, updateRequest, childSpan)).resolves.toBeUndefined()
 
       expect(httpRequest).toHaveBeenCalledWith({
         headers: {
@@ -428,7 +428,7 @@ describe('FxQuotesModel Tests -->', () => {
           Date: headers.date
         },
         method: ENUM.Http.RestMethods.PUT,
-        url: `${mockEndpoint}/fxQuotes/${updateRequest.conversionRequestId}`,
+        url: `${mockEndpoint}/fxQuotes/${conversionRequestId}`,
         data: expect.objectContaining(updateRequest)
       }, headers['fspiop-source'])
     })
@@ -438,7 +438,7 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(fxQuotesModel, '_getParticipantEndpoint').mockResolvedValue(undefined)
       jest.spyOn(fxQuotesModel, 'sendErrorCallback').mockResolvedValue()
 
-      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, updateRequest, updateRequest, childSpan)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, updateRequest.conversionRequestId, updateRequest, updateRequest, childSpan)).resolves.toBeUndefined()
       expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-source'], expect.any(Error), updateRequest.conversionRequestId, headers, childSpan, true)
       expect(httpRequest).not.toBeCalled()
     })
@@ -449,7 +449,7 @@ describe('FxQuotesModel Tests -->', () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log, httpRequest })
       fxQuotesModel._getParticipantEndpoint = jest.fn().mockResolvedValue(mockEndpoint)
 
-      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, updateRequest, updateRequest, childSpan))
+      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, updateRequest.conversionRequestId, updateRequest, updateRequest, childSpan))
         .rejects.toThrow(FSPIOPError)
     })
 
@@ -460,7 +460,7 @@ describe('FxQuotesModel Tests -->', () => {
       fxQuotesModel._getParticipantEndpoint = jest.fn().mockResolvedValue(mockEndpoint)
       fxQuotesModel.envConfig.instrumentationMetricsDisabled = true
 
-      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, conversionRequestId, updateRequest, childSpan))
+      await expect(fxQuotesModel.forwardFxQuoteUpdate(headers, conversionRequestId, updateRequest, updateRequest, childSpan))
         .rejects.toThrow()
     })
   })
@@ -615,9 +615,9 @@ describe('FxQuotesModel Tests -->', () => {
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteUpdate').mockResolvedValue()
 
-      await expect(fxQuotesModel.handleFxQuoteUpdateResend(headers, request.conversionRequestId, request, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteUpdateResend(headers, request.conversionRequestId, request, request, span)).resolves.toBeUndefined()
 
-      expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
+      expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalledWith(headers, request.conversionRequestId, request, request, span.getChild())
     })
 
     test('should handle error thrown', async () => {
@@ -625,9 +625,9 @@ describe('FxQuotesModel Tests -->', () => {
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteUpdate').mockRejectedValue(new Error('Forward Error'))
       jest.spyOn(fxQuotesModel, 'handleException').mockResolvedValue()
 
-      await expect(fxQuotesModel.handleFxQuoteUpdateResend(headers, request.conversionRequestId, request, span)).resolves.toBeUndefined()
+      await expect(fxQuotesModel.handleFxQuoteUpdateResend(headers, request.conversionRequestId, request, request, span)).resolves.toBeUndefined()
 
-      expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalledWith(headers, request.conversionRequestId, request, span.getChild())
+      expect(fxQuotesModel.forwardFxQuoteUpdate).toBeCalledWith(headers, request.conversionRequestId, request, request, span.getChild())
       expect(fxQuotesModel.handleException).toBeCalledWith(headers['fspiop-source'], request.conversionRequestId, expect.any(Error), headers, span.getChild())
     })
 

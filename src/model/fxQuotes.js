@@ -391,6 +391,7 @@ class FxQuotesModel {
           return this.handleFxQuoteUpdateResend(
             headers,
             conversionRequestId,
+            fxQuoteUpdateRequest,
             originalPayload,
             span
           )
@@ -437,7 +438,7 @@ class FxQuotesModel {
         await txn.commit()
       }
 
-      await this.forwardFxQuoteUpdate(headers, fxQuoteUpdateRequest, originalPayload, childSpan)
+      await this.forwardFxQuoteUpdate(headers, conversionRequestId, fxQuoteUpdateRequest, originalPayload, childSpan)
       histTimer({ success: true, queryName: 'handleFxQuoteUpdate' })
     } catch (err) {
       histTimer({ success: false, queryName: 'handleFxQuoteUpdate' })
@@ -459,8 +460,7 @@ class FxQuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardFxQuoteUpdate (headers, fxQuoteUpdateRequest, originalFxQuoteResponse, span) {
-    const conversionRequestId = fxQuoteUpdateRequest.conversionRequestId
+  async forwardFxQuoteUpdate (headers, conversionRequestId, fxQuoteUpdateRequest, originalFxQuoteResponse, span) {
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'forwardFxQuoteUpdate - Metrics for fx quote model',
@@ -507,7 +507,7 @@ class FxQuotesModel {
           {
             httpMethod: opts.method,
             httpUrl: opts.url,
-            conversionRequestId: fxQuoteUpdateRequest.conversionRequestId,
+            conversionRequestId: conversionRequestId,
             conversionId: fxQuoteUpdateRequest.conversionTerms.conversionId,
             determiningTransferId: fxQuoteUpdateRequest.conversionTerms.determiningTransferId,
             transactionId: fxQuoteUpdateRequest.conversionTerms.determiningTransferId
@@ -706,7 +706,7 @@ class FxQuotesModel {
    * Deals with resends of fxQuote responses (PUT) under the API spec:
    * See section 3.2.5.1, 9.4 and 9.5 in "API Definition v1.0.docx" API specification document.
    */
-  async handleFxQuoteUpdateResend (headers, conversionRequestId, originalPayload, span) {
+  async handleFxQuoteUpdateResend (headers, conversionRequestId, fxQuoteUpdateRequest, originalPayload, span) {
     try {
       const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
       const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
@@ -720,7 +720,7 @@ class FxQuotesModel {
       const childSpan = span.getChild('qs_fxQuote_forwardFxQuoteUpdateResend')
       try {
         this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { conversionRequestId }, payload: originalPayload }, EventSdk.AuditEventAction.start)
-        await this.forwardFxQuoteUpdate(headers, conversionRequestId, originalPayload, childSpan)
+        await this.forwardFxQuoteUpdate(headers, conversionRequestId, fxQuoteUpdateRequest, originalPayload, childSpan)
       } catch (err) {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
