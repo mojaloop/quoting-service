@@ -413,7 +413,7 @@ class QuotesModel {
         this.envConfig.simpleAudit || await forwardQuoteRequestSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
         await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
       } else {
-        this.envConfig.simpleAudit ||  await forwardQuoteRequestSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
+        this.envConfig.simpleAudit || await forwardQuoteRequestSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
         await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan, handledRuleEvents.additionalHeaders)
       }
     } catch (err) {

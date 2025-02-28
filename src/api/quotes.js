@@ -82,25 +82,26 @@ module.exports = {
       })
 
       let contentSpecificTags = {}
+      let operation
       if (isFX) {
         contentSpecificTags = {
           conversionRequestId: message.content.payload.conversionRequestId,
           conversionId: message.content.payload.conversionTerms.conversionId,
           transferId: message.content.payload.conversionTerms.determiningTransferId
         }
-        operation = Enum.Tags.QueryTags.operation.putFxQuotesByID
+        operation = Enum.Tags.QueryTags.operation.postFxQuotes
       } else {
         contentSpecificTags = {
           quoteId: message.content.payload.quoteId,
           transferId: message.content.payload.transactionId
         }
-        operation = Enum.Tags.QueryTags.operation.putQuotesByID
+        operation = Enum.Tags.QueryTags.operation.postQuotes
       }
       const queryTags = EventFrameworkUtil.Tags.getQueryTags(
         Enum.Tags.QueryTags.serviceName.quotingService,
         Enum.Tags.QueryTags.auditType.transactionFlow,
         Enum.Tags.QueryTags.contentType.httpRequest,
-        isFX ? Enum.Tags.QueryTags.operation.postFxQuotes : Enum.Tags.QueryTags.operation.postQuotes,
+        operation,
         {
           httpMethod: request.method,
           httpPath: request.path,
