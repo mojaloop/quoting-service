@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.3.0](https://github.com/mojaloop/quoting-service/compare/v17.2.1...v17.3.0) (2025-03-03)
+
+
+### Features
+
+* align audit messages ([#397](https://github.com/mojaloop/quoting-service/issues/397)) ([3f7c1d2](https://github.com/mojaloop/quoting-service/commit/3f7c1d276db97be043794f661e9b1430e706e5e9))
+
 ### [17.2.1](https://github.com/mojaloop/quoting-service/compare/v17.2.0...v17.2.1) (2025-02-25)
 
 
