@@ -507,7 +507,7 @@ class FxQuotesModel {
           {
             httpMethod: opts.method,
             httpUrl: opts.url,
-            conversionRequestId: conversionRequestId,
+            conversionRequestId,
             conversionId: fxQuoteUpdateRequest.conversionTerms.conversionId,
             determiningTransferId: fxQuoteUpdateRequest.conversionTerms.determiningTransferId,
             transactionId: fxQuoteUpdateRequest.conversionTerms.determiningTransferId

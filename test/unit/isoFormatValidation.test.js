@@ -234,7 +234,8 @@ describe('ISO format validation Tests -->', () => {
       })
       fspiopPayload.conversionTerms.determiningTransferId = mocks.generateULID()
       const { body } = await TransformFacades.FSPIOP.fxQuotes.put({
-        body: fspiopPayload
+        body: fspiopPayload,
+        params: { ID: mocks.generateULID() }
       })
       const request = {
         method: 'PUT',
