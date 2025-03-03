@@ -58,8 +58,6 @@ const getSpanTags = ({ payload, headers, params, spanContext }, transactionType,
   const tags = {
     transactionType,
     transactionAction,
-    transactionId: (payload && payload.transactionId) || (params && params.id) || (spanContext?.tags?.transactionId),
-    quoteId: (payload && payload.quoteId) || (params && params.id) || (spanContext?.tags?.quoteId),
     source: headers[Enum.Http.Headers.FSPIOP.SOURCE],
     destination: headers[Enum.Http.Headers.FSPIOP.DESTINATION]
   }
@@ -305,12 +303,14 @@ const getParticipantEndpoint = async ({ fspId, db, loggerFn, endpointType, proxy
   return endpoint
 }
 
-const auditSpan = async (request) => {
+const auditSpan = async (request, additionalTags = {}, additionalContentFields = {}) => {
   const { span, headers, payload, method } = request
   span.setTags(getSpanTags(request, 'quote', method))
+  span.setTags(additionalTags)
   await span.audit({
     headers,
-    payload
+    payload,
+    ...additionalContentFields
   }, AuditEventAction.start)
 }
 

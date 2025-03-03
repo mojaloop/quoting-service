@@ -253,8 +253,6 @@ describe('util', () => {
       const expected = {
         transactionType: 'quote',
         transactionAction: 'prepare',
-        transactionId: '12345',
-        quoteId: 'ABCDE',
         source: 'fsp1',
         destination: config.hubName
       }
@@ -283,8 +281,6 @@ describe('util', () => {
       const expected = {
         transactionType: 'quote',
         transactionAction: 'prepare',
-        transactionId: '12345',
-        quoteId: 'ABCDE',
         source: 'fsp1',
         destination: config.hubName,
         payeeFsp: 'fsp1',

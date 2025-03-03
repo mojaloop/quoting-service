@@ -137,13 +137,15 @@ describe('BulkQuotesModel', () => {
     mockChildSpan = {
       injectContextToHttpRequest: jest.fn(opts => opts),
       audit: jest.fn(),
+      setTags: jest.fn(),
       isFinished: undefined,
       finish: jest.fn()
     }
     mockSpan = {
       getChild: jest.fn(() => mockChildSpan),
       error: jest.fn(),
-      finish: jest.fn()
+      finish: jest.fn(),
+      setTags: jest.fn()
     }
     mockData = {
       amountTypeId: 'fakeAmountTypeId',

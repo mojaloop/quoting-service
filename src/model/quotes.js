@@ -410,11 +410,11 @@ class QuotesModel {
       histTimer({ success: true, queryName: 'quote_handleQuoteRequest' })
 
       if (envConfig.simpleRoutingMode) {
-        await forwardQuoteRequestSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
+        this.envConfig.simpleAudit || await forwardQuoteRequestSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan)
       } else {
-        await forwardQuoteRequestSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(handledRuleEvents.headers, refs.quoteId, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan, handledRuleEvents.additionalHeaders)
+        this.envConfig.simpleAudit || await forwardQuoteRequestSpan.audit({ headers, payload: refs }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteRequest(handledRuleEvents.headers, quoteRequest, handledRuleEvents.quoteRequest, forwardQuoteRequestSpan, handledRuleEvents.additionalHeaders)
       }
     } catch (err) {
       // any-error
@@ -446,7 +446,8 @@ class QuotesModel {
    *
    * @returns {undefined}
    */
-  async forwardQuoteRequest (headers, quoteId, originalQuoteRequest, span, additionalHeaders) {
+  async forwardQuoteRequest (headers, quoteRequest, originalQuoteRequest, span, additionalHeaders) {
+    const quoteId = quoteRequest.quoteId
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'forwardQuoteRequest - Metrics for quote model',
@@ -486,6 +487,19 @@ class QuotesModel {
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
         const { data, ...rest } = opts
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.postQuotes,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url,
+            quoteId: quoteRequest.quoteId,
+            transactionId: quoteRequest.transactionId
+          }
+        )
+        span.setTags(queryTags)
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
       log.debug('Forwarding quote request...', { opts })
@@ -530,8 +544,8 @@ class QuotesModel {
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       const childSpan = span.getChild('qs_quote_forwardQuoteRequestResend')
       try {
-        await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
-        await this.forwardQuoteRequest(headers, quoteRequest.quoteId, quoteRequest, childSpan, additionalHeaders)
+        this.envConfig.simpleAudit || await childSpan.audit({ headers, payload: quoteRequest }, EventSdk.AuditEventAction.start)
+        await this.forwardQuoteRequest(headers, quoteRequest, quoteRequest, childSpan, additionalHeaders)
         histTimer({ success: true, queryName: 'quote_handleQuoteRequestResend' })
         log.info('handleQuoteRequestResend is done')
       } catch (err) {
@@ -751,6 +765,19 @@ class QuotesModel {
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
         const { data, ...rest } = opts
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.putQuotesByID,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url,
+            quoteId
+            // transferId ## Its nice to have transferId here, but its not available in the payload. Need to get it from the db.
+          }
+        )
+        span.setTags(queryTags)
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
       log.debug('Forwarding quote response...', { opts })
@@ -793,7 +820,7 @@ class QuotesModel {
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       const childSpan = span.getChild('qs_quote_forwardQuoteUpdateResend')
       try {
-        await childSpan.audit({ headers, params: { quoteId }, payload }, EventSdk.AuditEventAction.start)
+        this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { quoteId }, payload }, EventSdk.AuditEventAction.start)
         await this.forwardQuoteUpdate(headers, quoteId, payload, childSpan)
         histTimer({ success: true, queryName: 'quote_handleQuoteUpdateResend' })
         log.info('handleQuoteUpdateResend is done')
@@ -898,7 +925,7 @@ class QuotesModel {
     try {
       childSpan = span.getChild('qs_quote_forwardQuoteGet')
       try {
-        await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
+        this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
         histTimer({ success: false, queryName: 'quote_handleQuoteGet' })
         step = 'forwardQuoteGet-1'
         await this.forwardQuoteGet(headers, quoteId, childSpan)
@@ -969,6 +996,18 @@ class QuotesModel {
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.getQuotesByID,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url,
+            quoteId
+          }
+        )
+        span.setTags(queryTags)
         span.audit(opts, EventSdk.AuditEventAction.egress)
       }
 
@@ -999,7 +1038,7 @@ class QuotesModel {
     const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
     const childSpan = span.getChild('qs_quote_sendErrorCallback')
     try {
-      await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
+      this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
       const result = await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan, true)
       histTimer({ success: true, queryName: 'quote_handleException' })
       log.info('handleException is done')
@@ -1090,6 +1129,18 @@ class QuotesModel {
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
         const { data, ...rest } = opts
+        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
+          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
+          ENUM.Tags.QueryTags.auditType.transactionFlow,
+          ENUM.Tags.QueryTags.contentType.httpRequest,
+          ENUM.Tags.QueryTags.operation.putQuotesErrorByID,
+          {
+            httpMethod: opts.method,
+            httpUrl: opts.url,
+            quoteId
+          }
+        )
+        span.setTags(queryTags)
         span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
       }
 

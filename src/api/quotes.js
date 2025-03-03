@@ -37,6 +37,8 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { Http, Events } = require('@mojaloop/central-services-shared').Enum
 const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handling').Factory
+const EventFrameworkUtil = require('@mojaloop/central-services-shared').Util.EventFramework
+const Enum = require('@mojaloop/central-services-shared').Enum
 
 const util = require('../lib/util')
 const dto = require('../lib/dto')
@@ -67,7 +69,6 @@ module.exports = {
     let step
 
     try {
-      await util.auditSpan(request)
       const type = isFX ? Events.Event.Type.FX_QUOTE : Events.Event.Type.QUOTE
 
       step = 'messageFromRequestDto-1'
@@ -79,6 +80,36 @@ module.exports = {
         originalPayloadStorage,
         payloadCache
       })
+
+      let contentSpecificTags = {}
+      let operation
+      if (isFX) {
+        contentSpecificTags = {
+          conversionRequestId: message.content.payload.conversionRequestId,
+          conversionId: message.content.payload.conversionTerms.conversionId,
+          determiningTransferId: message.content.payload.conversionTerms.determiningTransferId,
+          transactionId: message.content.payload.conversionTerms.determiningTransferId
+        }
+        operation = Enum.Tags.QueryTags.operation.postFxQuotes
+      } else {
+        contentSpecificTags = {
+          quoteId: message.content.payload.quoteId,
+          transactionId: message.content.payload.transactionId
+        }
+        operation = Enum.Tags.QueryTags.operation.postQuotes
+      }
+      const queryTags = EventFrameworkUtil.Tags.getQueryTags(
+        Enum.Tags.QueryTags.serviceName.quotingService,
+        Enum.Tags.QueryTags.auditType.transactionFlow,
+        Enum.Tags.QueryTags.contentType.httpRequest,
+        operation,
+        {
+          httpMethod: request.method,
+          httpPath: request.path,
+          ...contentSpecificTags
+        }
+      )
+      await util.auditSpan(request, queryTags, { transformedPayload: message.content.payload })
 
       const producerConfig = isFX ? kafkaConfig.PRODUCER.FX_QUOTE.POST : kafkaConfig.PRODUCER.QUOTE.POST
       const topicConfig = dto.topicConfigDto({ topicName: producerConfig.topic })

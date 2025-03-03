@@ -170,7 +170,7 @@ describe('/quotes/{id} API Tests -->', () => {
       Producer.produceMessage = jest.fn()
       const conversionRequestId = randomUUID()
       const mockRequest = mocks.mockHttpRequest({
-        payload: { conversionRequestId },
+        payload: { conversionRequestId, conversionTerms: { conversionId: randomUUID(), determiningTransferId: randomUUID() } },
         headers: {
           'content-type': 'application/vnd.interoperability.fxQuotes+json;version=1.0'
         }
@@ -266,6 +266,7 @@ describe('/quotes/{id} API Tests -->', () => {
           'content-type': 'application/vnd.interoperability.fxQuotes+json;version=1.0'
         }
       })
+      mockRequest.path = `/fxQuotes/${conversionRequestId}/error`
       const { handler, code } = mocks.createMockHapiHandler()
 
       // Act
