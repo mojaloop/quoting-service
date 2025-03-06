@@ -2,5 +2,6 @@
 reject: [
   "eslint",
   "@mojaloop/sdk-standard-components", ## version 19.9.0 caused integration tests to fail
-  "@mojaloop/inter-scheme-proxy-cache-lib" ## version 2.3.7 caused integration tests to fail
+  "@mojaloop/inter-scheme-proxy-cache-lib", ## version 2.3.7 caused integration tests to fail
+  "@mojaloop/central-services-shared" ## version 2.3.7 caused integration tests to fail
 ]
