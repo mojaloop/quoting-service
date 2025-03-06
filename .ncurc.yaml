@@ -1,5 +1,6 @@
 ## Add a comment indicating the reason for each rejected dependency upgrade added to this list, and what should be done to resolve it (i.e. handle it through a story, etc).
 reject: [
   "eslint",
-  "@mojaloop/sdk-standard-components" ## version 19.9.0 caused integration tests to fail
+  "@mojaloop/sdk-standard-components", ## version 19.9.0 caused integration tests to fail
+  "@mojaloop/inter-scheme-proxy-cache-lib" ## version 2.3.7 caused integration tests to fail
 ]
