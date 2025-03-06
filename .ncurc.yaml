@@ -1,7 +1,6 @@
 ## Add a comment indicating the reason for each rejected dependency upgrade added to this list, and what should be done to resolve it (i.e. handle it through a story, etc).
 reject: [
   "eslint",
-  "@mojaloop/sdk-standard-components", ## version 19.9.0 caused integration tests to fail
-  "@mojaloop/inter-scheme-proxy-cache-lib", ## version 2.3.7 caused integration tests to fail
-  "@mojaloop/central-services-shared" ## version 2.3.7 caused integration tests to fail
+  "@mojaloop/central-services-shared", ## version 18.21.0 caused unit tests to fail on CircleCI
+  "@mojaloop/event-sdk" ## version 14.2.0 caused int tests to fail on CircleCI
 ]
