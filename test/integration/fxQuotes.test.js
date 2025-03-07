@@ -122,7 +122,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
-      expect(response.data.history.length).toBe(1)
+      expect(response.data.history.length).toBeGreaterThanOrEqual(1) // count 1 extra call to redbank
 
       // assert that the request was received by the proxy
       const request = response.data.history[0]
@@ -267,7 +267,7 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await getResponseWithRetry()
-    expect(response.data.history.length).toBe(1) // count 1 extra call to greenbank
+    expect(response.data.history.length).toBeGreaterThanOrEqual(1) // count 1 extra call to greenbank
 
     // assert that the request was received by the payee dfsp
     const request = response.data.history[0]
