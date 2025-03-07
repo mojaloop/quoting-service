@@ -86,7 +86,6 @@
     "wait-4-docker": "node ./scripts/_wait4_all.js"
   },
   "overrides": {
-    "@mojaloop/event-sdk": "14.3.0-snapshot.0",
     "shins": {
       "ajv": "6.12.3",
       "ejs": "3.1.10",
@@ -115,9 +114,9 @@
     "@mojaloop/central-services-health": "15.0.4",
     "@mojaloop/central-services-logger": "11.5.5",
     "@mojaloop/central-services-metrics": "12.4.5",
-    "@mojaloop/central-services-shared": "18.22.1-snapshot.0",
+    "@mojaloop/central-services-shared": "18.22.1",
     "@mojaloop/central-services-stream": "11.5.1",
-    "@mojaloop/event-sdk": "14.3.0-snapshot.0",
+    "@mojaloop/event-sdk": "14.3.0",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.3.7",
     "@mojaloop/ml-number": "11.2.7",
     "@mojaloop/ml-schema-transformer-lib": "2.5.6",
