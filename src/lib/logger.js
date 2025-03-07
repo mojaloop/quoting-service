@@ -29,6 +29,5 @@ const { loggerFactory } = require('@mojaloop/central-services-logger/src/context
 const logger = loggerFactory('QS') // global logger
 
 module.exports = {
-  logger,
-  loggerFactory
+  logger
 }
