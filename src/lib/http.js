@@ -59,13 +59,13 @@ async function httpRequest (opts, fspiopSource) {
   // need to wrap the request below in a `try catch` to handle network errors
   let res
   let body
-  const log = logger.child({ context: 'httpRequest', fspiopSource, opts })
+  const log = logger.child({ component: 'httpRequest', fspiopSource })
   log.debug('httpRequest is started...')
 
   try {
     res = await axios.request(opts)
     body = await res.data
-    log.debug('httpRequest is finished', { body })
+    log.verbose('httpRequest is finished', { body, opts })
   } catch (e) {
     log.error('httpRequest is failed due to error:', e)
     const [fspiopErrorType, fspiopErrorDescr] = e.response && e.response.status === 404

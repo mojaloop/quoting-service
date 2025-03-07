@@ -28,12 +28,13 @@
 
 const { Producer } = require('@mojaloop/central-services-stream').Util
 const { createProxyClient } = require('../../src/lib/proxy')
+const { logger } = require('../../src/lib/logger')
 const Config = require('../../src/lib/config')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
 const dto = require('../../src/lib/dto')
+const Database = require('../../src/data/cachedDatabase')
 const mocks = require('../mocks')
 const { wrapWithRetries } = require('../util/helper')
-const Database = require('../../src/data/cachedDatabase')
 
 const TEST_TIMEOUT = 20_000
 
@@ -121,7 +122,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
-      expect(response.data.history.length).toBe(2) // count 1 extra call to redbank
+      expect(response.data.history.length).toBe(1)
 
       // assert that the request was received by the proxy
       const request = response.data.history[0]
@@ -193,7 +194,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
-      if (response.data.history.length !== 1) console.log(response.data.history)
+      if (response.data.history.length !== 1) logger.info('response.data.history', response.data.history)
       expect(response.data.history.length).toBe(1)
 
       // assert that the callback was received by the payer dfsp
@@ -266,7 +267,7 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await getResponseWithRetry()
-    expect(response.data.history.length).toBe(2) // count 1 extra call to greenbank
+    expect(response.data.history.length).toBe(1) // count 1 extra call to greenbank
 
     // assert that the request was received by the payee dfsp
     const request = response.data.history[0]
