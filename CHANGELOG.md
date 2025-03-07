@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.4.0](https://github.com/mojaloop/quoting-service/compare/v17.3.1...v17.4.0) (2025-03-07)
+
+
+### Features
+
+* **csi-1252:** updated central-services-shared to log request error details  ([#400](https://github.com/mojaloop/quoting-service/issues/400)) ([3402778](https://github.com/mojaloop/quoting-service/commit/3402778f666e9b62661b90e2322d1db46b28d452))
+
 ### [17.3.1](https://github.com/mojaloop/quoting-service/compare/v17.3.0...v17.3.1) (2025-03-06)
 
 
