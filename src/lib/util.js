@@ -245,12 +245,25 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
     if (!proxyClient.isConnected) await proxyClient.connect()
     const proxyIdSource = await proxyClient.lookupProxyByDfspId(source)
     const proxyIdDestination = await proxyClient.lookupProxyByDfspId(destination)
-    if (proxyIdSource) {
+
+    if (!proxyIdSource) {
+      const selfHealSourceProxy = config.selfHealFXPProxyMap[source]
+      if (selfHealSourceProxy) {
+        await proxyClient.addDfspIdToProxyMapping(source, selfHealSourceProxy)
+        requestPayer = proxyAdjacentParticipantDto(source)
+      }
+    } else {
       // construct participant adjacent data structure that uses the original
       // participant when they are proxied and out of scheme
       requestPayer = proxyAdjacentParticipantDto(source)
     }
-    if (proxyIdDestination) {
+    if (!proxyIdDestination) {
+      const selfHealDestinationProxy = config.selfHealFXPProxyMap[destination]
+      if (selfHealDestinationProxy) {
+        await proxyClient.addDfspIdToProxyMapping(destination, selfHealDestinationProxy)
+        requestPayee = proxyAdjacentParticipantDto(destination)
+      }
+    } else {
       // construct participant adjacent data structure that uses the original
       // participant when they are proxied and out of scheme
       requestPayee = proxyAdjacentParticipantDto(destination)

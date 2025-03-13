@@ -156,6 +156,75 @@ describe('POST /fxQuotes request tests --> ', () => {
     }
   })
 
+  test('should POST /fxQuotes (proxied) self heal', async () => {
+    let response = await hubClient.getHistory()
+    expect(response.data.history.length).toBe(0)
+
+    const from = 'pinkbank'
+    const to = 'orangebank' // orangebank not in the hub db
+    const proxyId = 'orangebankproxy'
+    let proxyClient
+
+    try {
+      proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+
+      // assert that the proxy representative is not mapped in the cache
+      const key = `dfsp:${to}`
+      let proxy = await proxyClient.redisClient.get(key)
+      expect(proxy).toBe(null)
+
+      const payload = mocks.postFxQuotesPayloadDto({
+        initiatingFsp: from,
+        counterPartyFsp: to
+      })
+      const message = mocks.kafkaMessagePayloadPostDto({ from, to, id: payload.conversionRequestId, payloadBase64: base64Encode(JSON.stringify(payload)) })
+      const { topic, config } = kafkaConfig.PRODUCER.FX_QUOTE.POST
+      const topicConfig = dto.topicConfigDto({ topicName: topic })
+      const isOk = await Producer.produceMessage(message, topicConfig, config)
+      expect(isOk).toBe(true)
+
+      response = await getResponseWithRetry()
+      expect(response.data.history.length).toBeGreaterThanOrEqual(1) // count 1 extra call to redbank
+
+      // assert that the request was received by the proxy
+      const request = response.data.history[0]
+      expect(request.method).toBe('POST')
+      expect(request.url).toBe(`/${proxyId}/fxQuotes`)
+      expect(request.body).toEqual(payload)
+      expect(request.headers['fspiop-source']).toBe(from)
+      expect(request.headers['fspiop-destination']).toBe(to)
+
+      // check fx quote details were saved to db
+      const fxQuoteDetails = await db._getFxQuoteDetails(payload.conversionRequestId)
+      expect(fxQuoteDetails).toEqual({
+        conversionRequestId: payload.conversionRequestId,
+        conversionId: payload.conversionTerms.conversionId,
+        determiningTransferId: payload.conversionTerms.determiningTransferId,
+        amountTypeId: 1,
+        initiatingFsp: payload.conversionTerms.initiatingFsp,
+        counterPartyFsp: payload.conversionTerms.counterPartyFsp,
+        sourceAmount: payload.conversionTerms.sourceAmount.amount,
+        sourceCurrency: payload.conversionTerms.sourceAmount.currency,
+        targetAmount: 0,
+        targetCurrency: payload.conversionTerms.targetAmount.currency,
+        extensions: expect.anything(),
+        expirationDate: expect.anything(),
+        createdDate: expect.anything()
+      })
+      expect(JSON.parse(fxQuoteDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
+
+      // assert that the proxy representative is mapped in the cache
+      // this is a self-heal test as orangeBank is defined in SELF_HEAL_FXP_PROXY_MAP
+      const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
+      proxy = await proxyClient.redisClient.get(key)
+      expect(isAdded).toBe(true)
+      expect(proxy).toBe(proxyId)
+    } finally {
+      await proxyClient.removeDfspIdFromProxyMapping(to)
+      await proxyClient.disconnect()
+    }
+  })
+
   /**
    * Produces a PUT /fxQuotes/{ID} callback from a proxied payee
    * Expects a PUT /fxQuotes/{ID} callback at the payer's endpoint
