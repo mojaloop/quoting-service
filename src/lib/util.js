@@ -247,7 +247,7 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
     const proxyIdDestination = await proxyClient.lookupProxyByDfspId(destination)
 
     if (!proxyIdSource) {
-      const selfHealSourceProxy = config.selfHealFXPProxyMap[source]
+      const selfHealSourceProxy = config.proxyMap[source]
       if (selfHealSourceProxy) {
         await proxyClient.addDfspIdToProxyMapping(source, selfHealSourceProxy)
         requestPayer = proxyAdjacentParticipantDto(source)
@@ -258,7 +258,7 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
       requestPayer = proxyAdjacentParticipantDto(source)
     }
     if (!proxyIdDestination) {
-      const selfHealDestinationProxy = config.selfHealFXPProxyMap[destination]
+      const selfHealDestinationProxy = config.proxyMap[destination]
       if (selfHealDestinationProxy) {
         await proxyClient.addDfspIdToProxyMapping(destination, selfHealDestinationProxy)
         requestPayee = proxyAdjacentParticipantDto(destination)

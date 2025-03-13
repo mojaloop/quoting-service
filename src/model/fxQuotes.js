@@ -94,7 +94,7 @@ class FxQuotesModel {
       // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
       const proxy = await this.proxyClient?.lookupProxyByDfspId(fspiopDestination)
       if (!proxy) {
-        const selfHealFXPProxy = this.envConfig.selfHealFXPProxyMap[fspiopDestination]
+        const selfHealFXPProxy = this.envConfig.proxyMap[fspiopDestination]
         if (selfHealFXPProxy) {
           await this.proxyClient?.addDfspIdToProxyMapping(fspiopDestination, selfHealFXPProxy)
         } else {

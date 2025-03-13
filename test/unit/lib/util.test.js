@@ -646,7 +646,7 @@ describe('util', () => {
     it('self heals source proxy mapping if not found', async () => {
       // Arrange
       Config.mockImplementation(() => ({
-        selfHealFXPProxyMap: {
+        proxyMap: {
           [mockData.headers['fspiop-source']]: 'selfHealProxy1'
         }
       // eslint-disable-next-line
@@ -693,7 +693,7 @@ describe('util', () => {
     it('self heals destination proxy mapping if not found', async () => {
       // Arrange
       Config.mockImplementation(() => ({
-        selfHealFXPProxyMap: {
+        proxyMap: {
           [mockData.headers['fspiop-destination']]: 'selfHealProxy2'
         }
       // eslint-disable-next-line

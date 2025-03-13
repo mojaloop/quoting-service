@@ -163,11 +163,12 @@ describe('POST /fxQuotes request tests --> ', () => {
     const from = 'pinkbank'
     const to = 'orangebank' // orangebank not in the hub db
     const proxyId = 'orangebankproxy'
-    let proxyClient
+
+    // remove the proxy mapping for orangebank
+    const proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
+    await proxyClient.removeDfspIdFromProxyMapping(to)
 
     try {
-      proxyClient = createProxyClient({ proxyCacheConfig: proxyCache, logger: console })
-
       // assert that the proxy representative is not mapped in the cache
       const key = `dfsp:${to}`
       let proxy = await proxyClient.redisClient.get(key)
@@ -214,13 +215,12 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(JSON.parse(fxQuoteDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
 
       // assert that the proxy representative is mapped in the cache
-      // this is a self-heal test as orangeBank is defined in SELF_HEAL_FXP_PROXY_MAP
+      // this is a self-heal test as orangeBank is defined in PROXY_MAP
       const isAdded = await proxyClient.addDfspIdToProxyMapping(to, proxyId)
       proxy = await proxyClient.redisClient.get(key)
       expect(isAdded).toBe(true)
       expect(proxy).toBe(proxyId)
     } finally {
-      await proxyClient.removeDfspIdFromProxyMapping(to)
       await proxyClient.disconnect()
     }
   })
