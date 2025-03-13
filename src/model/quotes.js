@@ -196,13 +196,8 @@ class QuotesModel {
     }
     // skip fulfil validation if the source is a proxy
     if (!proxyIdSource) {
-      const selfHealSourceProxy = this.envConfig.selfHealFXPProxyMap[fspiopSource]
-      if (selfHealSourceProxy) {
-        await this.proxyClient.addDfspIdToProxyMapping(fspiopSource, selfHealSourceProxy)
-      } else {
-        const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
-        await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
-      }
+      const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
+      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, ENUM.Accounts.LedgerAccountType.POSITION)
     }
   }
 

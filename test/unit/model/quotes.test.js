@@ -756,22 +756,6 @@ describe('QuotesModel', () => {
       expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
       await expect(promise).resolves.toBeUndefined()
     })
-
-    it('should validate quote update if proxy is not in cache but is in this.envConfig.selfHealFXPProxyMap', async () => {
-      quotesModel.proxyClient = {
-        isConnected: false,
-        connect: jest.fn().mockResolvedValue(true),
-        lookupProxyByDfspId: jest.fn().mockResolvedValueOnce(undefined),
-        addDfspIdToProxyMapping: jest.fn().mockResolvedValueOnce(true)
-      }
-      quotesModel.envConfig.selfHealFXPProxyMap = {
-        [mockData.headers['fspiop-source']]: 'proxyId'
-      }
-      const promise = quotesModel.validateQuoteUpdate(mockData.headers, mockData.quoteUpdate)
-      await expect(promise).resolves.toBeUndefined()
-      expect(quotesModel.proxyClient.addDfspIdToProxyMapping).toHaveBeenCalledWith(mockData.headers['fspiop-source'], 'proxyId')
-      expect(quotesModel.db.getParticipant).toHaveBeenCalledTimes(0)
-    })
   })
   describe('handleQuoteRequest', () => {
     beforeEach(() => {
