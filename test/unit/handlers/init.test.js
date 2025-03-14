@@ -95,6 +95,23 @@ describe('init Tests -->', () => {
     expect(mockProxyCache.connect).toHaveBeenCalled()
   })
 
+  test('should call addDfspIdToProxyMapping if proxyMap has entries', async () => {
+    isDbOk = true
+    const config = new Config()
+    config.proxyCache.enabled = true
+    config.proxyMap = { dfsp1: 'proxy1', dfsp2: 'proxy2' }
+    const mockProxyCache = {
+      connect: jest.fn().mockResolvedValue(true),
+      addDfspIdToProxyMapping: jest.fn().mockResolvedValue(true)
+    }
+    createProxyClient.mockReturnValue(mockProxyCache)
+
+    await expect(init.startFn(handlerList, config)).resolves.toBeTruthy()
+    expect(mockProxyCache.connect).toHaveBeenCalled()
+    expect(mockProxyCache.addDfspIdToProxyMapping).toHaveBeenCalledWith('dfsp1', 'proxy1')
+    expect(mockProxyCache.addDfspIdToProxyMapping).toHaveBeenCalledWith('dfsp2', 'proxy2')
+  })
+
   test('should throw error if proxyCache is not connected', async () => {
     isDbOk = true
     const config = new Config()

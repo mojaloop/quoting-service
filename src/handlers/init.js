@@ -56,6 +56,12 @@ const startFn = async (handlerList, appConfig = undefined) => {
     const isProxyOk = await proxyClient.connect()
     if (!isProxyOk) throw new Error('Proxy is not connected')
     logger.info('Proxy cache is connected')
+
+    if (config.proxyMap) {
+      for (const [dfspId, proxyId] of Object.entries(config.proxyMap)) {
+        await proxyClient.addDfspIdToProxyMapping(dfspId, proxyId)
+      }
+    }
   }
 
   initializeInstrumentation(config)

@@ -38,9 +38,9 @@ const Logger = require('@mojaloop/central-services-logger')
 const { Cache } = require('memory-cache')
 const { Enum } = require('@mojaloop/central-services-shared')
 
-const Config = require('../../../src/lib/config.js')
+let Config = require('../../../src/lib/config.js')
 const { RESOURCES, ISO_HEADER_PART } = require('../../../src/constants')
-const {
+let {
   failActionHandler,
   getStackOrInspect,
   getSpanTags,
@@ -520,9 +520,19 @@ describe('util', () => {
   })
 
   describe('fetchParticipantInfo', () => {
+    beforeAll(() => {
+      jest.mock('../../../src/lib/config')
+    })
+
     beforeEach(() => {
       // restore the current method in test to its original implementation
       axios.request.mockRestore()
+      jest.resetModules()
+      Config = require('../../../src/lib/config')
+    })
+
+    afterAll(() => {
+      Config = jest.requireActual('../../../src/lib/config')
     })
 
     it('returns payer and payee', async () => {
@@ -631,6 +641,100 @@ describe('util', () => {
       expect(axios.request.mock.calls.length).toBe(2)
       expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
       expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+    })
+
+    it('self heals source proxy mapping if not found', async () => {
+      // Arrange
+      Config.mockImplementation(() => ({
+        proxyMap: {
+          [mockData.headers['fspiop-source']]: 'selfHealProxy1'
+        }
+      // eslint-disable-next-line
+      }))
+      // eslint-disable-next-line
+      ({ fetchParticipantInfo } = require('../../../src/lib/util'))
+      const cache = new Cache()
+      const proxyClient = {
+        isConnected: false,
+        connect: jest.fn().mockResolvedValue(true),
+        lookupProxyByDfspId: jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce('proxy2'),
+        addDfspIdToProxyMapping: jest.fn().mockResolvedValue(true)
+      }
+      // Act
+      const result = await fetchParticipantInfo(
+        mockData.headers['fspiop-source'],
+        mockData.headers['fspiop-destination'],
+        cache,
+        proxyClient
+      )
+      // Assert
+      expect(result).toEqual({
+        payer: {
+          name: mockData.headers['fspiop-source'],
+          id: '',
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        },
+        payee: {
+          name: mockData.headers['fspiop-destination'],
+          id: '',
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        }
+      })
+      expect(proxyClient.addDfspIdToProxyMapping).toHaveBeenCalledWith(mockData.headers['fspiop-source'], 'selfHealProxy1')
+      expect(axios.request.mock.calls.length).toBe(0)
+    })
+
+    it('self heals destination proxy mapping if not found', async () => {
+      // Arrange
+      Config.mockImplementation(() => ({
+        proxyMap: {
+          [mockData.headers['fspiop-destination']]: 'selfHealProxy2'
+        }
+      // eslint-disable-next-line
+      }))
+      // eslint-disable-next-line
+      ({ fetchParticipantInfo } = require('../../../src/lib/util'))
+      const cache = new Cache()
+      const proxyClient = {
+        isConnected: false,
+        connect: jest.fn().mockResolvedValue(true),
+        lookupProxyByDfspId: jest.fn().mockResolvedValueOnce('proxy1').mockResolvedValueOnce(null),
+        addDfspIdToProxyMapping: jest.fn().mockResolvedValue(true)
+      }
+      // Act
+      const result = await fetchParticipantInfo(
+        mockData.headers['fspiop-source'],
+        mockData.headers['fspiop-destination'],
+        cache,
+        proxyClient
+      )
+      // Assert
+      expect(result).toEqual({
+        payer: {
+          name: mockData.headers['fspiop-source'],
+          id: '',
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        },
+        payee: {
+          name: mockData.headers['fspiop-destination'],
+          id: '',
+          isActive: 1,
+          links: { self: '' },
+          accounts: [],
+          proxiedParticipant: true
+        }
+      })
+      expect(proxyClient.addDfspIdToProxyMapping).toHaveBeenCalledWith(mockData.headers['fspiop-destination'], 'selfHealProxy2')
+      expect(axios.request.mock.calls.length).toBe(0)
     })
   })
 

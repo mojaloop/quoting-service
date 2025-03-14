@@ -94,9 +94,14 @@ class FxQuotesModel {
       // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
       const proxy = await this.proxyClient?.lookupProxyByDfspId(fspiopDestination)
       if (!proxy) {
-        await Promise.all(currencies.map((currency) => {
-          return this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
-        }))
+        const selfHealFXPProxy = this.envConfig.proxyMap[fspiopDestination]
+        if (selfHealFXPProxy) {
+          await this.proxyClient?.addDfspIdToProxyMapping(fspiopDestination, selfHealFXPProxy)
+        } else {
+          await Promise.all(currencies.map((currency) => {
+            return this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, ENUM.Accounts.LedgerAccountType.POSITION)
+          }))
+        }
       }
       histTimer({ success: true, queryName: 'validateFxQuoteRequest' })
     } catch (error) {
