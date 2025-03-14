@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.5.0](https://github.com/mojaloop/quoting-service/compare/v17.4.0...v17.5.0) (2025-03-14)
+
+
+### Features
+
+* add config option to self heal fxp proxy mappings ([#401](https://github.com/mojaloop/quoting-service/issues/401)) ([d03744e](https://github.com/mojaloop/quoting-service/commit/d03744ebd7b0d031a1c86eef72333ee40841d952))
+
 ## [17.4.0](https://github.com/mojaloop/quoting-service/compare/v17.3.1...v17.4.0) (2025-03-07)
 
 
