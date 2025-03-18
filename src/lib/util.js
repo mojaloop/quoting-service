@@ -46,7 +46,7 @@ const { RESOURCES, HEADERS, ISO_HEADER_PART } = require('../constants')
 const { logger } = require('../lib')
 const Config = require('./config')
 
-const { rethrow } = require('@mojaloop/central-services-shared').Util
+const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('QS')
 const config = new Config()
 
 const failActionHandler = async (request, h, err) => {
