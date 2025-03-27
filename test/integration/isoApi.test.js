@@ -102,7 +102,7 @@ describe('ISO API Tests -->', () => {
       expect(data.history.length).toBe(1)
       const { body, headers } = data.history[0]
       expect(headers['content-type']).toContain(ISO_HEADER_PART)
-      expect(body.TxInfAndSts.StsRsnInf.Rsn.Cd).toBe(expectedErrorCode)
+      expect(body.TxInfAndSts.StsRsnInf.Rsn.Prtry).toBe(expectedErrorCode)
     })
 
     test('should validate ISO PUT /quotes/{id}/error payload and forward error if quote exists in db', async () => {
@@ -138,7 +138,7 @@ describe('ISO API Tests -->', () => {
 
       expect(body.GrpHdr.MsgId).toBe(isoPayload.GrpHdr.MsgId)
       expect(body.GrpHdr.CreDtTm).toBe(isoPayload.GrpHdr.CreDtTm)
-      expect(body.TxInfAndSts.StsRsnInf.Rsn.Cd).toBe(isoPayload.TxInfAndSts.StsRsnInf.Rsn.Cd)
+      expect(body.TxInfAndSts.StsRsnInf.Rsn.Prtry).toBe(isoPayload.TxInfAndSts.StsRsnInf.Rsn.Prtry)
     })
   })
 
@@ -190,7 +190,7 @@ describe('ISO API Tests -->', () => {
       expect(data.history.length).toBe(1)
       const { body, headers } = data.history[0]
       expect(headers['content-type']).toContain(ISO_HEADER_PART)
-      expect(body.TxInfAndSts.StsRsnInf.Rsn.Cd).toBe(errorCode)
+      expect(body.TxInfAndSts.StsRsnInf.Rsn.Prtry).toBe(errorCode)
     })
 
     test('should validate ISO PUT /fxQuotes/{id}/error payload and forward error if quote exists in db', async () => {
@@ -223,7 +223,7 @@ describe('ISO API Tests -->', () => {
 
       expect(body.GrpHdr.MsgId).toBe(isoPayload.GrpHdr.MsgId)
       expect(body.GrpHdr.CreDtTm).toBe(isoPayload.GrpHdr.CreDtTm)
-      expect(body.TxInfAndSts.StsRsnInf.Rsn.Cd).toBe(isoPayload.TxInfAndSts.StsRsnInf.Rsn.Cd)
+      expect(body.TxInfAndSts.StsRsnInf.Rsn.Prtry).toBe(isoPayload.TxInfAndSts.StsRsnInf.Rsn.Prtry)
     })
   })
 })
