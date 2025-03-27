@@ -118,7 +118,7 @@ describe('POST /quotes API Tests -->', () => {
 
     // Assert
     expect(spyErrorLog).toHaveBeenCalledTimes(1)
-    expect(spyErrorLog.mock.calls[0][0]).toContain(error.message)
+    expect(spyErrorLog.mock.calls[0][1].message).toContain(error.message)
   })
 
   it('should rethrow errors if metrics are disabled', async () => {
