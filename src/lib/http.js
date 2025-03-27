@@ -67,7 +67,7 @@ async function httpRequest (opts, fspiopSource) {
     body = await res.data
     log.verbose('httpRequest is finished', { body, opts })
   } catch (e) {
-    log.error('httpRequest is failed due to error:', e)
+    log.error('httpRequest failed due to an error:', e)
     const [fspiopErrorType, fspiopErrorDescr] = e.response && e.response.status === 404
       ? [ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Not found']
       : [ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error']

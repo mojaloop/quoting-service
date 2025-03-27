@@ -173,7 +173,7 @@ class QuotesModel {
       histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
       log.verbose('validateQuoteRequest is done')
     } catch (err) {
-      log.warn('validateQuoteRequest is failed with error', err)
+      log.warn('validateQuoteRequest failed with error', err)
       histTimer({ success: false, queryName: 'quote_validateQuoteRequest' })
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'validateQuoteRequest', step })
@@ -508,7 +508,7 @@ class QuotesModel {
       histTimer({ success: true, queryName: 'quote_forwardQuoteRequest' })
       log.info('forwardQuoteRequest is done')
     } catch (err) {
-      log.error('forwardQuoteRequest is failed with error:', err)
+      log.error('forwardQuoteRequest failed with error:', err)
       histTimer({ success: false, queryName: 'quote_forwardQuoteRequest' })
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(err, { operation: 'forwardQuoteRequest', step })
