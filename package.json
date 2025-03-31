@@ -143,7 +143,6 @@
     "jest-junit": "16.0.0",
     "npm-check-updates": "17.1.16",
     "pre-commit": "1.2.2",
-    "sinon": "20.0.0",
     "standard": "17.1.2",
     "standard-version": "9.5.0",
     "swagmock": "1.0.0"
