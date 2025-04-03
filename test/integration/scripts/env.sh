@@ -15,5 +15,3 @@ export CENTRAL_LEDGER_ADMIN_PORT=3001
 export CENTRAL_LEDGER_ADMIN_BASE=/
 
 export MIGRATION_TIMEOUT=60
-
-source ./scripts/env.sh

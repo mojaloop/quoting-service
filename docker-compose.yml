@@ -24,29 +24,27 @@ x-quoting-service: &quotingServiceBase
   depends_on:
     <<: *dependsOnMysqlAndKafka
   extra_hosts:
-      - "redis-node-0:host-gateway"
+    - "redis-node-0:host-gateway"
 #    central-ledger:
 #      condition: service_healthy # to perform test dfsp onboarding
 
 # @see https://uninterrupted.tech/blog/hassle-free-redis-cluster-deployment-using-docker/
 x-redis-node: &REDIS_NODE
-  image: docker.io/bitnami/redis-cluster:6.2.14
+  image: docker.io/bitnami/redis-cluster:7.4.2
   environment: &REDIS_ENVS
-    ALLOW_EMPTY_PASSWORD: 'yes'
-    REDIS_CLUSTER_DYNAMIC_IPS: 'no'
-    REDIS_CLUSTER_ANNOUNCE_IP: ${REDIS_CLUSTER_ANNOUNCE_IP}
-    REDIS_NODES: localhost:6379 localhost:6380 localhost:6381 localhost:6382 localhost:6383 localhost:6384
+    ALLOW_EMPTY_PASSWORD: yes
+    REDIS_NODES: redis-node-0:6379 redis-node-1:6380 redis-node-2:6381 redis-node-3:6382 redis-node-4:6383 redis-node-5:6384
+    REDIS_CLUSTER_ANNOUNCE_HOSTNAME: localhost
+    REDIS_CLUSTER_PREFERRED_ENDPOINT_TYPE: hostname
   healthcheck:
     test: [ "CMD", "redis-cli", "ping" ]
     timeout: 2s
-  network_mode: host
 
 x-healthcheck-params: &healthcheckParams
   interval: 30s
   timeout: 20s
   retries: 10
   start_period: 40s
-
 
 services:
   quoting-service:
@@ -63,7 +61,7 @@ services:
     environment:
       - LOG_LEVEL=debug
       - QUOTE_API_TYPE=iso20022
-#      - QUOTE_ORIGINAL_PAYLOAD_STORAGE=redis
+      #      - QUOTE_ORIGINAL_PAYLOAD_STORAGE=redis
       - QUOTE_ORIGINAL_PAYLOAD_STORAGE=kafka
     ports:
       - "13002:3002"
@@ -80,21 +78,29 @@ services:
       - "29229:9229"
     container_name: qs_quoting-service-handler
 
-
   central-ledger:
     image: mojaloop/central-ledger:v17.8.0-snapshot.7
     container_name: qs_central-ledger
     ports:
       - "3001:3001"
     volumes:
-       - ./docker/central-ledger/default.json:/opt/app/config/default.json
+      - ./docker/central-ledger/default.json:/opt/app/config/default.json
     environment:
       - CLEDG_DATABASE_URI=mysql://central_ledger:password@mysql:3306/central_ledger
       - CLEDG_SIDECAR__DISABLED=true
     depends_on: *dependsOnMysqlAndKafka
     healthcheck:
       <<: *healthcheckParams
-      test: [ "CMD", "sh", "-c" ,"apk --no-cache add curl", "&&", "curl", "http://localhost:3001/health" ]
+      test:
+        [
+          "CMD",
+          "sh",
+          "-c",
+          "apk --no-cache add curl",
+          "&&",
+          "curl",
+          "http://localhost:3001/health",
+        ]
 
   ml-api-adapter:
     image: mojaloop/ml-api-adapter:latest
@@ -123,16 +129,18 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=true
     healthcheck:
       <<: *healthcheckParams
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "mysql" ]
+      test: ["CMD", "mysqladmin", "ping", "-h", "mysql"]
 
-#  To use with proxyCache.type === 'redis-cluster'
+  #  To use with proxyCache.type === 'redis-cluster'
   redis-node-0:
     container_name: redis-node-0
     <<: *REDIS_NODE
+    ports:
+      - 6379:6379
     environment:
       <<: *REDIS_ENVS
-      REDIS_CLUSTER_CREATOR: 'yes'
       REDIS_PORT_NUMBER: 6379
+      REDIS_CLUSTER_CREATOR: yes
     depends_on:
       - redis-node-1
       - redis-node-2
@@ -142,55 +150,54 @@ services:
   redis-node-1:
     container_name: redis-node-1
     <<: *REDIS_NODE
+    ports:
+      - 6380:6380
     environment:
       <<: *REDIS_ENVS
       REDIS_PORT_NUMBER: 6380
-    ports:
-      - "16380:16380"
   redis-node-2:
     container_name: redis-node-2
     <<: *REDIS_NODE
+    ports:
+      - 6381:6381
     environment:
       <<: *REDIS_ENVS
       REDIS_PORT_NUMBER: 6381
-    ports:
-      - "16381:16381"
   redis-node-3:
     container_name: redis-node-3
     <<: *REDIS_NODE
+    ports:
+      - 6382:6382
     environment:
       <<: *REDIS_ENVS
       REDIS_PORT_NUMBER: 6382
-    ports:
-      - "16382:16382"
   redis-node-4:
     container_name: redis-node-4
     <<: *REDIS_NODE
+    ports:
+      - 6383:6383
     environment:
       <<: *REDIS_ENVS
       REDIS_PORT_NUMBER: 6383
-    ports:
-      - "16383:16383"
   redis-node-5:
     container_name: redis-node-5
     <<: *REDIS_NODE
+    ports:
+      - 6384:6384
     environment:
       <<: *REDIS_ENVS
       REDIS_PORT_NUMBER: 6384
-    ports:
-      - "16384:16384"
 
-##  To use with proxyCache.type === 'redis'
-#  redis:
-#    image: redis:6.2.4-alpine
-#    restart: "unless-stopped"
-#    environment:
-#      - ALLOW_EMPTY_PASSWORD=yes
-#      - REDIS_PORT=6379
-#      - REDIS_REPLICATION_MODE=master
-#    ports:
-#      - "${REDIS_STANDALONE_PORT}:6379"
-
+  ##  To use with proxyCache.type === 'redis'
+  #  redis:
+  #    image: redis:6.2.4-alpine
+  #    restart: "unless-stopped"
+  #    environment:
+  #      - ALLOW_EMPTY_PASSWORD=yes
+  #      - REDIS_PORT=6379
+  #      - REDIS_REPLICATION_MODE=master
+  #    ports:
+  #      - "${REDIS_STANDALONE_PORT}:6379"
 
   kafka:
     image: docker.io/bitnami/kafka:3.5
@@ -215,7 +222,13 @@ services:
       KAFKA_ENABLE_KRAFT: "true"
     healthcheck:
       <<: *healthcheckParams
-      test: ["CMD" ,"/opt/bitnami/kafka/bin/kafka-broker-api-versions.sh","--bootstrap-server","kafka:9092"]
+      test:
+        [
+          "CMD",
+          "/opt/bitnami/kafka/bin/kafka-broker-api-versions.sh",
+          "--bootstrap-server",
+          "kafka:9092",
+        ]
 
   init-kafka:
     image: docker.io/bitnami/kafka:3.5

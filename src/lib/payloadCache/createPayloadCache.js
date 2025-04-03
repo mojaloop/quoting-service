@@ -25,7 +25,7 @@
 *****/
 
 /* istanbul ignore file */
-const { logger } = require('../../lib')
+const { logger } = require('../../lib/logger')
 const PayloadCache = require('./PayloadCache')
 const PayloadCacheError = require('./errors')
 const { CACHE_TYPES } = require('./constants')
