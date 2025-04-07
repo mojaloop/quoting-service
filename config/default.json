@@ -84,7 +84,7 @@
   },
   "PROXY_MAP": {},
   "PROXY_CACHE": {
-    "enabled": true,
+    "enabled": false,
     "type": "redis-cluster",
     "proxyConfig": {
       "cluster": [
