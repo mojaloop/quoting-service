@@ -79,7 +79,7 @@ describe('FxQuotesModel Tests -->', () => {
   beforeEach(() => {
     db = fxQuoteMocks.db()
     proxyClient = fxQuoteMocks.proxyClient()
-    log = logger
+    log = logger.child({ test: 'fxQuotesModel' })
     requestId = randomUUID()
     headers = fxQuoteMocks.headers()
     request = fxQuoteMocks.fxQuoteRequest()
@@ -657,13 +657,13 @@ describe('FxQuotesModel Tests -->', () => {
       const error = new Error('Send Error Callback Error')
       fxQuotesModel = new FxQuotesModel({ db, requestId, proxyClient, log })
       jest.spyOn(fxQuotesModel, 'sendErrorCallback').mockRejectedValue(error)
-      jest.spyOn(log, 'error')
+      const logError = jest.spyOn(log.mlLogger, 'error')
 
       await expect(fxQuotesModel.handleException(headers['fspiop-source'], conversionRequestId, error, headers, span)).resolves.toBeUndefined()
 
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       expect(fxQuotesModel.sendErrorCallback).toBeCalledWith(headers['fspiop-source'], fspiopError, conversionRequestId, headers, childSpan, true)
-      expect(log.error).toBeCalledWith(expect.any(String), error)
+      expect(logError.mock.lastCall[1].message).toBe(error.message)
     })
   })
 

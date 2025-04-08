@@ -27,7 +27,7 @@
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const rules = require('../../config/rules')
-const RulesEngine = require('./rules.js')
+const RulesEngine = require('./rules')
 
 module.exports.executeRules = async function executeRules (headers, quoteRequest, originalPayload, payer, payee, operation) {
   if (rules.length === 0) {
@@ -43,8 +43,7 @@ module.exports.executeRules = async function executeRules (headers, quoteRequest
   }
 
   const { events } = await RulesEngine.run(rules, facts)
-
-  this.writeLog(`Rules engine returned events ${JSON.stringify(events)}`)
+  this.log.verbose('Rules engine returned events: ', { events })
 
   return await this.handleRuleEvents(events, headers, quoteRequest, originalPayload)
 }

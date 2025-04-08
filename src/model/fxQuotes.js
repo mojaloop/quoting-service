@@ -33,7 +33,6 @@ const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('@mojaloop/central-services-shared').Util
-const Logger = require('@mojaloop/central-services-logger')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -44,7 +43,7 @@ const util = require('../lib/util')
 
 const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
-const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
+const { generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
 const { RESOURCES, ERROR_MESSAGES } = require('../constants')
 const { executeRules, handleRuleEvents } = require('./executeRules')
 
@@ -60,7 +59,7 @@ class FxQuotesModel {
     this.envConfig = deps.envConfig || new Config()
     this.httpRequest = deps.httpRequest || httpRequest
     this.log = deps.log || logger.child({
-      context: this.constructor.name,
+      component: this.constructor.name,
       requestId: this.requestId
     })
     try {
@@ -267,7 +266,7 @@ class FxQuotesModel {
       }
 
       const { payer, payee } = await this._fetchParticipantInfo(fspiopSource, fspiopDestination, cache, this.proxyClient)
-      this.writeLog(`Got payer ${payer} and payee ${payee}`)
+      this.log.verbose('fetchParticipantInfo is done:', { payer, payee })
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
       // supply a rules file containing an empty array.
@@ -730,7 +729,7 @@ class FxQuotesModel {
         // any-error
         // as we are on our own in this context, dont just rethrow the error, instead...
         // get the model to handle it
-        this.log.error(`Error forwarding fxQuote response: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+        this.log.error('error forwarding fxQuote response: ', err)
         await this.handleException(fspiopSource, conversionRequestId, err, headers, childSpan)
       } finally {
         if (childSpan && !childSpan.isFinished) {
@@ -754,7 +753,8 @@ class FxQuotesModel {
       'handleException - Metrics for fx quote model',
       ['success', 'queryName']
     ).startTimer()
-    this.log.info('Attempting to send error callback to fspiopSource:', { conversionRequestId, fspiopSource })
+    const log = this.log.child({ conversionRequestId, fspiopSource })
+    log.info('attempting to send error callback to fspiopSource')
     const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
     const childSpan = span.getChild('qs_fxQuote_sendErrorCallback')
     try {
@@ -763,7 +763,7 @@ class FxQuotesModel {
       histTimer({ success: true, queryName: 'handleException' })
     } catch (err) {
       histTimer({ success: false, queryName: 'handleException' })
-      this.log.error('error in handleException, stop request processing!', err)
+      log.error('error in handleException, stop request processing!', err)
     } finally {
       if (childSpan && !childSpan.isFinished) {
         await childSpan.finish()
@@ -785,7 +785,6 @@ class FxQuotesModel {
       'sendErrorCallback - Metrics for fx quote model',
       ['success', 'queryName']
     ).startTimer()
-    const { envConfig } = this
     const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
     const log = this.log.child({ conversionRequestId, fspiopDest })
     let step
@@ -800,43 +799,19 @@ class FxQuotesModel {
 
       const fspiopUri = `/fxQuotes/${conversionRequestId}/error`
       const fullCallbackUrl = `${endpoint}${fspiopUri}`
-      log.info('Sending error callback to participant...', { conversionRequestId, fspiopSource, fspiopError, fullCallbackUrl })
+      log.info('Sending error callback to participant...', { fspiopSource, fspiopError, fullCallbackUrl })
 
-      // make an error callback
-      let fromSwitchHeaders
-
-      // modify/set the headers only in case it is explicitly requested to do so
-      // as this part needs to cover two different cases:
-      // 1. (do not modify them) when the Switch needs to relay an error, e.g. from a DFSP to another
-      // 2. (modify/set them) when the Switch needs to send errors that are originating in the Switch, e.g. to send an error back to the caller
-      if (modifyHeaders === true) {
-        // Should not forward 'fspiop-signature' header for switch generated messages
-        delete headers['fspiop-signature']
-        fromSwitchHeaders = Object.assign({}, headers, {
-          'fspiop-destination': fspiopSource,
-          'fspiop-source': envConfig.hubName,
-          'fspiop-http-method': ENUM.Http.RestMethods.PUT,
-          'fspiop-uri': fspiopUri
-        })
-      } else {
-        fromSwitchHeaders = Object.assign({}, headers)
-      }
-
-      // JWS Signer expects headers in lowercase
-      let formattedHeaders
-      if (envConfig.jws?.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes)
-      } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, null)
-      }
+      const callbackHeaders = this.#makeErrorCallbackHeaders({
+        modifyHeaders, headers, fspiopSource, fspiopUri
+      })
 
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
         data: originalPayload || await this.makeErrorPayload(fspiopError, headers),
-        headers: formattedHeaders
+        headers: callbackHeaders
       }
-      this.addFspiopSignatureHeader(opts) // try to "combine" with formattedHeaders logic
+      this.addFspiopSignatureHeader(opts) // try to "combine" with #makeErrorCallbackHeaders logic
 
       if (span) {
         opts = span.injectContextToHttpRequest(opts)
@@ -858,7 +833,7 @@ class FxQuotesModel {
       step = 'sendHttpRequest-2'
       const res = await this.sendHttpRequest(opts, fspiopSource, fspiopDest)
       const statusCode = res.status
-      log.info('got errorCallback response with statusCode:', { statusCode })
+      log.verbose('got errorCallback response with statusCode:', { statusCode })
 
       if (statusCode !== ENUM.Http.ReturnCodes.OK.CODE) {
         // think, if it's better to move this logic into this.sendHttpRequest()
@@ -873,7 +848,7 @@ class FxQuotesModel {
       }
     } catch (err) {
       histTimer({ success: false, queryName: 'sendErrorCallback' })
-      log.error('Error in sendErrorCallback', err)
+      log.error('error in sendErrorCallback: ', err)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
@@ -896,7 +871,7 @@ class FxQuotesModel {
   async _getParticipantEndpoint (fspId, endpointType = ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES) {
     const { db, proxyClient, log } = this
     const endpoint = await getParticipantEndpoint({ fspId, db, loggerFn: log.debug.bind(log), endpointType, proxyClient })
-    log.debug('Resolved participant endpoint:', { fspId, endpoint, endpointType })
+    log.verbose('Resolved participant endpoint:', { fspId, endpoint, endpointType })
     return endpoint
   }
 
@@ -913,7 +888,7 @@ class FxQuotesModel {
       step = 'axios-request-1'
       return axios.request(options)
     } catch (err) {
-      this.log.warn('error in sendHttpRequest', err)
+      this.log.warn('error in sendHttpRequest: ', err)
       const extensions = err.extensions || []
       const fspiopError = ErrorHandler.CreateFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
@@ -941,7 +916,7 @@ class FxQuotesModel {
     // If JWS is enabled and the 'fspiop-source' matches the configured jws header value('switch')
     // that means it's a switch generated message and we need to sign it
     if (jws?.jwsSign && opts.headers['fspiop-source'] === jws.fspiopSourceToSign) {
-      const logger = Logger
+      const logger = this.log.child()
       logger.log = logger.info
       this.log.verbose('Getting the JWS Signer to sign the switch generated message')
       const jwsSigner = new JwsSigner({
@@ -952,14 +927,35 @@ class FxQuotesModel {
     }
   }
 
-  /**
-   * Writes a formatted message to the console
-   *
-   * @returns {undefined}
-   */
-  // eslint-disable-next-line no-unused-vars
-  writeLog (message) {
-    Logger.isDebugEnabled && Logger.debug(`(${this.requestId}) [quotesmodel]: ${message}`)
+  #makeErrorCallbackHeaders ({ modifyHeaders, headers, fspiopSource, fspiopUri }) {
+    const { envConfig } = this
+    let fromSwitchHeaders
+    // modify/set the headers only in case it is explicitly requested to do so
+    // as this part needs to cover two different cases:
+    // 1. (do not modify them) when the Switch needs to relay an error, e.g. from a DFSP to another
+    // 2. (modify/set them) when the Switch needs to send errors that are originating in the Switch, e.g. to send an error back to the caller
+    if (modifyHeaders === true) {
+      // Should not forward 'fspiop-signature' header for switch generated messages
+      delete headers['fspiop-signature']
+      fromSwitchHeaders = Object.assign({}, headers, {
+        'fspiop-destination': fspiopSource,
+        'fspiop-source': envConfig.hubName,
+        'fspiop-http-method': ENUM.Http.RestMethods.PUT,
+        'fspiop-uri': fspiopUri
+      })
+    } else {
+      fromSwitchHeaders = Object.assign({}, headers)
+    }
+
+    // JWS Signer expects headers in lowercase
+    let formattedHeaders
+    if (envConfig.jws?.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
+      formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes)
+    } else {
+      formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, null)
+    }
+
+    return formattedHeaders
   }
 }
 
