@@ -26,6 +26,8 @@
  ******/
 
 const Metrics = require('@mojaloop/central-services-metrics')
+const EventSdk = require('@mojaloop/event-sdk')
+const { Enum, Util } = require('@mojaloop/central-services-shared')
 
 /**
  * @typedef {Object} QuotesDeps
@@ -34,6 +36,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
  * @prop {string} requestId
  * @prop {Object} envConfig
  * @prop {Object} httpRequest
+ * @prop {Object} libUtil
  * @prop {Object} log
  */
 
@@ -45,11 +48,35 @@ class BaseQuotesModel {
     this.requestId = deps.requestId
     this.envConfig = deps.envConfig
     this.httpRequest = deps.httpRequest // todo: QuotesModel doesn't use httpRequest
+    this.libUtil = deps.libUtil
     this.log = deps.log.child({
       component: this.constructor.name,
       requestId: deps.requestId
     })
     this.#initErrorCounter()
+  }
+
+  injectSpanContext (span, requestOpts, operationName, tags = {}) {
+    requestOpts = span.injectContextToHttpRequest(requestOpts)
+    const { data, ...rest } = requestOpts
+    const operation = Enum.Tags.QueryTags.operation[operationName]
+
+    const queryTags = Util.EventFramework.Tags.getQueryTags(
+      Enum.Tags.QueryTags.serviceName.quotingServiceHandler,
+      Enum.Tags.QueryTags.auditType.transactionFlow,
+      Enum.Tags.QueryTags.contentType.httpRequest,
+      operation,
+      {
+        httpMethod: requestOpts.method,
+        httpUrl: requestOpts.url,
+        ...tags
+      }
+    )
+    this.log.debug('injectSpanContext queryTags:', { operation, queryTags })
+    span.setTags(queryTags)
+    span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
+
+    return requestOpts
   }
 
   #initErrorCounter () {

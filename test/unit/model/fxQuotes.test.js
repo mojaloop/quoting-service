@@ -154,8 +154,8 @@ describe('FxQuotesModel Tests -->', () => {
 
   describe('handleFxQuoteRequest', () => {
     test('should handle fx quote request', async () => {
+      deps.libUtil.fetchParticipantInfo = jest.fn(() => ({ payer: 'payer', payee: 'payee' }))
       fxQuotesModel = new FxQuotesModel(deps)
-      fxQuotesModel._fetchParticipantInfo = jest.fn(() => ({ payer: 'payer', payee: 'payee' }))
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest').mockResolvedValue()
       jest.spyOn(fxQuotesModel, 'validateFxQuoteRequest')
 
@@ -194,8 +194,8 @@ describe('FxQuotesModel Tests -->', () => {
     })
 
     test('should handle fx quote request in persistent mode', async () => {
+      deps.libUtil.fetchParticipantInfo = jest.fn(() => ({ payer: 'payer', payee: 'payee' }))
       fxQuotesModel = new FxQuotesModel(deps)
-      fxQuotesModel._fetchParticipantInfo = jest.fn(() => ({ payer: 'payer', payee: 'payee' }))
       fxQuotesModel.envConfig.simpleRoutingMode = false
 
       jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteRequest').mockResolvedValue({
@@ -235,8 +235,8 @@ describe('FxQuotesModel Tests -->', () => {
     })
 
     test('should handle error thrown', async () => {
+      deps.libUtil.fetchParticipantInfo = jest.fn(() => ({ payer: 'payer', payee: 'payee' }))
       fxQuotesModel = new FxQuotesModel(deps)
-      fxQuotesModel._fetchParticipantInfo = jest.fn(() => ({ payer: 'payer', payee: 'payee' }))
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest').mockRejectedValue(new Error('Forward Error'))
       jest.spyOn(fxQuotesModel, 'validateFxQuoteRequest')
       jest.spyOn(fxQuotesModel, 'handleException').mockResolvedValue()

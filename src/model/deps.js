@@ -26,7 +26,8 @@
  ******/
 
 const Config = require('../lib/config')
-const httpLib = require('../lib/http')
+const libHttp = require('../lib/http')
+const libUtil = require('../lib/util')
 const { logger } = require('../lib')
 
 /** @returns {QuotesDeps} */
@@ -35,7 +36,7 @@ const createDeps = ({
   proxyClient,
   requestId,
   envConfig = new Config(),
-  httpRequest = httpLib.httpRequest,
+  httpRequest = libHttp.httpRequest,
   log = logger
 }) => ({
   db,
@@ -43,7 +44,8 @@ const createDeps = ({
   requestId,
   envConfig,
   httpRequest,
-  log
+  log,
+  libUtil
 })
 
 module.exports = {

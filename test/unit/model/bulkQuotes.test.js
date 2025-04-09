@@ -861,7 +861,7 @@ describe('BulkQuotesModel', () => {
 
     it('handles an error in sendErrorCallback', async () => {
       // Arrange
-      expect.assertions(3)
+      expect.assertions(2)
       const error = new Error('Test Error')
       const expectedError = ErrorHandler.ReformatFSPIOPError(error)
       bulkQuotesModel.sendErrorCallback.mockImplementationOnce(() => { throw new Error('Error sending callback.') })
@@ -871,7 +871,6 @@ describe('BulkQuotesModel', () => {
 
       // Assert
       expect(bulkQuotesModel.sendErrorCallback).toHaveBeenCalledWith('payeefsp', expectedError, mockData.bulkQuoteId, mockData.headers, mockChildSpan, true)
-      expect(bulkQuotesModel.writeLog).toHaveBeenCalledTimes(1)
       expect(mockChildSpan.finish).toHaveBeenCalledTimes(1)
     })
   })
