@@ -20,16 +20,47 @@
  optionally within square brackets <email>.
 
  * Mojaloop Foundation
- - Name Surname <name.surname@mojaloop.io>
-*****/
+ * Eugen Klymniuk <eugen.klymniuk@infitx.com>
 
-const QuotesModel = require('./quotes')
-const BulkQuotesModel = require('./bulkQuotes')
-const FxQuotesModel = require('./fxQuotes')
-const { createDeps } = require('./deps')
+ --------------
+ ******/
 
-module.exports = (db, proxyClient) => ({
-  quotesModelFactory: (requestId) => new QuotesModel(createDeps({ db, proxyClient, requestId })),
-  bulkQuotesModelFactory: (requestId) => new BulkQuotesModel(createDeps({ db, proxyClient, requestId })),
-  fxQuotesModelFactory: (requestId) => new FxQuotesModel(createDeps({ db, proxyClient, requestId }))
-})
+const Metrics = require('@mojaloop/central-services-metrics')
+
+/**
+ * @typedef {Object} QuotesDeps
+ * @prop {Object} db
+ * @prop {Object} proxyClient
+ * @prop {string} requestId
+ * @prop {Object} envConfig
+ * @prop {Object} httpRequest
+ * @prop {Object} log
+ */
+
+class BaseQuotesModel {
+  /** @param {QuotesDeps} deps - The dependencies required by the class instance. */
+  constructor (deps) {
+    this.db = deps.db
+    this.proxyClient = deps.proxyClient
+    this.requestId = deps.requestId
+    this.envConfig = deps.envConfig
+    this.httpRequest = deps.httpRequest // todo: QuotesModel doesn't use httpRequest
+    this.log = deps.log.child({
+      component: this.constructor.name,
+      requestId: deps.requestId
+    })
+    this.#initErrorCounter()
+  }
+
+  #initErrorCounter () {
+    try {
+      if (!this.envConfig.instrumentationMetricsDisabled) {
+        this.errorCounter = Metrics.getCounter('errorCount')
+      }
+    } catch (err) {
+      this.log.error(`error initializing metrics in ${this.constructor.name}: `, err)
+    }
+  }
+}
+
+module.exports = BaseQuotesModel

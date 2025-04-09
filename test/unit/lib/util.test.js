@@ -750,8 +750,7 @@ describe('util', () => {
         connect: jest.fn(),
         lookupProxyByDfspId: jest.fn()
       }
-      const loggerFn = Logger.info
-      const params = { db, loggerFn, endpointType, proxyClient }
+      const params = { db, endpointType, proxyClient }
 
       // Act
       const action = async () => getParticipantEndpoint(params)
@@ -767,15 +766,6 @@ describe('util', () => {
       await expect(action2()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
 
       // Arrange
-      params.db = db
-      params.loggerFn = null
-      // Act
-      const action3 = async () => getParticipantEndpoint(params)
-      // Assert
-      await expect(action3()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
-
-      // Arrange
-      params.loggerFn = loggerFn
       params.endpointType = null
       // Act
       const action4 = async () => getParticipantEndpoint(params)
@@ -783,6 +773,7 @@ describe('util', () => {
       await expect(action4()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
 
       // Arrange
+      params.db = db
       params.endpointType = endpointType
       params.proxyClient = null
       // Act
@@ -799,7 +790,6 @@ describe('util', () => {
         db: {
           getParticipantEndpoint: jest.fn().mockResolvedValue(expected)
         },
-        loggerFn: Logger.info,
         endpointType: 'TEST_ENDPOINT_TYPE',
         proxyClient: {
           connect: jest.fn(),
@@ -830,7 +820,6 @@ describe('util', () => {
             return Promise.resolve(null)
           })
         },
-        loggerFn: Logger.info,
         endpointType: 'TEST_ENDPOINT_TYPE',
         proxyClient: {
           isConnecected: false,

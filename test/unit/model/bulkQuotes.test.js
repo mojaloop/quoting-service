@@ -62,51 +62,18 @@ const Enum = require('@mojaloop/central-services-shared').Enum
 const LibUtil = require('@mojaloop/central-services-shared').Util
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
-const Logger = require('@mojaloop/central-services-logger')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
-const { logger } = require('../../../src/lib')
-const Config = jest.requireActual('../../../src/lib/config')
-const fileConfig = new Config()
-
-Metrics.setup(fileConfig.instrumentationMetricsConfig)
-const Db = require('../../../src/data/database')
 const BulkQuotesModel = require('../../../src/model/bulkQuotes')
+const { createDeps } = require('../../../src/model/deps')
+const Config = jest.requireActual('../../../src/lib/config')
+const Db = require('../../../src/data/database')
 const Http = require('../../../src/lib/http')
 const Util = require('../../../src/lib/util')
+const { jwsSigningKey } = require('#test/mocks')
 
-const jwsSigningKey = `-----BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEA0eJEh3Op5p6x137lRkAsvmEBbd32dbRChrCUItZbtxjf/qfB
-yD5k8Hn4n4vbqzP8XSGS0f6KmNC+iRaP74HVgzAqc4Uid4J8dtSBq3VmucYQYzLc
-101QjuvD+SKmZwlw/q0PtulmqlASI2SbMfwcAraMi6ab7v5W4EGNeIPLEIo3BXsQ
-DTCWqiZb7aXkHkcY7sOjAzK/2bNGYFmAthdYrHzvCkqnJ7LAHX3Oj7rJea5MqtuN
-B9POZYaD10n9JuYWdwPqLrw6/hVgPSFEy+ulrVbXf54ZH0dfMThAYRvFrT81yulk
-H95JhXWGdi6cTp6t8LVOKFhnNfxjWw0Jayj9xwIDAQABAoIBADB2u/Y/CgNbr5sg
-DRccqHhJdAgHkep59kadrYch0knEL6zg1clERxCUSYmlxNKSjXp/zyQ4T46b3PNQ
-x2m5pDDHxXWpT10jP1Q9G7gYwuCw0IXnb8EzdB+cZ0M28g+myXW1RoSo/nDjTlzn
-1UJEgb9Kocd5cFZOWocr+9vRKumlZULMsA8yiNwlAfJHcMBM7acsa3myCqVhLyWt
-4BQylVuLFa+A6QzpMXEwFCq8EOXf07gl1XVzC6LJ1fTa9gVM3N+YE+oEXKrsHCxG
-/ACgKsjepL27QjJ7qvecWPP0F2LxEZYOm5tbXaKJTobzQUJHgUokanZMhjYprDsZ
-zumLw9kCgYEA/DUWcnLeImlfq/EYdhejkl3J+WX3vhS23OqVgY1amu7CZzaai6vt
-H0TRc8Zsbi4jgmFDU8PFzytP6qz6Tgom4R736z6oBi7bjnGyN17/NSbf+DaRVcM6
-vnZr7jNC2FJlECmIN+dkwUA/YCr2SA7hxZXM9mIYSc+6+glDiIO5Cf0CgYEA1Qo/
-uQbVHhW+Cp8H0kdMuhwUbkBquRrxRZlXS1Vrf3f9me9JLUy9UPWb3y3sKVurG5+O
-SIlr4hDcZyXdE198MtDMhBIGqU9ORSjppJDNDVvtt+n2FD4XmWIU70vKBJBivX0+
-Bow6yduis+p12fuvpvpnKCz8UjOgOQJhLZ4GQBMCgYBP6gpozVjxkm4ML2LO2IKt
-+CXtbo/nnOysZ3BkEoQpH4pd5gFmTF3gUJAFnVPyPZBm2abZvejJ0jGKbLELVVAo
-eQWZdssK2oIbSo9r2CAJmX3SSogWorvUafWdDoUZwlHfoylUfW+BhHgQYsyS3JRR
-ZTwCveZwTPA0FgdeFE7niQKBgQCHaD8+ZFhbCejDqXb4MXdUJ3rY5Lqwsq491YwF
-huKPn32iNNQnJcqCxclv3iln1Cr6oLx34Fig1KSyLv/IS32OcuY635Y6UPznumxe
-u+aJIjADIILXNOwdAplZy6s4oWkRFaSx1rmbCa3tew2zImTv1eJxR76MpOGmupt3
-uiQw3wKBgFjBT/aVKdBeHeP1rIHHldQV5QQxZNkc6D3qn/oAFcwpj9vcGfRjQWjO
-ARzXM2vUWEet4OVn3DXyOdaWFR1ppehz7rAWBiPgsMg4fjAusYb9Mft1GMxMzuwT
-Oyqsp6pzAWFrCD3JAoTLxClV+j5m+SXZ/ItD6ziGpl/h7DyayrFZ
------END RSA PRIVATE KEY-----`
-
-Logger.isDebugEnabled = jest.fn(() => true)
-Logger.isErrorEnabled = jest.fn(() => true)
-Logger.isInfoEnabled = jest.fn(() => true)
+Metrics.setup(new Config().instrumentationMetricsConfig)
 
 describe('BulkQuotesModel', () => {
   let mockData
@@ -114,6 +81,8 @@ describe('BulkQuotesModel', () => {
   let mockChildSpan
   let mockSpan
   let bulkQuotesModel
+  let deps
+  let proxyClient
 
   mockConfig = new Config()
 
@@ -270,10 +239,12 @@ describe('BulkQuotesModel', () => {
       transactionReference: 'fakeTxRef'
     }
 
-    bulkQuotesModel = new BulkQuotesModel({
+    deps = createDeps({
       db: new Db(),
+      proxyClient,
       requestId: mockData.bulkQuotePostRequest.bulkQuoteId
     })
+    bulkQuotesModel = new BulkQuotesModel(deps)
     bulkQuotesModel.db.newTransaction.mockImplementation(() => mockTransaction)
     bulkQuotesModel.db.config = mockConfig
     bulkQuotesModel.db.createTransactionReference.mockImplementation(() => mockData.transactionReference)
@@ -310,20 +281,7 @@ describe('BulkQuotesModel', () => {
 
   describe('constructor', () => {
     it('should create a new instance of BulkQuotesModel', () => {
-      expect(new BulkQuotesModel({ db: new Db() })).toBeInstanceOf(BulkQuotesModel)
-    })
-
-    it('should catch and log any error thrown', async () => {
-      const log = logger.child({ context: 'test' })
-      log.error = jest.fn()
-      jest.spyOn(Metrics, 'getCounter').mockImplementation(() => { throw new Error('Test Metrics Error') })
-      try {
-        const model = new BulkQuotesModel({ db: new Db(), log })
-        expect(model).toBeInstanceOf(BulkQuotesModel)
-        expect(log.error).toHaveBeenCalledTimes(1)
-      } catch (err) {
-        throw new Error('This should not happen')
-      }
+      expect(bulkQuotesModel).toBeInstanceOf(BulkQuotesModel)
     })
   })
 

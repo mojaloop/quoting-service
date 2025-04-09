@@ -41,48 +41,25 @@ const ENUM = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('@mojaloop/central-services-shared').Util
-const Logger = require('@mojaloop/central-services-logger')
 const MLNumber = require('@mojaloop/ml-number')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
-const Config = require('../lib/config')
 const LOCAL_ENUM = require('../lib/enum')
 const dto = require('../lib/dto')
 const util = require('../lib/util')
 
-const { logger } = require('../lib')
 const { httpRequest } = require('../lib/http')
 const { RESOURCES } = require('../constants')
 const { executeRules, handleRuleEvents } = require('./executeRules')
+const BaseQuotesModel = require('./BaseQuotesModel')
+
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
 
 axios.defaults.headers.common = {}
 
-/**
- * Encapsulates operations on the quotes domain model
- *
- * @returns {undefined}
- */
-class QuotesModel {
-  constructor (deps) {
-    this.db = deps.db
-    this.requestId = deps.requestId
-    this.proxyClient = deps.proxyClient
-    this.envConfig = deps.config || new Config()
-    this.log = deps.log || logger.child({
-      context: this.constructor.name,
-      requestId: this.requestId
-    })
-    try {
-      if (!this.envConfig.instrumentationMetricsDisabled) {
-        this.errorCounter = Metrics.getCounter('errorCount')
-      }
-    } catch (err) {
-      this.log.error('Error getting metrics errorCounter in QuotesModel: ', err)
-    }
-  }
-
+/** Encapsulates operations on the quotes domain model. */
+class QuotesModel extends BaseQuotesModel {
   executeRules () {
     return executeRules.apply(this, arguments)
   }
@@ -1115,7 +1092,7 @@ class QuotesModel {
       } else {
         formattedHeaders = util.generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.quotes, null)
       }
-      logger.warn(JSON.stringify(originalPayload))
+
       let opts = {
         method: ENUM.Http.RestMethods.PUT,
         url: fullCallbackUrl,
@@ -1153,9 +1130,11 @@ class QuotesModel {
           opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign
 
         if (needToSign) {
+          const logger = log.child()
+          logger.log = logger.info
           log.verbose('Getting the JWS Signer to sign the switch generated message')
           const jwsSigner = new JwsSigner({
-            logger: Logger,
+            logger,
             signingKey: envConfig.jws.jwsSigningKey
           })
           opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
@@ -1166,14 +1145,16 @@ class QuotesModel {
         // todo: use wrapper on axios
       } catch (err) {
         // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, `network error in sendErrorCallback: ${err.message}`, {
-          error: err,
-          url: fullCallbackUrl,
-          sourceFsp: fspiopSource,
-          destinationFsp: fspiopDest,
-          method: opts && opts.method,
-          request: JSON.stringify(opts, LibUtil.getCircularReplacer())
-        }, fspiopSource)
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+          `network error in sendErrorCallback: ${err.message}`, {
+            error: err,
+            url: fullCallbackUrl,
+            sourceFsp: fspiopSource,
+            destinationFsp: fspiopDest,
+            method: opts && opts.method,
+            request: JSON.stringify(opts, LibUtil.getCircularReplacer())
+          }, fspiopSource)
       }
       this.log.verbose(`callback got response: ${res.status} ${res.statusText}`)
 
@@ -1190,13 +1171,13 @@ class QuotesModel {
       }
     } catch (err) {
       log.error('error in sendErrorCallback:', err)
+      histTimer({ success: false, queryName: 'quote_sendErrorCallback' })
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
         await span.error(fspiopError, state)
         await span.finish(fspiopError.message, state)
       }
-      histTimer({ success: false, queryName: 'quote_sendErrorCallback' })
       if (!this.envConfig.instrumentationMetricsDisabled) {
         util.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
       }
@@ -1323,17 +1304,8 @@ class QuotesModel {
 
   // wrapping this dependency here to allow for easier use and testing
   async _getParticipantEndpoint (fspId, endpointType = ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_QUOTES) {
-    return util.getParticipantEndpoint({ fspId, db: this.db, loggerFn: this.writeLog.bind(this), endpointType, proxyClient: this.proxyClient })
-  }
-
-  /**
-   * Writes a formatted message to the console
-   *
-   * @returns {undefined}
-   */
-  // eslint-disable-next-line no-unused-vars
-  writeLog (message) {
-    Logger.isDebugEnabled && Logger.debug(`(${this.requestId}) [quotesmodel]: ${message}`)
+    const { db, log, proxyClient } = this
+    return util.getParticipantEndpoint({ fspId, endpointType, db, log, proxyClient })
   }
 }
 

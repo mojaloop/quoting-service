@@ -36,41 +36,20 @@ const LibUtil = require('@mojaloop/central-services-shared').Util
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
-const Config = require('../lib/config')
 const LOCAL_ENUM = require('../lib/enum')
 const dto = require('../lib/dto')
 const util = require('../lib/util')
 
-const { logger } = require('../lib')
-const { httpRequest } = require('../lib/http')
 const { generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint, calculateRequestHash, fetchParticipantInfo } = require('../lib/util')
 const { RESOURCES, ERROR_MESSAGES } = require('../constants')
 const { executeRules, handleRuleEvents } = require('./executeRules')
+const BaseQuotesModel = require('./BaseQuotesModel')
 
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
 
 axios.defaults.headers.common = {}
 
-class FxQuotesModel {
-  constructor (deps) {
-    this.db = deps.db
-    this.requestId = deps.requestId
-    this.proxyClient = deps.proxyClient
-    this.envConfig = deps.envConfig || new Config()
-    this.httpRequest = deps.httpRequest || httpRequest
-    this.log = deps.log || logger.child({
-      component: this.constructor.name,
-      requestId: this.requestId
-    })
-    try {
-      if (!this.envConfig.instrumentationMetricsDisabled) {
-        this.errorCounter = Metrics.getCounter('errorCount')
-      }
-    } catch (err) {
-      this.log.error('Error initializing metrics in FxQuotesModel: ', err)
-    }
-  }
-
+class FxQuotesModel extends BaseQuotesModel {
   executeRules = executeRules
   handleRuleEvents = handleRuleEvents
   _fetchParticipantInfo = fetchParticipantInfo
@@ -870,7 +849,7 @@ class FxQuotesModel {
   // wrapping this dependency here to allow for easier use and testing
   async _getParticipantEndpoint (fspId, endpointType = ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES) {
     const { db, proxyClient, log } = this
-    const endpoint = await getParticipantEndpoint({ fspId, db, loggerFn: log.debug.bind(log), endpointType, proxyClient })
+    const endpoint = await getParticipantEndpoint({ fspId, db, log, endpointType, proxyClient })
     log.verbose('Resolved participant endpoint:', { fspId, endpoint, endpointType })
     return endpoint
   }

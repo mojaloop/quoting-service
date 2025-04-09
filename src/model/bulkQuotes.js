@@ -41,14 +41,12 @@ const EventSdk = require('@mojaloop/event-sdk')
 const LibUtil = require('@mojaloop/central-services-shared').Util
 const Logger = require('@mojaloop/central-services-logger')
 const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
-const Metrics = require('@mojaloop/central-services-metrics')
 
-const { logger } = require('../lib')
-const Config = require('../lib/config')
 const { httpRequest } = require('../lib/http')
 const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
 const libUtil = require('../lib/util')
+const BaseQuotesModel = require('./BaseQuotesModel')
 
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
 
@@ -57,29 +55,8 @@ delete axios.defaults.headers.common['Content-Type']
 
 /**
  * Encapsulates operations on the bulkQuotes domain model
- *
- * @returns {undefined}
  */
-
-class BulkQuotesModel {
-  constructor (deps) {
-    this.db = deps.db
-    this.requestId = deps.requestId
-    this.proxyClient = deps.proxyClient
-    this.envConfig = deps.config || new Config()
-    this.log = deps.log || logger.child({
-      context: this.constructor.name,
-      requestId: this.requestId
-    })
-    try {
-      if (!this.envConfig.instrumentationMetricsDisabled) {
-        this.errorCounter = Metrics.getCounter('errorCount')
-      }
-    } catch (err) {
-      this.log.error('Error initializing metrics in BulkQuotesModel: ', err)
-    }
-  }
-
+class BulkQuotesModel extends BaseQuotesModel {
   /**
    * Validates the quote request object
    *
@@ -545,7 +522,8 @@ class BulkQuotesModel {
           ENUM.Tags.QueryTags.operation.putBulkQuotesErrorByID,
           {
             httpMethod: opts.method,
-            httpUrl: opts.url
+            httpUrl: opts.url,
+            bulkQuoteId
           }
         )
         span.setTags(queryTags)
@@ -627,7 +605,8 @@ class BulkQuotesModel {
 
   // wrapping this dependency here to allow for easier use and testing
   async _getParticipantEndpoint (fspId, endpointType = ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES) {
-    return getParticipantEndpoint({ fspId, db: this.db, loggerFn: this.writeLog.bind(this), endpointType, proxyClient: this.proxyClient })
+    const { db, log, proxyClient } = this
+    return getParticipantEndpoint({ fspId, endpointType, db, log, proxyClient })
   }
 
   /**

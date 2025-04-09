@@ -20,16 +20,32 @@
  optionally within square brackets <email>.
 
  * Mojaloop Foundation
- - Name Surname <name.surname@mojaloop.io>
-*****/
+ * Eugen Klymniuk <eugen.klymniuk@infitx.com>
 
-const QuotesModel = require('./quotes')
-const BulkQuotesModel = require('./bulkQuotes')
-const FxQuotesModel = require('./fxQuotes')
-const { createDeps } = require('./deps')
+ --------------
+ ******/
 
-module.exports = (db, proxyClient) => ({
-  quotesModelFactory: (requestId) => new QuotesModel(createDeps({ db, proxyClient, requestId })),
-  bulkQuotesModelFactory: (requestId) => new BulkQuotesModel(createDeps({ db, proxyClient, requestId })),
-  fxQuotesModelFactory: (requestId) => new FxQuotesModel(createDeps({ db, proxyClient, requestId }))
+const Config = require('../lib/config')
+const httpLib = require('../lib/http')
+const { logger } = require('../lib')
+
+/** @returns {QuotesDeps} */
+const createDeps = ({
+  db,
+  proxyClient,
+  requestId,
+  envConfig = new Config(),
+  httpRequest = httpLib.httpRequest,
+  log = logger
+}) => ({
+  db,
+  proxyClient,
+  requestId,
+  envConfig,
+  httpRequest,
+  log
 })
+
+module.exports = {
+  createDeps
+}
