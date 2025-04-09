@@ -2505,7 +2505,6 @@ describe('QuotesModel', () => {
     it('should not JWS resign error callback, if fspiop-signature header already exists', async () => {
       // Arrange
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
-      // expect.assertions(6)
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')

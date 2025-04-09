@@ -32,7 +32,6 @@ const axios = require('axios')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
-const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
 const LOCAL_ENUM = require('../lib/enum')
@@ -737,8 +736,8 @@ class FxQuotesModel extends BaseQuotesModel {
       const fullCallbackUrl = `${endpoint}${fspiopUri}`
       log.info('Sending error callback to participant...', { fspiopSource, fspiopError, fullCallbackUrl })
 
-      const callbackHeaders = this.#makeErrorCallbackHeaders({
-        modifyHeaders, headers, fspiopSource, fspiopUri
+      const callbackHeaders = super.makeErrorCallbackHeaders({
+        modifyHeaders, headers, fspiopSource, fspiopUri, resource: RESOURCES.fxQuotes
       })
 
       let opts = {
@@ -747,7 +746,7 @@ class FxQuotesModel extends BaseQuotesModel {
         data: originalPayload || await this.makeErrorPayload(fspiopError, headers),
         headers: callbackHeaders
       }
-      this.addFspiopSignatureHeader(opts) // try to "combine" with #makeErrorCallbackHeaders logic
+      super.addFspiopSignatureHeader(opts) // try to "combine" with #makeErrorCallbackHeaders logic
 
       if (span) opts = super.injectSpanContext(span, opts, { conversionRequestId })
 
@@ -830,53 +829,6 @@ class FxQuotesModel extends BaseQuotesModel {
       }
       throw fspiopError
     }
-  }
-
-  addFspiopSignatureHeader (opts) {
-    const { jws } = this.envConfig
-    // If JWS is enabled and the 'fspiop-source' matches the configured jws header value('switch')
-    // that means it's a switch generated message and we need to sign it
-    if (jws?.jwsSign && opts.headers['fspiop-source'] === jws.fspiopSourceToSign) {
-      const logger = this.log.child()
-      logger.log = logger.info
-      this.log.verbose('Getting the JWS Signer to sign the switch generated message')
-      const jwsSigner = new JwsSigner({
-        logger,
-        signingKey: jws.jwsSigningKey
-      })
-      opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
-    }
-  }
-
-  #makeErrorCallbackHeaders ({ modifyHeaders, headers, fspiopSource, fspiopUri }) {
-    const { envConfig } = this
-    let fromSwitchHeaders
-    // modify/set the headers only in case it is explicitly requested to do so
-    // as this part needs to cover two different cases:
-    // 1. (do not modify them) when the Switch needs to relay an error, e.g. from a DFSP to another
-    // 2. (modify/set them) when the Switch needs to send errors that are originating in the Switch, e.g. to send an error back to the caller
-    if (modifyHeaders === true) {
-      // Should not forward 'fspiop-signature' header for switch generated messages
-      delete headers['fspiop-signature']
-      fromSwitchHeaders = Object.assign({}, headers, {
-        'fspiop-destination': fspiopSource,
-        'fspiop-source': envConfig.hubName,
-        'fspiop-http-method': Enum.Http.RestMethods.PUT,
-        'fspiop-uri': fspiopUri
-      })
-    } else {
-      fromSwitchHeaders = Object.assign({}, headers)
-    }
-
-    // JWS Signer expects headers in lowercase
-    let formattedHeaders
-    if (envConfig.jws?.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-      formattedHeaders = this.libUtil.generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes)
-    } else {
-      formattedHeaders = this.libUtil.generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.fxQuotes, null)
-    }
-
-    return formattedHeaders
   }
 
   async #fetchParticipantsInfo (fspiopSource, fspiopDestination, cache) {

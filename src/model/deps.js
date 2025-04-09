@@ -25,6 +25,7 @@
  --------------
  ******/
 
+const { Jws } = require('@mojaloop/sdk-standard-components')
 const Config = require('../lib/config')
 const libHttp = require('../lib/http')
 const libUtil = require('../lib/util')
@@ -35,6 +36,7 @@ const createDeps = ({
   db,
   proxyClient,
   requestId,
+  JwsSigner = Jws.signer,
   envConfig = new Config(),
   httpRequest = libHttp.httpRequest,
   log = logger
@@ -42,6 +44,7 @@ const createDeps = ({
   db,
   proxyClient,
   requestId,
+  JwsSigner,
   envConfig,
   httpRequest,
   log,

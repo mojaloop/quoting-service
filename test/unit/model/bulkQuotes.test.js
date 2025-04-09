@@ -1172,22 +1172,6 @@ describe('BulkQuotesModel', () => {
     })
   })
 
-  describe('writeLog', () => {
-    beforeEach(() => {
-      // restore the current method in test to its original implementation
-      bulkQuotesModel.writeLog.mockRestore()
-    })
-
-    it('writes to the log', () => {
-      // Arrange
-      bulkQuotesModel.log.debug = jest.fn()
-      // Act
-      bulkQuotesModel.writeLog('test message')
-      // Assert
-      expect(bulkQuotesModel.log.debug).toBeCalledTimes(1)
-    })
-  })
-
   describe('_getParticipantEndpoint', () => {
     beforeEach(() => {
       // restore the current method in test to its original implementation

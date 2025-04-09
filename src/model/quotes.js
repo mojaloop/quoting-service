@@ -41,7 +41,6 @@ const { Enum, Util } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const MLNumber = require('@mojaloop/ml-number')
-const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
 const Metrics = require('@mojaloop/central-services-metrics')
 
 const LOCAL_ENUM = require('../lib/enum')
@@ -1006,7 +1005,6 @@ class QuotesModel extends BaseQuotesModel {
       'sendErrorCallback - Metrics for quote model',
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
-    const { envConfig } = this
     const fspiopDest = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
     const log = this.log.child({ quoteId, fspiopDest })
     let step
@@ -1025,33 +1023,9 @@ class QuotesModel extends BaseQuotesModel {
       const fspiopUri = `/quotes/${quoteId}/error`
       const fullCallbackUrl = `${endpoint}${fspiopUri}`
 
-      // make an error callback
-      let fromSwitchHeaders
-      let formattedHeaders
-
-      // modify/set the headers only in case it is explicitly requested to do so
-      // as this part needs to cover two different cases:
-      // 1. (do not modify them) when the Switch needs to relay an error, e.g. from a DFSP to another
-      // 2. (modify/set them) when the Switch needs send errors that are originating in the Switch, e.g. to send an error back to the caller
-      if (modifyHeaders === true) {
-        // Should not forward 'fspiop-signature' header for switch generated messages
-        delete headers['fspiop-signature']
-        fromSwitchHeaders = Object.assign({}, headers, {
-          'fspiop-destination': fspiopSource,
-          'fspiop-source': envConfig.hubName,
-          'fspiop-http-method': Enum.Http.RestMethods.PUT,
-          'fspiop-uri': fspiopUri
-        })
-      } else {
-        fromSwitchHeaders = Object.assign({}, headers)
-      }
-
-      // JWS Signer expects headers in lowercase
-      if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = this.libUtil.generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.quotes)
-      } else {
-        formattedHeaders = this.libUtil.generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true, RESOURCES.quotes, null)
-      }
+      const callbackHeaders = super.makeErrorCallbackHeaders({
+        modifyHeaders, headers, fspiopSource, fspiopUri
+      })
 
       let opts = {
         method: Enum.Http.RestMethods.PUT,
@@ -1059,33 +1033,18 @@ class QuotesModel extends BaseQuotesModel {
         data: originalPayload || await this.makeErrorPayload(fspiopError, headers),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
-        headers: formattedHeaders
+        headers: callbackHeaders
       }
       log.debug('sendErrorCallback quote http request opts:', { opts })
       if (span) opts = super.injectSpanContext(span, opts, { quoteId })
 
       let res
       try {
-        // If JWS is enabled and the 'fspiop-source' matches the configured jws header value(i.e the hub name)
-        // that means it's a switch generated message and we need to sign it
-        const needToSign = !opts.headers['fspiop-signature'] &&
-          envConfig.jws?.jwsSign &&
-          opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign
-
-        if (needToSign) {
-          const logger = log.child()
-          logger.log = logger.info
-          log.verbose('Getting the JWS Signer to sign the switch generated message')
-          const jwsSigner = new JwsSigner({
-            logger,
-            signingKey: envConfig.jws.jwsSigningKey
-          })
-          opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
-        }
-        histTimer({ success: true, queryName: 'quote_sendErrorCallback' })
+        super.addFspiopSignatureHeader(opts)
         step = 'axios-request-2'
         res = await axios.request(opts)
         // todo: use wrapper on axios
+        histTimer({ success: true, queryName: 'quote_sendErrorCallback' })
       } catch (err) {
         // external-error
         throw ErrorHandler.CreateFSPIOPError(
