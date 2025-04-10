@@ -38,7 +38,6 @@ const { Enum, Util } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 
-const { httpRequest } = require('../lib/http')
 const LOCAL_ENUM = require('../lib/enum')
 const BaseQuotesModel = require('./BaseQuotesModel')
 
@@ -151,7 +150,7 @@ class BulkQuotesModel extends BaseQuotesModel {
       if (span) opts = super.injectSpanContext(span, opts, 'postBulkQuotes', { bulkQuoteId })
 
       step = 'httpRequest-2'
-      await httpRequest(opts, source)
+      await this.httpRequest(opts, source)
       log.info('forwardBulkQuoteRequest is done')
     } catch (err) {
       log.error('error in forwardBulkQuoteRequest: ', err)
@@ -231,7 +230,7 @@ class BulkQuotesModel extends BaseQuotesModel {
       if (span) opts = super.injectSpanContext(span, opts, 'putBulkQuotesByID', { bulkQuoteId })
 
       step = 'httpRequest-3'
-      await httpRequest(opts, source)
+      await this.httpRequest(opts, source)
       log.info('forwardBulkQuoteUpdate is done')
     } catch (err) {
       log.error('error in forwardBulkQuoteUpdate: ', err)
@@ -309,7 +308,7 @@ class BulkQuotesModel extends BaseQuotesModel {
       if (span) opts = super.injectSpanContext(span, opts, 'getBulkQuotesByID', { bulkQuoteId })
 
       step = 'httpRequest-2'
-      await httpRequest(opts, source)
+      await this.httpRequest(opts, source)
     } catch (err) {
       log.error('error in forwardBulkQuoteGet: ', err)
       if (!this.envConfig.instrumentationMetricsDisabled) {

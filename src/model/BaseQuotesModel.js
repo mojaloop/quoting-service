@@ -39,7 +39,7 @@ const { RESOURCES } = require('../constants')
  * @prop {Object} envConfig
  * @prop {Object} log
  * @prop {JwsSignerFactory} jwsSignerFactory
- * @prop {Object} httpRequest
+ * @prop {Function} httpRequest
  * @prop {Object} libUtil
  * @prop {RulesEngine} rulesEngine
  * @prop {Array<Rule>} rules
