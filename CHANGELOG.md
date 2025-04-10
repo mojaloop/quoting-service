@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.7.2](https://github.com/mojaloop/quoting-service/compare/v17.7.1...v17.7.2) (2025-04-10)
+
+
+### Bug Fixes
+
+* preserve trace context during batch handling ([#408](https://github.com/mojaloop/quoting-service/issues/408)) ([44dab8f](https://github.com/mojaloop/quoting-service/commit/44dab8f6c61d5acbe01e6c2e7abcea34a64be33c))
+
 ### [17.7.1](https://github.com/mojaloop/quoting-service/compare/v17.7.0...v17.7.1) (2025-03-27)
 
 
