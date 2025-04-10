@@ -374,10 +374,6 @@ describe('QuotesModel', () => {
   })
 
   describe('executeRules', () => {
-    // beforeEach(() => {
-    //   quotesModel.executeRules.mockRestore()
-    // })
-
     describe('Failures:', () => {
       describe('In case a non empty set of rules is loaded', () => {
         it('throws an unhandled exception if `RulesEngine.run` throws an exception', async () => {
@@ -731,10 +727,6 @@ describe('QuotesModel', () => {
 
     describe('Failures:', () => {
       describe('Before forwarding the request:', () => {
-        // beforeEach(() => {
-        //   quotesModel.executeRules.mockRestore()
-        // })
-
         it('throws an exception if `executeRules` fails', async () => {
           expect.assertions(1)
 
@@ -1141,7 +1133,6 @@ describe('QuotesModel', () => {
         describe('In case environment is configured for simple routing mode', () => {
           beforeEach(() => {
             mockConfig.simpleRoutingMode = true
-            // quotesModel.executeRules.mockRestore()
           })
 
           it('calls `handleException` with the proper arguments if `span.audit` fails', async () => {
@@ -1196,7 +1187,6 @@ describe('QuotesModel', () => {
 
           beforeEach(() => {
             mockConfig.simpleRoutingMode = false
-            // quotesModel.executeRules.mockRestore()
 
             expectedResult = {
               amountTypeId: mockData.amountTypeId,
@@ -1289,7 +1279,6 @@ describe('QuotesModel', () => {
             }
           }))
 
-          // quotesModel.executeRules.mockRestore()
           const result = await quotesModel.handleQuoteRequest({
             headers: mockData.headers,
             quoteRequest: mockData.quoteRequest,
@@ -1305,7 +1294,6 @@ describe('QuotesModel', () => {
         describe('In case environment is configured for simple routing mode', () => {
           beforeEach(() => {
             mockConfig.simpleRoutingMode = true
-            // quotesModel.executeRules.mockRestore()
           })
 
           it('forwards the quote request properly', async () => {
@@ -1334,7 +1322,6 @@ describe('QuotesModel', () => {
 
           beforeEach(() => {
             mockConfig.simpleRoutingMode = false
-            // quotesModel.executeRules.mockRestore()
 
             expectedResult = {
               amountTypeId: mockData.amountTypeId,

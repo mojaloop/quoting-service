@@ -197,8 +197,7 @@ class QuotesModel extends BaseQuotesModel {
       await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
 
       step = 'fetchParticipantInfo-2'
-      const { payer, payee } = await this.libUtil.fetchParticipantInfo(fspiopSource, fspiopDestination, cache, this.proxyClient)
-      log.debug('got payer and payee', { payer, payee })
+      const { payer, payee } = await super.fetchParticipantsInfo(fspiopSource, fspiopDestination, cache)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
       // supply a rules file containing an empty array.

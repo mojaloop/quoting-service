@@ -109,11 +109,16 @@ const createEngine = () => {
 }
 
 /**
- * Evaluate the input data against the business rules
- *
+ * @typedef {Function} RunRules
  * @param {Array<Rule>} rules
- * @param {Object.<string, any>} runtimeFacts
+ * @param {RuntimeFacts} runtimeFacts
  * @returns {Promise<Object>} - array of failure cases, may be empty
+ */
+/** @typedef {Object.<string, any>} RuntimeFacts */
+
+/**
+ * Evaluate the input data against the business rules
+ * @type {RunRules}
  */
 const run = (rules, runtimeFacts) => {
   const engine = createEngine()
@@ -121,6 +126,12 @@ const run = (rules, runtimeFacts) => {
 
   return engine.run(runtimeFacts)
 }
+
+/**
+ * @typedef {Object} RulesEngine
+ * @prop {RunRules} run
+ * @prop {Object.<string, string>} events
+ */
 
 module.exports = {
   events,

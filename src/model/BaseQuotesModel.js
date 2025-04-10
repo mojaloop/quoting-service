@@ -30,7 +30,6 @@ const EventSdk = require('@mojaloop/event-sdk')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { RESOURCES } = require('../constants')
-const rulesEngine = require('./rulesEngine')
 
 /**
  * @typedef {Object} QuotesDeps
@@ -38,10 +37,11 @@ const rulesEngine = require('./rulesEngine')
  * @prop {Object} proxyClient
  * @prop {string} requestId
  * @prop {Object} envConfig
+ * @prop {Object} log
  * @prop {JwsSignerFactory} jwsSignerFactory
  * @prop {Object} httpRequest
  * @prop {Object} libUtil
- * @prop {Object} log
+ * @prop {RulesEngine} rulesEngine
  * @prop {Array<Rule>} rules
  */
 
@@ -62,7 +62,7 @@ class BaseQuotesModel {
     })
     this.jwsSignerFactory = deps.jwsSignerFactory
     this.libUtil = deps.libUtil
-    this.rulesEngine = rulesEngine
+    this.rulesEngine = deps.rulesEngine
     this.#rules = Array.isArray(deps.rules) ? deps.rules : []
     this.#initErrorCounter()
   }
@@ -137,6 +137,12 @@ class BaseQuotesModel {
       }
       return result
     }
+  }
+
+  async fetchParticipantsInfo (source, destination, cache) {
+    const { payer, payee } = await this.libUtil.fetchParticipantInfo(source, destination, cache, this.proxyClient)
+    this.log.verbose('fetchParticipantsInfo is done:', { payer, payee, source, destination })
+    return { payer, payee }
   }
 
   makeErrorCallbackHeaders ({ modifyHeaders, headers, fspiopSource, fspiopUri, resource = RESOURCES.quotes }) {

@@ -32,6 +32,7 @@ const Config = require('../lib/config')
 const libHttp = require('../lib/http')
 const libUtil = require('../lib/util')
 const { logger } = require('../lib')
+const rulesEngine = require('./rulesEngine')
 
 /**
  * @typedef {Function} JwsSignerFactory
@@ -63,6 +64,7 @@ const createDeps = ({
   log,
   jwsSignerFactory,
   libUtil,
+  rulesEngine,
   rules
 })
 

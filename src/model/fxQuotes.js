@@ -235,7 +235,7 @@ class FxQuotesModel extends BaseQuotesModel {
         await txn.commit()
       }
 
-      const { payer, payee } = await this.#fetchParticipantsInfo(fspiopSource, fspiopDestination, cache)
+      const { payer, payee } = super.fetchParticipantsInfo(fspiopSource, fspiopDestination, cache)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
       // supply a rules file containing an empty array.
@@ -825,12 +825,6 @@ class FxQuotesModel extends BaseQuotesModel {
       }
       throw fspiopError
     }
-  }
-
-  async #fetchParticipantsInfo (fspiopSource, fspiopDestination, cache) {
-    const { payer, payee } = await this.libUtil.fetchParticipantInfo(fspiopSource, fspiopDestination, cache, this.proxyClient)
-    this.log.verbose('fetchParticipantInfo is done:', { payer, payee })
-    return { payer, payee }
   }
 }
 
