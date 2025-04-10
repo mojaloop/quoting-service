@@ -31,6 +31,7 @@ const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handli
 const { ErrorMessages } = require('../lib/enum')
 const { getSpanTags } = require('../lib/util')
 const dto = require('../lib/dto')
+const { otel } = require('@mojaloop/central-services-stream/src/kafka')
 
 const { FSPIOP } = Enum.Http.Headers
 
@@ -45,6 +46,12 @@ class QuotingHandler {
     this.payloadCache = deps.payloadCache
     this.tracer = deps.tracer
     this.handleMessages = this.handleMessages.bind(this)
+    this.configByTopic = Object.values(this.config.kafkaConfig.CONSUMER).reduce((acc, value) =>
+      Object.values(value).reduce((acc, { topic, config }) => {
+        acc[topic] = config
+        return acc
+      }, acc),
+    {})
   }
 
   async handleMessages(error, messages) {
@@ -54,7 +61,12 @@ class QuotingHandler {
     }
 
     await Promise.allSettled(
-      messages.map(msg => this.defineHandlerByTopic(msg))
+      messages.map(msg => messages.length > 1
+        ? otel
+          .startConsumerTracingSpan(msg, this.configByTopic[msg.topic])
+          .executeInsideSpanContext(() => this.defineHandlerByTopic(msg))
+        : this.defineHandlerByTopic(msg)
+      )
     )
     this.logger.info('handleMessages is done')
 
