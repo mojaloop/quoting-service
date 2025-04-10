@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.8.0](https://github.com/mojaloop/quoting-service/compare/v17.7.2...v17.8.0) (2025-04-10)
+
+
+### Features
+
+* **csi-422:** improved logging;  added BaseQuotesModel ([#407](https://github.com/mojaloop/quoting-service/issues/407)) ([999c204](https://github.com/mojaloop/quoting-service/commit/999c2047a97c7194cc5422232ff14bfb566ac4be))
+
 ### [17.7.2](https://github.com/mojaloop/quoting-service/compare/v17.7.1...v17.7.2) (2025-04-10)
 
 
