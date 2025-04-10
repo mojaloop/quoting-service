@@ -41,6 +41,19 @@
 const jre = require('json-rules-engine')
 const assert = require('assert').strict
 
+/**
+ * @typedef {Object} Rule
+ * @prop {Object} conditions
+ * @prop {RuleEvent} event
+ * @prop {string} [name]
+ */
+
+/**
+ * @typedef {Object} RuleEvent
+ * @prop {string} type
+ * @prop {Object.<string, any>} [params]
+ */
+
 const events = {
   INTERCEPT_QUOTE: 'INTERCEPT_QUOTE',
   INVALID_QUOTE_REQUEST: 'INVALID_QUOTE_REQUEST'
@@ -98,7 +111,9 @@ const createEngine = () => {
 /**
  * Evaluate the input data against the business rules
  *
- * @returns {promise} - array of failure cases, may be empty
+ * @param {Array<Rule>} rules
+ * @param {Object.<string, any>} runtimeFacts
+ * @returns {Promise<Object>} - array of failure cases, may be empty
  */
 const run = (rules, runtimeFacts) => {
   const engine = createEngine()

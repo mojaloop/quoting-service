@@ -27,8 +27,10 @@
 
 const Metrics = require('@mojaloop/central-services-metrics')
 const EventSdk = require('@mojaloop/event-sdk')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { RESOURCES } = require('../constants')
+const rulesEngine = require('./rulesEngine')
 
 /**
  * @typedef {Object} QuotesDeps
@@ -36,27 +38,105 @@ const { RESOURCES } = require('../constants')
  * @prop {Object} proxyClient
  * @prop {string} requestId
  * @prop {Object} envConfig
- * @prop {JwsSigner} JwsSigner
+ * @prop {JwsSignerFactory} jwsSignerFactory
  * @prop {Object} httpRequest
  * @prop {Object} libUtil
  * @prop {Object} log
+ * @prop {Array<Rule>} rules
  */
 
 class BaseQuotesModel {
+  /** @type {Array<Rule>} */
+  #rules = []
+
   /** @param {QuotesDeps} deps - The dependencies required by the class instance. */
   constructor (deps) {
     this.db = deps.db
     this.proxyClient = deps.proxyClient
     this.requestId = deps.requestId
-    this.JwsSigner = deps.JwsSigner // todo: use factory
     this.envConfig = deps.envConfig
     this.httpRequest = deps.httpRequest // todo: QuotesModel doesn't use httpRequest
-    this.libUtil = deps.libUtil
     this.log = deps.log.child({
       component: this.constructor.name,
       requestId: deps.requestId
     })
+    this.jwsSignerFactory = deps.jwsSignerFactory
+    this.libUtil = deps.libUtil
+    this.rulesEngine = rulesEngine
+    this.#rules = Array.isArray(deps.rules) ? deps.rules : []
     this.#initErrorCounter()
+  }
+
+  async executeRules (headers, quoteRequest, originalPayload, payer, payee, operation) {
+    if (this.#rules.length === 0) {
+      return await this.handleRuleEvents([], headers, quoteRequest, originalPayload)
+    }
+
+    const facts = {
+      operation,
+      payer,
+      payee,
+      payload: quoteRequest,
+      headers
+    }
+
+    const { events } = await this.rulesEngine.run(this.#rules, facts)
+    this.log.verbose('rulesEngine returned events: ', { events })
+
+    return await this.handleRuleEvents(events, headers, quoteRequest, originalPayload)
+  }
+
+  async handleRuleEvents (events, headers, payload, originalPayload) {
+    const quoteRequest = originalPayload || payload
+
+    // At the time of writing, all events cause the "normal" flow of execution to be interrupted.
+    // So we'll return false when there have been no events whatsoever.
+    if (events.length === 0) {
+      return { terminate: false, quoteRequest, headers }
+    }
+
+    const unhandledEvents = events.filter(ev => !(ev.type in this.rulesEngine.events))
+    if (unhandledEvents.length > 0) {
+      const errMessage = 'Unhandled event returned by rules engine'
+      this.log.warn(errMessage, { unhandledEvents })
+      throw new Error(errMessage)
+    }
+
+    const { INVALID_QUOTE_REQUEST, INTERCEPT_QUOTE } = this.rulesEngine.events
+
+    const invalidQuoteRequestEvents = events.filter(ev => ev.type === INVALID_QUOTE_REQUEST)
+    if (invalidQuoteRequestEvents.length > 0) {
+      // Use the first event, ignore the others for now. This is ergonomically worse for someone
+      // developing against this service, as they can't see all reasons their quote was invalid at
+      // once. But is a valid solution in the short-term.
+      const { FSPIOPError: code, message } = invalidQuoteRequestEvents[0].params
+      // Will throw an internal server error if property doesn't exist
+      throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes[code],
+        message, null, headers['fspiop-source'])
+    }
+
+    const interceptQuoteEvents = events.filter(ev => ev.type === INTERCEPT_QUOTE)
+    if (interceptQuoteEvents.length > 1) {
+      throw new Error('Multiple intercept quote events received')
+    }
+    if (interceptQuoteEvents.length > 0) {
+      // send the quote request to the recipient in the event
+      const result = {
+        terminate: false,
+        quoteRequest,
+        headers: {
+          ...headers,
+          'fspiop-destination': interceptQuoteEvents[0].params.rerouteToFsp
+        }
+      }
+      // if additionalHeaders are present then add the additional non-standard headers (e.g. used by forex)
+      // Note these headers are not part of the mojaloop specification
+      if (interceptQuoteEvents[0].params.additionalHeaders) {
+        result.headers = { ...result.headers, ...interceptQuoteEvents[0].params.additionalHeaders }
+        result.additionalHeaders = interceptQuoteEvents[0].params.additionalHeaders
+      }
+      return result
+    }
   }
 
   makeErrorCallbackHeaders ({ modifyHeaders, headers, fspiopSource, fspiopUri, resource = RESOURCES.quotes }) {
@@ -99,12 +179,7 @@ class BaseQuotesModel {
       opts.headers['fspiop-source'] === jws.fspiopSourceToSign
     ) {
       this.log.verbose('Getting the JWS Signer to sign the switch generated message')
-      const logger = this.log.child()
-      logger.log = logger.info
-      const jwsSigner = new this.JwsSigner({
-        logger,
-        signingKey: jws.jwsSigningKey
-      })
+      const jwsSigner = this.jwsSignerFactory(jws.jwsSigningKey, this.log.child())
       opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
     }
   }

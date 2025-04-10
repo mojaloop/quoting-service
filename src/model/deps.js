@@ -24,19 +24,33 @@
 
  --------------
  ******/
+/* eslint-disable new-cap */
 
 const { Jws } = require('@mojaloop/sdk-standard-components')
+const rules = require('../../config/rules.json')
 const Config = require('../lib/config')
 const libHttp = require('../lib/http')
 const libUtil = require('../lib/util')
 const { logger } = require('../lib')
+
+/**
+ * @typedef {Function} JwsSignerFactory
+ * @param {string|Buffer} signingKey - The secret used for signing.
+ * @param {Logger.SdkLogger} logger - Logger instance.
+ * @returns {JwsSigner} - A configured JWS signer instance.
+ */
+
+/** @type {JwsSignerFactory} */
+const jwsSignerFactory = (signingKey, logger) => {
+  logger.log = logger.info
+  return new Jws.signer({ signingKey, logger })
+}
 
 /** @returns {QuotesDeps} */
 const createDeps = ({
   db,
   proxyClient,
   requestId,
-  JwsSigner = Jws.signer,
   envConfig = new Config(),
   httpRequest = libHttp.httpRequest,
   log = logger
@@ -44,11 +58,12 @@ const createDeps = ({
   db,
   proxyClient,
   requestId,
-  JwsSigner,
   envConfig,
   httpRequest,
   log,
-  libUtil
+  jwsSignerFactory,
+  libUtil,
+  rules
 })
 
 module.exports = {

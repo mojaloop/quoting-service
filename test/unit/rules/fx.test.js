@@ -28,7 +28,7 @@
  --------------
  ******/
 
-const RulesEngine = require('../../../src/model/rules')
+const RulesEngine = require('#src/model/rulesEngine')
 
 const fxRules = {
   EURtoXOFSendEUR: { // EUR to XOF, amountType=SEND, amount.currency=EUR

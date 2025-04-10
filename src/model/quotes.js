@@ -48,7 +48,6 @@ const dto = require('../lib/dto')
 
 const { httpRequest } = require('../lib/http')
 const { RESOURCES } = require('../constants')
-const { executeRules, handleRuleEvents } = require('./executeRules')
 const BaseQuotesModel = require('./BaseQuotesModel')
 
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
@@ -57,12 +56,6 @@ axios.defaults.headers.common = {}
 
 /** Encapsulates operations on the quotes domain model. */
 class QuotesModel extends BaseQuotesModel {
-  executeRules () {
-    return executeRules.apply(this, arguments)
-  }
-
-  handleRuleEvents = handleRuleEvents
-
   /**
    * Validates the quote request object
    *

@@ -46,7 +46,7 @@ jest.mock('../../../config/rules.json', () => mockRules)
 jest.mock('axios')
 jest.mock('@mojaloop/central-services-logger')
 jest.mock('../../../src/data/database')
-jest.mock('../../../src/model/rules')
+jest.mock('../../../src/model/rulesEngine')
 jest.mock('../../../src/lib/config', () => {
   return jest.fn().mockImplementation(() => mockConfig)
 })
@@ -77,7 +77,7 @@ const { createDeps } = require('../../../src/model/deps')
 const Config = jest.requireActual('../../../src/lib/config')
 const Db = require('../../../src/data/database')
 const rules = require('../../../config/rules')
-const RulesEngine = require('../../../src/model/rules')
+const RulesEngine = require('../../../src/model/rulesEngine')
 const Http = require('../../../src/lib/http')
 const Util = require('../../../src/lib/util')
 const { jwsSigningKey } = require('#test/mocks')
@@ -374,9 +374,9 @@ describe('QuotesModel', () => {
   })
 
   describe('executeRules', () => {
-    beforeEach(() => {
-      quotesModel.executeRules.mockRestore()
-    })
+    // beforeEach(() => {
+    //   quotesModel.executeRules.mockRestore()
+    // })
 
     describe('Failures:', () => {
       describe('In case a non empty set of rules is loaded', () => {
@@ -432,6 +432,7 @@ describe('QuotesModel', () => {
       })
     })
   })
+
   describe('handleRuleEvents', () => {
     beforeEach(() => {
       quotesModel.handleRuleEvents.mockRestore()
@@ -730,9 +731,9 @@ describe('QuotesModel', () => {
 
     describe('Failures:', () => {
       describe('Before forwarding the request:', () => {
-        beforeEach(() => {
-          quotesModel.executeRules.mockRestore()
-        })
+        // beforeEach(() => {
+        //   quotesModel.executeRules.mockRestore()
+        // })
 
         it('throws an exception if `executeRules` fails', async () => {
           expect.assertions(1)
@@ -1140,7 +1141,7 @@ describe('QuotesModel', () => {
         describe('In case environment is configured for simple routing mode', () => {
           beforeEach(() => {
             mockConfig.simpleRoutingMode = true
-            quotesModel.executeRules.mockRestore()
+            // quotesModel.executeRules.mockRestore()
           })
 
           it('calls `handleException` with the proper arguments if `span.audit` fails', async () => {
@@ -1195,7 +1196,7 @@ describe('QuotesModel', () => {
 
           beforeEach(() => {
             mockConfig.simpleRoutingMode = false
-            quotesModel.executeRules.mockRestore()
+            // quotesModel.executeRules.mockRestore()
 
             expectedResult = {
               amountTypeId: mockData.amountTypeId,
@@ -1288,7 +1289,7 @@ describe('QuotesModel', () => {
             }
           }))
 
-          quotesModel.executeRules.mockRestore()
+          // quotesModel.executeRules.mockRestore()
           const result = await quotesModel.handleQuoteRequest({
             headers: mockData.headers,
             quoteRequest: mockData.quoteRequest,
@@ -1304,7 +1305,7 @@ describe('QuotesModel', () => {
         describe('In case environment is configured for simple routing mode', () => {
           beforeEach(() => {
             mockConfig.simpleRoutingMode = true
-            quotesModel.executeRules.mockRestore()
+            // quotesModel.executeRules.mockRestore()
           })
 
           it('forwards the quote request properly', async () => {
@@ -1333,7 +1334,7 @@ describe('QuotesModel', () => {
 
           beforeEach(() => {
             mockConfig.simpleRoutingMode = false
-            quotesModel.executeRules.mockRestore()
+            // quotesModel.executeRules.mockRestore()
 
             expectedResult = {
               amountTypeId: mockData.amountTypeId,

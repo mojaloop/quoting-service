@@ -38,7 +38,6 @@ const LOCAL_ENUM = require('../lib/enum')
 const dto = require('../lib/dto')
 
 const { RESOURCES, ERROR_MESSAGES } = require('../constants')
-const { executeRules, handleRuleEvents } = require('./executeRules')
 const BaseQuotesModel = require('./BaseQuotesModel')
 
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
@@ -46,9 +45,6 @@ const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
 axios.defaults.headers.common = {}
 
 class FxQuotesModel extends BaseQuotesModel {
-  executeRules = executeRules
-  handleRuleEvents = handleRuleEvents
-
   /**
    * Validates the fxQuote request object
    *
