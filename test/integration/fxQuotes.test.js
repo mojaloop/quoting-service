@@ -125,8 +125,8 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(response.data.history.length).toBeGreaterThanOrEqual(1) // count 1 extra call to redbank
 
       // assert that the request was received by the proxy
-      const request = response.data.history.find(r => r.method === 'POST')
-      expect(request).toBeDefined()
+      const request = response.data.history[0]
+      expect(request.method).toBe('POST')
       expect(request.url).toBe(`/${proxyId}/fxQuotes`)
       expect(request.body).toEqual(payload)
       expect(request.headers['fspiop-source']).toBe(from)

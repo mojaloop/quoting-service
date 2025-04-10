@@ -235,7 +235,7 @@ class FxQuotesModel extends BaseQuotesModel {
         await txn.commit()
       }
 
-      const { payer, payee } = super.fetchParticipantsInfo(fspiopSource, fspiopDestination, cache)
+      const { payer, payee } = await super.fetchParticipantsInfo(fspiopSource, fspiopDestination, cache)
 
       // Run the rules engine. If the user does not want to run the rules engine, they need only to
       // supply a rules file containing an empty array.
