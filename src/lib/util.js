@@ -293,14 +293,13 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
   return { payer, payee }
 }
 
-const getParticipantEndpoint = async ({ fspId, db, loggerFn, endpointType, proxyClient = null }) => {
-  if (!fspId || !db || !loggerFn || !endpointType) {
+const getParticipantEndpoint = async ({ fspId, endpointType, db, log = logger, proxyClient = null }) => {
+  if (!fspId || !db || !endpointType) {
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Missing required arguments for \'getParticipantEndpoint\'')
   }
 
   let endpoint = await db.getParticipantEndpoint(fspId, endpointType)
-
-  loggerFn(`DB lookup: resolved participant '${fspId}' ${endpointType} endpoint to: '${endpoint}'`)
+  log.debug(`DB lookup: resolved participant '${fspId}' ${endpointType} endpoint to: '${endpoint}'`)
 
   // if endpoint is not found in db, check the proxy cache for a proxy representative for the fsp (this might be an inter-scheme request)
   if (!endpoint && proxyClient) {
@@ -310,7 +309,7 @@ const getParticipantEndpoint = async ({ fspId, db, loggerFn, endpointType, proxy
       endpoint = await db.getParticipantEndpoint(proxyId, endpointType)
     }
 
-    loggerFn(`Proxy lookup: resolved participant '${fspId}' ${endpointType} endpoint to: '${endpoint}', proxyId: ${proxyId} `)
+    log.debug(`Proxy lookup: resolved participant '${fspId}' ${endpointType} endpoint to: '${endpoint}', proxyId: ${proxyId} `)
   }
 
   return endpoint

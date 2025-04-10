@@ -113,10 +113,9 @@ const mockRules = [
       }
     }
   }
-
 ]
 
-const RulesEngine = require('../../../src/model/rules')
+const RulesEngine = require('#src/model/rulesEngine')
 
 describe('RulesEngine', () => {
   describe('run', () => {

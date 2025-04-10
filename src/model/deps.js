@@ -20,16 +20,54 @@
  optionally within square brackets <email>.
 
  * Mojaloop Foundation
- - Name Surname <name.surname@mojaloop.io>
-*****/
+ * Eugen Klymniuk <eugen.klymniuk@infitx.com>
 
-const QuotesModel = require('./quotes')
-const BulkQuotesModel = require('./bulkQuotes')
-const FxQuotesModel = require('./fxQuotes')
-const { createDeps } = require('./deps')
+ --------------
+ ******/
+/* eslint-disable new-cap */
 
-module.exports = (db, proxyClient) => ({
-  quotesModelFactory: (requestId) => new QuotesModel(createDeps({ db, proxyClient, requestId })),
-  bulkQuotesModelFactory: (requestId) => new BulkQuotesModel(createDeps({ db, proxyClient, requestId })),
-  fxQuotesModelFactory: (requestId) => new FxQuotesModel(createDeps({ db, proxyClient, requestId }))
+const { Jws } = require('@mojaloop/sdk-standard-components')
+const rules = require('../../config/rules.json')
+const Config = require('../lib/config')
+const libHttp = require('../lib/http')
+const libUtil = require('../lib/util')
+const { logger } = require('../lib')
+const rulesEngine = require('./rulesEngine')
+
+/**
+ * @typedef {Function} JwsSignerFactory
+ * @param {string|Buffer} signingKey - The secret used for signing.
+ * @param {Logger.SdkLogger} logger - Logger instance.
+ * @returns {JwsSigner} - A configured JWS signer instance.
+ */
+
+/** @type {JwsSignerFactory} */
+const jwsSignerFactory = (signingKey, logger) => {
+  logger.log = logger.info
+  return new Jws.signer({ signingKey, logger })
+}
+
+/** @returns {QuotesDeps} */
+const createDeps = ({
+  db,
+  proxyClient,
+  requestId,
+  envConfig = new Config(),
+  httpRequest = libHttp.httpRequest,
+  log = logger
+}) => ({
+  db,
+  proxyClient,
+  requestId,
+  envConfig,
+  httpRequest,
+  log,
+  jwsSignerFactory,
+  libUtil,
+  rulesEngine,
+  rules
 })
+
+module.exports = {
+  createDeps
+}

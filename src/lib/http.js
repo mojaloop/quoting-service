@@ -45,6 +45,7 @@ const { getStackOrInspect } = require('../lib/util')
 
 axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
 axios.defaults.httpAgent.toJSON = () => ({})
+axios.defaults.headers.common = {}
 
 /**
  * Encapsulates making an HTTP request and translating any error response into a domain-specific

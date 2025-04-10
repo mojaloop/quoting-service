@@ -33,22 +33,13 @@
  ******/
 
 const axios = require('axios')
-const util = require('util')
 
-const ENUM = require('@mojaloop/central-services-shared').Enum
+const { Enum, Util } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
-const LibUtil = require('@mojaloop/central-services-shared').Util
-const Logger = require('@mojaloop/central-services-logger')
-const JwsSigner = require('@mojaloop/sdk-standard-components').Jws.signer
-const Metrics = require('@mojaloop/central-services-metrics')
 
-const { logger } = require('../lib')
-const Config = require('../lib/config')
-const { httpRequest } = require('../lib/http')
-const { getStackOrInspect, generateRequestHeadersForJWS, generateRequestHeaders, getParticipantEndpoint } = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
-const libUtil = require('../lib/util')
+const BaseQuotesModel = require('./BaseQuotesModel')
 
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
 
@@ -57,42 +48,21 @@ delete axios.defaults.headers.common['Content-Type']
 
 /**
  * Encapsulates operations on the bulkQuotes domain model
- *
- * @returns {undefined}
  */
-
-class BulkQuotesModel {
-  constructor (deps) {
-    this.db = deps.db
-    this.requestId = deps.requestId
-    this.proxyClient = deps.proxyClient
-    this.envConfig = deps.config || new Config()
-    this.log = deps.log || logger.child({
-      context: this.constructor.name,
-      requestId: this.requestId
-    })
-    try {
-      if (!this.envConfig.instrumentationMetricsDisabled) {
-        this.errorCounter = Metrics.getCounter('errorCount')
-      }
-    } catch (err) {
-      this.log.error('Error initializing metrics in BulkQuotesModel: ', err)
-    }
-  }
-
+class BulkQuotesModel extends BaseQuotesModel {
   /**
    * Validates the quote request object
    *
    * @returns {promise} - promise will reject if request is not valid
    */
   async validateBulkQuoteRequest (fspiopSource, fspiopDestination, bulkQuoteRequest) {
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
 
     // Ensure the proxy client is connected
     if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
     // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
     if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
-      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, ENUM.Accounts.LedgerAccountType.POSITION)
+      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
     }
   }
 
@@ -107,8 +77,8 @@ class BulkQuotesModel {
     let fspiopSource
     let childSpan
     try {
-      fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-      const fspiopDestination = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+      fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
+      const fspiopDestination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
 
       // validate - this will throw if the request is invalid
       childSpan = span.getChild('qs_bulkquote_forwardBulkQuoteRequest')
@@ -117,10 +87,9 @@ class BulkQuotesModel {
       this.envConfig.simpleAudit || await childSpan.audit({ headers, payload: bulkQuoteRequest }, EventSdk.AuditEventAction.start)
       await this.forwardBulkQuoteRequest(headers, bulkQuoteRequest.bulkQuoteId, bulkQuoteRequest, childSpan)
     } catch (err) {
-      // any-error
       // as we are on our own in this context, dont just rethrow the error, instead...
       // get the model to handle it
-      this.writeLog(`Error forwarding quote request: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+      this.log.error('error in handleBulkQuoteRequest: ', err)
       await this.handleException(fspiopSource, bulkQuoteRequest.bulkQuoteId, err, headers, childSpan)
     } finally {
       if (childSpan && !childSpan.isFinished) {
@@ -138,19 +107,19 @@ class BulkQuotesModel {
    * @returns {undefined}
    */
   async forwardBulkQuoteRequest (headers, bulkQuoteId, originalBulkQuoteRequest, span) {
+    const source = headers[Enum.Http.Headers.FSPIOP.SOURCE]
+    const destination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+    const log = this.log.child({ bulkQuoteId, source, destination })
     let endpoint
     let step
-    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
     try {
       // lookup payee dfsp callback endpoint
       // TODO: for MVP we assume initiator is always payer dfsp! this may not always be the
       // case if a xfer is requested by payee
       step = 'getParticipantEndpoint-1'
-      endpoint = await this._getParticipantEndpoint(fspiopDest)
-
-      this.writeLog(`Resolved FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulkQuote ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
+      endpoint = await this._getParticipantEndpoint(destination)
+      log.debug('Resolved FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulkQuote: ', { endpoint })
 
       if (!endpoint) {
         // internal-error
@@ -160,53 +129,33 @@ class BulkQuotesModel {
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
           `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for quote ${bulkQuoteId} PAYEE party`,
           null,
-          fspiopSource
+          source
         )
         if (!this.envConfig.instrumentationMetricsDisabled) {
-          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteRequest', step })
+          this.libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteRequest', step })
         }
         throw fspiopError
       }
 
-      const fullCallbackUrl = `${endpoint}${ENUM.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
-      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
-
-      this.writeLog(`Forwarding quote request to endpoint: ${fullCallbackUrl}`)
-      this.writeLog(`Forwarding quote request headers: ${JSON.stringify(newHeaders)}`)
-      this.writeLog(`Forwarding quote request body: ${JSON.stringify(originalBulkQuoteRequest)}`)
+      const fullCallbackUrl = `${endpoint}${Enum.EndPoints.FspEndpointTemplates.BULK_QUOTES_POST}`
+      log.verbose('fullCallbackUrl: ', { fullCallbackUrl })
 
       let opts = {
-        method: ENUM.Http.RestMethods.POST,
+        method: Enum.Http.RestMethods.POST,
         url: fullCallbackUrl,
         data: originalBulkQuoteRequest,
-        headers: newHeaders
+        headers: this.libUtil.generateRequestHeaders(headers, this.envConfig.protocolVersions)
       }
+      log.debug('forwarding request opts:', { opts })
+      if (span) opts = super.injectSpanContext(span, opts, 'postBulkQuotes', { bulkQuoteId })
 
-      if (span) {
-        opts = span.injectContextToHttpRequest(opts)
-        const { data, ...rest } = opts
-        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
-          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
-          ENUM.Tags.QueryTags.auditType.transactionFlow,
-          ENUM.Tags.QueryTags.contentType.httpRequest,
-          ENUM.Tags.QueryTags.operation.postBulkQuotes,
-          {
-            httpMethod: opts.method,
-            httpUrl: opts.url
-          }
-        )
-        span.setTags(queryTags)
-        span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
-      }
-
-      this.writeLog(`Forwarding request : ${util.inspect(opts)}`)
       step = 'httpRequest-2'
-      await httpRequest(opts, fspiopSource)
+      await this.httpRequest(opts, source)
+      log.info('forwardBulkQuoteRequest is done')
     } catch (err) {
-      // any-error
-      this.writeLog(`Error forwarding bulkQuote request to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
+      log.error('error in forwardBulkQuoteRequest: ', err)
       if (!this.envConfig.instrumentationMetricsDisabled) {
-        libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteRequest', step })
+        this.libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteRequest', step })
       }
       throw reformatFSPIOPError(err)
     }
@@ -230,11 +179,8 @@ class BulkQuotesModel {
       this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { bulkQuoteId }, payload: bulkQuoteUpdateRequest }, EventSdk.AuditEventAction.start)
       await this.forwardBulkQuoteUpdate(headers, bulkQuoteId, bulkQuoteUpdateRequest, childSpan)
     } catch (err) {
-      // any-error
-      // as we are on our own in this context, dont just rethrow the error, instead...
-      // get the model to handle it
-      const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-      this.writeLog(`Error forwarding bulk quote update: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+      this.log.error('error in handleBulkQuoteUpdate: ', err)
+      const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
       await this.handleException(fspiopSource, bulkQuoteId, err, headers, childSpan)
     } finally {
       if (childSpan && !childSpan.isFinished) {
@@ -249,65 +195,47 @@ class BulkQuotesModel {
    * @returns {undefined}
    */
   async forwardBulkQuoteUpdate (headers, bulkQuoteId, originalBulkQuoteResponse, span) {
-    let endpoint = null
+    const source = headers[Enum.Http.Headers.FSPIOP.SOURCE]
+    const destination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+    const log = this.log.child({ bulkQuoteId, source, destination })
+    let endpoint
     let step
-    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-    const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
 
     try {
       // lookup payer dfsp callback endpoint
       step = 'getParticipantEndpoint-1'
-      endpoint = await this._getParticipantEndpoint(fspiopDest)
-      this.writeLog(`Resolved PAYER party FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulk quote ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
+      endpoint = await this._getParticipantEndpoint(destination)
+      log.debug('Resolved PAYER party FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulkQuote: ', { endpoint })
 
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
         // make an error callback to the initiator
-        const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for quote ${bulkQuoteId} PAYER party`, null, fspiopSource)
+        const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR, `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for quote ${bulkQuoteId} PAYER party`, null, source)
         step = 'sendErrorCallback-2'
-        return this.sendErrorCallback(fspiopSource, fspiopError, bulkQuoteId, headers, true)
+        return this.sendErrorCallback(source, fspiopError, bulkQuoteId, headers, true)
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
-      // we need to strip off the 'accept' header
-      // for all PUT requests as per the API Specification Document
-      // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
-      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions, true)
-
-      this.writeLog(`Forwarding bulk quote response to endpoint: ${fullCallbackUrl}`)
-      this.writeLog(`Forwarding bulk quote response headers: ${JSON.stringify(newHeaders)}`)
-      this.writeLog(`Forwarding bulk quote response body: ${JSON.stringify(originalBulkQuoteResponse)}`)
+      log.verbose('fullCallbackUrl: ', { fullCallbackUrl })
 
       let opts = {
-        method: ENUM.Http.RestMethods.PUT,
+        method: Enum.Http.RestMethods.PUT,
         url: fullCallbackUrl,
         data: originalBulkQuoteResponse,
-        headers: newHeaders
+        headers: this.libUtil.generateRequestHeaders(headers, this.envConfig.protocolVersions, true)
+        // we need to strip off the 'accept' header
+        // for all PUT requests as per the API Specification Document
+        // https://github.com/mojaloop/mojaloop-specification/blob/main/documents/v1.1-document-set/fspiop-v1.1-openapi2.yaml
       }
+      if (span) opts = super.injectSpanContext(span, opts, 'putBulkQuotesByID', { bulkQuoteId })
 
-      if (span) {
-        opts = span.injectContextToHttpRequest(opts)
-        const { data, ...rest } = opts
-        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
-          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
-          ENUM.Tags.QueryTags.auditType.transactionFlow,
-          ENUM.Tags.QueryTags.contentType.httpRequest,
-          ENUM.Tags.QueryTags.operation.putBulkQuotesByID,
-          {
-            httpMethod: opts.method,
-            httpUrl: opts.url
-          }
-        )
-        span.setTags(queryTags)
-        span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
-      }
       step = 'httpRequest-3'
-      await httpRequest(opts, fspiopSource)
+      await this.httpRequest(opts, source)
+      log.info('forwardBulkQuoteUpdate is done')
     } catch (err) {
-      // any-error
-      this.writeLog(`Error forwarding bulk quote response to endpoint ${endpoint}: ${getStackOrInspect(err)}`)
+      log.error('error in forwardBulkQuoteUpdate: ', err)
       if (!this.envConfig.instrumentationMetricsDisabled) {
-        libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteUpdate', step })
+        this.libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteUpdate', step })
       }
       throw reformatFSPIOPError(err)
     }
@@ -319,16 +247,13 @@ class BulkQuotesModel {
    * @returns {undefined}
    */
   async handleBulkQuoteGet (headers, bulkQuoteId, span) {
-    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
     const childSpan = span.getChild('qs_quote_forwardBulkQuoteGet')
     try {
       this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
       await this.forwardBulkQuoteGet(headers, bulkQuoteId, childSpan)
     } catch (err) {
-      // any-error
-      // as we are on our own in this context, dont just rethrow the error, instead...
-      // get the model to handle it
-      this.writeLog(`Error forwarding bulk quote get: ${getStackOrInspect(err)}. Attempting to send error callback to ${fspiopSource}`)
+      this.log.error('error in handleBulkQuoteGet: ', err)
       await this.handleException(fspiopSource, bulkQuoteId, err, headers, childSpan)
     } finally {
       if (childSpan && !childSpan.isFinished) {
@@ -343,17 +268,18 @@ class BulkQuotesModel {
    * @returns {undefined}
    */
   async forwardBulkQuoteGet (headers, bulkQuoteId, span) {
+    const source = headers[Enum.Http.Headers.FSPIOP.SOURCE]
+    const destination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+    const log = this.log.child({ bulkQuoteId, source, destination })
     let endpoint
     let step
+
     try {
       // lookup payee dfsp callback endpoint
       // todo: for MVP we assume initiator is always payer dfsp! this may not always be the case if a xfer is requested by payee
-      const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
-      const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
       step = 'getParticipantEndpoint-1'
-      endpoint = await this._getParticipantEndpoint(fspiopDest)
-
-      this.writeLog(`Resolved ${fspiopDest} FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulk quote GET ${bulkQuoteId} to: ${util.inspect(endpoint)}`)
+      endpoint = await this._getParticipantEndpoint(destination)
+      log.debug('Resolved destination FSPIOP_CALLBACK_URL_BULK_QUOTES endpoint for bulkQuote GET to: ', { endpoint })
 
       if (!endpoint) {
         // we didnt get an endpoint for the payee dfsp!
@@ -363,47 +289,30 @@ class BulkQuotesModel {
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_FSP_ERROR,
           `No FSPIOP_CALLBACK_URL_BULK_QUOTES found for bulk quote GET ${bulkQuoteId}`,
           null,
-          fspiopSource
+          source
         )
         if (!this.envConfig.instrumentationMetricsDisabled) {
-          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteGet', step })
+          this.libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'forwardBulkQuoteGet', step })
         }
         throw fspiopError
       }
 
       const fullCallbackUrl = `${endpoint}/bulkQuotes/${bulkQuoteId}`
-      const newHeaders = generateRequestHeaders(headers, this.envConfig.protocolVersions)
-
-      this.writeLog(`Forwarding quote get request to endpoint: ${fullCallbackUrl}`)
+      log.verbose(`Forwarding bulkQuote get request to endpoint: ${fullCallbackUrl}`)
 
       let opts = {
-        method: ENUM.Http.RestMethods.GET,
+        method: Enum.Http.RestMethods.GET,
         url: fullCallbackUrl,
-        headers: newHeaders
+        headers: this.libUtil.generateRequestHeaders(headers, this.envConfig.protocolVersions)
       }
+      if (span) opts = super.injectSpanContext(span, opts, 'getBulkQuotesByID', { bulkQuoteId })
 
-      if (span) {
-        opts = span.injectContextToHttpRequest(opts)
-        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
-          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
-          ENUM.Tags.QueryTags.auditType.transactionFlow,
-          ENUM.Tags.QueryTags.contentType.httpRequest,
-          ENUM.Tags.QueryTags.operation.getBulkQuotesByID,
-          {
-            httpMethod: opts.method,
-            httpUrl: opts.url
-          }
-        )
-        span.setTags(queryTags)
-        span.audit(opts, EventSdk.AuditEventAction.egress)
-      }
       step = 'httpRequest-2'
-      await httpRequest(opts, fspiopSource)
+      await this.httpRequest(opts, source)
     } catch (err) {
-      // any-error
-      this.writeLog(`Error forwarding quote get request: ${getStackOrInspect(err)}`)
+      log.error('error in forwardBulkQuoteGet: ', err)
       if (!this.envConfig.instrumentationMetricsDisabled) {
-        libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteGet', step })
+        this.libUtil.rethrowAndCountFspiopError(err, { operation: 'forwardBulkQuoteGet', step })
       }
       throw reformatFSPIOPError(err)
     }
@@ -415,19 +324,16 @@ class BulkQuotesModel {
    * @returns {undefined}
    */
   async handleBulkQuoteError (headers, bulkQuoteId, error, span) {
-    let newError
-    const fspiopSource = headers[ENUM.Http.Headers.FSPIOP.SOURCE]
+    const fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
     const childSpan = span.getChild('qs_quote_forwardBulkQuoteError')
     try {
       // create a new object to represent the error
       const fspiopError = ErrorHandler.CreateFSPIOPErrorFromErrorInformation(error)
       this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
       // Needed to add await here to prevent 'span already finished' bug
-      await this.sendErrorCallback(headers[ENUM.Http.Headers.FSPIOP.DESTINATION], fspiopError, bulkQuoteId, headers, childSpan, false)
-      return newError
+      await this.sendErrorCallback(headers[Enum.Http.Headers.FSPIOP.DESTINATION], fspiopError, bulkQuoteId, headers, childSpan, false)
     } catch (err) {
-      // internal-error
-      this.writeLog(`Error in handleBulkQuoteError: ${getStackOrInspect(err)}`)
+      this.log.error('error in handleBulkQuoteError: ', err)
       await this.handleException(fspiopSource, bulkQuoteId, err, headers, childSpan)
     } finally {
       if (childSpan && !childSpan.isFinished) {
@@ -449,9 +355,8 @@ class BulkQuotesModel {
       this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { bulkQuoteId } }, EventSdk.AuditEventAction.start)
       return await this.sendErrorCallback(fspiopSource, fspiopError, bulkQuoteId, headers, childSpan, true)
     } catch (err) {
-      // any-error
       // not much we can do other than log the error
-      this.writeLog(`Error occurred while handling error. Check service logs as this error may not have been propagated successfully to any other party: ${getStackOrInspect(err)}`)
+      this.log.error('Error occurred while handling error. Check service logs as this error may not have been propagated successfully to any other party: ', err)
     } finally {
       if (!childSpan.isFinished) {
         await childSpan.finish()
@@ -467,15 +372,15 @@ class BulkQuotesModel {
    * @returns {promise}
    */
   async sendErrorCallback (fspiopSource, fspiopError, bulkQuoteId, headers, span, modifyHeaders = true) {
+    const destination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
+    const log = this.log.child({ bulkQuoteId, fspiopSource, destination })
     let step
-    const { envConfig } = this
-    const fspiopDest = headers[ENUM.Http.Headers.FSPIOP.DESTINATION]
+
     try {
       // look up the callback base url
       step = 'getParticipantEndpoint-1'
       const endpoint = await this._getParticipantEndpoint(fspiopSource)
-
-      this.writeLog(`Resolved participant '${fspiopSource}' '${ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES}' to: '${endpoint}'`)
+      log.debug(`Resolved participant '${fspiopSource}' '${Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES}' to: '${endpoint}'`)
 
       if (!endpoint) {
         // oops, we cant make an error callback if we dont have an endpoint to call!
@@ -487,87 +392,37 @@ class BulkQuotesModel {
           fspiopSource
         )
         if (!this.envConfig.instrumentationMetricsDisabled) {
-          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+          this.libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
         }
         throw fspiopError
       }
 
       const fspiopUri = `/bulkQuotes/${bulkQuoteId}/error`
       const fullCallbackUrl = `${endpoint}${fspiopUri}`
+      log.verbose(`Making error callback to participant '${fspiopSource}' for bulkQuoteId '${bulkQuoteId}' to ${fullCallbackUrl}`)
 
-      // log the original error
-      this.writeLog(`Making error callback to participant '${fspiopSource}' for bulkQuoteId '${bulkQuoteId}' to ${fullCallbackUrl} for error: ${util.inspect(fspiopError.toFullErrorObject())}`)
-
-      // make an error callback
-      let fromSwitchHeaders
-      let formattedHeaders
-
-      // modify/set the headers only in case it is explicitly requested to do so
-      // as this part needs to cover two different cases:
-      // 1. (do not modify them) when the Switch needs to relay an error, e.g. from a DFSP to another
-      // 2. (modify/set them) when the Switch needs send errors that are originating in the Switch, e.g. to send an error back to the caller
-      if (modifyHeaders === true) {
-        // Should not forward 'fspiop-signature' header for switch generated messages
-        delete headers['fspiop-signature']
-        fromSwitchHeaders = Object.assign({}, headers, {
-          'fspiop-destination': fspiopSource,
-          'fspiop-source': envConfig.hubName,
-          'fspiop-http-method': ENUM.Http.RestMethods.PUT,
-          'fspiop-uri': fspiopUri
-        })
-      } else {
-        fromSwitchHeaders = Object.assign({}, headers)
-      }
-
-      // JWS Signer expects headers in lowercase
-      if (envConfig.jws && envConfig.jws.jwsSign && fromSwitchHeaders['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-        formattedHeaders = generateRequestHeadersForJWS(fromSwitchHeaders, envConfig.protocolVersions, true)
-      } else {
-        formattedHeaders = generateRequestHeaders(fromSwitchHeaders, envConfig.protocolVersions, true)
-      }
+      const callbackHeaders = super.makeErrorCallbackHeaders({
+        modifyHeaders, headers, fspiopSource, fspiopUri
+      })
 
       let opts = {
-        method: ENUM.Http.RestMethods.PUT,
+        method: Enum.Http.RestMethods.PUT,
         url: fullCallbackUrl,
-        data: fspiopError.toApiErrorObject(envConfig.errorHandling),
+        data: fspiopError.toApiErrorObject(this.envConfig.errorHandling),
         // use headers of the error object if they are there...
         // otherwise use sensible defaults
-        headers: formattedHeaders
+        headers: callbackHeaders
       }
-
-      if (span) {
-        opts = span.injectContextToHttpRequest(opts)
-        const { data, ...rest } = opts
-        const queryTags = LibUtil.EventFramework.Tags.getQueryTags(
-          ENUM.Tags.QueryTags.serviceName.quotingServiceHandler,
-          ENUM.Tags.QueryTags.auditType.transactionFlow,
-          ENUM.Tags.QueryTags.contentType.httpRequest,
-          ENUM.Tags.QueryTags.operation.putBulkQuotesErrorByID,
-          {
-            httpMethod: opts.method,
-            httpUrl: opts.url
-          }
-        )
-        span.setTags(queryTags)
-        span.audit({ ...rest, payload: data }, EventSdk.AuditEventAction.egress)
-      }
+      if (span) opts = super.injectSpanContext(span, opts, 'putBulkQuotesErrorByID', { bulkQuoteId })
 
       let res
       try {
-        // If JWS is enabled and the 'fspiop-source' matches the configured jws header value(i.e the hub name)
-        // that means it's a switch generated message and we need to sign it
-        if (envConfig.jws && envConfig.jws.jwsSign && opts.headers['fspiop-source'] === envConfig.jws.fspiopSourceToSign) {
-          this.writeLog('Getting the JWS Signer to sign the switch generated message')
-          const jwsSigner = new JwsSigner({
-            logger: Logger,
-            signingKey: envConfig.jws.jwsSigningKey
-          })
-          opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
-        }
+        super.addFspiopSignatureHeader(opts)
+
         step = 'axios-request-2'
         res = await axios.request(opts)
       } catch (err) {
-        // external-error
+        log.warn('error in axios.request:', err)
         const extensions = err.extensions || []
         const fspiopError = ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
@@ -576,42 +431,41 @@ class BulkQuotesModel {
             error: err,
             url: fullCallbackUrl,
             sourceFsp: fspiopSource,
-            destinationFsp: fspiopDest,
+            destinationFsp: destination,
             method: opts && opts.method,
-            request: JSON.stringify(opts, LibUtil.getCircularReplacer())
+            request: JSON.stringify(opts, Util.getCircularReplacer())
           },
           fspiopSource,
           extensions
         )
         if (!this.envConfig.instrumentationMetricsDisabled) {
-          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+          this.libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
         }
         throw fspiopError
       }
-      this.writeLog(`Error callback got response ${res.status} ${res.statusText}`)
+      log.verbose(`Error callback got response ${res.status} ${res.statusText}`)
 
-      if (res.status !== ENUM.Http.ReturnCodes.OK.CODE) {
+      if (res.status !== Enum.Http.ReturnCodes.OK.CODE) {
         // external-error
         const fspiopError = ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
           'Got non-success response sending error callback', {
             url: fullCallbackUrl,
             sourceFsp: fspiopSource,
-            destinationFsp: fspiopDest,
+            destinationFsp: destination,
             method: opts && opts.method,
-            request: JSON.stringify(opts, LibUtil.getCircularReplacer()),
-            response: JSON.stringify(res, LibUtil.getCircularReplacer())
+            request: JSON.stringify(opts, Util.getCircularReplacer()),
+            response: JSON.stringify(res, Util.getCircularReplacer())
           },
           fspiopSource
         )
         if (!this.envConfig.instrumentationMetricsDisabled) {
-          libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+          this.libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
         }
         throw fspiopError
       }
     } catch (err) {
-      // any-error
-      this.writeLog(`Error in sendErrorCallback: ${getStackOrInspect(err)}`)
+      log.error('error in sendErrorCallback: ', err)
       const fspiopError = ErrorHandler.ReformatFSPIOPError(err)
       const state = new EventSdk.EventStateMetadata(EventSdk.EventStatusType.failed, fspiopError.apiErrorCode.code, fspiopError.apiErrorCode.message)
       if (span) {
@@ -619,25 +473,16 @@ class BulkQuotesModel {
         await span.finish(fspiopError.message, state)
       }
       if (!this.envConfig.instrumentationMetricsDisabled) {
-        libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+        this.libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
       }
       throw fspiopError
     }
   }
 
   // wrapping this dependency here to allow for easier use and testing
-  async _getParticipantEndpoint (fspId, endpointType = ENUM.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES) {
-    return getParticipantEndpoint({ fspId, db: this.db, loggerFn: this.writeLog.bind(this), endpointType, proxyClient: this.proxyClient })
-  }
-
-  /**
-   * Writes a formatted message to the console
-   *
-   * @returns {undefined}
-   */
-  // eslint-disable-next-line no-unused-vars
-  writeLog (message) {
-    this.log.debug(`${new Date().toISOString()}, (${this.requestId}) [bulkQuotesModel]: ${message}`)
+  async _getParticipantEndpoint (fspId, endpointType = Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES) {
+    const { db, log, proxyClient } = this
+    return this.libUtil.getParticipantEndpoint({ fspId, endpointType, db, log, proxyClient })
   }
 }
 
