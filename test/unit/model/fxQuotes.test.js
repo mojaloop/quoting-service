@@ -34,6 +34,7 @@ const path = require('node:path')
 const axios = require('axios')
 
 jest.mock('axios')
+axios.create = jest.fn(() => axios)
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const ENUM = require('@mojaloop/central-services-shared').Enum

@@ -64,6 +64,7 @@ jest.mock('../../../src/lib/util', () => {
 jest.mock('../../../src/lib/http')
 
 const axios = require('axios')
+axios.create = jest.fn(() => axios)
 
 const clone = require('@mojaloop/central-services-shared').Util.clone
 const Enum = require('@mojaloop/central-services-shared').Enum
