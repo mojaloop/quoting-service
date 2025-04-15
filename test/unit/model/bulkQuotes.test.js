@@ -38,7 +38,6 @@
 let mockConfig
 
 jest.mock('axios')
-jest.mock('@mojaloop/central-services-logger')
 jest.mock('../../../src/data/database')
 jest.mock('../../../src/lib/config', () => {
   return jest.fn().mockImplementation(() => mockConfig)
@@ -57,6 +56,7 @@ jest.mock('../../../src/lib/util', () => {
 jest.mock('../../../src/lib/http')
 
 const axios = require('axios')
+axios.create = jest.fn(() => axios)
 
 const Enum = require('@mojaloop/central-services-shared').Enum
 const LibUtil = require('@mojaloop/central-services-shared').Util
