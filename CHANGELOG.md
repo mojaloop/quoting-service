@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.9.0](https://github.com/mojaloop/quoting-service/compare/v17.8.0...v17.9.0) (2025-04-15)
+
+
+### Features
+
+* **csi-1348:** use updated AxiosHttpRequester ([#409](https://github.com/mojaloop/quoting-service/issues/409)) ([1e7683a](https://github.com/mojaloop/quoting-service/commit/1e7683a15fbdfe4cd7ce7e6042fc4a5a49425bb6))
+
 ## [17.8.0](https://github.com/mojaloop/quoting-service/compare/v17.7.2...v17.8.0) (2025-04-10)
 
 
