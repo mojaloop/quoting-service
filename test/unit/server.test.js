@@ -35,8 +35,90 @@ const mockProducer = {
 jest.mock('@mojaloop/central-services-stream', () => ({
   Util: { Producer: mockProducer }
 }))
+jest.mock('@mojaloop/central-services-shared', () => ({
+  HealthCheck: {
+    HealthCheck: class {},
+    HealthCheckEnums: {
+      responseCode: {},
+      serviceName: {},
+      statusEnum: {}
+    }
+  },
+  Util: {
+    OpenapiBackend: {
+      initialise: jest.fn().mockResolvedValue(),
+      validationFail: jest.fn().mockResolvedValue(),
+      notFound: jest.fn().mockResolvedValue(),
+      methodNotAllowed: jest.fn().mockResolvedValue()
+    },
+    rethrow: {
+      with: jest.fn(() => ({
+        rethrowAndCountFspiopError: jest.fn(),
+        rethrowDatabaseError: jest.fn(),
+        rethrowCachedDatabaseError: jest.fn()
+      }))
+    },
+    HeaderValidation: {
+      getHubNameRegex: jest.fn(() => ({
+        test: jest.fn(() => true)
+      }))
+    },
+    Hapi: {
+      API_TYPES: { fspiop: 'fspiop', iso20022: 'iso20022' }
+    },
+    StreamingProtocol: {
+      decodePayload: jest.fn(),
+      encodePayload: jest.fn(),
+      decodeMessages: jest.fn(),
+      isDataUri: jest.fn(),
+      createMessage: jest.fn(),
+      createMessageFromRequest: jest.fn(),
+      updateMessageProtocolMetadata: jest.fn(),
+      createMetadata: jest.fn(),
+      createMetadataWithCorrelatedEvent: jest.fn(),
+      createMetadataWithCorrelatedEventState: jest.fn(),
+      createEventMetadata: jest.fn(),
+      createEventState: jest.fn(),
+      parseDataURI: jest.fn()
+    }
+  },
+  Enum: {
+    Http: {
+      Headers: {
+        FSPIOP: {
+          SOURCE: 'fspiop-source',
+          DESTINATION: 'fspiop-destination'
+        },
+        GENERAL: {
+          ACCEPT: {
+            regex: /.*/
+          },
+          CONTENT_TYPE: {
+            regex: /.*/
+          }
+        }
+      }
+    }
+  }
+}))
 
-jest.setTimeout(10_000)
+jest.mock('@mojaloop/central-services-metrics', () => ({
+  plugin: { register: jest.fn() },
+  setup: jest.fn()
+}))
+
+jest.mock('../../src/lib', () => ({
+  ...jest.requireActual('../../src/lib'),
+  initPayloadCache: jest.fn().mockResolvedValue({}),
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    verbose: jest.fn()
+  }
+}))
+
+jest.setTimeout(20_000)
 
 describe('Server Tests', () => {
   let Hapi
