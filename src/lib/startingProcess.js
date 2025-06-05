@@ -37,33 +37,24 @@ const startingProcess = (startFn, stopFn) => {
   const startTime = Date.now()
   Logger.verbose(`starting ${processName}...`, { startTime })
 
-  process.on('uncaughtExceptionMonitor', (err) => {
+  process.on('uncaughtExceptionMonitor', async (err) => {
     Logger.error(`uncaughtExceptionMonitor in ${processName}: ${err?.stack}`, { err, stack: err?.stack })
-    process.exit(2)
+    await _handleStop(stopFn, 2)
   })
 
-  process.on('unhandledRejection', (err) => {
+  process.on('unhandledRejection', async (err) => {
     Logger.error(`unhandledRejection in ${processName}: ${err?.stack}`, { err, stack: err?.stack })
-    process.exit(3)
+    await _handleStop(stopFn, 3)
   })
 
   if (typeof startFn !== 'function' || typeof stopFn !== 'function') {
     Logger.error('startFn and stopFn should be async functions!')
-    process.exit(4)
+    return _handleStop(stopFn, 4)
   }
 
-  SIGNALS.forEach(sig => process.on(sig, () => {
+  SIGNALS.forEach(sig => process.on(sig, async () => {
     Logger.info(`${sig}: stopping ${processName}`, { sig })
-
-    stopFn()
-      .then(() => {
-        Logger.info(`${processName} was stopped`, { heapStats: v8.getHeapStatistics() })
-        process.exit(0)
-      })
-      .catch((err) => {
-        Logger.warn(`${processName} was stopped with error: ${err?.stack}`, { err, stack: err?.stack })
-        process.exit(5)
-      })
+    await _handleStop(stopFn, 0)
   }))
 
   startFn()
@@ -78,6 +69,18 @@ const startingProcess = (startFn, stopFn) => {
     .catch((err) => {
       Logger.error(`error on ${processName} start: ${err?.stack}`, { err, stack: err?.stack })
       process.exit(1)
+    })
+}
+
+const _handleStop = async (stopFn, successExitCode = 0, errorExitCode = 5) => {
+  return stopFn()
+    .then(() => {
+      Logger.info(`${processName} was stopped`, { heapStats: v8.getHeapStatistics() })
+      process.exit(successExitCode)
+    })
+    .catch((err) => {
+      Logger.warn(`${processName} was stopped with error: ${err?.stack}`, { err, stack: err?.stack })
+      process.exit(errorExitCode)
     })
 }
 
