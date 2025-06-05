@@ -27,59 +27,59 @@
 /* eslint-disable no-process-exit  */
 const process = require('node:process')
 const v8 = require('node:v8')
-const Logger = require('@mojaloop/central-services-logger')
 const { name, version } = require('../../package.json')
+const { logger } = require('./logger')
 
 const processName = `${name}@${version}`
 const SIGNALS = ['SIGINT', 'SIGTERM']
 
 const startingProcess = (startFn, stopFn) => {
   const startTime = Date.now()
-  Logger.verbose(`starting ${processName}...`, { startTime })
+  logger.verbose(`starting ${processName}...`, { startTime })
 
   process.on('uncaughtExceptionMonitor', async (err) => {
-    Logger.error(`uncaughtExceptionMonitor in ${processName}: ${err?.stack}`, { err, stack: err?.stack })
+    logger.error(`uncaughtExceptionMonitor in ${processName}: ${err?.message}`, err)
     await _handleStop(stopFn, 2)
   })
 
   process.on('unhandledRejection', async (err) => {
-    Logger.error(`unhandledRejection in ${processName}: ${err?.stack}`, { err, stack: err?.stack })
+    logger.error(`unhandledRejection in ${processName}: ${err?.message}`, err)
     await _handleStop(stopFn, 3)
   })
 
   if (typeof startFn !== 'function' || typeof stopFn !== 'function') {
-    Logger.error('startFn and stopFn should be async functions!')
-    return _handleStop(stopFn, 4)
+    logger.error('startFn and stopFn should be async functions!')
+    process.exit(4)
   }
 
   SIGNALS.forEach(sig => process.on(sig, async () => {
-    Logger.info(`${sig}: stopping ${processName}`, { sig })
+    logger.info(`${sig}: stopping ${processName}`, { sig })
     await _handleStop(stopFn, 0)
   }))
 
   startFn()
     .then((info) => {
       const startDurationSec = Math.round((Date.now() - startTime) / 1000)
-      Logger.info(`${processName} is started  [start duration, sec: ${startDurationSec.toFixed(1)}]`, {
+      logger.info(`${processName} is started  [start duration, sec: ${startDurationSec.toFixed(1)}]`, {
         info,
         startDurationSec,
         heapStats: v8.getHeapStatistics()
       })
     })
     .catch((err) => {
-      Logger.error(`error on ${processName} start: ${err?.stack}`, { err, stack: err?.stack })
+      logger.error(`error on ${processName} start: ${err?.error}`, err)
       process.exit(1)
     })
 }
 
-const _handleStop = async (stopFn, successExitCode = 0, errorExitCode = 5) => {
+const _handleStop = async (stopFn = async () => {}, successExitCode = 0, errorExitCode = 5) => {
   return stopFn()
     .then(() => {
-      Logger.info(`${processName} was stopped`, { heapStats: v8.getHeapStatistics() })
+      logger.info(`${processName} was stopped`, { heapStats: v8.getHeapStatistics() })
       process.exit(successExitCode)
     })
     .catch((err) => {
-      Logger.warn(`${processName} was stopped with error: ${err?.stack}`, { err, stack: err?.stack })
+      logger.warn(`${processName} was stopped with error: ${err?.message}`, err)
       process.exit(errorExitCode)
     })
 }

@@ -81,6 +81,8 @@ const startFn = async (handlerList, appConfig = undefined) => {
 
   consumersMap = await createConsumers(handler.handleMessages, handlerList)
   monitoringServer = await createMonitoringServer(config.monitoringPort, consumersMap, db)
+  logger.info('startFn is done')
+
   return handler
 }
 
@@ -94,6 +96,7 @@ const stopFn = async () => {
     await Promise.all(Object.values(consumersMap).map(consumer => consumer.disconnect()))
   }
   await db?.disconnect()
+  logger.info('stopFn is done')
 }
 
 const initializeInstrumentation = (config) => {
