@@ -686,12 +686,14 @@ class FxQuotesModel extends BaseQuotesModel {
     ).startTimer()
     const log = this.log.child({ conversionRequestId, fspiopSource })
     log.info('attempting to send error callback to fspiopSource')
-    const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-    const childSpan = span.getChild('qs_fxQuote_sendErrorCallback')
+    const childSpan = span?.getChild('qs_fxQuote_sendErrorCallback')
+
     try {
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { conversionRequestId } }, EventSdk.AuditEventAction.start)
       await this.sendErrorCallback(fspiopSource, fspiopError, conversionRequestId, headers, childSpan, true)
       histTimer({ success: true, queryName: 'handleException' })
+      log.info('handleException is done')
     } catch (err) {
       histTimer({ success: false, queryName: 'handleException' })
       log.error('error in handleException, stop request processing!', err)

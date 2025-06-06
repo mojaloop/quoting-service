@@ -26,7 +26,7 @@
  ******/
 
 const process = require('node:process')
-const startingProcess = require('../../../src/lib/startingProcess')
+const startingProcess = require('#src/lib/startingProcess')
 
 describe('startingProcess Tests', () => {
   let mockExit
@@ -40,30 +40,32 @@ describe('startingProcess Tests', () => {
     jest.clearAllMocks()
   })
 
-  test('should exit process in startFn is nopt a function', () => {
+  test('should exit process in startFn is not a function', () => {
     try {
       startingProcess()
     } catch {}
     expect(mockExit).toHaveBeenCalledWith(4)
   })
 
-  test('should exit process in stopFn is nopt a function', () => {
+  test('should exit process in stopFn is not a function', () => {
     try {
       startingProcess(async () => {})
     } catch {}
     expect(mockExit).toHaveBeenCalledWith(4)
   })
 
-  test('should exit on uncaughtExceptionMonitor', () => {
-    startingProcess(async () => {}, async () => {})
+  test('should call stopFn on unhandledRejection', () => {
+    const stopFn = jest.fn(async () => {})
+    startingProcess(async () => {}, stopFn)
     process.emit('unhandledRejection')
-    expect(mockExit).toHaveBeenCalledWith(3)
+    expect(stopFn).toHaveBeenCalledTimes(1)
   })
 
-  test('should exit on uncaughtExceptionMonitor', () => {
-    startingProcess(async () => {}, async () => {})
+  test('should call stopFn on uncaughtExceptionMonitor', () => {
+    const stopFn = jest.fn(async () => {})
+    startingProcess(async () => {}, stopFn)
     process.emit('uncaughtExceptionMonitor')
-    expect(mockExit).toHaveBeenCalledWith(2)
+    expect(stopFn).toHaveBeenCalledTimes(1)
   })
 
   test('should call stopFn on SIGTERM', async () => {

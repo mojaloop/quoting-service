@@ -963,9 +963,10 @@ class QuotesModel extends BaseQuotesModel {
       ['success', 'queryName', 'duplicateResult']
     ).startTimer()
     const log = this.log.child({ quoteId })
-    const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-    const childSpan = span.getChild('qs_quote_sendErrorCallback')
+    const childSpan = span?.getChild('qs_quote_sendErrorCallback')
+
     try {
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       this.envConfig.simpleAudit || await childSpan.audit({ headers, params: { quoteId } }, EventSdk.AuditEventAction.start)
       const result = await this.sendErrorCallback(fspiopSource, fspiopError, quoteId, headers, childSpan, true)
       histTimer({ success: true, queryName: 'quote_handleException' })
@@ -977,7 +978,7 @@ class QuotesModel extends BaseQuotesModel {
       log.error('Error occurred while handling error. Check service logs as this error may not have been propagated successfully to any other party', err)
       histTimer({ success: false, queryName: 'quote_handleException' })
     } finally {
-      if (!childSpan.isFinished) {
+      if (!childSpan?.isFinished) {
         await childSpan.finish()
       }
     }
