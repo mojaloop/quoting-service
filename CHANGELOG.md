@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.10.1](https://github.com/mojaloop/quoting-service/compare/v17.10.0...v17.10.1) (2025-06-06)
+
+
+### Bug Fixes
+
+* added stopfn ([#411](https://github.com/mojaloop/quoting-service/issues/411)) ([3ee6d24](https://github.com/mojaloop/quoting-service/commit/3ee6d24b8a9938fd6e4eecb1d5cd27ae78a5a104))
+
 ## [17.10.0](https://github.com/mojaloop/quoting-service/compare/v17.9.0...v17.10.0) (2025-05-30)
 
 
