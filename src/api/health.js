@@ -67,20 +67,14 @@ const getSubServiceHealthDatastore = async (db) => {
 }
 
 const checkKafkaProducers = async (topicNames) => {
-  const isAllConnected = await Promise.all(
-    topicNames.map(async topic => {
-      try {
-        const producer = Producer.getProducer(topic)
-        return await producer.isConnected()
-      } catch (err) {
-        Logger.isWarnEnabled && Logger.warn(`checkKafkaProducers error: ${err.message}`)
-        return false
-      }
-    })
-  )
-  const status = isAllConnected.every(Boolean)
-    ? statusEnum.OK
-    : statusEnum.DOWN
+  let status = statusEnum.OK
+  try {
+    await Producer.allConnected()
+    status = statusEnum.OK
+  } catch (err) {
+    Logger.isDebugEnabled && Logger.debug(`getSubServiceHealthBroker failed with error: ${err.message}.`)
+    status = statusEnum.DOWN
+  }
 
   return {
     name: serviceName.broker,
