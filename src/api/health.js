@@ -72,7 +72,7 @@ const checkKafkaProducers = async (topicNames) => {
     await Producer.allConnected()
     status = statusEnum.OK
   } catch (err) {
-    Logger.isDebugEnabled && Logger.debug(`getSubServiceHealthBroker failed with error: ${err.message}.`)
+    Logger.isWarnEnabled && Logger.warn(`getSubServiceHealthBroker failed with error: ${err.message}.`)
     status = statusEnum.DOWN
   }
 
