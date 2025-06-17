@@ -1,4 +1,0 @@
-## Add a comment indicating the reason for each rejected dependency upgrade added to this list, and what should be done to resolve it (i.e. handle it through a story, etc).
-reject: [
-  "eslint"
-]

@@ -209,24 +209,14 @@ describe('/health', () => {
 
   describe('checkKafkaProducers Tests', () => {
     it('should return OK status if all producers are connected', async () => {
-      Producer.getProducer = jest.fn(() => ({
-        isConnected: () => true
-      }))
+      Producer.allConnected = jest.fn().mockResolvedValue(true)
       const topicNames = ['topic1', 'topic2']
       const result = await HealthHandler.checkKafkaProducers(topicNames)
       expect(result.status).toEqual(statusEnum.OK)
     })
 
-    it('should return DOWN status if NOT all producers are connected', async () => {
-      Producer.getProducer = jest.fn(() => ({
-        isConnected: () => false
-      }))
-      const result = await HealthHandler.checkKafkaProducers(['topic1'])
-      expect(result.status).toEqual(statusEnum.DOWN)
-    })
-
-    it('should return DOWN status if getProducer throws na error', async () => {
-      Producer.getProducer = jest.fn(() => { throw new Error('Test Error') })
+    it('should return DOWN status if allConnected throws an error', async () => {
+      Producer.allConnected = jest.fn().mockRejectedValue(new Error('Test Error'))
       const result = await HealthHandler.checkKafkaProducers(['topic1'])
       expect(result.status).toEqual(statusEnum.DOWN)
     })
