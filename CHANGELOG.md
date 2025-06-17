@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.10.2](https://github.com/mojaloop/quoting-service/compare/v17.10.1...v17.10.2) (2025-06-17)
+
+
+### Chore
+
+* bump deps for rdkafka ([#413](https://github.com/mojaloop/quoting-service/issues/413)) ([20852ed](https://github.com/mojaloop/quoting-service/commit/20852edb745c52cd4cb3374207d8efb770116c42))
+
 ### [17.10.1](https://github.com/mojaloop/quoting-service/compare/v17.10.0...v17.10.1) (2025-06-06)
 
 
