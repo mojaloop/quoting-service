@@ -32,20 +32,30 @@ const { HealthCheckEnums } = require('@mojaloop/central-services-shared').Health
 const Metrics = require('@mojaloop/central-services-metrics')
 const { createMonitoringServer, initializeInstrumentation } = require('../../../src/handlers/monitoringServer')
 
+// Mock the Consumer.allConnected method at the module level
+jest.mock('@mojaloop/central-services-stream', () => {
+  return {
+    Util: {
+      Consumer: {
+        allConnected: jest.fn()
+      }
+    }
+  }
+})
+
 describe('Monitoring Server', () => {
   let server
   let consumersMap
   let db
   let isKafkaConnected = true
 
-  // Mock the allConnected method as used in health.js
-  const mockConsumer = {
-    allConnected: jest.fn(async () => {
+  // Helper to update the mock implementation before each test
+  const setAllConnectedMock = () => {
+    const { Util: { Consumer } } = require('@mojaloop/central-services-stream')
+    Consumer.allConnected.mockImplementation(async (topic) => {
       if (isKafkaConnected) {
-        // Simulate stateList.OK as in consumer.js
-        return HealthCheckEnums.statusEnum.OK
+        return true // allConnected returns true if connected
       } else {
-        // Simulate throwing as in allConnected when not connected
         throw new Error('Consumer not connected')
       }
     })
@@ -56,8 +66,9 @@ describe('Monitoring Server', () => {
   }
 
   beforeAll(async () => {
+    setAllConnectedMock()
     consumersMap = {
-      topic: mockConsumer
+      topic: {} // The actual value is not used, only the topic name is needed
     }
     db = mockDb
     server = await createMonitoringServer(0, consumersMap, db)

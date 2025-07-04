@@ -37,6 +37,7 @@ const { getSubServiceHealthDatastore } = require('../../api/health')
 const { HealthCheckEnums } = require('@mojaloop/central-services-shared').HealthCheck
 const Logger = require('@mojaloop/central-services-logger')
 const { statusEnum, serviceName } = HealthCheckEnums
+const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 
 let healthCheck
 
@@ -49,7 +50,7 @@ const createHealthCheck = (consumersMap, db) => {
       const results = await Promise.all(
         topics.map(async (topic) => {
           try {
-            return await consumersMap[topic].allConnected(topic)
+            return await Consumer.allConnected(topic)
           } catch (err) {
             Logger.isWarnEnabled && Logger.warn(`allConnected threw for topic ${topic}: ${err.message}`)
             return false
