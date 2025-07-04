@@ -35,19 +35,34 @@ const { defaultHealthHandler } = require('@mojaloop/central-services-health')
 const packageJson = require('../../../package.json')
 const { getSubServiceHealthDatastore } = require('../../api/health')
 const { HealthCheckEnums } = require('@mojaloop/central-services-shared').HealthCheck
-
+const Logger = require('@mojaloop/central-services-logger')
 const { statusEnum, serviceName } = HealthCheckEnums
 
 let healthCheck
 
 const createHealthCheck = (consumersMap, db) => {
   const checkKafkaBroker = async () => {
-    const isAllConnected = await Promise.all(
-      Object.values(consumersMap).map(consumer => consumer.isConnected())
-    )
-    const status = isAllConnected.every(Boolean)
-      ? statusEnum.OK
-      : statusEnum.DOWN
+    let status = statusEnum.OK
+
+    try {
+      const topics = Object.keys(consumersMap)
+      const results = await Promise.all(
+        topics.map(async (topic) => {
+          try {
+            return await consumersMap[topic].allConnected(topic)
+          } catch (err) {
+            Logger.isWarnEnabled && Logger.warn(`allConnected threw for topic ${topic}: ${err.message}`)
+            return false
+          }
+        })
+      )
+
+      if (results.some(connected => !connected)) {
+        status = statusEnum.DOWN
+      }
+    } catch (err) {
+      status = statusEnum.DOWN
+    }
 
     return {
       name: serviceName.broker,

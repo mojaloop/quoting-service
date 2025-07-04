@@ -32,10 +32,35 @@
 const { HealthCheck, HealthCheckEnums } = require('@mojaloop/central-services-shared').HealthCheck
 const health = require('../../../../src/handlers/plugins/health')
 
+jest.mock('@mojaloop/central-services-shared', () => {
+  const actual = jest.requireActual('@mojaloop/central-services-shared')
+  return {
+    ...actual,
+    HealthCheck: {
+      ...actual.HealthCheck,
+      HealthCheck: actual.HealthCheck.HealthCheck,
+      HealthCheckEnums: actual.HealthCheck.HealthCheckEnums
+    }
+  }
+})
+
+jest.mock('../../../../src/api/health', () => ({
+  getSubServiceHealthDatastore: jest.fn(() => ({
+    name: 'datastore',
+    status: 'OK'
+  }))
+}))
+
 describe('health Tests -->', () => {
   let isKafkaConnected = true
   const mockConsumer = {
-    isConnected: jest.fn(async () => isKafkaConnected)
+    allConnected: jest.fn(async () => {
+      if (isKafkaConnected) {
+        return true
+      } else {
+        throw new Error('Not connected')
+      }
+    })
   }
   const mockDb = {
     getIsMigrationLocked: jest.fn(async () => false)
@@ -43,6 +68,7 @@ describe('health Tests -->', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    isKafkaConnected = true
   })
 
   describe('createHealthCheck', () => {

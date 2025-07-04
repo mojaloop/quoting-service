@@ -38,8 +38,17 @@ describe('Monitoring Server', () => {
   let db
   let isKafkaConnected = true
 
+  // Mock the allConnected method as used in health.js
   const mockConsumer = {
-    isConnected: jest.fn(async () => isKafkaConnected)
+    allConnected: jest.fn(async () => {
+      if (isKafkaConnected) {
+        // Simulate stateList.OK as in consumer.js
+        return HealthCheckEnums.statusEnum.OK
+      } else {
+        // Simulate throwing as in allConnected when not connected
+        throw new Error('Consumer not connected')
+      }
+    })
   }
 
   const mockDb = {
