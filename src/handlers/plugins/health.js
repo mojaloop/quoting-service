@@ -35,7 +35,7 @@ const { defaultHealthHandler } = require('@mojaloop/central-services-health')
 const packageJson = require('../../../package.json')
 const { getSubServiceHealthDatastore } = require('../../api/health')
 const { HealthCheckEnums } = require('@mojaloop/central-services-shared').HealthCheck
-const Logger = require('@mojaloop/central-services-logger')
+const logger = require('../../lib/logger')
 const { statusEnum, serviceName } = HealthCheckEnums
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 
@@ -52,7 +52,7 @@ const createHealthCheck = (consumersMap, db) => {
           try {
             return await Consumer.allConnected(topic)
           } catch (err) {
-            Logger.isWarnEnabled && Logger.warn(`allConnected threw for topic ${topic}: ${err.message}`)
+            logger.isWarnEnabled && logger.warn(`allConnected threw for topic ${topic}: ${err.message}`)
             return false
           }
         })
