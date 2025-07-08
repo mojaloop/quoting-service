@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.10.3](https://github.com/mojaloop/quoting-service/compare/v17.10.2...v17.10.3) (2025-07-08)
+
+
+### Bug Fixes
+
+* fix health endpoint of qs in handler mode ([#414](https://github.com/mojaloop/quoting-service/issues/414)) ([856111b](https://github.com/mojaloop/quoting-service/commit/856111bbd4404c4cb02e1955977a0b0216a3a26f))
+
 ### [17.10.2](https://github.com/mojaloop/quoting-service/compare/v17.10.1...v17.10.2) (2025-06-17)
 
 
