@@ -32,29 +32,64 @@
 const { HealthCheck, HealthCheckEnums } = require('@mojaloop/central-services-shared').HealthCheck
 const health = require('../../../../src/handlers/plugins/health')
 
+// Mock the Consumer.allConnected import used in health.js
+jest.mock('@mojaloop/central-services-stream', () => ({
+  Util: {
+    Consumer: {
+      allConnected: jest.fn()
+    }
+  }
+}))
+
+const { allConnected } = require('@mojaloop/central-services-stream').Util.Consumer
+
+jest.mock('@mojaloop/central-services-shared', () => {
+  const actual = jest.requireActual('@mojaloop/central-services-shared')
+  return {
+    ...actual,
+    HealthCheck: {
+      ...actual.HealthCheck,
+      HealthCheck: actual.HealthCheck.HealthCheck,
+      HealthCheckEnums: actual.HealthCheck.HealthCheckEnums
+    }
+  }
+})
+
+jest.mock('../../../../src/api/health', () => ({
+  getSubServiceHealthDatastore: jest.fn(() => ({
+    name: 'datastore',
+    status: 'OK'
+  }))
+}))
+
 describe('health Tests -->', () => {
   let isKafkaConnected = true
-  const mockConsumer = {
-    isConnected: jest.fn(async () => isKafkaConnected)
-  }
   const mockDb = {
     getIsMigrationLocked: jest.fn(async () => false)
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
+    isKafkaConnected = true
+    allConnected.mockImplementation(async () => {
+      if (isKafkaConnected) {
+        return true
+      } else {
+        throw new Error('Not connected')
+      }
+    })
   })
 
   describe('createHealthCheck', () => {
     it('should return HealthCheck instance', async () => {
-      const checker = health.createHealthCheck({ topic: mockConsumer }, mockDb)
+      const checker = health.createHealthCheck({ topic: {} }, mockDb)
       expect(checker).toBeInstanceOf(HealthCheck)
       const result = await checker.getHealth()
       expect(result.status).toBe(HealthCheckEnums.statusEnum.OK)
     })
     it('should return DOWN status if consumer is not connected', async () => {
       isKafkaConnected = false
-      let checker = health.createHealthCheck({ topic: mockConsumer }, mockDb)
+      let checker = health.createHealthCheck({ topic: {} }, mockDb)
       const result = await checker.getHealth()
       expect(result.status).toBe(HealthCheckEnums.statusEnum.DOWN)
       checker = null
@@ -90,7 +125,7 @@ describe('health Tests -->', () => {
       const request = {
         server: {
           app: {
-            consumersMap: { topic: mockConsumer },
+            consumersMap: { topic: {} },
             db: mockDb
           }
         }
@@ -105,12 +140,13 @@ describe('health Tests -->', () => {
         status: HealthCheckEnums.statusEnum.OK
       }))
     })
+
     it('should return DOWN status if consumer is not connected', async () => {
       isKafkaConnected = false
       const request = {
         server: {
           app: {
-            consumersMap: { topic: mockConsumer },
+            consumersMap: { topic: {} },
             db: mockDb
           }
         }
