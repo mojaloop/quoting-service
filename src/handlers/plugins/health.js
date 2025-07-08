@@ -35,7 +35,7 @@ const { defaultHealthHandler } = require('@mojaloop/central-services-health')
 const packageJson = require('../../../package.json')
 const { getSubServiceHealthDatastore } = require('../../api/health')
 const { HealthCheckEnums } = require('@mojaloop/central-services-shared').HealthCheck
-const logger = require('../../lib/logger')
+const { logger } = require('../../lib/logger')
 const { statusEnum, serviceName } = HealthCheckEnums
 const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 
