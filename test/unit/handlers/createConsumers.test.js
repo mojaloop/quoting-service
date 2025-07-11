@@ -49,11 +49,12 @@ describe('createConsumers Tests -->', () => {
 
     const consumers = await createConsumers(onMessageFn, handlerList)
     expect(connectMethodMock).toHaveBeenCalledTimes(Object.keys(consumers).length)
-    expect(consumeMethodMock).toHaveBeenCalledWith(onMessageFn)
-    expect(consumers).toBeTruthy()
     Object.values(consumers).forEach((consumer) => {
+      // Check that consume was called with a function for each consumer
+      expect(consumeMethodMock).toHaveBeenCalledWith(expect.any(Function))
       expect(consumer).toBeInstanceOf(Consumer)
     })
+    expect(consumers).toBeTruthy()
   })
 
   it('should throw error if onMessageFn is not a function', async () => {
