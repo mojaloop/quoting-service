@@ -73,8 +73,11 @@ describe('createConsumers Tests -->', () => {
 
     expect(consumers).toBeTruthy()
     Object.values(consumers).forEach((consumer) => {
+      // Check that consume was called with a function for each consumer
+      expect(consumeMethodMock).toHaveBeenCalledWith(expect.any(Function))
       expect(consumer).toBeInstanceOf(Consumer)
     })
+    expect(consumers).toBeTruthy()
   })
 
   it('should throw error if onMessageFn is not a function', async () => {

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.10.4](https://github.com/mojaloop/quoting-service/compare/v17.10.3...v17.10.4) (2025-07-11)
+
+
+### Chore
+
+* bump deps ([#415](https://github.com/mojaloop/quoting-service/issues/415)) ([c840661](https://github.com/mojaloop/quoting-service/commit/c840661aba640e194b6688ae0318aa601253bf01))
+
 ### [17.10.3](https://github.com/mojaloop/quoting-service/compare/v17.10.2...v17.10.3) (2025-07-08)
 
 
