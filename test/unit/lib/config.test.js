@@ -58,7 +58,7 @@ const mockDefaultFile = {
     }
   },
   DATABASE: {
-    DIALECT: 'mysql',
+    DIALECT: 'mysql2',
     HOST: 'localhost',
     PORT: 3306,
     USER: 'central_ledger',
