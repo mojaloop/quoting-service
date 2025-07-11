@@ -1159,6 +1159,13 @@ class Database {
             WHERE fxQuoteConversionTermsExtension.conversionId=fxQuoteConversionTerms.conversionId) AS extensions')
         ])
         .first()
+
+      if (result) {
+        // Convert decimal strings back to numbers for backward compatibility
+        result.sourceAmount = result.sourceAmount != null ? parseFloat(result.sourceAmount) : result.sourceAmount
+        result.targetAmount = result.targetAmount != null ? parseFloat(result.targetAmount) : result.targetAmount
+      }
+
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteDetails:', err)
@@ -1188,6 +1195,29 @@ class Database {
             WHERE fxCharge.conversionId=fxQuoteResponseConversionTerms.conversionId) AS charges')
         ])
         .first()
+
+      if (result) {
+        // Convert decimal strings back to numbers for backward compatibility
+        result.sourceAmount = result.sourceAmount != null ? parseFloat(result.sourceAmount) : result.sourceAmount
+        result.targetAmount = result.targetAmount != null ? parseFloat(result.targetAmount) : result.targetAmount
+
+        // Convert charge amounts in the JSON array
+        if (result.charges) {
+          try {
+            const charges = JSON.parse(result.charges)
+            if (Array.isArray(charges)) {
+              charges.forEach(charge => {
+                charge.sourceAmount = charge.sourceAmount != null ? parseFloat(charge.sourceAmount) : charge.sourceAmount
+                charge.targetAmount = charge.targetAmount != null ? parseFloat(charge.targetAmount) : charge.targetAmount
+              })
+              result.charges = JSON.stringify(charges)
+            }
+          } catch (parseError) {
+            this.log.warn('Failed to parse charges JSON for amount conversion:', parseError)
+          }
+        }
+      }
+
       return result
     } catch (err) {
       this.log.error('Error in _getFxQuoteDetails:', err)
