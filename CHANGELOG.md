@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.10.5](https://github.com/mojaloop/quoting-service/compare/v17.10.4...v17.10.5) (2025-07-13)
+
+
+### Chore
+
+* switch to mysql2 client and fix tests ([#416](https://github.com/mojaloop/quoting-service/issues/416)) ([3512aeb](https://github.com/mojaloop/quoting-service/commit/3512aebd2738dee950942307d97927ebe05abb2c))
+
 ### [17.10.4](https://github.com/mojaloop/quoting-service/compare/v17.10.3...v17.10.4) (2025-07-11)
 
 
