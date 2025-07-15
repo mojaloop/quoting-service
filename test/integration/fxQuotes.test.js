@@ -297,19 +297,18 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(new MLNumber(fxQuoteResponseDetails.sourceAmount).isEqualTo(payload.conversionTerms.sourceAmount.amount)).toBe(true)
       expect(new MLNumber(fxQuoteResponseDetails.targetAmount).isEqualTo(payload.conversionTerms.targetAmount.amount)).toBe(true)
       expect(JSON.parse(fxQuoteResponseDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
-      const charges = JSON.parse(fxQuoteResponseDetails.charges)
-      const expectedCharges = charges.map(charge => ({
-        chargeType: charge.chargeType,
-        sourceAmount: {
-          currency: charge.sourceCurrency,
-          amount: charge.sourceAmount
-        },
-        targetAmount: {
-          currency: charge.targetCurrency,
-          amount: charge.targetAmount
-        }
-      }))
-      expect(expectedCharges).toEqual(payload.conversionTerms.charges)
+      const chargesFromDb = JSON.parse(fxQuoteResponseDetails.charges)
+      const expectedCharges = payload.conversionTerms.charges
+      expect(chargesFromDb.length).toBe(expectedCharges.length)
+      for (let i = 0; i < chargesFromDb.length; i++) {
+        const dbCharge = chargesFromDb[i]
+        const expectedCharge = expectedCharges[i]
+        expect(dbCharge.chargeType).toBe(expectedCharge.chargeType)
+        expect(dbCharge.sourceCurrency).toBe(expectedCharge.sourceAmount.currency)
+        expect(new MLNumber(dbCharge.sourceAmount).isEqualTo(expectedCharge.sourceAmount.amount)).toBe(true)
+        expect(dbCharge.targetCurrency).toBe(expectedCharge.targetAmount.currency)
+        expect(new MLNumber(dbCharge.targetAmount).isEqualTo(expectedCharge.targetAmount.amount)).toBe(true)
+      }
     } finally {
       await proxyClient.removeDfspIdFromProxyMapping(from)
       await proxyClient.disconnect()
