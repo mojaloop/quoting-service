@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.12.0](https://github.com/mojaloop/quoting-service/compare/v17.10.5...v17.12.0) (2025-07-17)
+
+
+### Features
+
+* added additional db options ([#417](https://github.com/mojaloop/quoting-service/issues/417)) ([0089f20](https://github.com/mojaloop/quoting-service/commit/0089f20912c020c1fedbafc7fd803d852a42cc91))
+
+
+### Chore
+
+* add initial sbom ([#418](https://github.com/mojaloop/quoting-service/issues/418)) ([a86e9f5](https://github.com/mojaloop/quoting-service/commit/a86e9f520c783b0e43aca991795059d1a2549f6d))
+* version bump ([#419](https://github.com/mojaloop/quoting-service/issues/419)) ([c600c7f](https://github.com/mojaloop/quoting-service/commit/c600c7f2c45a3896d79a62fcccea4dcf2333f9c7))
+
 ### [17.10.5](https://github.com/mojaloop/quoting-service/compare/v17.10.4...v17.10.5) (2025-07-13)
 
 
