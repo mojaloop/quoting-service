@@ -163,11 +163,11 @@ const postFxQuotesPayloadDto = ({
   amountType = 'SEND',
   sourceAmount = {
     currency: 'USD',
-    amount: 300
+    amount: '300'
   },
   targetAmount = {
     currency: 'ZMW',
-    amount: 0
+    amount: '0'
   },
   expiration = new Date(Date.now() + 5 * 60 * 1000).toISOString(),
   extensionList = {
@@ -196,7 +196,7 @@ const postFxQuotesPayloadDto = ({
 const putFxQuotesPayloadDto = ({
   fxQuotesPostPayload = postFxQuotesPayloadDto(),
   condition = 'mock-condition',
-  charges = [{ chargeType: 'Tax', sourceAmount: { amount: 1, currency: 'USD' }, targetAmount: { amount: 100, currency: 'ZMW' } }]
+  charges = [{ chargeType: 'Tax', sourceAmount: { amount: '1', currency: 'USD' }, targetAmount: { amount: '100', currency: 'ZMW' } }]
 } = {}) => {
   const dto = {
     ...fxQuotesPostPayload,
