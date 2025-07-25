@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.12.1](https://github.com/mojaloop/quoting-service/compare/v17.12.0...v17.12.1) (2025-07-25)
+
+
+### Chore
+
+* fix vuls and update deps ([#423](https://github.com/mojaloop/quoting-service/issues/423)) ([ccf485a](https://github.com/mojaloop/quoting-service/commit/ccf485ab6e44133f837ef1fe8e7108c3fecd369a))
+* **sbom:** update sbom [skip ci] ([9efa253](https://github.com/mojaloop/quoting-service/commit/9efa2537d4716eecb5e9e2843eb88dd0729cec6c))
+
 ## [17.12.0](https://github.com/mojaloop/quoting-service/compare/v17.10.5...v17.12.0) (2025-07-17)
 
 
