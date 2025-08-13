@@ -58,16 +58,15 @@ const startingProcess = (startFn, stopFn) => {
   }))
 
   startFn()
-    .then((info) => {
-      const startDurationSec = Math.round((Date.now() - startTime) / 1000)
-      logger.info(`${processName} is started  [start duration, sec: ${startDurationSec.toFixed(1)}]`, {
-        info,
-        startDurationSec,
+    .then(() => {
+      const startDurationMs = Date.now() - startTime
+      logger.info(`${processName} is started  [start duration, ms: ${startDurationMs}]`, {
+        startDurationMs,
         heapStats: v8.getHeapStatistics()
       })
     })
     .catch((err) => {
-      logger.error(`error on ${processName} start: ${err?.error}`, err)
+      logger.error(`error on ${processName} start: `, err)
       process.exit(1)
     })
 }
@@ -79,7 +78,7 @@ const _handleStop = async (stopFn = async () => {}, successExitCode = 0, errorEx
       process.exit(successExitCode)
     })
     .catch((err) => {
-      logger.warn(`${processName} was stopped with error: ${err?.message}`, err)
+      logger.warn(`${processName} was stopped with error: `, err)
       process.exit(errorExitCode)
     })
 }

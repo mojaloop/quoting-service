@@ -51,9 +51,7 @@ const LOCAL_ENUM = require('../lib/enum')
 class Database {
   constructor (config, log, queryBuilder) {
     this.config = config
-    this.log = log || logger.child({
-      context: this.constructor.name
-    })
+    this.log = log || logger.child({ component: this.constructor.name })
     this.queryBuilder = queryBuilder
   }
 
@@ -97,11 +95,11 @@ class Database {
   async isConnected () {
     try {
       const result = await this.queryBuilder.raw('SELECT 1 + 1 AS result')
-      if (result) {
-        return true
-      }
-      return false
+      const isOk = !!result
+      this.log.debug('isConnected result:', { isOk, result })
+      return isOk
     } catch (err) {
+      this.log.warn('error in db.isConnected: ', err)
       return false
     }
   }
