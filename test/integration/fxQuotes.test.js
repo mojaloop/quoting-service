@@ -35,6 +35,7 @@ const dto = require('../../src/lib/dto')
 const Database = require('../../src/data/cachedDatabase')
 const mocks = require('../mocks')
 const { wrapWithRetries } = require('../util/helper')
+const MLNumber = require('@mojaloop/ml-number')
 
 const TEST_TIMEOUT = 20_000
 
@@ -134,21 +135,21 @@ describe('POST /fxQuotes request tests --> ', () => {
 
       // check fx quote details were saved to db
       const fxQuoteDetails = await db._getFxQuoteDetails(payload.conversionRequestId)
-      expect(fxQuoteDetails).toEqual({
+      expect(fxQuoteDetails).toMatchObject({
         conversionRequestId: payload.conversionRequestId,
         conversionId: payload.conversionTerms.conversionId,
         determiningTransferId: payload.conversionTerms.determiningTransferId,
         amountTypeId: 1,
         initiatingFsp: payload.conversionTerms.initiatingFsp,
         counterPartyFsp: payload.conversionTerms.counterPartyFsp,
-        sourceAmount: payload.conversionTerms.sourceAmount.amount,
         sourceCurrency: payload.conversionTerms.sourceAmount.currency,
-        targetAmount: 0,
         targetCurrency: payload.conversionTerms.targetAmount.currency,
         extensions: expect.anything(),
         expirationDate: expect.anything(),
         createdDate: expect.anything()
       })
+      expect(new MLNumber(fxQuoteDetails.sourceAmount).isEqualTo(payload.conversionTerms.sourceAmount.amount)).toBe(true)
+      expect(new MLNumber(fxQuoteDetails.targetAmount).isEqualTo(0)).toBe(true)
       expect(JSON.parse(fxQuoteDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
     } finally {
       await proxyClient.removeDfspIdFromProxyMapping(to)
@@ -197,21 +198,22 @@ describe('POST /fxQuotes request tests --> ', () => {
 
       // check fx quote details were saved to db
       const fxQuoteDetails = await db._getFxQuoteDetails(payload.conversionRequestId)
-      expect(fxQuoteDetails).toEqual({
+      expect(fxQuoteDetails).toMatchObject({
         conversionRequestId: payload.conversionRequestId,
         conversionId: payload.conversionTerms.conversionId,
         determiningTransferId: payload.conversionTerms.determiningTransferId,
         amountTypeId: 1,
         initiatingFsp: payload.conversionTerms.initiatingFsp,
         counterPartyFsp: payload.conversionTerms.counterPartyFsp,
-        sourceAmount: payload.conversionTerms.sourceAmount.amount,
         sourceCurrency: payload.conversionTerms.sourceAmount.currency,
-        targetAmount: 0,
         targetCurrency: payload.conversionTerms.targetAmount.currency,
         extensions: expect.anything(),
         expirationDate: expect.anything(),
         createdDate: expect.anything()
       })
+      expect(new MLNumber(fxQuoteDetails.sourceAmount).isEqualTo(payload.conversionTerms.sourceAmount.amount)).toBe(true)
+      expect(new MLNumber(fxQuoteDetails.targetAmount).isEqualTo(0)).toBe(true)
+      expect(JSON.parse(fxQuoteDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
       expect(JSON.parse(fxQuoteDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
 
       // assert that the proxy representative is mapped in the cache
@@ -276,7 +278,7 @@ describe('POST /fxQuotes request tests --> ', () => {
 
       // check fx quote response details were saved to db
       const fxQuoteResponseDetails = await db._getFxQuoteResponseDetails(payload.conversionRequestId)
-      expect(fxQuoteResponseDetails).toEqual({
+      expect(fxQuoteResponseDetails).toMatchObject({
         conversionRequestId: payload.conversionRequestId,
         fxQuoteResponseId: expect.anything(),
         ilpCondition: payload.condition,
@@ -285,29 +287,28 @@ describe('POST /fxQuotes request tests --> ', () => {
         determiningTransferId: payload.conversionTerms.determiningTransferId,
         counterPartyFsp: payload.conversionTerms.counterPartyFsp,
         initiatingFsp: payload.conversionTerms.initiatingFsp,
-        sourceAmount: payload.conversionTerms.sourceAmount.amount,
         sourceCurrency: payload.conversionTerms.sourceAmount.currency,
-        targetAmount: payload.conversionTerms.targetAmount.amount,
         targetCurrency: payload.conversionTerms.targetAmount.currency,
         expirationDate: expect.anything(),
         createdDate: expect.anything(),
         charges: expect.anything(),
         extensions: expect.anything()
       })
+      expect(new MLNumber(fxQuoteResponseDetails.sourceAmount).isEqualTo(payload.conversionTerms.sourceAmount.amount)).toBe(true)
+      expect(new MLNumber(fxQuoteResponseDetails.targetAmount).isEqualTo(payload.conversionTerms.targetAmount.amount)).toBe(true)
       expect(JSON.parse(fxQuoteResponseDetails.extensions)).toEqual(payload.conversionTerms.extensionList.extension)
-      const charges = JSON.parse(fxQuoteResponseDetails.charges)
-      const expectedCharges = charges.map(charge => ({
-        chargeType: charge.chargeType,
-        sourceAmount: {
-          currency: charge.sourceCurrency,
-          amount: charge.sourceAmount
-        },
-        targetAmount: {
-          currency: charge.targetCurrency,
-          amount: charge.targetAmount
-        }
-      }))
-      expect(expectedCharges).toEqual(payload.conversionTerms.charges)
+      const chargesFromDb = JSON.parse(fxQuoteResponseDetails.charges)
+      const expectedCharges = payload.conversionTerms.charges
+      expect(chargesFromDb.length).toBe(expectedCharges.length)
+      for (let i = 0; i < chargesFromDb.length; i++) {
+        const dbCharge = chargesFromDb[i]
+        const expectedCharge = expectedCharges[i]
+        expect(dbCharge.chargeType).toBe(expectedCharge.chargeType)
+        expect(dbCharge.sourceCurrency).toBe(expectedCharge.sourceAmount.currency)
+        expect(new MLNumber(dbCharge.sourceAmount).isEqualTo(expectedCharge.sourceAmount.amount)).toBe(true)
+        expect(dbCharge.targetCurrency).toBe(expectedCharge.targetAmount.currency)
+        expect(new MLNumber(dbCharge.targetAmount).isEqualTo(expectedCharge.targetAmount.amount)).toBe(true)
+      }
     } finally {
       await proxyClient.removeDfspIdFromProxyMapping(from)
       await proxyClient.disconnect()

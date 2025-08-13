@@ -115,7 +115,10 @@ class Config {
         port: RC.DATABASE.PORT,
         user: RC.DATABASE.USER,
         password: RC.DATABASE.PASSWORD,
-        database: RC.DATABASE.SCHEMA
+        database: RC.DATABASE.SCHEMA,
+        ...RC.DATABASE.ADDITIONAL_CONNECTION_OPTIONS,
+        decimalNumbers: false,
+        jsonStrings: true
       },
       pool: {
         // minimum size

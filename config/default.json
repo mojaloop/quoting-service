@@ -33,13 +33,13 @@
     }
   },
   "DATABASE": {
-    "DIALECT": "mysql",
+    "DIALECT": "mysql2",
     "HOST": "localhost",
     "PORT": 3306,
     "USER": "central_ledger",
     "PASSWORD": "password",
     "SCHEMA": "central_ledger",
-    "POOL_MIN_SIZE": 10,
+    "POOL_MIN_SIZE": 0,
     "POOL_MAX_SIZE": 10,
     "ACQUIRE_TIMEOUT_MILLIS": 30000,
     "CREATE_TIMEOUT_MILLIS": 30000,
@@ -47,7 +47,8 @@
     "IDLE_TIMEOUT_MILLIS": 30000,
     "REAP_INTERVAL_MILLIS": 1000,
     "CREATE_RETRY_INTERVAL_MILLIS": 200,
-    "DEBUG": false
+    "DEBUG": false,
+    "ADDITIONAL_CONNECTION_OPTIONS": {}
   },
   "SWITCH_ENDPOINT": "http://localhost:3001",
   "ERROR_HANDLING": {

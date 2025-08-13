@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.12.1](https://github.com/mojaloop/quoting-service/compare/v17.12.0...v17.12.1) (2025-07-25)
+
+
+### Chore
+
+* fix vuls and update deps ([#423](https://github.com/mojaloop/quoting-service/issues/423)) ([ccf485a](https://github.com/mojaloop/quoting-service/commit/ccf485ab6e44133f837ef1fe8e7108c3fecd369a))
+* **sbom:** update sbom [skip ci] ([9efa253](https://github.com/mojaloop/quoting-service/commit/9efa2537d4716eecb5e9e2843eb88dd0729cec6c))
+
+## [17.12.0](https://github.com/mojaloop/quoting-service/compare/v17.10.5...v17.12.0) (2025-07-17)
+
+
+### Features
+
+* added additional db options ([#417](https://github.com/mojaloop/quoting-service/issues/417)) ([0089f20](https://github.com/mojaloop/quoting-service/commit/0089f20912c020c1fedbafc7fd803d852a42cc91))
+
+
+### Chore
+
+* add initial sbom ([#418](https://github.com/mojaloop/quoting-service/issues/418)) ([a86e9f5](https://github.com/mojaloop/quoting-service/commit/a86e9f520c783b0e43aca991795059d1a2549f6d))
+* version bump ([#419](https://github.com/mojaloop/quoting-service/issues/419)) ([c600c7f](https://github.com/mojaloop/quoting-service/commit/c600c7f2c45a3896d79a62fcccea4dcf2333f9c7))
+
+### [17.10.5](https://github.com/mojaloop/quoting-service/compare/v17.10.4...v17.10.5) (2025-07-13)
+
+
+### Chore
+
+* switch to mysql2 client and fix tests ([#416](https://github.com/mojaloop/quoting-service/issues/416)) ([3512aeb](https://github.com/mojaloop/quoting-service/commit/3512aebd2738dee950942307d97927ebe05abb2c))
+
+### [17.10.4](https://github.com/mojaloop/quoting-service/compare/v17.10.3...v17.10.4) (2025-07-11)
+
+
+### Chore
+
+* bump deps ([#415](https://github.com/mojaloop/quoting-service/issues/415)) ([c840661](https://github.com/mojaloop/quoting-service/commit/c840661aba640e194b6688ae0318aa601253bf01))
+
+### [17.10.3](https://github.com/mojaloop/quoting-service/compare/v17.10.2...v17.10.3) (2025-07-08)
+
+
+### Bug Fixes
+
+* fix health endpoint of qs in handler mode ([#414](https://github.com/mojaloop/quoting-service/issues/414)) ([856111b](https://github.com/mojaloop/quoting-service/commit/856111bbd4404c4cb02e1955977a0b0216a3a26f))
+
+### [17.10.2](https://github.com/mojaloop/quoting-service/compare/v17.10.1...v17.10.2) (2025-06-17)
+
+
+### Chore
+
+* bump deps for rdkafka ([#413](https://github.com/mojaloop/quoting-service/issues/413)) ([20852ed](https://github.com/mojaloop/quoting-service/commit/20852edb745c52cd4cb3374207d8efb770116c42))
+
+### [17.10.1](https://github.com/mojaloop/quoting-service/compare/v17.10.0...v17.10.1) (2025-06-06)
+
+
+### Bug Fixes
+
+* added stopfn ([#411](https://github.com/mojaloop/quoting-service/issues/411)) ([3ee6d24](https://github.com/mojaloop/quoting-service/commit/3ee6d24b8a9938fd6e4eecb1d5cd27ae78a5a104))
+
 ## [17.10.0](https://github.com/mojaloop/quoting-service/compare/v17.9.0...v17.10.0) (2025-05-30)
 
 

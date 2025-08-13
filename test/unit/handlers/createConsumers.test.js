@@ -49,11 +49,35 @@ describe('createConsumers Tests -->', () => {
 
     const consumers = await createConsumers(onMessageFn, handlerList)
     expect(connectMethodMock).toHaveBeenCalledTimes(Object.keys(consumers).length)
-    expect(consumeMethodMock).toHaveBeenCalledWith(onMessageFn)
+
+    // QUOTE has 3 topics (POST, PUT, GET), so consume should be called 3 times
+    const expectedConsumerCount = 3
+    expect(consumeMethodMock).toHaveBeenCalledTimes(expectedConsumerCount)
+
+    // Test that each wrapped function properly calls the original onMessageFn
+    for (let i = 0; i < expectedConsumerCount; i++) {
+      expect(typeof consumeMethodMock.mock.calls[i][0]).toBe('function')
+
+      const wrappedCommand = consumeMethodMock.mock.calls[i][0]
+      const testError = new Error(`test error ${i}`)
+      const testMessages = [{ value: `test message ${i}` }]
+
+      // Test with error (should still call onMessageFn)
+      wrappedCommand(testError, testMessages)
+      expect(onMessageFn).toHaveBeenCalledWith(testError, testMessages)
+
+      // Test with success
+      wrappedCommand(null, testMessages)
+      expect(onMessageFn).toHaveBeenCalledWith(null, testMessages)
+    }
+
     expect(consumers).toBeTruthy()
     Object.values(consumers).forEach((consumer) => {
+      // Check that consume was called with a function for each consumer
+      expect(consumeMethodMock).toHaveBeenCalledWith(expect.any(Function))
       expect(consumer).toBeInstanceOf(Consumer)
     })
+    expect(consumers).toBeTruthy()
   })
 
   it('should throw error if onMessageFn is not a function', async () => {
