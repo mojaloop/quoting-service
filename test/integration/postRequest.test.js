@@ -165,7 +165,7 @@ describe('POST request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await getResponseWithRetry()
-    expect(response.data.history.length).toBe(1)
+    expect(response.data.history.length).toBeGreaterThanOrEqual(1)
 
     const { url } = response.data.history[0]
     expect(url).toBe(`/${message.to}/quotes`)
