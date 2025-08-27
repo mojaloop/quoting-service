@@ -353,7 +353,7 @@ class QuotesModel extends BaseQuotesModel {
 
       log.verbose('rules passed, forwarding the quote on to the recipient dfsp...')
     } catch (err) {
-      log.error('error in handleQuoteRequest:', err)
+      log.error('error in handleQuoteRequest: ', err)
       if (txn) {
         await txn.rollback().catch(() => {})
       }
@@ -964,6 +964,7 @@ class QuotesModel extends BaseQuotesModel {
     ).startTimer()
     const log = this.log.child({ quoteId })
     const childSpan = span?.getChild('qs_quote_sendErrorCallback')
+    log.warn(`start handleException in quotes due to: ${error?.message}`, { errData: error?.response?.data })
 
     try {
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
