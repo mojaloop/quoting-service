@@ -295,10 +295,16 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
 
 const cacheParticipantData = async (dfspId, config, cache) => {
   const url = `${config.switchEndpoint}/participants/${dfspId}`
-  const { data } = await axios.request({ url })
-  const participantData = { data }
-  cache && cache.put(`fetchParticipantInfo_${dfspId}`, participantData, config.participantDataCacheExpiresInMs)
-  return participantData
+  try {
+    const { data } = await axios.request({ url })
+    const participantData = { data }
+    cache && cache.put(`fetchParticipantInfo_${dfspId}`, participantData, config.participantDataCacheExpiresInMs)
+    return participantData
+  } catch (err) {
+    const { data: errData, status } = err?.response || {} // axios error
+    logger.warn(`error in sending http request to hub: ${err?.message}`, { errData, status, url })
+    throw err
+  }
 }
 
 const getParticipantEndpoint = async ({ fspId, endpointType, db, log = logger, proxyClient = null }) => {
