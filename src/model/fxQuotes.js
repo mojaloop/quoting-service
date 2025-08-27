@@ -249,7 +249,7 @@ class FxQuotesModel extends BaseQuotesModel {
       histTimer({ success: true, queryName: 'handleFxQuoteRequest' })
     } catch (err) {
       histTimer({ success: false, queryName: 'handleFxQuoteRequest' })
-      this.log.error('error in handleFxQuoteRequest', err)
+      this.log.error('error in handleFxQuoteRequest: ', err)
       if (txn) {
         await txn.rollback().catch(() => {})
       }
@@ -685,8 +685,8 @@ class FxQuotesModel extends BaseQuotesModel {
       ['success', 'queryName']
     ).startTimer()
     const log = this.log.child({ conversionRequestId, fspiopSource })
-    log.info('attempting to send error callback to fspiopSource')
     const childSpan = span?.getChild('qs_fxQuote_sendErrorCallback')
+    log.warn(`start handleException in fxQuotes due to: ${error?.message}`, { errData: error?.response?.data })
 
     try {
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
