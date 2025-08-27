@@ -303,7 +303,7 @@ const cacheParticipantData = async (dfspId, config, cache) => {
   } catch (err) {
     const { data: errData, status } = err?.response || {} // axios error
     logger.warn(`error in sending http request to hub: ${err?.message}`, { errData, status, url })
-    throw err
+    throw err // think, if it's better to rethrow a custom error
   }
 }
 
