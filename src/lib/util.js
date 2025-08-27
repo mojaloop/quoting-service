@@ -236,15 +236,15 @@ const proxyAdjacentParticipantDto = (name) => ({
 // Add caching to the participant endpoint
 const fetchParticipantInfo = async (source, destination, cache, proxyClient) => {
   // Get quote participants from central ledger admin
-  const { switchEndpoint } = config
-  const url = `${switchEndpoint}/participants`
   let requestPayer
   let requestPayee
 
   if (proxyClient) {
     if (!proxyClient.isConnected) await proxyClient.connect()
-    const proxyIdSource = await proxyClient.lookupProxyByDfspId(source)
-    const proxyIdDestination = await proxyClient.lookupProxyByDfspId(destination)
+    const [proxyIdSource, proxyIdDestination] = await Promise.all([
+      proxyClient.lookupProxyByDfspId(source),
+      proxyClient.lookupProxyByDfspId(destination)
+    ])
 
     if (!proxyIdSource) {
       const selfHealSourceProxy = config.proxyMap[source]
@@ -257,6 +257,7 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
       // participant when they are proxied and out of scheme
       requestPayer = proxyAdjacentParticipantDto(source)
     }
+
     if (!proxyIdDestination) {
       const selfHealDestinationProxy = config.proxyMap[destination]
       if (selfHealDestinationProxy) {
@@ -274,23 +275,30 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
   const cachedPayee = cache && !requestPayee && cache.get(`fetchParticipantInfo_${destination}`)
 
   if (!cachedPayer && !requestPayer) {
-    requestPayer = await axios.request({ url: `${url}/${source}` })
-    cache && cache.put(`fetchParticipantInfo_${source}`, requestPayer, Config.participantDataCacheExpiresInMs)
-    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
+    requestPayer = await cacheParticipantData(source, config, cache)
+    logger.debug(`[fetchParticipantInfo]: cache miss for payer ${source}`)
   } else {
-    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache hit for payer ${source}`)
+    logger.debug(`[fetchParticipantInfo]: cache hit for payer ${source}`)
   }
   if (!cachedPayee && !requestPayee) {
-    requestPayee = await axios.request({ url: `${url}/${destination}` })
-    cache && cache.put(`fetchParticipantInfo_${destination}`, requestPayee, Config.participantDataCacheExpiresInMs)
-    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache miss for payee ${destination}`)
+    requestPayee = await cacheParticipantData(destination, config, cache)
+    logger.debug(`[fetchParticipantInfo]: cache miss for payee ${destination}`)
   } else {
-    logger.isDebugEnabled && logger.debug(`[fetchParticipantInfo]: cache hit for payee ${destination}`)
+    logger.debug(`[fetchParticipantInfo]: cache hit for payee ${destination}`)
   }
 
-  const payer = cachedPayer || requestPayer.data
-  const payee = cachedPayee || requestPayee.data
-  return { payer, payee }
+  return {
+    payer: cachedPayer || requestPayer.data,
+    payee: cachedPayee || requestPayee.data
+  }
+}
+
+const cacheParticipantData = async (dfspId, config, cache) => {
+  const url = `${config.switchEndpoint}/participants/${dfspId}`
+  const { data } = await axios.request({ url })
+  const participantData = { data }
+  cache && cache.put(`fetchParticipantInfo_${dfspId}`, participantData, config.participantDataCacheExpiresInMs)
+  return participantData
 }
 
 const getParticipantEndpoint = async ({ fspId, endpointType, db, log = logger, proxyClient = null }) => {

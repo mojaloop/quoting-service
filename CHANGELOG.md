@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.13.0](https://github.com/mojaloop/quoting-service/compare/v17.12.1...v17.13.0) (2025-08-26)
+
+
+### Bug Fixes
+
+* **csi-1676:** removed unneeded info from logs ([#424](https://github.com/mojaloop/quoting-service/issues/424)) ([798717c](https://github.com/mojaloop/quoting-service/commit/798717c244adc25305f143e0ebfd4be6bf07bb84))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([38b45d0](https://github.com/mojaloop/quoting-service/commit/38b45d0d502bbf143f351f027dbfcf4f389089b5))
+
 ### [17.12.1](https://github.com/mojaloop/quoting-service/compare/v17.12.0...v17.12.1) (2025-07-25)
 
 
