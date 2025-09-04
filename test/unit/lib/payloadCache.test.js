@@ -27,6 +27,7 @@
 
 const MockIoRedis = require('../../MockIoRedis')
 jest.mock('ioredis', () => MockIoRedis)
+jest.mock('@mojaloop/central-services-shared/src/util/redis/redisCache')
 
 const { setTimeout: sleep } = require('node:timers/promises')
 const { createPayloadCache, PayloadCache } = require('../../../src/lib/payloadCache')
@@ -37,22 +38,15 @@ const { type, connectionConfig } = config.payloadCache
 
 describe('Payload Cache Tests -->', () => {
   let cache
-  const redisClient = new MockIoRedis.Cluster(connectionConfig.cluster)
 
   beforeEach(async () => {
     cache = createPayloadCache(type, connectionConfig)
-    await Promise.all([
-      cache.connect(),
-      redisClient.connect()
-    ])
+    await cache.connect()
     expect(cache.isConnected).toBe(true)
   })
 
   afterEach(async () => {
-    await Promise.all([
-      cache?.disconnect(),
-      redisClient?.quit()
-    ])
+    await cache?.disconnect()
   })
 
   test('should should throw for invalid type', () => {

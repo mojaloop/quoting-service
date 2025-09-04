@@ -27,6 +27,7 @@
 
 const MockIoRedis = require('../../MockIoRedis')
 jest.mock('ioredis', () => MockIoRedis)
+jest.mock('@mojaloop/central-services-shared/src/util/redis/redisCache')
 
 const { decodePayload } = require('@mojaloop/central-services-shared').Util.StreamingProtocol
 const dto = require('../../../src/lib/dto')
