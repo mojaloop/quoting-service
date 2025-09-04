@@ -28,6 +28,80 @@
 const MockIoRedis = require('../../MockIoRedis')
 jest.mock('ioredis', () => MockIoRedis)
 
+// Mock the RedisCache with proper logger support
+jest.mock('@mojaloop/central-services-shared/src/util/redis/redisCache', () => {
+  return class MockRedisCache {
+    constructor (logger, connectionConfig) {
+      // Ensure we have logger methods
+      this.log = logger || {
+        debug: jest.fn(),
+        warn: jest.fn(),
+        error: jest.fn(),
+        info: jest.fn()
+      }
+      // If logger is passed but doesn't have all methods, add them
+      if (this.log && typeof this.log === 'object') {
+        this.log.debug = this.log.debug || jest.fn()
+        this.log.warn = this.log.warn || jest.fn()
+        this.log.error = this.log.error || jest.fn()
+        this.log.info = this.log.info || jest.fn()
+      }
+      this.connectionConfig = connectionConfig
+      this.isConnected = false
+      this.storage = new Map()
+      this.timers = new Map()
+    }
+
+    async connect () {
+      this.isConnected = true
+      return true
+    }
+
+    async disconnect () {
+      this.isConnected = false
+      this.storage.clear()
+      for (const timer of this.timers.values()) {
+        clearTimeout(timer)
+      }
+      this.timers.clear()
+      return true
+    }
+
+    async set (key, value, ttl) {
+      if (this.timers.has(key)) {
+        clearTimeout(this.timers.get(key))
+        this.timers.delete(key)
+      }
+
+      this.storage.set(key, value)
+      if (ttl) {
+        const timer = setTimeout(() => {
+          this.storage.delete(key)
+          this.timers.delete(key)
+        }, ttl * 1000)
+        this.timers.set(key, timer)
+      }
+      return 'OK'
+    }
+
+    async get (key) {
+      return this.storage.get(key) || null
+    }
+
+    async del (key) {
+      return this.storage.delete(key) ? 1 : 0
+    }
+
+    async exists (key) {
+      return this.storage.has(key) ? 1 : 0
+    }
+
+    async ping () {
+      return 'PONG'
+    }
+  }
+})
+
 const { decodePayload } = require('@mojaloop/central-services-shared').Util.StreamingProtocol
 const dto = require('../../../src/lib/dto')
 const Config = require('../../../src/lib/config')
