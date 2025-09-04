@@ -401,6 +401,11 @@ describe('QuotesModel', () => {
           expect(rules.length).toBe(0)
 
           quotesModel.handleRuleEvents.mockRestore()
+          RulesEngine.run.mockImplementation(() => {
+            return {
+              events: []
+            }
+          })
           await expect(quotesModel.executeRules(mockData.headers, mockData.quoteRequest))
             .resolves
             .toEqual({ terminate: false, headers: mockData.headers, quoteRequest: mockData.quoteRequest })
