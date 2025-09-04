@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.13.2](https://github.com/mojaloop/quoting-service/compare/v17.13.1...v17.13.2) (2025-09-04)
+
+
+### Bug Fixes
+
+* issue 4198 by using the latest CS-Shared version ([#427](https://github.com/mojaloop/quoting-service/issues/427)) ([e965180](https://github.com/mojaloop/quoting-service/commit/e965180dd619159900fa5219459ea28d64ddc15f))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([ed7fb3d](https://github.com/mojaloop/quoting-service/commit/ed7fb3d80d50e509fafe6be21031efd558898c14))
+
 ### [17.13.1](https://github.com/mojaloop/quoting-service/compare/v17.13.0...v17.13.1) (2025-09-03)
 
 
