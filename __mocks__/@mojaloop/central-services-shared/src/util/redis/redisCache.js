@@ -27,11 +27,19 @@
 
 class MockRedisCache {
   constructor (logger, connectionConfig) {
+    // Ensure we have logger methods with jest.fn() for test compatibility
     this.log = logger || {
-      debug: () => {},
-      warn: () => {},
-      error: () => {},
-      info: () => {}
+      debug: jest.fn ? jest.fn() : () => {},
+      warn: jest.fn ? jest.fn() : () => {},
+      error: jest.fn ? jest.fn() : () => {},
+      info: jest.fn ? jest.fn() : () => {}
+    }
+    // If logger is passed but doesn't have all methods, add them
+    if (this.log && typeof this.log === 'object') {
+      this.log.debug = this.log.debug || (jest.fn ? jest.fn() : () => {})
+      this.log.warn = this.log.warn || (jest.fn ? jest.fn() : () => {})
+      this.log.error = this.log.error || (jest.fn ? jest.fn() : () => {})
+      this.log.info = this.log.info || (jest.fn ? jest.fn() : () => {})
     }
     this.connectionConfig = connectionConfig
     this.isConnected = false
