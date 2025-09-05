@@ -27,7 +27,7 @@
 /* eslint-disable new-cap */
 
 const { Jws } = require('@mojaloop/sdk-standard-components')
-const rules = require('../../config/rules.json')
+const rules = require('../../config/rules')
 const Config = require('../lib/config')
 const libHttp = require('../lib/http')
 const libUtil = require('../lib/util')
