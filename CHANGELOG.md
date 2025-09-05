@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.13.3](https://github.com/mojaloop/quoting-service/compare/v17.13.2...v17.13.3) (2025-09-05)
+
+
+### Bug Fixes
+
+* rules engine regression ([#428](https://github.com/mojaloop/quoting-service/issues/428)) ([20c94f5](https://github.com/mojaloop/quoting-service/commit/20c94f5040f13fe50721179f9f27531f1a97360d))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([b32df35](https://github.com/mojaloop/quoting-service/commit/b32df3588cee53898075f2a7029461e2054ce966))
+
 ### [17.13.2](https://github.com/mojaloop/quoting-service/compare/v17.13.1...v17.13.2) (2025-09-04)
 
 
