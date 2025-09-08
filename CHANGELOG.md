@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.13.4](https://github.com/mojaloop/quoting-service/compare/v17.13.3...v17.13.4) (2025-09-08)
+
+
+### Chore
+
+* bump metrics for app critical metrics ([#429](https://github.com/mojaloop/quoting-service/issues/429)) ([664c6d2](https://github.com/mojaloop/quoting-service/commit/664c6d2bd879e93c4678b55b0302afd9457e4143))
+* **sbom:** update sbom [skip ci] ([ff08330](https://github.com/mojaloop/quoting-service/commit/ff0833060dea601098b469d733f0421cb93c42b7))
+
 ### [17.13.3](https://github.com/mojaloop/quoting-service/compare/v17.13.2...v17.13.3) (2025-09-05)
 
 
