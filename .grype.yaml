@@ -3,12 +3,6 @@ ignore:
   # as grype looks at package-lock.json where it shows versions with
   # vulnerabilities, npm ls shows only 7.0.6 verion is used
 
-  # Ignore axios vulnerability in mojaloop central-services-shared
-  - vulnerability: "GHSA-4hjh-wcwx-xvwj"
-    package:
-      name: "axios"
-
-
 # Set output format defaults
 output:
   - "table"
