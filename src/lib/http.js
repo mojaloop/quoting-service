@@ -43,7 +43,10 @@ const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { logger } = require('../lib')
 const { getStackOrInspect } = require('../lib/util')
 
-axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
+const keepAlive = process.env.HTTP_AGENT_KEEP_ALIVE === 'true'
+logger.verbose('http keepAlive:', { keepAlive })
+
+axios.defaults.httpAgent = new http.Agent({ keepAlive })
 axios.defaults.httpAgent.toJSON = () => ({})
 axios.defaults.headers.common = {}
 
