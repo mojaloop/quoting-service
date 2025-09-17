@@ -27,7 +27,10 @@
 /* eslint-disable new-cap */
 
 const { Jws } = require('@mojaloop/sdk-standard-components')
-const rules = require('../../config/rules.json')
+// Do not specify extension as json to allow for different file formats (js, json, etc)
+// Ref: https://nodejs.org/api/modules.html#file-modules
+// The following line will attempt to load the required filename with the added extensions: .js, .json, and finally .node.
+const rules = require('../../config/rules')
 const Config = require('../lib/config')
 const libHttp = require('../lib/http')
 const libUtil = require('../lib/util')

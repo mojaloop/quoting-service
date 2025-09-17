@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.13.5](https://github.com/mojaloop/quoting-service/compare/v17.13.4...v17.13.5) (2025-09-10)
+
+
+### Chore
+
+* bump metrics for app critical metrics ([#430](https://github.com/mojaloop/quoting-service/issues/430)) ([fe92065](https://github.com/mojaloop/quoting-service/commit/fe92065730b0661bae435ed1265ce5fadcf912fc))
+* **sbom:** update sbom [skip ci] ([22249ac](https://github.com/mojaloop/quoting-service/commit/22249ac12c270aaadb125520f3ec501850cf9802))
+
+### [17.13.4](https://github.com/mojaloop/quoting-service/compare/v17.13.3...v17.13.4) (2025-09-08)
+
+
+### Chore
+
+* bump metrics for app critical metrics ([#429](https://github.com/mojaloop/quoting-service/issues/429)) ([664c6d2](https://github.com/mojaloop/quoting-service/commit/664c6d2bd879e93c4678b55b0302afd9457e4143))
+* **sbom:** update sbom [skip ci] ([ff08330](https://github.com/mojaloop/quoting-service/commit/ff0833060dea601098b469d733f0421cb93c42b7))
+
+### [17.13.3](https://github.com/mojaloop/quoting-service/compare/v17.13.2...v17.13.3) (2025-09-05)
+
+
+### Bug Fixes
+
+* rules engine regression ([#428](https://github.com/mojaloop/quoting-service/issues/428)) ([20c94f5](https://github.com/mojaloop/quoting-service/commit/20c94f5040f13fe50721179f9f27531f1a97360d))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([b32df35](https://github.com/mojaloop/quoting-service/commit/b32df3588cee53898075f2a7029461e2054ce966))
+
+### [17.13.2](https://github.com/mojaloop/quoting-service/compare/v17.13.1...v17.13.2) (2025-09-04)
+
+
+### Bug Fixes
+
+* issue 4198 by using the latest CS-Shared version ([#427](https://github.com/mojaloop/quoting-service/issues/427)) ([e965180](https://github.com/mojaloop/quoting-service/commit/e965180dd619159900fa5219459ea28d64ddc15f))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([ed7fb3d](https://github.com/mojaloop/quoting-service/commit/ed7fb3d80d50e509fafe6be21031efd558898c14))
+
+### [17.13.1](https://github.com/mojaloop/quoting-service/compare/v17.13.0...v17.13.1) (2025-09-03)
+
+
+### Bug Fixes
+
+* improve logging ([#426](https://github.com/mojaloop/quoting-service/issues/426)) ([84ea730](https://github.com/mojaloop/quoting-service/commit/84ea730d5bd186ea89fb570eeff7f28bee17dd18))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([834ab15](https://github.com/mojaloop/quoting-service/commit/834ab15754ea7173e35cfa6c09bcd2a7c71e5e5c))
+
 ## [17.13.0](https://github.com/mojaloop/quoting-service/compare/v17.12.1...v17.13.0) (2025-08-26)
 
 
