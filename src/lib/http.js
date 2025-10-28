@@ -47,6 +47,7 @@ const Config = require('./config')
 axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
 axios.defaults.httpAgent.toJSON = () => ({})
 axios.defaults.headers.common = {}
+const config = new Config()
 
 /**
  * Encapsulates making an HTTP request and translating any error response into a domain-specific
@@ -64,7 +65,7 @@ async function httpRequest (opts, fspiopSource) {
   const log = logger.child({ component: 'httpRequest', fspiopSource })
   log.debug('httpRequest is started...')
   opts = {
-    timeout: (new Config()).httpRequestTimeoutMs,
+    timeout: config.httpRequestTimeoutMs,
     ...opts
   }
   try {
