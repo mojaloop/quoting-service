@@ -165,6 +165,7 @@ class Config {
     this.payloadCache = RC.PAYLOAD_CACHE
     this.originalPayloadStorage = RC.ORIGINAL_PAYLOAD_STORAGE || PAYLOAD_STORAGES.none
     this.simpleAudit = RC.SIMPLE_AUDIT || false
+    this.httpRequestTimeoutMs = RC.HTTP_REQUEST_TIMEOUT_MS || 20000
   }
 }
 

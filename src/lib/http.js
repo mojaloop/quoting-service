@@ -35,65 +35,33 @@
  --------------
  ******/
 
-const http = require('node:http')
-const util = require('node:util')
-const axios = require('axios')
-const ErrorHandler = require('@mojaloop/central-services-error-handling')
-
+const { sendRequest } = require('@mojaloop/central-services-shared/src/util/request')
 const { logger } = require('../lib')
-const { getStackOrInspect } = require('../lib/util')
-
-axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
-axios.defaults.httpAgent.toJSON = () => ({})
-axios.defaults.headers.common = {}
+const config = require('./config')
 
 /**
- * Encapsulates making an HTTP request and translating any error response into a domain-specific
+ * Encapsulates making an HTTP request using sendRequest and translating any error response into a domain-specific
  * error type.
  *
- * @param {Object} opts
+ * @param {Object} opts - Options for the HTTP request (must include url, headers, method, source, destination, etc.)
  * @param {String} fspiopSource
- * @returns {Promise<void>}
+ * @returns {Promise<any>}
  */
 async function httpRequest (opts, fspiopSource) {
-  // Network errors lob an exception. Bear in mind 3xx 4xx and 5xx are not network errors so we
-  // need to wrap the request below in a `try catch` to handle network errors
-  let res
-  let body
   const log = logger.child({ component: 'httpRequest', fspiopSource })
   log.debug('httpRequest is started...')
-
   try {
-    res = await axios.request(opts)
-    body = await res.data
-    log.verbose('httpRequest is finished', { body, opts })
+    // Pass httpRequestTimeoutMs from config if not already set in opts
+    const timeout = opts.timeout !== undefined ? opts.timeout : config.httpRequestTimeoutMs
+    const response = await sendRequest({ timeout, ...opts })
+    log.verbose('httpRequest is finished', { response, opts })
+    // Axios returns the full response, but sendRequest returns the same, so return response.data if present
+    return response.data !== undefined ? response.data : response
   } catch (e) {
     log.error('httpRequest failed due to an error:', e)
-    const [fspiopErrorType, fspiopErrorDescr] = e.response && e.response.status === 404
-      ? [ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Not found']
-      : [ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error']
-    throw ErrorHandler.CreateFSPIOPError(fspiopErrorType, fspiopErrorDescr,
-      `${getStackOrInspect(e)}. Opts: ${util.inspect(opts)}`,
-      fspiopSource)
+    // sendRequest throws FSPIOPError, so just rethrow
+    throw e
   }
-
-  // handle non network related errors below
-  if (res.status < 200 || res.status >= 300) {
-    const errObj = {
-      opts,
-      status: res.status,
-      statusText: res.statusText,
-      body
-    }
-    log.warn('httpRequest returned non-success status code', errObj)
-
-    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
-      'Non-success response in HTTP request',
-      `${errObj}`,
-      fspiopSource)
-  }
-
-  return body
 }
 
 module.exports = {

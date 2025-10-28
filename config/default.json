@@ -12,6 +12,7 @@
     "PRECISION": 18,
     "SCALE": 4
   },
+  "HTTP_REQUEST_TIMEOUT_MS": 20000,
   "PROTOCOL_VERSIONS": {
     "CONTENT": {
       "DEFAULT": "2.0",

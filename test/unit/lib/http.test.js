@@ -29,9 +29,11 @@
  ******/
 'use strict'
 
-jest.mock('axios')
+jest.mock('@mojaloop/central-services-shared/src/util/request', () => ({
+  sendRequest: jest.fn()
+}))
 
-const axios = require('axios')
+const { sendRequest } = require('@mojaloop/central-services-shared/src/util/request')
 const { httpRequest } = require('../../../src/lib/http')
 
 describe('httpRequest', () => {
@@ -41,45 +43,37 @@ describe('httpRequest', () => {
 
   it('performs a successful http request', async () => {
     // Arrange
-    axios.request.mockReturnValueOnce({
-      status: 200,
-      data: Promise.resolve({})
-    })
+    sendRequest.mockResolvedValueOnce({ status: 200, data: { foo: 'bar' } })
     const options = {}
 
     // Act
-    await httpRequest(options, 'payeefsp')
+    const result = await httpRequest(options, 'payeefsp')
 
     // Assert
-    expect(axios.request).toHaveBeenCalledTimes(1)
+    expect(sendRequest).toHaveBeenCalledTimes(1)
+    expect(result).toEqual({ foo: 'bar' })
+  })
+
+  it('returns full response if no data property', async () => {
+    // Arrange
+    sendRequest.mockResolvedValueOnce({ status: 200 })
+    const options = {}
+
+    // Act
+    const result = await httpRequest(options, 'payeefsp')
+
+    // Assert
+    expect(sendRequest).toHaveBeenCalledTimes(1)
+    expect(result).toEqual({ status: 200 })
   })
 
   it('handles a http exception', async () => {
     // Arrange
-    axios.request.mockImplementationOnce(() => { throw new Error('Network error') })
+    sendRequest.mockRejectedValueOnce(new Error('Network error'))
     const options = {}
 
-    // Act
-    const action = async () => httpRequest(options, 'payeefsp')
-
-    // Assert
-    await expect(action()).rejects.toThrow('Network error')
-    expect(axios.request).toHaveBeenCalledTimes(1)
-  })
-
-  it('handles a bad response', async () => {
-    // Arrange
-    axios.request.mockReturnValueOnce({
-      status: 400,
-      data: Promise.resolve({})
-    })
-    const options = {}
-
-    // Act
-    const action = async () => httpRequest(options, 'payeefsp')
-
-    // Assert
-    await expect(action()).rejects.toThrow('Non-success response in HTTP request')
-    expect(axios.request).toHaveBeenCalledTimes(1)
+    // Act & Assert
+    await expect(httpRequest(options, 'payeefsp')).rejects.toThrow('Network error')
+    expect(sendRequest).toHaveBeenCalledTimes(1)
   })
 })
