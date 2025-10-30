@@ -40,6 +40,7 @@ const EventSdk = require('@mojaloop/event-sdk')
 
 const LOCAL_ENUM = require('../lib/enum')
 const BaseQuotesModel = require('./BaseQuotesModel')
+const { httpRequestBase } = require('../lib/http')
 
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
 
@@ -420,7 +421,7 @@ class BulkQuotesModel extends BaseQuotesModel {
         super.addFspiopSignatureHeader(opts)
 
         step = 'axios-request-2'
-        res = await axios.request(opts)
+        res = await httpRequestBase(opts, axios)
       } catch (err) {
         log.warn('error in axios.request:', err)
         const extensions = err.extensions || []

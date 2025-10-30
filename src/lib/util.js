@@ -37,7 +37,6 @@
 const crypto = require('node:crypto')
 const path = require('node:path')
 const util = require('node:util')
-const axios = require('axios')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
@@ -47,6 +46,7 @@ const { logger } = require('../lib')
 const Config = require('./config')
 
 const rethrow = require('@mojaloop/central-services-shared').Util.rethrow.with('QS')
+const { httpRequestBase } = require('./http')
 const config = new Config()
 
 const failActionHandler = async (request, h, err) => {
@@ -295,8 +295,8 @@ const fetchParticipantInfo = async (source, destination, cache, proxyClient) => 
 
 const cacheParticipantData = async (dfspId, config, cache) => {
   const url = `${config.switchEndpoint}/participants/${dfspId}`
-  const { data } = await axios.request({ url })
-  const participantData = { data }
+  const res = await httpRequestBase({ url })
+  const participantData = { data: res.data }
   cache && cache.put(`fetchParticipantInfo_${dfspId}`, participantData, config.participantDataCacheExpiresInMs)
   return participantData
 }

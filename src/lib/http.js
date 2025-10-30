@@ -58,18 +58,16 @@ const config = new Config()
  * @returns {Promise<void>}
  */
 async function httpRequest (opts, fspiopSource) {
-  // Network errors lob an exception. Bear in mind 3xx 4xx and 5xx are not network errors so we
-  // need to wrap the request below in a `try catch` to handle network errors
-  let res
-  let body
   const log = logger.child({ component: 'httpRequest', fspiopSource })
   log.debug('httpRequest is started...')
   opts = {
     timeout: config.httpRequestTimeoutMs,
     ...opts
   }
+  let res
+  let body
   try {
-    res = await axios.request(opts)
+    res = await httpRequestBase(opts)
     body = await res.data
     log.verbose('httpRequest is finished', { body, opts })
   } catch (e) {
@@ -82,7 +80,6 @@ async function httpRequest (opts, fspiopSource) {
       fspiopSource)
   }
 
-  // handle non network related errors below
   if (res.status < 200 || res.status >= 300) {
     const errObj = {
       opts,
@@ -101,6 +98,14 @@ async function httpRequest (opts, fspiopSource) {
   return body
 }
 
+async function httpRequestBase (opts, axiosInstance = axios) {
+  return axiosInstance.request({
+    timeout: config.httpRequestTimeoutMs,
+    ...opts
+  })
+}
+
 module.exports = {
-  httpRequest
+  httpRequest,
+  httpRequestBase
 }

@@ -34,6 +34,7 @@ const path = require('node:path')
 const axios = require('axios')
 
 jest.mock('axios')
+jest.mock('../../../src/lib/http')
 axios.create = jest.fn(() => axios)
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
@@ -49,6 +50,7 @@ const { logger } = require('../../../src/lib')
 const { makeAppInteroperabilityHeader } = require('../../../src/lib/util')
 const { HEADERS, RESOURCES, ERROR_MESSAGES } = require('../../../src/constants')
 const { fxQuoteMocks } = require('../../mocks')
+const Http = require('../../../src/lib/http')
 
 Metrics.setup(new Config().instrumentationMetricsConfig)
 
@@ -769,7 +771,8 @@ describe('FxQuotesModel Tests -->', () => {
       fxQuotesModel = new FxQuotesModel(deps)
       fxQuotesModel._getParticipantEndpoint = jest.fn().mockResolvedValue(mockEndpoint)
       jest.spyOn(fxQuotesModel, 'sendHttpRequest')
-      jest.spyOn(axios, 'request').mockResolvedValue({ status: 200 })
+      jest.spyOn(Http, 'httpRequestBase').mockResolvedValue({ status: 200 })
+
       const fspiopError = ErrorHandler.CreateFSPIOPError({ code: 2001, message: 'Generic server error' }, '', new Error('Test error'))
 
       await expect(fxQuotesModel.sendErrorCallback(headers['fspiop-source'], fspiopError, conversionRequestId, headers, childSpan, false)).resolves.toBeUndefined()
@@ -872,11 +875,11 @@ describe('FxQuotesModel Tests -->', () => {
       const error = new Error('Network Error')
 
       fxQuotesModel = new FxQuotesModel(deps)
-      jest.spyOn(axios, 'request').mockImplementation(() => { throw error })
+      Http.httpRequestBase.mockImplementationOnce(() => { throw error })
 
       await expect(fxQuotesModel.sendHttpRequest(options, fspiopSource, fspiopDest)).rejects.toThrow('Network Error')
 
-      expect(axios.request).toBeCalledWith(options)
+      expect(Http.httpRequestBase).toBeCalledWith(options, expect.anything())
     })
 
     test('should rethrow error if metrics is disabled', async () => {
@@ -886,7 +889,7 @@ describe('FxQuotesModel Tests -->', () => {
       const error = new Error('Network Error')
 
       fxQuotesModel = new FxQuotesModel(deps)
-      jest.spyOn(axios, 'request').mockImplementation(() => { throw error })
+      jest.spyOn(Http, 'httpRequestBase').mockImplementation(() => { throw error })
       fxQuotesModel.envConfig.instrumentationMetricsDisabled = true
 
       await expect(fxQuotesModel.sendHttpRequest(options, fspiopSource, fspiopDest)).rejects.toThrow()

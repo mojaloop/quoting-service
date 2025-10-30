@@ -31,12 +31,14 @@
 
 jest.mock('axios')
 jest.mock('@mojaloop/central-services-logger')
+jest.mock('../../../src/lib/http')
 
 const fs = require('node:fs/promises')
 const axios = require('axios')
 const Logger = require('@mojaloop/central-services-logger')
 const { Cache } = require('memory-cache')
 const { Enum } = require('@mojaloop/central-services-shared')
+const Http = require('../../../src/lib/http')
 
 let Config = require('../../../src/lib/config.js')
 const { RESOURCES, ISO_HEADER_PART } = require('../../../src/constants')
@@ -539,16 +541,16 @@ describe('util', () => {
       // Arrange
       const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] } }
       const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] } }
-      axios.request
+      Http.httpRequestBase
         .mockImplementationOnce(() => { return payer })
         .mockImplementationOnce(() => { return payee })
       // Act
       const result = await fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'])
       // Assert
       expect(result).toEqual({ payer: payer.data, payee: payee.data })
-      expect(axios.request.mock.calls.length).toBe(2)
-      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
-      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+      expect(Http.httpRequestBase.mock.calls.length).toBe(2)
+      expect(Http.httpRequestBase.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(Http.httpRequestBase.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
     })
 
     it('returns original payer and original payee data structure when they are proxied', async () => {
@@ -586,7 +588,7 @@ describe('util', () => {
           proxiedParticipant: true
         }
       })
-      expect(axios.request.mock.calls.length).toBe(0)
+      expect(Http.httpRequestBase.mock.calls.length).toBe(0)
     })
 
     it('caches payer and payee when cache is provided', async () => {
@@ -594,7 +596,7 @@ describe('util', () => {
       // Arrange
       const payer = { data: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }] } }
       const payee = { data: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }] } }
-      axios.request
+      Http.httpRequestBase
         .mockImplementationOnce(() => { return payer })
         .mockImplementationOnce(() => { return payee })
       // Act
@@ -610,27 +612,27 @@ describe('util', () => {
       )
       // Assert
       expect(result).toEqual({ payer: payer.data, payee: payee.data })
-      expect(axios.request.mock.calls.length).toBe(2)
-      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
-      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
-      expect(axios.request.mock.calls[2]).toBeUndefined()
+      expect(Http.httpRequestBase.mock.calls.length).toBe(2)
+      expect(Http.httpRequestBase.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(Http.httpRequestBase.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+      expect(Http.httpRequestBase.mock.calls[2]).toBeUndefined()
       cache.clear()
     })
 
-    it('throws an unhandled exception if the first attempt of `axios.request` throws an exception', async () => {
-      axios.request
+    it('throws an unhandled exception if the first attempt of `Http.httpRequestBase` throws an exception', async () => {
+      Http.httpRequestBase
         .mockImplementationOnce(() => { throw new Error('foo') })
 
       await expect(fetchParticipantInfo(mockData.headers['fspiop-source'], mockData.headers['fspiop-destination']))
         .rejects
         .toHaveProperty('message', 'foo')
 
-      expect(axios.request.mock.calls.length).toBe(1)
-      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(Http.httpRequestBase.mock.calls.length).toBe(1)
+      expect(Http.httpRequestBase.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
     })
 
-    it('throws an unhandled exception if the second attempt of `axios.request` throws an exception', async () => {
-      axios.request
+    it('throws an unhandled exception if the second attempt of `Http.httpRequestBase` throws an exception', async () => {
+      Http.httpRequestBase
         .mockImplementationOnce(() => { return { success: true } })
         .mockImplementationOnce(() => { throw new Error('foo') })
 
@@ -638,9 +640,9 @@ describe('util', () => {
         .rejects
         .toHaveProperty('message', 'foo')
 
-      expect(axios.request.mock.calls.length).toBe(2)
-      expect(axios.request.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
-      expect(axios.request.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
+      expect(Http.httpRequestBase.mock.calls.length).toBe(2)
+      expect(Http.httpRequestBase.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
+      expect(Http.httpRequestBase.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination']})
     })
 
     it('self heals source proxy mapping if not found', async () => {
