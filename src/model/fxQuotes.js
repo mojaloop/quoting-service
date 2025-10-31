@@ -39,6 +39,7 @@ const dto = require('../lib/dto')
 
 const { RESOURCES, ERROR_MESSAGES } = require('../constants')
 const BaseQuotesModel = require('./BaseQuotesModel')
+const { httpRequestBase } = require('../lib/http')
 
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
 
@@ -804,7 +805,7 @@ class FxQuotesModel extends BaseQuotesModel {
     let step
     try {
       step = 'axios-request-1'
-      return axios.request(options)
+      return await httpRequestBase(options, axios)
     } catch (err) {
       this.log.warn('error in sendHttpRequest: ', err)
       const extensions = err.extensions || []

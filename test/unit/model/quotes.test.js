@@ -2413,6 +2413,7 @@ describe('QuotesModel', () => {
       expect.assertions(1)
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       const expectedOptions = {
@@ -2426,7 +2427,7 @@ describe('QuotesModel', () => {
       await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
 
       // Assert
-      expect(axios.request).toBeCalledWith(expectedOptions)
+      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
     })
 
     it('sends the error callback and handles the span', async () => {
@@ -2434,6 +2435,7 @@ describe('QuotesModel', () => {
       expect.assertions(3)
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -2460,7 +2462,7 @@ describe('QuotesModel', () => {
       // Assert
       expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
       expect(mockSpan.audit).toBeCalledTimes(1)
-      expect(axios.request).toBeCalledWith(expectedOptions)
+      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
     })
 
     it('sends the error callback JWS signed', async () => {
@@ -2469,6 +2471,7 @@ describe('QuotesModel', () => {
       // expect.assertions(6)
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -2490,9 +2493,9 @@ describe('QuotesModel', () => {
       expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
       expect(mockSpan.audit).toBeCalledTimes(1)
       expect(jwsSignSpy).toBeCalledTimes(1)
-      expect(axios.request.mock.calls[0][0].headers).toHaveProperty('fspiop-signature')
-      expect(axios.request.mock.calls[0][0].headers['fspiop-signature']).toEqual(expect.stringContaining('signature'))
-      expect(axios.request.mock.calls[0][0].headers['fspiop-signature']).toEqual(expect.stringContaining('protectedHeader'))
+      expect(Http.httpRequestBase.mock.calls[0][0].headers).toHaveProperty('fspiop-signature')
+      expect(Http.httpRequestBase.mock.calls[0][0].headers['fspiop-signature']).toEqual(expect.stringContaining('signature'))
+      expect(Http.httpRequestBase.mock.calls[0][0].headers['fspiop-signature']).toEqual(expect.stringContaining('protectedHeader'))
       jwsSignSpy.mockRestore()
     })
 
@@ -2501,6 +2504,8 @@ describe('QuotesModel', () => {
       const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
+
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
 
@@ -2525,7 +2530,7 @@ describe('QuotesModel', () => {
       expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
       expect(mockSpan.audit).toBeCalledTimes(1)
       expect(jwsSignSpy).toBeCalledTimes(0)
-      expect(axios.request.mock.calls[0][0].headers['fspiop-signature']).toBe(fspiopSignature)
+      expect(Http.httpRequestBase.mock.calls[0][0].headers['fspiop-signature']).toBe(fspiopSignature)
       jwsSignSpy.mockRestore()
     })
 
@@ -2535,6 +2540,7 @@ describe('QuotesModel', () => {
       expect.assertions(5)
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -2565,8 +2571,8 @@ describe('QuotesModel', () => {
       expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
       expect(mockSpan.audit).toBeCalledTimes(1)
       expect(jwsSignSpy).not.toHaveBeenCalled()
-      expect(axios.request.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
-      expect(axios.request).toBeCalledWith(expectedOptions)
+      expect(Http.httpRequestBase.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
+      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
       jwsSignSpy.mockRestore()
     })
 
@@ -2576,6 +2582,7 @@ describe('QuotesModel', () => {
       expect.assertions(5)
       quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -2606,8 +2613,8 @@ describe('QuotesModel', () => {
       expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
       expect(mockSpan.audit).toBeCalledTimes(1)
       expect(jwsSignSpy).not.toHaveBeenCalled()
-      expect(axios.request.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
-      expect(axios.request).toBeCalledWith(expectedOptions)
+      expect(Http.httpRequestBase.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
+      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
       jwsSignSpy.mockRestore()
     })
 
@@ -2634,14 +2641,14 @@ describe('QuotesModel', () => {
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      axios.request.mockImplementationOnce(() => { throw new Error('HTTP test error') })
+      Http.httpRequestBase.mockImplementationOnce(() => { throw new Error('HTTP test error') })
 
       // Act
       const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
 
       // Assert
       await expect(action()).rejects.toThrow('network error in sendErrorCallback: HTTP test error')
-      expect(axios.request).toHaveBeenCalledTimes(1)
+      expect(Http.httpRequestBase).toHaveBeenCalledTimes(1)
     })
 
     it('handles a http bad status code', async () => {
@@ -2651,7 +2658,7 @@ describe('QuotesModel', () => {
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      axios.request.mockReturnValueOnce({
+      Http.httpRequestBase.mockReturnValueOnce({
         status: Enum.Http.ReturnCodes.BADREQUEST.CODE
       })
 
@@ -2660,7 +2667,7 @@ describe('QuotesModel', () => {
 
       // Assert
       await expect(action()).rejects.toThrow('Got non-success response sending error callback')
-      expect(axios.request).toHaveBeenCalledTimes(1)
+      expect(Http.httpRequestBase).toHaveBeenCalledTimes(1)
     })
 
     it('rethrows error when metrics is disabled and error occured', async () => {
@@ -2671,7 +2678,7 @@ describe('QuotesModel', () => {
       Util.generateRequestHeaders.mockReturnValueOnce({})
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      axios.request.mockImplementationOnce(() => { throw new Error('HTTP test error') })
+      Http.httpRequestBase.mockImplementationOnce(() => { throw new Error('HTTP test error') })
 
       // Act
       const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)

@@ -46,7 +46,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const LOCAL_ENUM = require('../lib/enum')
 const dto = require('../lib/dto')
 
-const { httpRequest } = require('../lib/http')
+const { httpRequest, httpRequestBase } = require('../lib/http')
 const { RESOURCES } = require('../constants')
 const BaseQuotesModel = require('./BaseQuotesModel')
 
@@ -1035,7 +1035,7 @@ class QuotesModel extends BaseQuotesModel {
       try {
         super.addFspiopSignatureHeader(opts)
         step = 'axios-request-2'
-        res = await axios.request(opts)
+        res = await httpRequestBase(opts, axios)
         // todo: use wrapper on axios
         histTimer({ success: true, queryName: 'quote_sendErrorCallback' })
       } catch (err) {
