@@ -1035,12 +1035,10 @@ class QuotesModel extends BaseQuotesModel {
       try {
         super.addFspiopSignatureHeader(opts)
         step = 'axios-request-2'
-        console.log(opts)
         res = await httpRequestBase(opts, axios)
         // todo: use wrapper on axios
         histTimer({ success: true, queryName: 'quote_sendErrorCallback' })
       } catch (err) {
-        console.log('error in axios request:', err)
         // external-error
         throw ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
