@@ -60,10 +60,6 @@ const config = new Config()
 async function httpRequest (opts, fspiopSource) {
   const log = logger.child({ component: 'httpRequest', fspiopSource })
   log.debug('httpRequest is started...')
-  opts = {
-    timeout: config.httpRequestTimeoutMs,
-    ...opts
-  }
   let res
   let body
   try {
