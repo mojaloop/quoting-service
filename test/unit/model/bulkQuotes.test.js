@@ -886,7 +886,7 @@ describe('BulkQuotesModel', () => {
       expect.assertions(1)
       bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve({status: 200}))
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve({ status: 200 }))
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       const expectedOptions = {
@@ -908,7 +908,7 @@ describe('BulkQuotesModel', () => {
       expect.assertions(3)
       bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve({status: 200}))
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve({ status: 200 }))
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -944,7 +944,7 @@ describe('BulkQuotesModel', () => {
       // expect.assertions(6)
       bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve({status: 200}))
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve({ status: 200 }))
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -978,7 +978,7 @@ describe('BulkQuotesModel', () => {
       expect.assertions(5)
       bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve({status: 200}))
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve({ status: 200 }))
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
@@ -1020,7 +1020,7 @@ describe('BulkQuotesModel', () => {
       expect.assertions(5)
       bulkQuotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
       Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve({status: 200}))
+      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve({ status: 200 }))
       const error = new Error('Test Error')
       const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
       mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({

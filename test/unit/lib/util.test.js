@@ -642,7 +642,7 @@ describe('util', () => {
 
       expect(Http.httpRequestBase.mock.calls.length).toBe(2)
       expect(Http.httpRequestBase.mock.calls[0][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-source'] })
-      expect(Http.httpRequestBase.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination']})
+      expect(Http.httpRequestBase.mock.calls[1][0]).toEqual({ url: 'http://localhost:3001/participants/' + mockData.headers['fspiop-destination'] })
     })
 
     it('self heals source proxy mapping if not found', async () => {
