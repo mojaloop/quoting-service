@@ -41,7 +41,6 @@ const axios = require('axios')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 
 const { logger } = require('../lib')
-const { getStackOrInspect } = require('../lib/util')
 const Config = require('./config')
 
 axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
@@ -72,7 +71,7 @@ async function httpRequest (opts, fspiopSource) {
       ? [ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Not found']
       : [ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error']
     throw ErrorHandler.CreateFSPIOPError(fspiopErrorType, fspiopErrorDescr,
-      `${getStackOrInspect(e)}. Opts: ${util.inspect(opts)}`,
+      `${e.stack || util.inspect(e)}. Opts: ${util.inspect(opts)}`,
       fspiopSource)
   }
 
