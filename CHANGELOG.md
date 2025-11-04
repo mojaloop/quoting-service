@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.13.8](https://github.com/mojaloop/quoting-service/compare/v17.13.7...v17.13.8) (2025-11-04)
+
+
+### Bug Fixes
+
+* circular dependency in http ([#437](https://github.com/mojaloop/quoting-service/issues/437)) ([d81b951](https://github.com/mojaloop/quoting-service/commit/d81b9518846f24c4e4f9ddedd1ee9c8493c1fe13))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([04aa94b](https://github.com/mojaloop/quoting-service/commit/04aa94b506274bd4a4bf243a43b5353b5c90d11d))
+
 ### [17.13.7](https://github.com/mojaloop/quoting-service/compare/v17.13.6...v17.13.7) (2025-10-31)
 
 
