@@ -4,6 +4,7 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [
-    "GHSA-9965-vmph-33xx"
+    "GHSA-9965-vmph-33xx",
+    "GHSA-vghf-hv5q-vc2g" // swag-mock
   ]
 }
