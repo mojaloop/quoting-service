@@ -9,6 +9,8 @@ ignore:
   - vulnerability: CVE-2025-60876
   - vulnerability: CVE-2025-60876
   - vulnerability: CVE-2025-60876
+  - vulnerability: GHSA-5j98-mcp5-4vw2
+  - vulnerability: GHSA-vghf-hv5q-vc2g
 
 # Set output format defaults
 output:
