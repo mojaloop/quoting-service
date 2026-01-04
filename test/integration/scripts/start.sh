@@ -6,6 +6,8 @@ then
     exit 1
 fi
 
+docker load -i /tmp/docker-image.tar
+
 pwd
 SCRIPTS_FOLDER=./test/integration/scripts
 
