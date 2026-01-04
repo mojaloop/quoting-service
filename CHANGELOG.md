@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.13.9](https://github.com/mojaloop/quoting-service/compare/v17.13.8...v17.13.9) (2026-01-04)
+
+
+### Bug Fixes
+
+* handle subtype mapping ([#440](https://github.com/mojaloop/quoting-service/issues/440)) ([c33b4c1](https://github.com/mojaloop/quoting-service/commit/c33b4c1da82ef78ea51a73d53d044153f89aecbc))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([7cc51a8](https://github.com/mojaloop/quoting-service/commit/7cc51a8847f3f8e12691e2895065f34463ea5f7f))
+
 ### [17.13.8](https://github.com/mojaloop/quoting-service/compare/v17.13.7...v17.13.8) (2025-11-04)
 
 
