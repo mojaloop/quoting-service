@@ -581,16 +581,15 @@ class QuotesModel extends BaseQuotesModel {
 
         // if we get here we need to create a duplicate check row
         const hash = this.libUtil.calculateRequestHash(payload)
-        step = 'createQuoteUpdateDuplicateCheck-7'
-        await this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash)
-
-        // create ilp packet in the db
-        step = 'createQuoteResponseIlpPacket-8'
-        await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId, payload.ilpPacket)
+        step = 'createQuoteUpdateDuplicateCheckAndIlpPacket-7'
+        await Promise.all([
+          this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash),
+          this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId, payload.ilpPacket)
+        ])
 
         // did we get a geoCode for the payee?
         if (payload.geoCode) {
-          step = 'createGeoCode-9'
+          step = 'createGeoCode-8'
           refs.geoCodeId = await this.db.createGeoCode(txn, {
             quotePartyId: payeeParty?.quotePartyId,
             latitude: payload.geoCode.latitude,
@@ -600,7 +599,7 @@ class QuotesModel extends BaseQuotesModel {
 
         // store any extension list items
         if (payload.extensionList && Array.isArray(payload.extensionList.extension)) {
-          step = 'createQuoteExtensions-10'
+          step = 'createQuoteExtensions-9'
           refs.extensions = await this.db.createQuoteExtensions(
             txn, payload.extensionList.extension, quoteId, null, refs.quoteResponseId
           )
