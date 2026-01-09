@@ -228,7 +228,7 @@ class Database {
           transactionReferenceId
         })
 
-      this.log.debug('inserted new transactionReference in db: ', transactionReferenceId)
+      this.log.debug('inserted new transactionReference in db: ', { quoteId, transactionReferenceId })
       return transactionReferenceId
     } catch (err) {
       this.log.error('Error in createTransactionReference:', err)
