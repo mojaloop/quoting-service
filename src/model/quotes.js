@@ -37,7 +37,8 @@
  ******/
 
 const axios = require('axios')
-const { Enum, Util } = require('@mojaloop/central-services-shared')
+const stringify = require('fast-safe-stringify')
+const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const MLNumber = require('@mojaloop/ml-number')
@@ -1048,7 +1049,7 @@ class QuotesModel extends BaseQuotesModel {
             sourceFsp: fspiopSource,
             destinationFsp: fspiopDest,
             method: opts && opts.method,
-            request: JSON.stringify(opts, Util.getCircularReplacer())
+            request: stringify(opts)
           }, fspiopSource)
       }
       this.log.verbose(`callback got response: ${res.status} ${res.statusText}`)
@@ -1060,8 +1061,8 @@ class QuotesModel extends BaseQuotesModel {
           sourceFsp: fspiopSource,
           destinationFsp: fspiopDest,
           method: opts && opts.method,
-          request: JSON.stringify(opts, Util.getCircularReplacer()),
-          response: JSON.stringify(res, Util.getCircularReplacer())
+          request: stringify(opts),
+          response: stringify(res)
         }, fspiopSource)
       }
     } catch (err) {
