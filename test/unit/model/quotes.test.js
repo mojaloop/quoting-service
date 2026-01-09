@@ -1347,7 +1347,7 @@ describe('QuotesModel', () => {
           })
 
           it('calls all database create entity methods with correct arguments', async () => {
-            // expect.assertions(8)
+            expect.assertions(8)
 
             const expectedHash = Util.calculateRequestHash(mockData.quoteRequest)
             const mockCreateQuoteDuplicateCheckArgs = [mockTransaction, mockData.quoteRequest.quoteId,
