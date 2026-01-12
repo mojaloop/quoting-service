@@ -37,6 +37,7 @@
 const crypto = require('node:crypto')
 const path = require('node:path')
 const util = require('node:util')
+const stringify = require('fast-safe-stringify')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const { AuditEventAction } = require('@mojaloop/event-sdk')
@@ -217,7 +218,7 @@ function generateRequestHeadersForJWS (
  */
 function calculateRequestHash (request) {
   // calculate a SHA-256 of the request
-  const requestStr = JSON.stringify(request)
+  const requestStr = stringify(request)
   return crypto.createHash('sha256').update(requestStr).digest('hex')
 }
 

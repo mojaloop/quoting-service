@@ -128,6 +128,7 @@ describe('QuotesModel', () => {
       setTags: jest.fn(),
       finish: jest.fn()
     }
+    const transactionId = 'abc123'
     mockData = {
       amountTypeId: 'fakeAmountTypeId',
       endpoints: {
@@ -151,7 +152,7 @@ describe('QuotesModel', () => {
       quoteId: 'test123',
       quoteRequest: {
         quoteId: 'test123',
-        transactionId: 'abc123',
+        transactionId,
         payee: {
           partyIdInfo: {
             partyIdType: 'MSISDN',
@@ -298,7 +299,7 @@ describe('QuotesModel', () => {
       ],
       scenario: 'fakeScenario',
       subScenario: 'fakeSubScenario',
-      transactionReference: 'fakeTxRef',
+      transactionReference: transactionId,
       payer: { accounts: [{ accountId: 1, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 },
       payee: { accounts: [{ accountId: 2, ledgerAccountType: 'POSITION', isActive: 1 }], isActive: 1 }
     }
@@ -1323,6 +1324,7 @@ describe('QuotesModel', () => {
             expect(result).toEqual({})
           })
         })
+
         describe('In case environment is not configured for simple routing mode', () => {
           let expectedResult
 
@@ -1362,7 +1364,7 @@ describe('QuotesModel', () => {
               quoteId: 'test123',
               transactionInitiatorId: 'fakeInitiator',
               transactionInitiatorTypeId: 'fakeInitiatorType',
-              transactionReferenceId: 'fakeTxRef',
+              transactionReferenceId: mockData.quoteRequest.transactionId,
               transactionRequestId: null,
               transactionScenarioId: 'fakeScenario',
               transactionSubScenarioId: undefined

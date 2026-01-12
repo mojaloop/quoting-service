@@ -215,7 +215,7 @@ class QuotingHandler {
       const result = isError
         ? await model.handleBulkQuoteError(headers, bulkQuoteId, payload.errorInformation, span)
         : await model.handleBulkQuoteUpdate(headers, bulkQuoteId, payload, span)
-      this.logger.isDebugEnabled && this.logger.debug(`handlePutBulkQuotes is done: ${JSON.stringify(result)}`)
+      this.logger.debug('handlePutBulkQuotes is done: ', { result })
     } catch (err) {
       this.logger.error(`error in handlePutBulkQuotes partition:${requestData.partition}, offset:${requestData.offset}:`, err)
       const fspiopSource = headers[FSPIOP.SOURCE]

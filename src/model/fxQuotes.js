@@ -28,8 +28,9 @@
 ******/
 
 const axios = require('axios')
+const stringify = require('fast-safe-stringify')
 
-const { Enum, Util } = require('@mojaloop/central-services-shared')
+const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const Metrics = require('@mojaloop/central-services-metrics')
@@ -761,8 +762,8 @@ class FxQuotesModel extends BaseQuotesModel {
           url: fullCallbackUrl,
           sourceFsp: fspiopSource,
           destinationFsp: fspiopDest,
-          request: JSON.stringify(opts, Util.getCircularReplacer()),
-          response: JSON.stringify(res, Util.getCircularReplacer())
+          request: stringify(opts),
+          response: stringify(res)
         }, fspiopSource)
       }
     } catch (err) {
@@ -818,7 +819,7 @@ class FxQuotesModel extends BaseQuotesModel {
           url: options?.url,
           sourceFsp: fspiopSource,
           destinationFsp: fspiopDest,
-          request: JSON.stringify(options, Util.getCircularReplacer())
+          request: stringify(options)
         },
         fspiopSource,
         extensions

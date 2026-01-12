@@ -37,7 +37,8 @@
  ******/
 
 const axios = require('axios')
-const { Enum, Util } = require('@mojaloop/central-services-shared')
+const stringify = require('fast-safe-stringify')
+const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 const MLNumber = require('@mojaloop/ml-number')
@@ -281,64 +282,41 @@ class QuotesModel extends BaseQuotesModel {
 
         // do everything in a db txn so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
-        step = 'createQuoteDuplicateCheck-8'
-        await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
+        step = 'createTransactionReferenceAndQuote-8'
+        const { quoteId, transactionId } = quoteRequest
+        refs.quoteId = quoteId
+        refs.transactionReferenceId = transactionId
 
-        // create a txn reference
-        step = 'createTransactionReference-9'
-        refs.transactionReferenceId = await this.db.createTransactionReference(
-          txn,
-          quoteRequest.quoteId,
-          quoteRequest.transactionId
-        )
-        this.log.verbose('transactionReference for quote is created in db: ', {
-          quoteId: quoteRequest.quoteId,
-          transactionId: quoteRequest.transactionId,
-          transactionReferenceId: refs.transactionReferenceId
-        })
+        await Promise.all([
+          this.db.createQuoteDuplicateCheck(txn, quoteId, hash),
+          this.db.createTransactionReference(txn, quoteId, transactionId),
+          this.#createQuoteInDb(txn, quoteRequest, refs)
+        ])
+        this.log.verbose('transactionReference and quote are created in db: ', { quoteId, transactionId })
 
-        // create the quote row itself
-        // eslint-disable-next-line require-atomic-updates
-        step = 'createQuote-10'
-        refs.quoteId = await this.db.createQuote(txn, {
-          quoteId: quoteRequest.quoteId,
-          transactionReferenceId: refs.transactionReferenceId,
-          transactionRequestId: quoteRequest.transactionRequestId || null,
-          note: quoteRequest.note,
-          expirationDate: quoteRequest.expiration ? new Date(quoteRequest.expiration) : null,
-          transactionInitiatorId: refs.transactionInitiatorId,
-          transactionInitiatorTypeId: refs.transactionInitiatorTypeId,
-          transactionScenarioId: refs.transactionScenarioId,
-          balanceOfPaymentsId: quoteRequest.transactionType.balanceOfPayments ? Number(quoteRequest.transactionType.balanceOfPayments) : null,
-          transactionSubScenarioId: refs.transactionSubScenarioId,
-          amountTypeId: refs.amountTypeId,
-          amount: new MLNumber(quoteRequest.amount.amount).toFixed(envConfig.amount.scale),
-          currencyId: quoteRequest.amount.currency
-        })
-
-        step = 'createQuoteParty-11'
+        step = 'createQuoteParties-9'
         ;[
           refs.payerId,
           refs.payeeId
         ] = await Promise.all([
-          this.db.createPayerQuoteParty(txn, refs.quoteId, quoteRequest.payer,
+          this.db.createPayerQuoteParty(txn, quoteId, quoteRequest.payer,
             quoteRequest.amount.amount, quoteRequest.amount.currency, payerEnumVals),
-          this.db.createPayeeQuoteParty(txn, refs.quoteId, quoteRequest.payee,
+          this.db.createPayeeQuoteParty(txn, quoteId, quoteRequest.payee,
             quoteRequest.amount.amount, quoteRequest.amount.currency, payeeEnumVals)
         ])
 
         // store any extension list items
         if (quoteRequest.extensionList && Array.isArray(quoteRequest.extensionList.extension)) {
-          step = 'createQuoteExtensions-12'
+          step = 'createQuoteExtensions-10'
           refs.extensions = await this.db.createQuoteExtensions(
-            txn, quoteRequest.extensionList.extension, quoteRequest.quoteId, quoteRequest.transactionId
+            txn, quoteRequest.extensionList.extension, quoteId, transactionId
           )
         }
 
         // did we get a geoCode for the initiator?
         if (quoteRequest.geoCode) {
           // eslint-disable-next-line require-atomic-updates
-          step = 'createGeoCode-13'
+          step = 'createGeoCode-11'
           refs.geoCodeId = await this.db.createGeoCode(txn, {
             quotePartyId: quoteRequest.transactionType.initiator === 'PAYER' ? refs.payerId : refs.payeeId,
             latitude: quoteRequest.geoCode.latitude,
@@ -346,7 +324,7 @@ class QuotesModel extends BaseQuotesModel {
           })
         }
 
-        step = 'commit-14'
+        step = 'commit-12'
         await txn.commit()
         log.debug('create quote transaction committed to db', { refs })
       }
@@ -603,16 +581,15 @@ class QuotesModel extends BaseQuotesModel {
 
         // if we get here we need to create a duplicate check row
         const hash = this.libUtil.calculateRequestHash(payload)
-        step = 'createQuoteUpdateDuplicateCheck-7'
-        await this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash)
-
-        // create ilp packet in the db
-        step = 'createQuoteResponseIlpPacket-8'
-        await this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId, payload.ilpPacket)
+        step = 'createQuoteUpdateDuplicateCheckAndIlpPacket-7'
+        await Promise.all([
+          this.db.createQuoteUpdateDuplicateCheck(txn, quoteId, refs.quoteResponseId, hash),
+          this.db.createQuoteResponseIlpPacket(txn, refs.quoteResponseId, payload.ilpPacket)
+        ])
 
         // did we get a geoCode for the payee?
         if (payload.geoCode) {
-          step = 'createGeoCode-9'
+          step = 'createGeoCode-8'
           refs.geoCodeId = await this.db.createGeoCode(txn, {
             quotePartyId: payeeParty?.quotePartyId,
             latitude: payload.geoCode.latitude,
@@ -622,7 +599,7 @@ class QuotesModel extends BaseQuotesModel {
 
         // store any extension list items
         if (payload.extensionList && Array.isArray(payload.extensionList.extension)) {
-          step = 'createQuoteExtensions-10'
+          step = 'createQuoteExtensions-9'
           refs.extensions = await this.db.createQuoteExtensions(
             txn, payload.extensionList.extension, quoteId, null, refs.quoteResponseId
           )
@@ -1048,7 +1025,7 @@ class QuotesModel extends BaseQuotesModel {
             sourceFsp: fspiopSource,
             destinationFsp: fspiopDest,
             method: opts && opts.method,
-            request: JSON.stringify(opts, Util.getCircularReplacer())
+            request: stringify(opts)
           }, fspiopSource)
       }
       this.log.verbose(`callback got response: ${res.status} ${res.statusText}`)
@@ -1060,8 +1037,8 @@ class QuotesModel extends BaseQuotesModel {
           sourceFsp: fspiopSource,
           destinationFsp: fspiopDest,
           method: opts && opts.method,
-          request: JSON.stringify(opts, Util.getCircularReplacer()),
-          response: JSON.stringify(res, Util.getCircularReplacer())
+          request: stringify(opts),
+          response: stringify(res)
         }, fspiopSource)
       }
     } catch (err) {
@@ -1201,6 +1178,28 @@ class QuotesModel extends BaseQuotesModel {
   async _getParticipantEndpoint (fspId, endpointType = Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_QUOTES) {
     const { db, log, proxyClient } = this
     return this.libUtil.getParticipantEndpoint({ fspId, endpointType, db, log, proxyClient })
+  }
+
+  #createQuoteInDb (txn, quoteRequest, refs) {
+    return this.db.createQuote(txn, {
+      quoteId: quoteRequest.quoteId,
+      transactionReferenceId: quoteRequest.transactionId,
+      transactionRequestId: quoteRequest.transactionRequestId || null,
+      note: quoteRequest.note,
+      expirationDate: quoteRequest.expiration
+        ? new Date(quoteRequest.expiration)
+        : null,
+      transactionInitiatorId: refs.transactionInitiatorId,
+      transactionInitiatorTypeId: refs.transactionInitiatorTypeId,
+      transactionScenarioId: refs.transactionScenarioId,
+      balanceOfPaymentsId: quoteRequest.transactionType.balanceOfPayments
+        ? Number(quoteRequest.transactionType.balanceOfPayments)
+        : null,
+      transactionSubScenarioId: refs.transactionSubScenarioId,
+      amountTypeId: refs.amountTypeId,
+      amount: new MLNumber(quoteRequest.amount.amount).toFixed(this.envConfig.amount.scale),
+      currencyId: quoteRequest.amount.currency
+    })
   }
 }
 

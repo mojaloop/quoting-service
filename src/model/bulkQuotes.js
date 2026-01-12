@@ -33,8 +33,9 @@
  ******/
 
 const axios = require('axios')
+const stringify = require('fast-safe-stringify')
 
-const { Enum, Util } = require('@mojaloop/central-services-shared')
+const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
 
@@ -434,7 +435,7 @@ class BulkQuotesModel extends BaseQuotesModel {
             sourceFsp: fspiopSource,
             destinationFsp: destination,
             method: opts && opts.method,
-            request: JSON.stringify(opts, Util.getCircularReplacer())
+            request: stringify(opts)
           },
           fspiopSource,
           extensions
@@ -455,8 +456,8 @@ class BulkQuotesModel extends BaseQuotesModel {
             sourceFsp: fspiopSource,
             destinationFsp: destination,
             method: opts && opts.method,
-            request: JSON.stringify(opts, Util.getCircularReplacer()),
-            response: JSON.stringify(res, Util.getCircularReplacer())
+            request: stringify(opts),
+            response: stringify(res)
           },
           fspiopSource
         )
