@@ -119,7 +119,7 @@
     "@mojaloop/central-services-health": "15.2.1",
     "@mojaloop/central-services-logger": "11.10.3",
     "@mojaloop/central-services-metrics": "12.8.3",
-    "@mojaloop/central-services-shared": "18.35.0",
+    "@mojaloop/central-services-shared": "18.35.1",
     "@mojaloop/central-services-stream": "11.8.14",
     "@mojaloop/event-sdk": "14.8.2",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.9.0",
