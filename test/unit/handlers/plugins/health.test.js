@@ -32,16 +32,16 @@
 const { HealthCheck, HealthCheckEnums } = require('@mojaloop/central-services-shared').HealthCheck
 const health = require('../../../../src/handlers/plugins/health')
 
-// Mock the Consumer.allConnected import used in health.js
+// Mock the Consumer.getConsumer import used in health.js
 jest.mock('@mojaloop/central-services-stream', () => ({
   Util: {
     Consumer: {
-      allConnected: jest.fn()
+      getConsumer: jest.fn()
     }
   }
 }))
 
-const { allConnected } = require('@mojaloop/central-services-stream').Util.Consumer
+const { getConsumer } = require('@mojaloop/central-services-stream').Util.Consumer
 
 jest.mock('@mojaloop/central-services-shared', () => {
   const actual = jest.requireActual('@mojaloop/central-services-shared')
@@ -63,21 +63,17 @@ jest.mock('../../../../src/api/health', () => ({
 }))
 
 describe('health Tests -->', () => {
-  let isKafkaConnected = true
+  let isConsumerHealthy = true
   const mockDb = {
     getIsMigrationLocked: jest.fn(async () => false)
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
-    isKafkaConnected = true
-    allConnected.mockImplementation(async () => {
-      if (isKafkaConnected) {
-        return true
-      } else {
-        throw new Error('Not connected')
-      }
-    })
+    isConsumerHealthy = true
+    getConsumer.mockImplementation(() => ({
+      isHealthy: jest.fn(async () => isConsumerHealthy)
+    }))
   })
 
   describe('createHealthCheck', () => {
@@ -87,8 +83,26 @@ describe('health Tests -->', () => {
       const result = await checker.getHealth()
       expect(result.status).toBe(HealthCheckEnums.statusEnum.OK)
     })
-    it('should return DOWN status if consumer is not connected', async () => {
-      isKafkaConnected = false
+    it('should return DOWN status if consumer is not healthy', async () => {
+      isConsumerHealthy = false
+      let checker = health.createHealthCheck({ topic: {} }, mockDb)
+      const result = await checker.getHealth()
+      expect(result.status).toBe(HealthCheckEnums.statusEnum.DOWN)
+      checker = null
+    })
+    it('should return DOWN status if getConsumer throws', async () => {
+      getConsumer.mockImplementation(() => {
+        throw new Error('Consumer not found')
+      })
+      let checker = health.createHealthCheck({ topic: {} }, mockDb)
+      const result = await checker.getHealth()
+      expect(result.status).toBe(HealthCheckEnums.statusEnum.DOWN)
+      checker = null
+    })
+    it('should return DOWN status if isHealthy throws', async () => {
+      getConsumer.mockImplementation(() => ({
+        isHealthy: jest.fn(async () => { throw new Error('Health check error') })
+      }))
       let checker = health.createHealthCheck({ topic: {} }, mockDb)
       const result = await checker.getHealth()
       expect(result.status).toBe(HealthCheckEnums.statusEnum.DOWN)
@@ -120,8 +134,11 @@ describe('health Tests -->', () => {
   })
 
   describe('handler', () => {
-    it('should return OK status if consumer is connected', async () => {
-      isKafkaConnected = true
+    it('should return OK status if consumer is healthy', async () => {
+      isConsumerHealthy = true
+      getConsumer.mockImplementation(() => ({
+        isHealthy: jest.fn(async () => isConsumerHealthy)
+      }))
       const request = {
         server: {
           app: {
@@ -141,8 +158,11 @@ describe('health Tests -->', () => {
       }))
     })
 
-    it('should return DOWN status if consumer is not connected', async () => {
-      isKafkaConnected = false
+    it('should return DOWN status if consumer is not healthy', async () => {
+      isConsumerHealthy = false
+      getConsumer.mockImplementation(() => ({
+        isHealthy: jest.fn(async () => isConsumerHealthy)
+      }))
       const request = {
         server: {
           app: {
