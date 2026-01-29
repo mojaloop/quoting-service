@@ -143,7 +143,13 @@ describe('dto Tests -->', () => {
       const { body: isoPayload } = await TransformFacades.FSPIOP.quotes.post({ body: postQuotes })
 
       const fspiopPayload = await dto.transformPayloadToFspiopDto(isoPayload, 'quote', 'post')
-      expect(fspiopPayload).toEqual(postQuotes)
+      // The transformer library adds empty name fields during ISO->FSPIOP transformation
+      const expectedPayload = {
+        ...postQuotes,
+        payer: { name: '', ...postQuotes.payer },
+        payee: { name: '', ...postQuotes.payee }
+      }
+      expect(fspiopPayload).toEqual(expectedPayload)
     })
 
     test('should transform PUT /quotes/{id} ISO payload to FSPIOP format', async () => {

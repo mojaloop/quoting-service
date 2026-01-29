@@ -42,6 +42,19 @@ const Consumer = require('@mojaloop/central-services-stream').Util.Consumer
 let healthCheck
 
 const createHealthCheck = (consumersMap, db) => {
+  /**
+   * @function checkKafkaBroker
+   *
+   * @description
+   *   Checks the health of Kafka consumers using the comprehensive isHealthy() method.
+   *   This method performs the following checks for each consumer:
+   *   - isConnected() - basic connection status
+   *   - assignments().length > 0 - consumer has topic partition assignments
+   *   - isPollHealthy() - last poll was within healthCheckPollInterval
+   *   - getMetadataSync() - topic exists in broker metadata
+   *
+   * @returns Promise<SubServiceHealth> The SubService health object for the broker
+   */
   const checkKafkaBroker = async () => {
     let status = statusEnum.OK
 
@@ -50,15 +63,20 @@ const createHealthCheck = (consumersMap, db) => {
       const results = await Promise.all(
         topics.map(async (topic) => {
           try {
-            return await Consumer.allConnected(topic)
+            const consumer = Consumer.getConsumer(topic)
+            const isHealthy = await consumer.isHealthy()
+            if (!isHealthy) {
+              logger.isWarnEnabled && logger.warn(`Consumer is not healthy for topic ${topic}`)
+            }
+            return isHealthy
           } catch (err) {
-            logger.isWarnEnabled && logger.warn(`allConnected threw for topic ${topic}: ${err.message}`)
+            logger.isWarnEnabled && logger.warn(`isHealthy check failed for topic ${topic}: ${err.message}`)
             return false
           }
         })
       )
 
-      if (results.some(connected => !connected)) {
+      if (results.some(healthy => !healthy)) {
         status = statusEnum.DOWN
       }
     } catch (err) {

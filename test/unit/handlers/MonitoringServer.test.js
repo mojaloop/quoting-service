@@ -32,12 +32,12 @@ const { HealthCheckEnums } = require('@mojaloop/central-services-shared').Health
 const Metrics = require('@mojaloop/central-services-metrics')
 const { createMonitoringServer, initializeInstrumentation } = require('../../../src/handlers/monitoringServer')
 
-// Mock the Consumer.allConnected method at the module level
+// Mock the Consumer.getConsumer method at the module level
 jest.mock('@mojaloop/central-services-stream', () => {
   return {
     Util: {
       Consumer: {
-        allConnected: jest.fn()
+        getConsumer: jest.fn()
       }
     }
   }
@@ -47,18 +47,14 @@ describe('Monitoring Server', () => {
   let server
   let consumersMap
   let db
-  let isKafkaConnected = true
+  let isConsumerHealthy = true
 
   // Helper to update the mock implementation before each test
-  const setAllConnectedMock = () => {
+  const setGetConsumerMock = () => {
     const { Util: { Consumer } } = require('@mojaloop/central-services-stream')
-    Consumer.allConnected.mockImplementation(async (topic) => {
-      if (isKafkaConnected) {
-        return true // allConnected returns true if connected
-      } else {
-        throw new Error('Consumer not connected')
-      }
-    })
+    Consumer.getConsumer.mockImplementation((topic) => ({
+      isHealthy: jest.fn(async () => isConsumerHealthy)
+    }))
   }
 
   const mockDb = {
@@ -66,7 +62,7 @@ describe('Monitoring Server', () => {
   }
 
   beforeAll(async () => {
-    setAllConnectedMock()
+    setGetConsumerMock()
     consumersMap = {
       topic: {} // The actual value is not used, only the topic name is needed
     }
@@ -103,8 +99,9 @@ describe('Monitoring Server', () => {
   })
 
   describe('createMonitoringServer', () => {
-    it('should return OK status if consumer is connected', async () => {
-      isKafkaConnected = true
+    it('should return OK status if consumer is healthy', async () => {
+      isConsumerHealthy = true
+      setGetConsumerMock()
       const res = await server.inject({
         method: 'GET',
         url: '/health'
@@ -113,8 +110,9 @@ describe('Monitoring Server', () => {
       expect(res.result.status).toBe(HealthCheckEnums.statusEnum.OK)
     })
 
-    it('should return DOWN status if consumer is not connected', async () => {
-      isKafkaConnected = false
+    it('should return DOWN status if consumer is not healthy', async () => {
+      isConsumerHealthy = false
+      setGetConsumerMock()
       const res = await server.inject({
         method: 'GET',
         url: '/health'
