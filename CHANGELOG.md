@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.14.0](https://github.com/mojaloop/quoting-service/compare/v17.13.11...v17.14.0) (2026-01-29)
+
+
+### Features
+
+* **csi-2030:** updated central-service-shared ([#447](https://github.com/mojaloop/quoting-service/issues/447)) ([4d1e80c](https://github.com/mojaloop/quoting-service/commit/4d1e80ce65acda1b3bd4bb42504c8f62cd63f477))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([123981a](https://github.com/mojaloop/quoting-service/commit/123981aa28a9d5bafdd1f178ad47ea0fcd9ba272))
+* update audit ([#450](https://github.com/mojaloop/quoting-service/issues/450)) ([f1d3fc9](https://github.com/mojaloop/quoting-service/commit/f1d3fc92e8385cc4a153e5faa2903af684dac063))
+
 ### [17.13.11](https://github.com/mojaloop/quoting-service/compare/v17.13.10...v17.13.11) (2026-01-16)
 
 
