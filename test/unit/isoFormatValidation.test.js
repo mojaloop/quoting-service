@@ -30,7 +30,7 @@ const idGenerator = require('@mojaloop/central-services-shared').Util.id
 const { API_TYPES } = require('../../src/constants')
 Object.assign(process.env, {
   QUOTE_API_TYPE: API_TYPES.iso20022,
-  QUOTE_PORT: '33002'
+  QUOTE_PORT: '43002'
 })
 
 jest.mock('@mojaloop/central-services-stream', () => ({
@@ -85,6 +85,7 @@ describe('ISO format validation Tests -->', () => {
         payload: body
       }
       const response = await server.inject(request)
+      console.log(response.payload)
       expect(response.statusCode).toBe(202)
     })
 
