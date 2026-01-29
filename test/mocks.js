@@ -215,8 +215,8 @@ const postQuotesPayloadDto = ({
   amountType = 'SEND',
   amount = { amount: '100', currency: 'USD' },
   transactionType = transactionTypeDto(),
-  payer = { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from } },
-  payee = { partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to } }
+  payer = { name: 'Jane Doe', partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '987654321', fspId: from }, personalInfo: { complexName: { firstName: 'Jane', lastName: 'Doe' } } },
+  payee = { name: 'John Doe', partyIdInfo: { partyIdType: 'MSISDN', partyIdentifier: '123456789', fspId: to }, personalInfo: { complexName: { firstName: 'John', lastName: 'Doe' } } }
 } = {}) => ({
   quoteId,
   transactionId,
