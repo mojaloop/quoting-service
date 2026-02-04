@@ -2755,5 +2755,491 @@ describe('/database', () => {
         await expect(action()).rejects.toThrowError('Test Error')
       })
     })
+
+    describe('getQuote', () => {
+      it('gets the quote by quoteId', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        const mockQuote = {
+          quoteId,
+          transactionReferenceId: 'referenceId',
+          amount: '100.0000',
+          currencyId: 'USD'
+        }
+        const mockList = mockKnexBuilder(
+          mockKnex,
+          [mockQuote],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuote(quoteId)
+
+        // Assert
+        expect(result).toStrictEqual(mockQuote)
+        expect(mockList[0]).toHaveBeenCalledWith('quote')
+        expect(mockList[1]).toHaveBeenCalledWith('quoteId', quoteId)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('returns null when the query returns undefined', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuote(quoteId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('returns null when the query returns no rows', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnexBuilder(
+          mockKnex,
+          [],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuote(quoteId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('handles an exception', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.getQuote(quoteId)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('getQuoteResponse', () => {
+      it('gets the quote response by quoteId', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        const mockQuoteResponse = {
+          quoteResponseId: '12345',
+          quoteId,
+          transferAmount: '100.0000',
+          transferAmountCurrencyId: 'USD'
+        }
+        const mockList = mockKnexBuilder(
+          mockKnex,
+          [mockQuoteResponse],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteResponse(quoteId)
+
+        // Assert
+        expect(result).toStrictEqual(mockQuoteResponse)
+        expect(mockList[0]).toHaveBeenCalledWith('quoteResponse')
+        expect(mockList[1]).toHaveBeenCalledWith('quoteId', quoteId)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('returns null when the query returns undefined', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteResponse(quoteId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('returns null when the query returns no rows', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnexBuilder(
+          mockKnex,
+          [],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteResponse(quoteId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('handles an exception', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.getQuoteResponse(quoteId)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('getQuoteParties', () => {
+      it('gets all quote parties for a given quoteId', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        const mockQuoteParties = [
+          { quotePartyId: '1', quoteId, partyName: 'Party1' },
+          { quotePartyId: '2', quoteId, partyName: 'Party2' }
+        ]
+        const mockList = mockKnexBuilder(
+          mockKnex,
+          mockQuoteParties,
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteParties(quoteId)
+
+        // Assert
+        expect(result).toStrictEqual(mockQuoteParties)
+        expect(mockList[0]).toHaveBeenCalledWith('quoteParty')
+        expect(mockList[1]).toHaveBeenCalledWith('quoteId', quoteId)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('returns empty array when the query returns undefined', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteParties(quoteId)
+
+        // Assert
+        expect(result).toStrictEqual([])
+      })
+
+      it('returns empty array when the query returns no rows', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnexBuilder(
+          mockKnex,
+          [],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteParties(quoteId)
+
+        // Assert
+        expect(result).toStrictEqual([])
+      })
+
+      it('handles an exception', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.getQuoteParties(quoteId)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('getParty', () => {
+      it('gets party information by quotePartyId', async () => {
+        // Arrange
+        const quotePartyId = '12345'
+        const mockParty = {
+          partyId: '1',
+          quotePartyId,
+          firstName: 'John',
+          lastName: 'Doe'
+        }
+        const mockList = mockKnexBuilder(
+          mockKnex,
+          [mockParty],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getParty(quotePartyId)
+
+        // Assert
+        expect(result).toStrictEqual(mockParty)
+        expect(mockList[0]).toHaveBeenCalledWith('party')
+        expect(mockList[1]).toHaveBeenCalledWith('quotePartyId', quotePartyId)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('returns null when the query returns undefined', async () => {
+        // Arrange
+        const quotePartyId = '12345'
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getParty(quotePartyId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('returns null when the query returns no rows', async () => {
+        // Arrange
+        const quotePartyId = '12345'
+        mockKnexBuilder(
+          mockKnex,
+          [],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getParty(quotePartyId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('handles an exception', async () => {
+        // Arrange
+        const quotePartyId = '12345'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.getParty(quotePartyId)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('getTransactionReference', () => {
+      it('gets transaction reference by quoteId', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        const mockTransactionReference = {
+          quoteId,
+          transactionReferenceId: 'ref123'
+        }
+        const mockList = mockKnexBuilder(
+          mockKnex,
+          [mockTransactionReference],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getTransactionReference(quoteId)
+
+        // Assert
+        expect(result).toStrictEqual(mockTransactionReference)
+        expect(mockList[0]).toHaveBeenCalledWith('transactionReference')
+        expect(mockList[1]).toHaveBeenCalledWith('quoteId', quoteId)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('returns null when the query returns undefined', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getTransactionReference(quoteId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('returns null when the query returns no rows', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnexBuilder(
+          mockKnex,
+          [],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getTransactionReference(quoteId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('handles an exception', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.getTransactionReference(quoteId)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('getQuoteExtensions', () => {
+      it('gets quote extensions by quoteId', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        const mockExtensions = [
+          { quoteId, key: 'key1', value: 'value1' },
+          { quoteId, key: 'key2', value: 'value2' }
+        ]
+        const mockList = mockKnexBuilder(
+          mockKnex,
+          mockExtensions,
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteExtensions(quoteId)
+
+        // Assert
+        expect(result).toStrictEqual(mockExtensions)
+        expect(mockList[0]).toHaveBeenCalledWith('quoteExtension')
+        expect(mockList[1]).toHaveBeenCalledWith('quoteId', quoteId)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('returns empty array when the query returns undefined', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteExtensions(quoteId)
+
+        // Assert
+        expect(result).toStrictEqual([])
+      })
+
+      it('returns empty array when the query returns no rows', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnexBuilder(
+          mockKnex,
+          [],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteExtensions(quoteId)
+
+        // Assert
+        expect(result).toStrictEqual([])
+      })
+
+      it('handles an exception', async () => {
+        // Arrange
+        const quoteId = 'ddaa67b3-5bf8-45c1-bfcf-1e8781177c37'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.getQuoteExtensions(quoteId)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
+
+    describe('getQuoteResponseIlpPacket', () => {
+      it('gets the ILP packet for a quote response', async () => {
+        // Arrange
+        const quoteResponseId = '12345'
+        const mockIlpPacket = 'mock_ilp_packet_value'
+        const mockList = mockKnexBuilder(
+          mockKnex,
+          [{ value: mockIlpPacket }],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteResponseIlpPacket(quoteResponseId)
+
+        // Assert
+        expect(result).toBe(mockIlpPacket)
+        expect(mockList[0]).toHaveBeenCalledWith('quoteResponseIlpPacket')
+        expect(mockList[1]).toHaveBeenCalledWith('quoteResponseId', quoteResponseId)
+        expect(mockList[2]).toHaveBeenCalledTimes(1)
+      })
+
+      it('returns null when the query returns undefined', async () => {
+        // Arrange
+        const quoteResponseId = '12345'
+        mockKnexBuilder(
+          mockKnex,
+          undefined,
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteResponseIlpPacket(quoteResponseId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('returns null when the query returns no rows', async () => {
+        // Arrange
+        const quoteResponseId = '12345'
+        mockKnexBuilder(
+          mockKnex,
+          [],
+          ['where', 'select']
+        )
+
+        // Act
+        const result = await database.getQuoteResponseIlpPacket(quoteResponseId)
+
+        // Assert
+        expect(result).toBeNull()
+      })
+
+      it('handles an exception', async () => {
+        // Arrange
+        const quoteResponseId = '12345'
+        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
+
+        // Act
+        const action = async () => database.getQuoteResponseIlpPacket(quoteResponseId)
+
+        // Assert
+        await expect(action()).rejects.toThrowError('Test Error')
+      })
+    })
   })
 })
