@@ -58,7 +58,7 @@
     "lint": "npx standard",
     "lint:fix": "npx standard --fix",
     "test": "npm run test:unit",
-    "test:unit": "jest --testMatch '**/test/unit/**/*.test.js' ",
+    "test:unit": "jest --runInBand --testMatch '**/test/unit/**/*.test.js' ",
     "test:unit:dto": "jest --testMatch '**/test/unit/lib/dto.test.js'",
     "test:unit:pc": "jest --testMatch '**/test/unit/lib/payloadCache.test.js'",
     "test:xunit": "npm run test:junit",
