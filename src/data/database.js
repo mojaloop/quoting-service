@@ -498,7 +498,7 @@ class Database {
         fspId: party.partyIdInfo.fspId,
         participantId: refs.participantId,
         merchantClassificationCode: party.merchantClassificationCode,
-        partyName: party.partyName,
+        partyName: party.name,
         transferParticipantRoleTypeId: refs.transferParticipantRoleTypeId,
         ledgerEntryTypeId: refs.ledgerEntryTypeId,
         amount: new MLNumber(amount).toFixed(this.config.amount.scale),

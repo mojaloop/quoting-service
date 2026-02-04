@@ -1146,7 +1146,7 @@ describe('/database', () => {
         // Arrange
         const txn = jest.fn()
         const party = {
-          partyName: 'testPartyName',
+          name: 'testPartyName',
           partyIdInfo: {
             partyIdentifier: 'testPartyIdentifier',
             partyIdType: 'MSISDN',
@@ -1197,7 +1197,7 @@ describe('/database', () => {
         // Arrange
         const txn = jest.fn()
         const party = {
-          partyName: 'testPartyName',
+          name: 'testPartyName',
           partyIdInfo: {
             partySubIdOrType: 'testSubId',
             partyIdentifier: 'testPartyIdentifier',
@@ -1243,7 +1243,7 @@ describe('/database', () => {
         // Arrange
         const txn = jest.fn()
         const party = {
-          partyName: 'testPartyName',
+          name: 'testPartyName',
           partyIdInfo: {
             partyIdentifier: 'testPartyIdentifier',
             partyIdType: 'MSISDN',
@@ -1302,7 +1302,7 @@ describe('/database', () => {
         // Arrange
         const txn = jest.fn()
         const party = {
-          partyName: 'testPartyName',
+          name: 'testPartyName',
           partyIdInfo: {
             partyIdentifier: 'testPartyIdentifier',
             partyIdType: 'MSISDN',
