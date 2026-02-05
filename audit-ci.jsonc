@@ -4,9 +4,9 @@
   // Only use one of ["low": true, "moderate": true, "high": true, "critical": true]
   "moderate": true,
   "allowlist": [
+    "GHSA-37qj-frw5-hhjh",
     "GHSA-9965-vmph-33xx",
-    "GHSA-vghf-hv5q-vc2g",
     "GHSA-p5wg-g6qr-c7cg",
-    "GHSA-37qj-frw5-hhjh"
+    "GHSA-vghf-hv5q-vc2g"
   ]
 }
