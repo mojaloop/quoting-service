@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.14.2](https://github.com/mojaloop/quoting-service/compare/v17.14.1...v17.14.2) (2026-02-05)
+
+
+### Bug Fixes
+
+* fix quoteParty party name mapping ([#452](https://github.com/mojaloop/quoting-service/issues/452)) ([a0ac28e](https://github.com/mojaloop/quoting-service/commit/a0ac28e4e758ef72de6a4018f5ef68161844bf70))
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([d54fb98](https://github.com/mojaloop/quoting-service/commit/d54fb98872b2f49abf1ed857fd60ed14d5272a70))
+
 ### [17.14.1](https://github.com/mojaloop/quoting-service/compare/v17.14.0...v17.14.1) (2026-02-03)
 
 
