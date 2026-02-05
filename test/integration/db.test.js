@@ -185,7 +185,6 @@ describe('Database Integration Tests --> ', () => {
       await wait(WAIT_TIMEOUT)
 
       const quoteResponse = await db.getQuoteResponse(quotePayload.quoteId)
-      console.log('quote response from db:', quoteResponse)
       expect(quoteResponse).toBeDefined()
       expect(quoteResponse.transferAmount).toBeDefined()
     })
