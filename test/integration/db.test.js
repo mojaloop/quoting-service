@@ -29,7 +29,7 @@ const { Producer } = require('@mojaloop/central-services-stream').Util
 const Config = require('../../src/lib/config')
 const dto = require('../../src/lib/dto')
 const mocks = require('../mocks')
-const Database = require('../../src/data/database')
+const Database = require('../../src/data/testDatabase')
 
 const TEST_TIMEOUT = 20_000
 const WAIT_TIMEOUT = 3_000

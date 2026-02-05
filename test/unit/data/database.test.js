@@ -39,7 +39,7 @@ const Knex = require('knex')
 const crypto = require('crypto')
 const ENUM = require('@mojaloop/central-services-shared').Enum
 
-const Database = require('../../../src/data/database')
+const Database = require('../../../src/data/testDatabase')
 const Config = require('../../../src/lib/config')
 const LibEnum = require('../../../src/lib/enum')
 const Logger = require('@mojaloop/central-services-logger')
