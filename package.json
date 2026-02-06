@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "17.14.2",
+  "version": "17.15.0-snapshot.0",
   "author": "ModusBox",
   "contributors": [
     "Georgi Georgiev <georgi.georgiev@modusbox.com>",
