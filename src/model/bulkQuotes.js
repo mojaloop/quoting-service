@@ -32,8 +32,6 @@
  --------------
  ******/
 
-const axios = require('axios')
-
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
@@ -43,9 +41,6 @@ const BaseQuotesModel = require('./BaseQuotesModel')
 const { httpRequestBase } = require('../lib/http')
 
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
-
-delete axios.defaults.headers.common.Accept
-delete axios.defaults.headers.common['Content-Type']
 
 /**
  * Encapsulates operations on the bulkQuotes domain model
@@ -421,7 +416,7 @@ class BulkQuotesModel extends BaseQuotesModel {
         super.addFspiopSignatureHeader(opts)
 
         step = 'axios-request-2'
-        res = await httpRequestBase(opts, axios)
+        res = await httpRequestBase(opts)
       } catch (err) {
         log.warn('error in axios.request:', err)
         const extensions = err.extensions || []

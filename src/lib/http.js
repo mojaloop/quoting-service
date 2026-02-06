@@ -35,17 +35,13 @@
  --------------
  ******/
 
-const http = require('node:http')
 const util = require('node:util')
-const axios = require('axios')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
+const { Request } = require('@mojaloop/central-services-shared').Util
 
 const { logger } = require('../lib')
 const Config = require('./config')
 
-axios.defaults.httpAgent = new http.Agent({ keepAlive: true })
-axios.defaults.httpAgent.toJSON = () => ({})
-axios.defaults.headers.common = {}
 const config = new Config()
 
 /**
@@ -93,8 +89,8 @@ async function httpRequest (opts, fspiopSource) {
   return body
 }
 
-async function httpRequestBase (opts, axiosInstance = axios) {
-  return axiosInstance.request({
+async function httpRequestBase (opts) {
+  return Request.sendBaseRequest({
     timeout: config.httpRequestTimeoutMs,
     ...opts
   })

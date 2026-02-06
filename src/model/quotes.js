@@ -36,7 +36,6 @@
  --------------
  ******/
 
-const axios = require('axios')
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
@@ -51,8 +50,6 @@ const { RESOURCES } = require('../constants')
 const BaseQuotesModel = require('./BaseQuotesModel')
 
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
-
-axios.defaults.headers.common = {}
 
 /** Encapsulates operations on the quotes domain model. */
 class QuotesModel extends BaseQuotesModel {
@@ -1035,8 +1032,7 @@ class QuotesModel extends BaseQuotesModel {
       try {
         super.addFspiopSignatureHeader(opts)
         step = 'axios-request-2'
-        res = await httpRequestBase(opts, axios)
-        // todo: use wrapper on axios
+        res = await httpRequestBase(opts)
         histTimer({ success: true, queryName: 'quote_sendErrorCallback' })
       } catch (err) {
         // external-error

@@ -32,7 +32,18 @@
 jest.mock('axios')
 
 const axios = require('axios')
-const { httpRequest, httpRequestBase } = require('../../../src/lib/http')
+const { httpRequest, httpRequestBase } = require('#src/lib/http')
+const { headersDto } = require('#test/mocks')
+
+const mockReqOptionsDto = ({
+  url = 'http://localhost:1234',
+  method = 'GET',
+  headers = headersDto()
+} = {}) => ({
+  url,
+  method,
+  headers
+})
 
 describe('httpRequest', () => {
   beforeEach(() => {
@@ -41,82 +52,67 @@ describe('httpRequest', () => {
 
   it('performs a successful http request', async () => {
     // Arrange
-    axios.request.mockReturnValueOnce({
-      status: 200,
-      data: Promise.resolve({})
-    })
-    const options = {}
+    const data = {}
+    axios.mockReturnValueOnce({ status: 200, data })
+    const options = mockReqOptionsDto()
 
     // Act
-    await httpRequest(options, 'payeefsp')
+    const result = await httpRequest(options, 'payeefsp')
 
     // Assert
-    expect(axios.request).toHaveBeenCalledTimes(1)
+    expect(result).toEqual(data)
+    expect(axios).toHaveBeenCalledTimes(1)
   })
 
   it('handles a http exception', async () => {
     // Arrange
-    axios.request.mockImplementationOnce(() => { throw new Error('Network error') })
-    const options = {}
+    axios.mockImplementationOnce(() => { throw new Error('Network error') })
+    const options = mockReqOptionsDto()
 
     // Act
     const action = async () => httpRequest(options, 'payeefsp')
 
     // Assert
     await expect(action()).rejects.toThrow('Network error')
-    expect(axios.request).toHaveBeenCalledTimes(1)
+    expect(axios).toHaveBeenCalledTimes(1)
   })
 
   it('handles a bad response', async () => {
-    // Arrange
-    axios.request.mockReturnValueOnce({
+    axios.mockReturnValueOnce({
       status: 400,
-      data: Promise.resolve({})
+      data: {}
     })
-    const options = {}
+    const options = mockReqOptionsDto()
 
     // Act
     const action = async () => httpRequest(options, 'payeefsp')
 
     // Assert
     await expect(action()).rejects.toThrow('Non-success response in HTTP request')
-    expect(axios.request).toHaveBeenCalledTimes(1)
+    expect(axios).toHaveBeenCalledTimes(1)
   })
 
   it('httpRequestBase performs a successful request', async () => {
     // Arrange
-    axios.request.mockResolvedValueOnce({ status: 200, data: 'response-data' })
-    const options = { url: 'http://example.com', method: 'GET' }
+    axios.mockResolvedValueOnce({ status: 200, data: 'response-data' })
+    const options = mockReqOptionsDto()
 
     // Act
     const result = await httpRequestBase(options)
 
     // Assert
-    expect(axios.request).toHaveBeenCalledWith(expect.objectContaining(options))
+    expect(axios).toHaveBeenCalledWith(expect.objectContaining(options))
     expect(result).toEqual({ status: 200, data: 'response-data' })
-  })
-
-  it('httpRequestBase uses custom axios instance', async () => {
-    // Arrange
-    const customAxios = { request: jest.fn().mockResolvedValue({ status: 201, data: 'custom' }) }
-    const options = { url: 'http://custom.com', method: 'POST' }
-
-    // Act
-    const result = await httpRequestBase(options, customAxios)
-
-    // Assert
-    expect(customAxios.request).toHaveBeenCalledWith(expect.objectContaining(options))
-    expect(result).toEqual({ status: 201, data: 'custom' })
   })
 
   it('httpRequestBase propagates errors from axios', async () => {
     // Arrange
     const error = new Error('axios failed')
-    axios.request.mockRejectedValueOnce(error)
+    axios.mockRejectedValueOnce(error)
     const options = { url: 'http://fail.com', method: 'GET' }
 
     // Act & Assert
     await expect(httpRequestBase(options)).rejects.toThrow('axios failed')
-    expect(axios.request).toHaveBeenCalledWith(expect.objectContaining(options))
+    expect(axios).toHaveBeenCalledWith(expect.objectContaining(options))
   })
 })
