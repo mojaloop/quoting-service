@@ -879,7 +879,7 @@ describe('FxQuotesModel Tests -->', () => {
 
       await expect(fxQuotesModel.sendHttpRequest(options, fspiopSource, fspiopDest)).rejects.toThrow('Network Error')
 
-      expect(Http.httpRequestBase).toBeCalledWith(options, expect.anything())
+      expect(Http.httpRequestBase).toBeCalledWith(options)
     })
 
     test('should rethrow error if metrics is disabled', async () => {
