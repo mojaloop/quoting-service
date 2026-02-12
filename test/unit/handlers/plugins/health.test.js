@@ -32,16 +32,16 @@
 const { HealthCheck, HealthCheckEnums } = require('@mojaloop/central-services-shared').HealthCheck
 const health = require('../../../../src/handlers/plugins/health')
 
-// Mock the Consumer.allConnected import used in health.js
+// Mock the Consumer import used in health.js
 jest.mock('@mojaloop/central-services-stream', () => ({
   Util: {
     Consumer: {
-      allConnected: jest.fn()
+      getConsumer: jest.fn()
     }
   }
 }))
 
-const { allConnected } = require('@mojaloop/central-services-stream').Util.Consumer
+const { getConsumer } = require('@mojaloop/central-services-stream').Util.Consumer
 
 jest.mock('@mojaloop/central-services-shared', () => {
   const actual = jest.requireActual('@mojaloop/central-services-shared')
@@ -71,13 +71,9 @@ describe('health Tests -->', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     isKafkaConnected = true
-    allConnected.mockImplementation(async () => {
-      if (isKafkaConnected) {
-        return true
-      } else {
-        throw new Error('Not connected')
-      }
-    })
+    getConsumer.mockImplementation(() => ({
+      isHealthy: jest.fn(async () => isKafkaConnected)
+    }))
   })
 
   describe('createHealthCheck', () => {

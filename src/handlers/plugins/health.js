@@ -50,18 +50,24 @@ const createHealthCheck = (consumersMap, db) => {
       const results = await Promise.all(
         topics.map(async (topic) => {
           try {
-            return await Consumer.allConnected(topic)
+            const consumer = Consumer.getConsumer(topic)
+            const isHealthy = await consumer.isHealthy()
+            if (!isHealthy) {
+              logger.isWarnEnabled && logger.warn(`Consumer is not healthy for topic ${topic}`)
+            }
+            return isHealthy
           } catch (err) {
-            logger.isWarnEnabled && logger.warn(`allConnected threw for topic ${topic}: ${err.message}`)
+            logger.isWarnEnabled && logger.warn(`isHealthy check failed for topic ${topic}: ${err.message}`)
             return false
           }
         })
       )
 
-      if (results.some(connected => !connected)) {
+      if (results.some(healthy => !healthy)) {
         status = statusEnum.DOWN
       }
     } catch (err) {
+      logger.isWarnEnabled && logger.warn(`checkKafkaBroker failed with error ${err.message}.`)
       status = statusEnum.DOWN
     }
 
