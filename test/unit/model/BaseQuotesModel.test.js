@@ -56,6 +56,6 @@ describe('BaseQuotesModel Tests -->', () => {
     expect(model).toBeInstanceOf(BaseQuotesModel)
     const [errMessage, meta] = logErrorSpy.mock.lastCall
     expect(errMessage).toBe('error initializing metrics in BaseQuotesModel: ')
-    expect(meta.stack).toBe(error.stack)
+    expect(meta.attributes?.['exception.stacktrace']).toBe(error.stack)
   })
 })

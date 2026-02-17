@@ -27,8 +27,6 @@
 --------------
 ******/
 
-const axios = require('axios')
-
 const { Enum, Util } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
@@ -42,8 +40,6 @@ const BaseQuotesModel = require('./BaseQuotesModel')
 const { httpRequestBase } = require('../lib/http')
 
 const reformatFSPIOPError = ErrorHandler.Factory.reformatFSPIOPError
-
-axios.defaults.headers.common = {}
 
 class FxQuotesModel extends BaseQuotesModel {
   /**
@@ -805,7 +801,7 @@ class FxQuotesModel extends BaseQuotesModel {
     let step
     try {
       step = 'axios-request-1'
-      return await httpRequestBase(options, axios)
+      return await httpRequestBase(options)
     } catch (err) {
       this.log.warn('error in sendHttpRequest: ', err)
       const extensions = err.extensions || []

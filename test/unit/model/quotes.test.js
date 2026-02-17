@@ -2427,7 +2427,7 @@ describe('QuotesModel', () => {
       await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
 
       // Assert
-      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
+      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions)
     })
 
     it('sends the error callback and handles the span', async () => {
@@ -2462,7 +2462,7 @@ describe('QuotesModel', () => {
       // Assert
       expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
       expect(mockSpan.audit).toBeCalledTimes(1)
-      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
+      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions)
     })
 
     it('sends the error callback JWS signed', async () => {
@@ -2572,7 +2572,7 @@ describe('QuotesModel', () => {
       expect(mockSpan.audit).toBeCalledTimes(1)
       expect(jwsSignSpy).not.toHaveBeenCalled()
       expect(Http.httpRequestBase.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
-      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
+      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions)
       jwsSignSpy.mockRestore()
     })
 
@@ -2614,7 +2614,7 @@ describe('QuotesModel', () => {
       expect(mockSpan.audit).toBeCalledTimes(1)
       expect(jwsSignSpy).not.toHaveBeenCalled()
       expect(Http.httpRequestBase.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
-      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
+      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions)
       jwsSignSpy.mockRestore()
     })
 
