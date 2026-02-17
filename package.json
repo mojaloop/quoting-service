@@ -121,7 +121,7 @@
     "@mojaloop/central-services-health": "15.2.2",
     "@mojaloop/central-services-logger": "11.11.0-infitx.0",
     "@mojaloop/central-services-metrics": "12.8.4",
-    "@mojaloop/central-services-shared": "18.36.0-infitx.1",
+    "@mojaloop/central-services-shared": "18.36.0-infitx.2",
     "@mojaloop/central-services-stream": "11.9.1",
     "@mojaloop/event-sdk": "14.8.2",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.9.0",
