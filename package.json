@@ -111,7 +111,6 @@
     "lodash-es": "4.17.23",
     "fast-xml-parser": "5.3.4",
     "axios": "1.13.5",
-    "minimatch": "10.2.1",
     "qs": "6.14.2"
   },
   "dependencies": {
@@ -142,7 +141,7 @@
     "knex": "3.1.0",
     "memory-cache": "0.2.0",
     "minimist": "1.2.8",
-    "mysql2": "^3.17.4",
+    "mysql2": "^3.18.0",
     "node-fetch": "3.3.2",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8"
@@ -155,8 +154,8 @@
     "ioredis-mock": "8.13.1",
     "jest": "29.7.0",
     "jest-junit": "16.0.0",
-    "npm-check-updates": "19.4.1",
-    "nyc": "17.1.0",
+    "npm-check-updates": "19.5.0",
+    "nyc": "18.0.0",
     "pre-commit": "1.2.2",
     "replace": "1.2.2",
     "sinon": "21.0.1",
