@@ -90,8 +90,8 @@ describe('PUT callback Tests --> ', () => {
     return payload
   }
 
-  const getResponseWithRetry = async () => {
-    return wrapWithRetries(() => hubClient.getHistory('/quotes'),
+  const getResponseWithRetry = async (includeRoutePath = '/quotes') => {
+    return wrapWithRetries(() => hubClient.getHistory(includeRoutePath),
       retryConf.remainingRetries,
       retryConf.timeout,
       (result) => result.data.history.length > 0
@@ -346,7 +346,7 @@ describe('PUT callback Tests --> ', () => {
       const postIsOk = await Producer.produceMessage(postMessage, postTopicConfig, kafkaConfig.PRODUCER.BULK_QUOTE.POST.config)
       expect(postIsOk).toBe(true)
 
-      response = await getResponseWithRetry()
+      response = await getResponseWithRetry('/bulkQuotes')
       expect(response.data.history.length).toBe(1)
       await hubClient.clearHistory()
 
@@ -356,7 +356,7 @@ describe('PUT callback Tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await getResponseWithRetry()
+      response = await getResponseWithRetry('/bulkQuotes')
       expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]

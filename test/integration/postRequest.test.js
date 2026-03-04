@@ -65,8 +65,8 @@ describe('POST request tests --> ', () => {
 
   const base64Encode = (data) => Buffer.from(data).toString('base64')
 
-  const getResponseWithRetry = async () => {
-    return wrapWithRetries(() => hubClient.getHistory('/quotes'),
+  const getResponseWithRetry = async (includeRoutePath = '/quotes') => {
+    return wrapWithRetries(() => hubClient.getHistory(includeRoutePath),
       retryConf.remainingRetries,
       retryConf.timeout,
       (result) => result.data.history.length > 0
@@ -281,7 +281,7 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await getResponseWithRetry()
+    response = await getResponseWithRetry('/bulkQuotes')
     expect(response.data.history.length).toBe(1)
 
     const request = response.data.history[0]
@@ -334,7 +334,7 @@ describe('POST request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await getResponseWithRetry()
+      response = await getResponseWithRetry('/bulkQuotes')
       expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]
