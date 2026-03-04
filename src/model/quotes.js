@@ -204,35 +204,9 @@ class QuotesModel extends BaseQuotesModel {
       if (handledRuleEvents.terminate) {
         return
       }
-
       if (!envConfig.simpleRoutingMode) {
-        // check if this is a resend or an erroneous duplicate
-        step = 'checkDuplicateQuoteRequest-4'
-        const dupe = await this.checkDuplicateQuoteRequest(quoteRequest)
-        log.debug('check duplicate for quote', { dupe })
-
-        // fail fast on duplicate
-        if (dupe.isDuplicateId && (!dupe.isResend)) {
-          // same quoteId but a different request, this is an error!
-          // internal-error
-          throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-            `Quote ${quoteRequest.quoteId} is a duplicate but hashes dont match`, null, fspiopSource)
-        }
-
-        if (dupe.isResend && dupe.isDuplicateId) {
-          // this is a resend
-          // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-          step = 'handleQuoteRequestResend-5'
-          return this.handleQuoteRequestResend(
-            handledRuleEvents.headers,
-            handledRuleEvents.quoteRequest,
-            handleQuoteRequestSpan,
-            handledRuleEvents.additionalHeaders
-          )
-        }
-
         // get various enum ids (async, as parallel as possible)
-        step = 'promise-all-6'
+        step = 'promise-all-4'
         const payerEnumVals = []
         const payeeEnumVals = []
         ;[
@@ -269,7 +243,7 @@ class QuotesModel extends BaseQuotesModel {
 
         if (quoteRequest.transactionType.subScenario) {
           // a sub scenario is specified, we need to look it up
-          step = 'getSubScenario-7'
+          step = 'getSubScenario-5'
           refs.transactionSubScenarioId = await this.db.getSubScenario(quoteRequest.transactionType.subScenario)
         }
 
@@ -278,8 +252,38 @@ class QuotesModel extends BaseQuotesModel {
 
         // do everything in a db txn so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
-        step = 'createQuoteDuplicateCheck-8'
-        await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
+        step = 'createQuoteDuplicateCheck-6'
+
+        try {
+          await this.db.createQuoteDuplicateCheck(txn, quoteRequest.quoteId, hash)
+        } catch (err) {
+          if (err?.errorCode !== 'ER_DUP_ENTRY') throw err
+          // check if this is a resend or an erroneous duplicate
+          step = 'checkDuplicateQuoteRequest-7'
+          const dupe = await this.checkDuplicateQuoteRequest(quoteRequest)
+          log.debug('check duplicate for quote', { dupe })
+
+          // fail fast on duplicate
+          if (dupe.isDuplicateId && (!dupe.isResend)) {
+            // same quoteId but a different request, this is an error!
+            // internal-error
+            throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
+              `Quote ${quoteRequest.quoteId} is a duplicate but hashes dont match`, null, fspiopSource)
+          }
+
+          if (dupe.isResend && dupe.isDuplicateId) {
+            // this is a resend
+            // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+            await txn.commit()
+            step = 'handleQuoteRequestResend-8'
+            return this.handleQuoteRequestResend(
+              handledRuleEvents.headers,
+              handledRuleEvents.quoteRequest,
+              handleQuoteRequestSpan,
+              handledRuleEvents.additionalHeaders
+            )
+          }
+        }
 
         // create a txn reference
         step = 'createTransactionReference-9'

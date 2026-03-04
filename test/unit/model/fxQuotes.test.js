@@ -51,6 +51,8 @@ const { makeAppInteroperabilityHeader } = require('../../../src/lib/util')
 const { HEADERS, RESOURCES, ERROR_MESSAGES } = require('../../../src/constants')
 const { fxQuoteMocks } = require('../../mocks')
 const Http = require('../../../src/lib/http')
+const dupError = new Error('foo')
+dupError.errorCode = 'ER_DUP_ENTRY'
 
 Metrics.setup(new Config().instrumentationMetricsConfig)
 
@@ -186,6 +188,7 @@ describe('FxQuotesModel Tests -->', () => {
       fxQuotesModel.envConfig.simpleRoutingMode = false
       jest.spyOn(fxQuotesModel, 'handleFxQuoteRequestResend')
       jest.spyOn(fxQuotesModel, 'forwardFxQuoteRequest')
+      jest.spyOn(db, 'createFxQuoteDuplicateCheck').mockRejectedValue(dupError)
       jest.spyOn(fxQuotesModel, 'checkDuplicateFxQuoteRequest').mockResolvedValue({
         isResend: true,
         isDuplicateId: true
