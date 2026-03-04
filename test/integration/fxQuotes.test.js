@@ -81,7 +81,7 @@ describe('POST /fxQuotes request tests --> ', () => {
   }
 
   const getResponseWithRetry = async () => {
-    return wrapWithRetries(() => hubClient.getHistory(),
+    return wrapWithRetries(() => hubClient.getHistory('/fxQuotes'),
       retryConf.remainingRetries,
       retryConf.timeout,
       (result) => result.data.history.length > 0
@@ -123,7 +123,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
-      expect(response.data.history.length).toBeGreaterThanOrEqual(1) // count 1 extra call to redbank
+      expect(response.data.history.length).toBe(1)
 
       // assert that the request was received by the proxy
       const request = response.data.history[0]
@@ -186,7 +186,7 @@ describe('POST /fxQuotes request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
-      expect(response.data.history.length).toBeGreaterThanOrEqual(1) // count 1 extra call to redbank
+      expect(response.data.history.length).toBe(1)
 
       // assert that the request was received by the proxy
       const request = response.data.history[0]
@@ -337,7 +337,7 @@ describe('POST /fxQuotes request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await getResponseWithRetry()
-    expect(response.data.history.length).toBeGreaterThanOrEqual(1) // count 1 extra call to greenbank
+    expect(response.data.history.length).toBe(1)
 
     // assert that the request was received by the payee dfsp
     const request = response.data.history[0]

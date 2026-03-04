@@ -37,8 +37,14 @@ class MockServerClient {
     this.#historyUrl = `http://${HOST}:${PORT}${Routes.HISTORY}`
   }
 
-  async getHistory() {
-    return this.#httpClient.get(this.#historyUrl)
+  async getHistory(includeRoutePath = '') {
+    const response = await this.#httpClient.get(this.#historyUrl)
+    if (includeRoutePath && Array.isArray(response.data?.history)) {
+      response.data.history = response.data.history.filter(
+        r => r.url.includes(includeRoutePath)
+      )
+    }
+    return response
   }
 
   async clearHistory() {

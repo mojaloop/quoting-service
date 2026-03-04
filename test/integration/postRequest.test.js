@@ -66,7 +66,7 @@ describe('POST request tests --> ', () => {
   const base64Encode = (data) => Buffer.from(data).toString('base64')
 
   const getResponseWithRetry = async () => {
-    return wrapWithRetries(() => hubClient.getHistory(),
+    return wrapWithRetries(() => hubClient.getHistory('/quotes'),
       retryConf.remainingRetries,
       retryConf.timeout,
       (result) => result.data.history.length > 0
@@ -88,7 +88,7 @@ describe('POST request tests --> ', () => {
 
     response = await getResponseWithRetry()
 
-    expect(response.data.history.length).toBeGreaterThan(0)
+    expect(response.data.history.length).toBe(1)
     const { url } = response.data.history[0]
     expect(url).toBe(`/${message.to}/quotes`)
   })
@@ -165,7 +165,7 @@ describe('POST request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await getResponseWithRetry()
-    expect(response.data.history.length).toBeGreaterThanOrEqual(1)
+    expect(response.data.history.length).toBe(1)
 
     const { url } = response.data.history[0]
     expect(url).toBe(`/${message.to}/quotes`)
@@ -212,7 +212,7 @@ describe('POST request tests --> ', () => {
     expect(isOk).toBe(true)
 
     response = await getResponseWithRetry()
-    expect([1, 2]).toContain(response.data.history.length)
+    expect(response.data.history.length).toBe(1)
 
     const request = response.data.history[0]
     expect(request.method).toBe('POST')
@@ -253,7 +253,7 @@ describe('POST request tests --> ', () => {
       expect(isOk).toBe(true)
 
       response = await getResponseWithRetry()
-      expect([1, 2]).toContain(response.data.history.length)
+      expect(response.data.history.length).toBe(1)
 
       const request = response.data.history[0]
       expect(request.url).toBe(`/${proxyId}/quotes`)
