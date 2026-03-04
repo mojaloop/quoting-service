@@ -334,9 +334,9 @@ describe('QuotingHandler Tests -->', () => {
   describe('defineHandlerByTopic method Tests', () => {
     const { QUOTE, BULK_QUOTE, FX_QUOTE } = (new Config()).kafkaConfig.CONSUMER
 
-    it('should skip message processing and log warn on incorrect topic name', async () => {
+    it('should skip message processing and log error on incorrect topic name', async () => {
       const message = createKafkaMessage('wrong-topic')
-      const warnLogSpy = jest.spyOn(logger, 'warn')
+      const warnLogSpy = jest.spyOn(logger, 'error')
 
       const result = await handler.defineHandlerByTopic(message)
       expect(result).toBeUndefined()
