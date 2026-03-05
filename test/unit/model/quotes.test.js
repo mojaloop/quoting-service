@@ -82,6 +82,8 @@ const RulesEngine = require('../../../src/model/rulesEngine')
 const Http = require('../../../src/lib/http')
 const Util = require('../../../src/lib/util')
 const { jwsSigningKey } = require('#test/mocks')
+const dupError = new Error('foo')
+dupError.errorCode = 'ER_DUP_ENTRY'
 
 Metrics.setup(new Config().instrumentationMetricsConfig)
 
@@ -824,6 +826,11 @@ describe('QuotesModel', () => {
         describe('In case environment is not configured for simple routing mode', () => {
           beforeEach(() => {
             mockConfig.simpleRoutingMode = false
+            RulesEngine.run.mockImplementation(() => {
+              return {
+                events: []
+              }
+            })
           })
 
           it('throws an exception if `db.newTransaction` fails', async () => {
@@ -847,6 +854,7 @@ describe('QuotesModel', () => {
 
             const fspiopError = ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR)
             quotesModel.checkDuplicateQuoteRequest = jest.fn(() => { throw fspiopError })
+            quotesModel.db.createQuoteDuplicateCheck = jest.fn(() => { throw dupError })
 
             await expect(quotesModel.handleQuoteRequest({
               headers: mockData.headers,
@@ -865,6 +873,7 @@ describe('QuotesModel', () => {
                 resend: false
               }
             })
+            quotesModel.db.createQuoteDuplicateCheck = jest.fn(() => { throw dupError })
 
             await expect(quotesModel.handleQuoteRequest({
               headers: mockData.headers,
@@ -1207,6 +1216,11 @@ describe('QuotesModel', () => {
               geoCodeId: mockData.geoCode,
               extensions: mockData.quoteRequest.extensionList.extension
             }
+            RulesEngine.run.mockImplementation(() => {
+              return {
+                events: []
+              }
+            })
           })
 
           it('calls `handleException` with the proper arguments if `span.audit` fails', async () => {
@@ -1264,6 +1278,7 @@ describe('QuotesModel', () => {
                 isResend: true
               }
             })
+            quotesModel.db.createQuoteDuplicateCheck = jest.fn(() => { throw dupError })
             await quotesModel.handleQuoteRequest({
               headers: mockData.headers,
               quoteRequest: mockData.quoteRequest,

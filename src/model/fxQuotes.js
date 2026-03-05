@@ -184,34 +184,38 @@ class FxQuotesModel extends BaseQuotesModel {
       await this.validateFxQuoteRequest(fspiopDestination, fxQuoteRequest)
 
       if (!this.envConfig.simpleRoutingMode) {
-        // check if this is a resend or an erroneous duplicate
-        const dupe = await this.checkDuplicateFxQuoteRequest(fxQuoteRequest)
-
-        // fail fast on duplicate
-        if (dupe.isDuplicateId && (!dupe.isResend)) {
-          // same conversionRequestId but a different request, this is an error!
-          // internal-error
-          throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
-            `Quote ${fxQuoteRequest.conversionRequestId} is a duplicate but hashes dont match`, null, fspiopSource)
-        }
-
-        if (dupe.isResend && dupe.isDuplicateId) {
-          // this is a resend
-          // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
-          return this.handleFxQuoteRequestResend(
-            headers,
-            fxQuoteRequest,
-            span,
-            originalPayload
-          )
-        }
-
         // if we get here we need to create a duplicate check row
         const hash = this.libUtil.calculateRequestHash(fxQuoteRequest)
 
         // do everything in a db txn so we can rollback multiple operations if something goes wrong
         txn = await this.db.newTransaction()
-        await this.db.createFxQuoteDuplicateCheck(txn, fxQuoteRequest.conversionRequestId, hash)
+        try {
+          await this.db.createFxQuoteDuplicateCheck(txn, fxQuoteRequest.conversionRequestId, hash)
+        } catch (err) {
+          if (err?.errorCode !== 'ER_DUP_ENTRY') throw err
+          // check if this is a resend or an erroneous duplicate
+          const dupe = await this.checkDuplicateFxQuoteRequest(fxQuoteRequest)
+
+          // fail fast on duplicate
+          if (dupe.isDuplicateId && (!dupe.isResend)) {
+            // same conversionRequestId but a different request, this is an error!
+            // internal-error
+            throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.MODIFIED_REQUEST,
+              `Quote ${fxQuoteRequest.conversionRequestId} is a duplicate but hashes dont match`, null, fspiopSource)
+          }
+
+          if (dupe.isResend && dupe.isDuplicateId) {
+            // this is a resend
+            // See section 3.2.5.1 in "API Definition v1.0.docx" API specification document.
+            await txn.commit()
+            return this.handleFxQuoteRequestResend(
+              headers,
+              fxQuoteRequest,
+              span,
+              originalPayload
+            )
+          }
+        }
 
         await this.db.createFxQuote(txn, fxQuoteRequest.conversionRequestId)
 
