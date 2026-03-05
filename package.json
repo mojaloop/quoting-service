@@ -14,7 +14,8 @@
     "Shashikant Hirugade <shashikant.hirugade@modusbox.com>",
     "Steven Oderayi <steven.oderayi@modusbox.com>",
     "Vassilis Barzokas <vassilis.barzokas@modusbox.com>",
-    "Juan Correa <juan.correa@modusbox.com>"
+    "Juan Correa <juan.correa@modusbox.com>",
+    "Eugen Klymniuk <eugen.klymniuk@infitx.com>"
   ],
   "repository": {
     "type": "git",
@@ -43,9 +44,9 @@
   },
   "pre-commit": [
     "lint",
+    "test:unit",
     "dep:check",
-    "audit:check",
-    "test:unit"
+    "audit:check"
   ],
   "scripts": {
     "start": "npm run start:api",
@@ -135,10 +136,10 @@
     "@hapi/vision": "7.0.3",
     "@mojaloop/central-services-error-handling": "13.1.6",
     "@mojaloop/central-services-health": "15.2.2",
-    "@mojaloop/central-services-logger": "11.11.0-infitx.0",
+    "@mojaloop/central-services-logger": "11.11.0-infitx.1",
     "@mojaloop/central-services-metrics": "12.8.5",
     "@mojaloop/central-services-shared": "18.36.0-infitx.4",
-    "@mojaloop/central-services-stream": "11.10.0-infitx.3",
+    "@mojaloop/central-services-stream": "11.10.0-iad-582.5",
     "@mojaloop/event-sdk": "14.8.3",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.9.0",
     "@mojaloop/ml-number": "11.4.3",
@@ -156,7 +157,7 @@
     "knex": "3.1.0",
     "memory-cache": "0.2.0",
     "minimist": "1.2.8",
-    "mysql2": "^3.18.2",
+    "mysql2": "^3.19.0",
     "node-fetch": "3.3.2",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8"
