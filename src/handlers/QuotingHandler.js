@@ -31,9 +31,17 @@ const { reformatFSPIOPError } = require('@mojaloop/central-services-error-handli
 const { ErrorMessages } = require('../lib/enum')
 const { getSpanTags } = require('../lib/util')
 const dto = require('../lib/dto')
-const { otel } = require('@mojaloop/central-services-stream/src/kafka')
 
 const { FSPIOP } = Enum.Http.Headers
+
+/**
+ * Batch metadata provided by central-services-stream consumer.
+ *
+ * @typedef {object} ConsumerBatchMeta
+ * @property {string} batchId - Correlation ID in format `{partition}.{firstOffset}-{lastOffset}`
+ * @property {number} batchSize - Number of messages in the batch
+ * @property {number} startTime - Timestamp (ms) when batch processing started
+ */
 
 class QuotingHandler {
   constructor (deps) {
@@ -46,29 +54,29 @@ class QuotingHandler {
     this.payloadCache = deps.payloadCache
     this.tracer = deps.tracer
     this.handleMessages = this.handleMessages.bind(this)
-    this.configByTopic = Object.values(this.config.kafkaConfig.CONSUMER).reduce((acc, value) =>
-      Object.values(value).reduce((acc, { topic, config }) => {
-        acc[topic] = config
-        return acc
-      }, acc),
-    {})
   }
 
-  async handleMessages(error, messages) {
+  /**
+   * Kafka consumer callback invoked by central-services-stream for each message batch.
+   *
+   * @param {Error|null} error - Kafka broker error, if any
+   * @param {Array<object>} messages - Kafka messages, each with { topic, value, partition, offset }
+   * @param {ConsumerBatchMeta} [meta={}] - Batch metadata from central-services-stream
+   * @returns {Promise<true>}
+   * @throws {FSPIOPError} Re-throws Kafka broker errors as FSPIOP errors
+   */
+  async handleMessages(error, messages, { batchId } = {}) {
+    const log = this.logger.child({ batchId })
+
     if (error) {
-      this.logger.error(ErrorMessages.consumingErrorFromKafka, error)
+      log.error(ErrorMessages.consumingErrorFromKafka, error)
       throw reformatFSPIOPError(error)
     }
 
     await Promise.allSettled(
-      messages.map(msg => messages.length > 1
-        ? otel
-          .startConsumerTracingSpan(msg, this.configByTopic[msg.topic])
-          .executeInsideSpanContext(() => this.defineHandlerByTopic(msg))
-        : this.defineHandlerByTopic(msg)
-      )
+      messages.map(msg => this.defineHandlerByTopic(msg))
     )
-    this.logger.info('handleMessages is done')
+    log.info(`handleMessages is done  [count: ${messages.length}]`)
 
     return true
   }
@@ -98,7 +106,7 @@ class QuotingHandler {
       case FX_QUOTE.GET.topic:
         return this.handleGetFxQuotes(requestData)
       default:
-        this.logger.warn(ErrorMessages.unsupportedKafkaTopic, message)
+        this.logger.error(ErrorMessages.unsupportedKafkaTopic, message)
     }
   }
 
