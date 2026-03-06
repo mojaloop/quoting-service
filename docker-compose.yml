@@ -17,6 +17,8 @@ x-quoting-service: &quotingServiceBase
       - NODE_VERSION=lts-alpine
   environment:
     - LOG_LEVEL=debug
+    - LOG_LEVEL_HTTP=verbose
+    - LOG_LEVEL_KAFKA=verbose
     - CSL_LOG_TRANSPORT=file
   volumes:
     - ./docker/quoting-service/default.json:/opt/app/config/default.json
@@ -61,7 +63,6 @@ services:
     <<: *quotingServiceBase
     command: npm start
     environment:
-      - LOG_LEVEL=debug
       - QUOTE_API_TYPE=iso20022
 #      - QUOTE_ORIGINAL_PAYLOAD_STORAGE=redis
       - QUOTE_ORIGINAL_PAYLOAD_STORAGE=kafka
@@ -73,8 +74,10 @@ services:
   quoting-service-handler:
     <<: *quotingServiceBase
     command: npm run start:handlers:debug
-    environment:
-      - LOG_LEVEL=debug
+#    environment:
+#      - LOG_LEVEL=debug
+#      - LOG_LEVEL_HTTP=verbose
+#      - LOG_LEVEL_KAFKA=verbose
     ports:
       - "3003:3003"
       - "29229:9229"
