@@ -25,6 +25,9 @@
  --------------
  ******/
 
+const { mockKnex } = require('#test/unit/mocks')
+
+jest.mock('knex', () => jest.fn(mockKnex))
 jest.mock('../../../src/handlers/createConsumers')
 jest.mock('../../../src/handlers/monitoringServer')
 jest.mock('../../../src/lib/proxy')

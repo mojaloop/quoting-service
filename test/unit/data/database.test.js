@@ -33,20 +33,16 @@
 ******/
 
 jest.mock('knex')
-jest.mock('@mojaloop/central-services-logger')
 
 const Knex = require('knex')
 const crypto = require('crypto')
 const ENUM = require('@mojaloop/central-services-shared').Enum
 
+const { logger } = require('#src/lib/logger')
 const Database = require('../../../src/data/testDatabase')
 const Config = require('../../../src/lib/config')
 const LibEnum = require('../../../src/lib/enum')
-const Logger = require('@mojaloop/central-services-logger')
-
-Logger.isDebugEnabled = jest.fn(() => true)
-Logger.isErrorEnabled = jest.fn(() => true)
-Logger.isInfoEnabled = jest.fn(() => true)
+const mocks = require('../mocks')
 
 /**
  * @function mockKnexBuilder
@@ -73,15 +69,16 @@ const mockKnexBuilder = (rootMock, returnValue, methodList) => {
   jestMocks.push(firstMock)
 
   // Ensure the mock order matches the called order
-  return jestMocks.reverse()
+  const qb = jestMocks.reverse()
+
+  qb.on = jest.fn().mockImplementation((event, listener) => { listener({ event }) })
+
+  return qb
 }
 
-describe('/database', () => {
+describe('Database Tests -->', () => {
   // Mock knex object for raw queries
-  const mockKnex = {
-    transaction: jest.fn(),
-    raw: jest.fn()
-  }
+  const mockKnex = mocks.mockKnex()
 
   let database
 
@@ -106,11 +103,12 @@ describe('/database', () => {
     describe('transaction', () => {
       it('should resolve with a transaction', async () => {
         const mockTransaction = {}
-        const queryBuilder = { transaction: jest.fn() }
+        // todo: use mockKnex
+        const queryBuilder = { transaction: jest.fn(), on: jest.fn() }
         queryBuilder.transaction.mockImplementation((callback) => {
           callback(mockTransaction)
         })
-        const database = new Database(config, Logger, queryBuilder)
+        const database = new Database(config, logger, queryBuilder)
 
         const result = await database.newTransaction()
 
@@ -120,12 +118,12 @@ describe('/database', () => {
 
       it('should reject with an error', async () => {
         const mockError = new Error('Transaction error')
-        const queryBuilder = { transaction: jest.fn() }
+        const queryBuilder = { transaction: jest.fn(), on: jest.fn() }
         const mockTransaction = {}
         queryBuilder.transaction.mockImplementation((callback) => {
           callback(mockTransaction)
         })
-        const database = new Database(config, Logger, queryBuilder)
+        const database = new Database(config, logger, queryBuilder)
 
         queryBuilder.transaction.mockImplementation(() => {
           throw mockError
@@ -179,6 +177,7 @@ describe('/database', () => {
 
     beforeEach(async () => {
       jest.clearAllMocks()
+      mockKnex.on = jest.fn()
       const defaultConfig = new Config()
 
       // Return the mockKnex we defined above.

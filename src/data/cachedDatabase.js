@@ -32,22 +32,18 @@
  --------------
  ******/
 
-const Database = require('./database.js')
 const Cache = require('memory-cache').Cache
 const Metrics = require('@mojaloop/central-services-metrics')
 
+const Database = require('./database.js')
 const util = require('../lib/util')
-const { logger } = require('../lib/')
 
 /**
  * An extension of the Database class that caches enum values in memory
  */
 class CachedDatabase extends Database {
   constructor (config, log) {
-    super(config)
-    this.log = log || logger.child({
-      context: this.constructor.name
-    })
+    super(config, log)
     this.cache = new Cache()
   }
 

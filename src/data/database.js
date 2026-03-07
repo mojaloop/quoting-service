@@ -36,23 +36,31 @@
 
 'use strict'
 
-const Knex = require('knex')
-const util = require('util')
+const { LOG_LEVEL_MYSQL = 'info' } = require('node:process').env
+const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const MLNumber = require('@mojaloop/ml-number')
-const Enum = require('@mojaloop/central-services-shared').Enum
-const { logger } = require('../lib/')
+
+const { logger: globalLogger } = require('../lib/')
 const libUtil = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
+const createMysqlQueryBuilder = require('./createMysqlQueryBuilder')
+
+const createLog = (logger = globalLogger, component = Database.name) => {
+  const log = logger.child({ component })
+  log.setLevel(LOG_LEVEL_MYSQL)
+  return log
+}
 
 /**
  * Abstracts operations against the database
  */
 class Database {
-  constructor (config, log, queryBuilder) {
+  constructor (config, logger, queryBuilder = null) {
+    const log = createLog(logger, this.constructor.name)
     this.config = config
-    this.log = log || logger.child({ component: this.constructor.name })
-    this.queryBuilder = queryBuilder
+    this.log = log
+    this.queryBuilder = createMysqlQueryBuilder({ config, log, queryBuilder })
   }
 
   /**
@@ -61,13 +69,15 @@ class Database {
      * @returns {promise}
      */
   async connect () {
-    this.queryBuilder = this.queryBuilder || new Knex(this.config.database)
+    await this.isConnected()
 
     return this
   }
 
   async disconnect () {
     return this.queryBuilder?.destroy()
+    // todo: - think we if we need to await and this.queryBuilder = null?
+    //       - do we need to remove qb.on(...) listeners?
   }
 
   /**
@@ -90,7 +100,7 @@ class Database {
   /**
      * Check whether the database connection has basic functionality
      *
-     * @returns {boolean}
+     * @returns {Promise<boolean>}
      */
   async isConnected () {
     try {
@@ -633,7 +643,7 @@ class Database {
       }
 
       if (rows.length > 1) {
-        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${rows.length}`)
       }
 
       return rows[0]
@@ -657,7 +667,7 @@ class Database {
       }
 
       if (rows.length > 1) {
-        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${rows.length}`)
       }
 
       return rows[0]
