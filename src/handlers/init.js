@@ -47,7 +47,7 @@ const startFn = async (handlerList, appConfig = undefined) => {
   const config = appConfig || new Config()
 
   db = new Database(config)
-  await db.connect()
+  // await db.connect() // todo: db.isConnected() is done inside db.connect()
   const isDbOk = await db.isConnected()
   if (!isDbOk) throw new Error('DB is not connected')
 

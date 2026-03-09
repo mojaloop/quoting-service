@@ -71,7 +71,7 @@ const mockKnexBuilder = (rootMock, returnValue, methodList) => {
   // Ensure the mock order matches the called order
   const qb = jestMocks.reverse()
 
-  qb.on = jest.fn().mockImplementation((event, listener) => { listener({ event }) })
+  qb.on = jest.fn()
 
   return qb
 }
@@ -91,7 +91,7 @@ describe('Database Tests -->', () => {
       // Return the mockKnex we defined above.
       // For individual tests, simply call mockKnex.<method>.mockImplementation
       Knex.mockImplementation(() => mockKnex)
-      database = new Database(config)
+      database = new Database(config, logger)
       await database.connect()
     })
 
@@ -184,7 +184,7 @@ describe('Database Tests -->', () => {
       // For individual tests, simply call mockKnex.<methodName>.mockImplementation
       Knex.mockImplementation(() => mockKnex)
 
-      database = new Database(defaultConfig)
+      database = new Database(defaultConfig, logger)
       await database.connect()
     })
 

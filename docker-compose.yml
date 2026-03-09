@@ -16,10 +16,10 @@ x-quoting-service: &quotingServiceBase
     args:
       - NODE_VERSION=lts-alpine
   environment:
-    - LOG_LEVEL=debug
+    - LOG_LEVEL=info
     - LOG_LEVEL_HTTP=verbose
     - LOG_LEVEL_KAFKA=verbose
-    - CSL_LOG_TRANSPORT=file
+    - LOG_LEVEL_MYSQL=debug
   volumes:
     - ./docker/quoting-service/default.json:/opt/app/config/default.json
     - ./secrets/:/opt/app/secrets/
@@ -75,9 +75,10 @@ services:
     <<: *quotingServiceBase
     command: npm run start:handlers:debug
 #    environment:
-#      - LOG_LEVEL=debug
+#      - LOG_LEVEL=verbose
 #      - LOG_LEVEL_HTTP=verbose
 #      - LOG_LEVEL_KAFKA=verbose
+#      - LOG_LEVEL_MYSQL=debug
     ports:
       - "3003:3003"
       - "29229:9229"
