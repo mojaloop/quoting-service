@@ -91,6 +91,7 @@ describe('Database Tests -->', () => {
       // Return the mockKnex we defined above.
       // For individual tests, simply call mockKnex.<method>.mockImplementation
       Knex.mockImplementation(() => mockKnex)
+      mockKnex.raw.mockResolvedValue([{ result: 2 }]) // isConnected() check in connect()
       database = new Database(config, logger)
       await database.connect()
     })
@@ -172,12 +173,11 @@ describe('Database Tests -->', () => {
   })
 
   describe('queryBuilder queries', () => {
-    // Mock knex object for queryBuilder queries
-    const mockKnex = jest.fn()
+    const mockKnex = mocks.mockKnex()
 
     beforeEach(async () => {
       jest.clearAllMocks()
-      mockKnex.on = jest.fn()
+      mockKnex.raw.mockResolvedValue([{ result: 2 }]) // isConnected() check in connect()
       const defaultConfig = new Config()
 
       // Return the mockKnex we defined above.
@@ -3239,6 +3239,46 @@ describe('Database Tests -->', () => {
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
+    })
+  })
+
+  describe('connect', () => {
+    it('should throw if DB is not connected', async () => {
+      Knex.mockImplementation(() => mockKnex)
+      mockKnex.raw.mockResolvedValue(undefined) // isConnected() returns false
+      const db = new Database({}, logger)
+
+      await expect(db.connect()).rejects.toThrow('DB is not connected')
+    })
+  })
+
+  describe('disconnect', () => {
+    it('should handle destroy error gracefully', async () => {
+      Knex.mockImplementation(() => mockKnex)
+      mockKnex.raw.mockResolvedValue([{ result: 2 }])
+      mockKnex.destroy.mockRejectedValue(new Error('destroy failed'))
+      const log = logger.child({ component: 'disconnect-test' })
+      jest.spyOn(log, 'warn')
+      const db = new Database({}, log)
+      await db.connect()
+
+      await expect(db.disconnect()).resolves.not.toThrow()
+      expect(log.warn).toHaveBeenCalledWith(
+        'error in db.disconnect: ',
+        expect.any(Error)
+      )
+      expect(db.queryBuilder).toBeNull()
+    })
+
+    it('should set queryBuilder to null on success', async () => {
+      Knex.mockImplementation(() => mockKnex)
+      mockKnex.raw.mockResolvedValue([{ result: 2 }])
+      mockKnex.destroy.mockResolvedValue(undefined)
+      const db = new Database({}, logger)
+      await db.connect()
+
+      await db.disconnect()
+      expect(db.queryBuilder).toBeNull()
     })
   })
 })

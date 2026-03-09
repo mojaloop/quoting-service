@@ -62,7 +62,7 @@ const createMysqlQueryBuilder = ({
 
     const startTime = Date.now()
     const timer = setTimeout(() => {
-      const error = new Error('Query timeout - no response received') // todo: throw custom DbError (with Prometheus metric)
+      const error = new Error('Knex query timeout - no response received') // throw custom DbError (with Prometheus metric)
       const { attributes } = dto.queryErrorAttributesDto({
         error,
         queryObject,

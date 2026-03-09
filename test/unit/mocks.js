@@ -8,20 +8,19 @@
  * @prop {Map<string, Function>} listeners - Event name to listener map (populated by `on`)
  */
 
-/** @returns {MockKnex} */
+/** @returns {MockKnex & jest.Mock} */
 const mockKnex = () => {
   const listeners = new Map()
-  return {
+  return Object.assign(jest.fn(), {
     connect: jest.fn(),
     destroy: jest.fn(),
     transaction: jest.fn(),
     raw: jest.fn(),
     on: jest.fn((event, fn) => {
       listeners.set(event, fn)
-      // fn({ event })
     }),
     listeners
-  }
+  })
 }
 
 const makeDbConfig = (overrides = {}) => ({

@@ -46,12 +46,10 @@ const { createProxyClient } = require('../../../src/lib/proxy')
 const handlerList = [Functionalities.QUOTE]
 
 describe('init Tests -->', () => {
-  let isDbOk
-  const mockIsConnected = jest.fn(async () => isDbOk)
+  const mockConnect = jest.fn()
 
   beforeAll(() => {
-    Database.prototype.isConnected = mockIsConnected
-    Database.prototype.connect = jest.fn()
+    Database.prototype.connect = mockConnect
   })
 
   test('should execute without error if no deps inited', async () => {
@@ -59,7 +57,7 @@ describe('init Tests -->', () => {
   })
 
   test('should disconnect proxyCache if enabled', async () => {
-    isDbOk = true
+    mockConnect.mockResolvedValueOnce(undefined)
     const config = new Config()
     config.proxyCache.enabled = true
     const mockProxyCache = {
@@ -75,20 +73,20 @@ describe('init Tests -->', () => {
   })
 
   test('should execute startFn without error if DB is connected', async () => {
-    isDbOk = true
+    mockConnect.mockResolvedValueOnce(undefined)
     await expect(init.startFn(handlerList))
       .resolves.toBeTruthy()
-    expect(mockIsConnected).toHaveBeenCalled()
+    expect(mockConnect).toHaveBeenCalled()
   })
 
   test('should throw error on startFn if DB is NOT connected', async () => {
-    isDbOk = false
+    mockConnect.mockRejectedValueOnce(new Error('DB is not connected'))
     await expect(init.startFn(handlerList))
-      .rejects.toThrowError('DB is not connected')
+      .rejects.toThrow('DB is not connected')
   })
 
   test('should connect proxyCache if enabled', async () => {
-    isDbOk = true
+    mockConnect.mockResolvedValueOnce(undefined)
     const config = new Config()
     config.proxyCache.enabled = true
     const mockProxyCache = { connect: jest.fn().mockResolvedValue(true) }
@@ -99,7 +97,7 @@ describe('init Tests -->', () => {
   })
 
   test('should call addDfspIdToProxyMapping if proxyMap has entries', async () => {
-    isDbOk = true
+    mockConnect.mockResolvedValueOnce(undefined)
     const config = new Config()
     config.proxyCache.enabled = true
     config.proxyMap = { dfsp1: 'proxy1', dfsp2: 'proxy2' }
@@ -116,7 +114,7 @@ describe('init Tests -->', () => {
   })
 
   test('should throw error if proxyCache is not connected', async () => {
-    isDbOk = true
+    mockConnect.mockResolvedValueOnce(undefined)
     const config = new Config()
     config.proxyCache.enabled = true
     const mockProxyCache = { connect: jest.fn().mockResolvedValue(false) }

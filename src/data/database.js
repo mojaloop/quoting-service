@@ -64,17 +64,20 @@ class Database {
      * @returns {promise}
      */
   async connect () {
-    await this.isConnected()
-    // const isOK = await this.isConnected()
-    // if (!isOK) throw new Error('DB is not connected') // todo: throw custom DbError
+    const isOK = await this.isConnected()
+    if (!isOK) throw new Error('DB is not connected') // throw custom DbError?
 
     return this
   }
 
   async disconnect () {
-    return this.queryBuilder?.destroy()
-    // todo: - think we if we need to await and this.queryBuilder = null?
-    //       - do we need to remove qb.on(...) listeners?
+    try {
+      return await this.queryBuilder?.destroy()
+    } catch (err) {
+      this.log.warn('error in db.disconnect: ', err)
+    } finally {
+      this.queryBuilder = null // (?) think if we need to remove qb.on(...) listeners
+    }
   }
 
   /**
