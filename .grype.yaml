@@ -30,6 +30,7 @@ ignore:
   - vulnerability: CVE-2026-27171
   - vulnerability: GHSA-wf6x-7x77-mvgw
   - vulnerability: GHSA-qffp-2rhf-9h96
+  - vulnerability: GHSA-9ppj-qmqm-q256 #  tar 7.5.7
 
 # Set output format defaults
 output:
