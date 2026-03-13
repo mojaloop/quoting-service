@@ -32,22 +32,26 @@
  --------------
  ******/
 
-const Database = require('./database.js')
+const { LOG_LEVEL_MYSQL = 'info' } = require('node:process').env
 const Cache = require('memory-cache').Cache
 const Metrics = require('@mojaloop/central-services-metrics')
 
-const util = require('../lib/util')
-const { logger } = require('../lib/')
+const { logger } = require('../lib/logger')
+const { rethrowCachedDatabaseError } = require('../lib/util')
+const Database = require('./database')
+
+const createDbLog = () => {
+  const log = logger.child(CachedDatabase.name)
+  log.setLevel(LOG_LEVEL_MYSQL)
+  return log
+}
 
 /**
  * An extension of the Database class that caches enum values in memory
  */
 class CachedDatabase extends Database {
-  constructor (config, log) {
-    super(config)
-    this.log = log || logger.child({
-      context: this.constructor.name
-    })
+  constructor (config, log = createDbLog()) {
+    super(config, log)
     this.cache = new Cache()
   }
 
@@ -115,7 +119,7 @@ class CachedDatabase extends Database {
 
       if (!value) {
         // we need to get the value from the db and cache it
-        this.log.debug('Cache miss for: ', { type, params })
+        this.log.verbose('Cache miss for: ', { type, params })
         value = await super[type].apply(this, params)
         // cache participant with a shorter TTL than enums (participant data is more likely to change)
         if (
@@ -137,7 +141,7 @@ class CachedDatabase extends Database {
     } catch (err) {
       this.log.error('Error in getCacheValue: ', err)
       histTimer({ success: false, queryName: type, hit: false })
-      util.rethrowCachedDatabaseError(err)
+      rethrowCachedDatabaseError(err)
     }
   }
 

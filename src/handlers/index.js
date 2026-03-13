@@ -25,9 +25,10 @@
 *****/
 
 const { argv } = require('node:process')
-const Logger = require('@mojaloop/central-services-logger')
 const { Command } = require('commander')
+
 const { version } = require('../../package.json')
+const { logger } = require('../lib/logger')
 const { Functionalities } = require('../lib/enum')
 const startingProcess = require('../lib/startingProcess')
 const { startFn, stopFn } = require('./init')
@@ -49,21 +50,21 @@ program.command('handler') // sub-command name, required
 
     /* istanbul ignore next */
     if (args.quotes) {
-      Logger.debug('CLI: Executing --quotes')
+      logger.debug('CLI: Executing --quotes')
       handlerList.push(Functionalities.QUOTE)
     }
     /* istanbul ignore next */
     if (args.bulk_quotes) {
-      Logger.debug('CLI: Executing --bulk_quotes')
+      logger.debug('CLI: Executing --bulk_quotes')
       handlerList.push(Functionalities.BULK_QUOTE)
     }
     /* istanbul ignore next */
     if (args.fx_quotes) {
-      Logger.debug('CLI: Executing --fx_quotes')
+      logger.debug('CLI: Executing --fx_quotes')
       handlerList.push(Functionalities.FX_QUOTE)
     }
 
-    Logger.info(`handlerList: ${handlerList}`)
+    logger.info(`handlerList: ${handlerList}`)
 
     startingProcess(() => startFn(handlerList), stopFn)
   })

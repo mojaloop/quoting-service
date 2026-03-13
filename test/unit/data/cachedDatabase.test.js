@@ -32,6 +32,9 @@
  --------------
  ******/
 
+const { mockKnex } = require('#test/unit/mocks')
+
+jest.mock('knex', () => jest.fn(mockKnex))
 jest.mock('@mojaloop/central-services-logger')
 
 const Config = require('../../../src/lib/config')

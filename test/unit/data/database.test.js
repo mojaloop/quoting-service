@@ -33,20 +33,16 @@
 ******/
 
 jest.mock('knex')
-jest.mock('@mojaloop/central-services-logger')
 
 const Knex = require('knex')
 const crypto = require('crypto')
 const ENUM = require('@mojaloop/central-services-shared').Enum
 
+const { logger } = require('#src/lib/logger')
 const Database = require('../../../src/data/testDatabase')
 const Config = require('../../../src/lib/config')
 const LibEnum = require('../../../src/lib/enum')
-const Logger = require('@mojaloop/central-services-logger')
-
-Logger.isDebugEnabled = jest.fn(() => true)
-Logger.isErrorEnabled = jest.fn(() => true)
-Logger.isInfoEnabled = jest.fn(() => true)
+const mocks = require('../mocks')
 
 /**
  * @function mockKnexBuilder
@@ -73,15 +69,16 @@ const mockKnexBuilder = (rootMock, returnValue, methodList) => {
   jestMocks.push(firstMock)
 
   // Ensure the mock order matches the called order
-  return jestMocks.reverse()
+  const qb = jestMocks.reverse()
+
+  qb.on = jest.fn()
+
+  return qb
 }
 
-describe('/database', () => {
+describe('Database Tests -->', () => {
   // Mock knex object for raw queries
-  const mockKnex = {
-    transaction: jest.fn(),
-    raw: jest.fn()
-  }
+  const mockKnex = mocks.mockKnex()
 
   let database
 
@@ -94,7 +91,8 @@ describe('/database', () => {
       // Return the mockKnex we defined above.
       // For individual tests, simply call mockKnex.<method>.mockImplementation
       Knex.mockImplementation(() => mockKnex)
-      database = new Database(config)
+      mockKnex.raw.mockResolvedValue([{ result: 2 }]) // isConnected() check in connect()
+      database = new Database(config, logger)
       await database.connect()
     })
 
@@ -106,11 +104,11 @@ describe('/database', () => {
     describe('transaction', () => {
       it('should resolve with a transaction', async () => {
         const mockTransaction = {}
-        const queryBuilder = { transaction: jest.fn() }
+        const queryBuilder = { transaction: jest.fn(), on: jest.fn() }
         queryBuilder.transaction.mockImplementation((callback) => {
           callback(mockTransaction)
         })
-        const database = new Database(config, Logger, queryBuilder)
+        const database = new Database(config, logger, queryBuilder)
 
         const result = await database.newTransaction()
 
@@ -120,12 +118,12 @@ describe('/database', () => {
 
       it('should reject with an error', async () => {
         const mockError = new Error('Transaction error')
-        const queryBuilder = { transaction: jest.fn() }
+        const queryBuilder = { transaction: jest.fn(), on: jest.fn() }
         const mockTransaction = {}
         queryBuilder.transaction.mockImplementation((callback) => {
           callback(mockTransaction)
         })
-        const database = new Database(config, Logger, queryBuilder)
+        const database = new Database(config, logger, queryBuilder)
 
         queryBuilder.transaction.mockImplementation(() => {
           throw mockError
@@ -174,18 +172,18 @@ describe('/database', () => {
   })
 
   describe('queryBuilder queries', () => {
-    // Mock knex object for queryBuilder queries
-    const mockKnex = jest.fn()
+    const mockKnex = mocks.mockKnex()
 
     beforeEach(async () => {
       jest.clearAllMocks()
+      mockKnex.raw.mockResolvedValue([{ result: 2 }]) // isConnected() check in connect()
       const defaultConfig = new Config()
 
       // Return the mockKnex we defined above.
       // For individual tests, simply call mockKnex.<methodName>.mockImplementation
       Knex.mockImplementation(() => mockKnex)
 
-      database = new Database(defaultConfig)
+      database = new Database(defaultConfig, logger)
       await database.connect()
     })
 
@@ -3240,6 +3238,46 @@ describe('/database', () => {
         // Assert
         await expect(action()).rejects.toThrowError('Test Error')
       })
+    })
+  })
+
+  describe('connect', () => {
+    it('should throw if DB is not connected', async () => {
+      Knex.mockImplementation(() => mockKnex)
+      mockKnex.raw.mockResolvedValue(undefined) // isConnected() returns false
+      const db = new Database({}, logger)
+
+      await expect(db.connect()).rejects.toThrow('DB is not connected')
+    })
+  })
+
+  describe('disconnect', () => {
+    it('should handle destroy error gracefully', async () => {
+      Knex.mockImplementation(() => mockKnex)
+      mockKnex.raw.mockResolvedValue([{ result: 2 }])
+      mockKnex.destroy.mockRejectedValue(new Error('destroy failed'))
+      const log = logger.child({ component: 'disconnect-test' })
+      jest.spyOn(log, 'warn')
+      const db = new Database({}, log)
+      await db.connect()
+
+      await expect(db.disconnect()).resolves.not.toThrow()
+      expect(log.warn).toHaveBeenCalledWith(
+        'error in db.disconnect: ',
+        expect.any(Error)
+      )
+      expect(db.queryBuilder).toBeNull()
+    })
+
+    it('should set queryBuilder to null on success', async () => {
+      Knex.mockImplementation(() => mockKnex)
+      mockKnex.raw.mockResolvedValue([{ result: 2 }])
+      mockKnex.destroy.mockResolvedValue(undefined)
+      const db = new Database({}, logger)
+      await db.connect()
+
+      await db.disconnect()
+      expect(db.queryBuilder).toBeNull()
     })
   })
 })

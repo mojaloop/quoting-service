@@ -36,23 +36,26 @@
 
 'use strict'
 
-const Knex = require('knex')
-const util = require('util')
+const { Enum } = require('@mojaloop/central-services-shared')
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const MLNumber = require('@mojaloop/ml-number')
-const Enum = require('@mojaloop/central-services-shared').Enum
-const { logger } = require('../lib/')
+
 const libUtil = require('../lib/util')
 const LOCAL_ENUM = require('../lib/enum')
+const createMysqlQueryBuilder = require('./createMysqlQueryBuilder')
 
 /**
  * Abstracts operations against the database
  */
 class Database {
-  constructor (config, log, queryBuilder) {
+  constructor (config, log, queryBuilder = null) {
     this.config = config
-    this.log = log || logger.child({ component: this.constructor.name })
-    this.queryBuilder = queryBuilder
+    this.log = log
+    this.queryBuilder = createMysqlQueryBuilder({
+      dbConfig: config.database,
+      log,
+      queryBuilder
+    })
   }
 
   /**
@@ -61,13 +64,20 @@ class Database {
      * @returns {promise}
      */
   async connect () {
-    this.queryBuilder = this.queryBuilder || new Knex(this.config.database)
+    const isOK = await this.isConnected()
+    if (!isOK) throw new Error('DB is not connected') // throw custom DbError?
 
     return this
   }
 
   async disconnect () {
-    return this.queryBuilder?.destroy()
+    try {
+      return await this.queryBuilder?.destroy()
+    } catch (err) {
+      this.log.warn('error in db.disconnect: ', err)
+    } finally {
+      this.queryBuilder = null // (?) think if we need to remove qb.on(...) listeners
+    }
   }
 
   /**
@@ -90,7 +100,7 @@ class Database {
   /**
      * Check whether the database connection has basic functionality
      *
-     * @returns {boolean}
+     * @returns {Promise<boolean>}
      */
   async isConnected () {
     try {
@@ -228,7 +238,7 @@ class Database {
           transactionReferenceId
         })
 
-      this.log.debug('inserted new transactionReference in db: ', transactionReferenceId)
+      this.log.verbose('inserted new transactionReference in db: ', { transactionReferenceId })
       return transactionReferenceId
     } catch (err) {
       this.log.error('Error in createTransactionReference:', err)
@@ -250,7 +260,7 @@ class Database {
           hash
         })
 
-      this.log.debug('inserted new duplicate check in db for quoteId: ', quoteId)
+      this.log.verbose('inserted new duplicate check in db for quoteId: ', { quoteId })
       return quoteId
     } catch (err) {
       this.log.error('Error in createQuoteDuplicateCheck:', err)
@@ -273,7 +283,7 @@ class Database {
           hash
         })
 
-      this.log.debug('inserted new response duplicate check in db for quote: ', { quoteId, quoteResponseId })
+      this.log.verbose('inserted new response duplicate check in db for quote: ', { quoteId, quoteResponseId })
       return quoteId
     } catch (err) {
       this.log.error('Error in createQuoteUpdateDuplicateCheck:', err)
@@ -509,7 +519,7 @@ class Database {
         .transacting(txn)
         .insert(newQuoteParty)
 
-      this.log.debug('inserted new quoteParty in db: ', res[0])
+      this.log.verbose('inserted new quoteParty in db: ', res[0])
 
       // hold on to the created quotePartyId so we can return it when we are done
       const quotePartyId = res[0]
@@ -524,7 +534,7 @@ class Database {
         }
 
         const createdParty = await this.createParty(txn, quotePartyId, newParty)
-        this.log.debug('inserted new party in db: ', createdParty)
+        this.log.verbose('inserted new party in db: ', { createdParty })
       }
       if (party.partyIdInfo.extensionList) {
         const extensions = party.partyIdInfo.extensionList.extension
@@ -589,7 +599,7 @@ class Database {
           currencyId: quote.currencyId
         })
 
-      this.log.debug('inserted new quote in db: ', quote)
+      this.log.verbose('inserted new quote in db: ', { quote })
       return quote.quoteId
     } catch (err) {
       this.log.error('Error in createQuote:', err)
@@ -633,7 +643,7 @@ class Database {
       }
 
       if (rows.length > 1) {
-        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${rows.length}`)
       }
 
       return rows[0]
@@ -657,7 +667,7 @@ class Database {
       }
 
       if (rows.length > 1) {
-        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${util.inspect(rows)}`)
+        throw ErrorHandler.Factory.createInternalServerFSPIOPError(`Expected 1 quoteParty row for quoteId ${quoteId} and partyType ${partyType} but got: ${rows.length}`)
       }
 
       return rows[0]
@@ -769,7 +779,7 @@ class Database {
 
       newQuoteResponse.quoteResponseId = res[0]
 
-      this.log.debug('inserted new quoteResponse in db: ', newQuoteResponse)
+      this.log.verbose('inserted new quoteResponse in db: ', { newQuoteResponse })
       return newQuoteResponse
     } catch (err) {
       this.log.error('Error in createQuoteResponse:', err)
@@ -847,7 +857,7 @@ class Database {
 
       newError.quoteErrorId = res[0]
 
-      this.log.debug('inserted new quoteError in db: ', newError)
+      this.log.verbose('inserted new quoteError in db: ', { newError })
       return res
     } catch (err) {
       this.log.error('Error in createQuoteError:', err)
@@ -938,7 +948,7 @@ class Database {
 
       newFxQuoteError.fxQuoteErrorId = res[0]
 
-      this.log.debug('inserted new fxQuoteError in db: ', newFxQuoteError)
+      this.log.verbose('inserted new fxQuoteError in db: ', { newFxQuoteError })
       return newFxQuoteError
     } catch (err) {
       this.log.error('Error in createFxQuoteError:', err)

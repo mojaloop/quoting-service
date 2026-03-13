@@ -26,6 +26,7 @@
 
 const { Cache } = require('memory-cache')
 const { Tracer } = require('@mojaloop/event-sdk')
+const Metrics = require('@mojaloop/central-services-metrics')
 
 const Config = require('../lib/config')
 const Database = require('../data/cachedDatabase')
@@ -36,7 +37,6 @@ const { createMonitoringServer } = require('./monitoringServer')
 const { createProxyClient } = require('../lib/proxy')
 const { logger, initPayloadCache } = require('../lib')
 const { version } = require('../../package.json')
-const Metrics = require('@mojaloop/central-services-metrics')
 
 let db
 let proxyClient
@@ -48,8 +48,6 @@ const startFn = async (handlerList, appConfig = undefined) => {
 
   db = new Database(config)
   await db.connect()
-  const isDbOk = await db.isConnected()
-  if (!isDbOk) throw new Error('DB is not connected')
 
   if (config.proxyCache.enabled) {
     proxyClient = createProxyClient({ proxyCacheConfig: config.proxyCache })
