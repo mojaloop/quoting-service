@@ -104,7 +104,6 @@ describe('Database Tests -->', () => {
     describe('transaction', () => {
       it('should resolve with a transaction', async () => {
         const mockTransaction = {}
-        // todo: use mockKnex
         const queryBuilder = { transaction: jest.fn(), on: jest.fn() }
         queryBuilder.transaction.mockImplementation((callback) => {
           callback(mockTransaction)
