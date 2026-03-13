@@ -2,7 +2,7 @@
   "name": "quoting-service",
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "17.15.0-iad-582.6",
+  "version": "17.15.0-infitx.5",
   "author": "ModusBox",
   "contributors": [
     "Georgi Georgiev <georgi.georgiev@modusbox.com>",
@@ -129,7 +129,8 @@
     "@redocly/openapi-core": {
       "minimatch": "5.1.9",
       "js-yaml": "4.1.1"
-    }
+    },
+    "flatted": "3.4.0"
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
