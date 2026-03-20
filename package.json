@@ -112,7 +112,7 @@
     "cross-spawn": "6.0.6",
     "path-to-regexp": "0.1.12",
     "validator": "13.15.22",
-    "undici": "7.18.2",
+    "undici": "7.24.0",
     "lodash": "4.17.23",
     "lodash-es": "4.17.23",
     "replace": {
@@ -124,13 +124,13 @@
     "@mojaloop/ml-schema-transformer-lib": {
       "ajv": "8.18.0"
     },
-    "fast-xml-parser": "5.4.1",
+    "fast-xml-parser": "5.5.7",
     "qs": "6.14.2",
     "@redocly/openapi-core": {
       "minimatch": "5.1.9",
       "js-yaml": "4.1.1"
     },
-    "flatted": "3.4.0"
+    "flatted": "3.4.2"
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
@@ -142,7 +142,7 @@
     "@mojaloop/central-services-logger": "11.11.0-infitx.4",
     "@mojaloop/central-services-metrics": "12.9.0-infitx.0",
     "@mojaloop/central-services-shared": "18.36.0-infitx.10",
-    "@mojaloop/central-services-stream": "11.10.0-infitx.6",
+    "@mojaloop/central-services-stream": "11.10.0-iad-786.5",
     "@mojaloop/event-sdk": "14.9.0-infitx.0",
     "@mojaloop/inter-scheme-proxy-cache-lib": "2.9.0",
     "@mojaloop/ml-number": "11.4.3",
