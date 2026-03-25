@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.14.5](https://github.com/mojaloop/quoting-service/compare/v17.14.4...v17.14.5) (2026-03-25)
+
+
+### Chore
+
+* add private:true to prevent npm publish ([#4384](https://github.com/mojaloop/quoting-service/issues/4384)) ([#465](https://github.com/mojaloop/quoting-service/issues/465)) ([ee52d8a](https://github.com/mojaloop/quoting-service/commit/ee52d8a3b89c609d073526be4269607810d677fa))
+* **sbom:** update sbom [skip ci] ([040e814](https://github.com/mojaloop/quoting-service/commit/040e81461a9c99fc9813363ecb39b2aaeacaa057))
+
 ### [17.14.4](https://github.com/mojaloop/quoting-service/compare/v17.14.3...v17.14.4) (2026-02-26)
 
 

@@ -3,7 +3,7 @@
   "private": true,
   "description": "Quoting Service hosted by a scheme",
   "license": "Apache-2.0",
-  "version": "17.14.4",
+  "version": "17.14.5",
   "author": "ModusBox",
   "contributors": [
     "Georgi Georgiev <georgi.georgiev@modusbox.com>",
