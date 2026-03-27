@@ -96,6 +96,14 @@ class CachedDatabase extends Database {
     return this.getCacheValue('getParticipantByName', [participantName, participantType])
   }
 
+  async getParticipantNoCache (...args) {
+    return super.getParticipant(...args)
+  }
+
+  async getParticipantByNameNoCache (...args) {
+    return super.getParticipantByName(...args)
+  }
+
   async getTransferParticipantRoleType (name) {
     return this.getCacheValue('getTransferParticipantRoleType', [name])
   }

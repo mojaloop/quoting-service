@@ -145,6 +145,65 @@ class BaseQuotesModel {
     return { payer, payee }
   }
 
+  /**
+   * Parses a W3C baggage header value (comma-separated key=value pairs).
+   *
+   * @param {string} baggage - raw baggage header value
+   * @returns {Object} - key/value map
+   */
+  static _parseBaggageHeader (baggage) {
+    if (!baggage) return {}
+    return Object.fromEntries(
+      baggage.split(',')
+        .map(entry => entry.trim().split('='))
+        .filter(parts => parts.length >= 2)
+        .map(([key, ...rest]) => [key.trim(), rest.join('=').trim()])
+    )
+  }
+
+  /**
+   * Returns true when the baggage header carries `test-instruction=skip-participant-cache`.
+   *
+   * @param {Object} headers - incoming HTTP headers
+   * @returns {boolean}
+   */
+  static _shouldSkipParticipantCache (headers) {
+    const baggage = headers?.baggage
+    if (!baggage) return false
+    const parsed = BaseQuotesModel._parseBaggageHeader(baggage)
+    return parsed['test-instruction'] === 'skip-participant-cache'
+  }
+
+  /**
+   * Retrieves a participant, bypassing the cache when the baggage header instructs it.
+   *
+   * @param {Object} headers - incoming HTTP headers
+   * @param  {...any} args - forwarded to db.getParticipant / db.getParticipantNoCache
+   * @returns {Promise<number>} participantId
+   */
+  async _getParticipant (headers, ...args) {
+    if (BaseQuotesModel._shouldSkipParticipantCache(headers)) {
+      this.log.debug('skip-participant-cache: bypassing cache for getParticipant')
+      return this.db.getParticipantNoCache(...args)
+    }
+    return this.db.getParticipant(...args)
+  }
+
+  /**
+   * Retrieves a participant by name, bypassing the cache when the baggage header instructs it.
+   *
+   * @param {Object} headers - incoming HTTP headers
+   * @param  {...any} args - forwarded to db.getParticipantByName / db.getParticipantByNameNoCache
+   * @returns {Promise<number>} participantId
+   */
+  async _getParticipantByName (headers, ...args) {
+    if (BaseQuotesModel._shouldSkipParticipantCache(headers)) {
+      this.log.debug('skip-participant-cache: bypassing cache for getParticipantByName')
+      return this.db.getParticipantByNameNoCache(...args)
+    }
+    return this.db.getParticipantByName(...args)
+  }
+
   makeErrorCallbackHeaders ({ modifyHeaders, headers, fspiopSource, fspiopUri, resource = RESOURCES.quotes }) {
     const { envConfig } = this
     let fromSwitchHeaders

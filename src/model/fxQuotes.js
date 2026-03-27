@@ -47,7 +47,7 @@ class FxQuotesModel extends BaseQuotesModel {
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateFxQuoteRequest (fspiopDestination, fxQuoteRequest) {
+  async validateFxQuoteRequest (fspiopDestination, fxQuoteRequest, headers = {}) {
     const histTimer = Metrics.getHistogram(
       'model_fxquote',
       'validateFxQuoteRequest - Metrics for fx quote model',
@@ -65,7 +65,7 @@ class FxQuotesModel extends BaseQuotesModel {
           await this.proxyClient?.addDfspIdToProxyMapping(fspiopDestination, selfHealFXPProxy)
         } else {
           await Promise.all(currencies.map((currency) => {
-            return this.db.getParticipant(fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, Enum.Accounts.LedgerAccountType.POSITION)
+            return this._getParticipant(headers, fspiopDestination, LOCAL_ENUM.COUNTERPARTY_FSP, currency, Enum.Accounts.LedgerAccountType.POSITION)
           }))
         }
       }
@@ -181,7 +181,7 @@ class FxQuotesModel extends BaseQuotesModel {
       fspiopSource = headers[Enum.Http.Headers.FSPIOP.SOURCE]
       const fspiopDestination = headers[Enum.Http.Headers.FSPIOP.DESTINATION]
 
-      await this.validateFxQuoteRequest(fspiopDestination, fxQuoteRequest)
+      await this.validateFxQuoteRequest(fspiopDestination, fxQuoteRequest, headers)
 
       if (!this.envConfig.simpleRoutingMode) {
         // if we get here we need to create a duplicate check row
