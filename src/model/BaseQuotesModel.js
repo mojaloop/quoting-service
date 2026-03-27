@@ -146,17 +146,22 @@ class BaseQuotesModel {
   }
 
   /**
-   * Parses a W3C baggage header value (comma-separated key=value pairs).
+   * Parses a W3C baggage header value as comma-separated list-members of `key=value`
+   * and ignores any per-entry properties (everything after the first `;` in a member).
    *
    * @param {string} baggage - raw baggage header value
    * @returns {Object} - key/value map
    */
   static _parseBaggageHeader (baggage) {
-    if (!baggage) return {}
+    if (!baggage || typeof baggage !== 'string') return {}
     return Object.fromEntries(
       baggage.split(',')
-        .map(entry => entry.trim().split('='))
-        .filter(parts => parts.length >= 2)
+        .map(entry => entry.trim())
+        .filter(entry => entry.length > 0)
+        // Discard per-entry properties, which follow the first ';' per W3C baggage
+        .map(entry => entry.split(';', 1)[0])
+        .map(member => member.split('='))
+        .filter(parts => parts.length >= 2 && parts[0].trim().length > 0)
         .map(([key, ...rest]) => [key.trim(), rest.join('=').trim()])
     )
   }
