@@ -1326,7 +1326,7 @@ describe('QuotesModel', () => {
               quoteRequest: mockData.quoteRequest,
               span: mockSpan
             })
-            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
+            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest, mockData.headers]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
             expect(mockSpan.getChild.mock.calls.length).toBe(1)
 
@@ -1438,7 +1438,7 @@ describe('QuotesModel', () => {
               span: mockSpan
             })
 
-            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
+            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest, mockData.headers]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
             expect(mockSpan.getChild.mock.calls.length).toBe(1)
 
@@ -1473,7 +1473,7 @@ describe('QuotesModel', () => {
               span: mockSpan
             })
 
-            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest]
+            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.quoteRequest, mockData.headers]
             expect(quotesModel.validateQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
             expect(mockSpan.getChild.mock.calls.length).toBe(1)
 

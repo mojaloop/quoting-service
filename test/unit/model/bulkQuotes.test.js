@@ -394,7 +394,7 @@ describe('BulkQuotesModel', () => {
 
             const result = await bulkQuotesModel.handleBulkQuoteRequest(mockData.headers, mockData.bulkQuotePostRequest, mockSpan)
 
-            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.bulkQuotePostRequest]
+            const expectedValidateQuoteRequestArgs = [mockData.headers['fspiop-source'], mockData.headers['fspiop-destination'], mockData.bulkQuotePostRequest, mockData.headers]
             expect(bulkQuotesModel.validateBulkQuoteRequest).toBeCalledWith(...expectedValidateQuoteRequestArgs)
             expect(mockSpan.getChild.mock.calls.length).toBe(1)
 

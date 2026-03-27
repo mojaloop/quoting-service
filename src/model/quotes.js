@@ -58,7 +58,7 @@ class QuotesModel extends BaseQuotesModel {
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateQuoteRequest (fspiopSource, fspiopDestination, quoteRequest) {
+  async validateQuoteRequest (fspiopSource, fspiopDestination, quoteRequest, headers = {}) {
     const histTimer = Metrics.getHistogram(
       'model_quote',
       'validateQuoteRequest - Metrics for quote model',
@@ -97,14 +97,14 @@ class QuotesModel extends BaseQuotesModel {
       ) {
         step = 'getParticipant-3'
         await Promise.all(quoteRequest.payer.supportedCurrencies.map(currency =>
-          this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, Enum.Accounts.LedgerAccountType.POSITION)
+          this._getParticipant(headers, fspiopSource, LOCAL_ENUM.PAYER_DFSP, currency, Enum.Accounts.LedgerAccountType.POSITION)
         ))
       } else {
         // If it is not passed in, then we validate payee against the `amount` currency.
         // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
         if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
           step = 'getParticipant-4'
-          await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+          await this._getParticipant(headers, fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
         }
       }
 
@@ -120,7 +120,7 @@ class QuotesModel extends BaseQuotesModel {
           !(await this.proxyClient?.lookupProxyByDfspId(quoteRequest.payer.partyIdInfo.fspId))
         ) {
           step = 'getParticipant-6'
-          await this.db.getParticipant(quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+          await this._getParticipant(headers, quoteRequest.payer.partyIdInfo.fspId, LOCAL_ENUM.PAYER_DFSP, quoteRequest.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
         }
         // Lets make sure the optional fspId exists in the payee's partyIdInfo before we validate it
         step = 'lookupProxyByDfspId-7'
@@ -131,7 +131,7 @@ class QuotesModel extends BaseQuotesModel {
           !(await this.proxyClient?.lookupProxyByDfspId(quoteRequest.payee.partyIdInfo.fspId))
         ) {
           step = 'getParticipant-8'
-          await this.db.getParticipant(quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+          await this._getParticipant(headers, quoteRequest.payee.partyIdInfo.fspId, LOCAL_ENUM.PAYEE_DFSP, quoteRequest.amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
         }
       }
       histTimer({ success: true, queryName: 'quote_validateQuoteRequest' })
@@ -161,7 +161,7 @@ class QuotesModel extends BaseQuotesModel {
     // skip fulfil validation if the source is a proxy
     if (!proxyIdSource) {
       const payeeCurrency = quoteUpdateRequest.payeeReceiveAmount?.currency || quoteUpdateRequest.transferAmount.currency
-      await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, Enum.Accounts.LedgerAccountType.POSITION)
+      await this._getParticipant(headers, fspiopSource, LOCAL_ENUM.PAYEE_DFSP, payeeCurrency, Enum.Accounts.LedgerAccountType.POSITION)
     }
   }
 
@@ -191,7 +191,7 @@ class QuotesModel extends BaseQuotesModel {
     const handleQuoteRequestSpan = span.getChild('qs_quote_handleQuoteRequest')
     try {
       step = 'validateQuoteRequest-1'
-      await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest)
+      await this.validateQuoteRequest(fspiopSource, fspiopDestination, quoteRequest, headers)
 
       step = 'fetchParticipantInfo-2'
       const { payer, payee } = await super.fetchParticipantsInfo(fspiopSource, fspiopDestination, cache)
@@ -231,12 +231,12 @@ class QuotesModel extends BaseQuotesModel {
           this.db.getAmountType(quoteRequest.amountType),
           this.db.getPartyType(LOCAL_ENUM.PAYER),
           this.db.getPartyIdentifierType(quoteRequest.payer.partyIdInfo.partyIdType),
-          payer.proxiedParticipant ? null : this.db.getParticipantByName(quoteRequest.payer.partyIdInfo.fspId),
+          payer.proxiedParticipant ? null : this._getParticipantByName(headers, quoteRequest.payer.partyIdInfo.fspId),
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYER_DFSP),
           this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE),
           this.db.getPartyType(LOCAL_ENUM.PAYEE),
           this.db.getPartyIdentifierType(quoteRequest.payee.partyIdInfo.partyIdType),
-          payee.proxiedParticipant ? null : this.db.getParticipantByName(quoteRequest.payee.partyIdInfo.fspId),
+          payee.proxiedParticipant ? null : this._getParticipantByName(headers, quoteRequest.payee.partyIdInfo.fspId),
           this.db.getTransferParticipantRoleType(LOCAL_ENUM.PAYEE_DFSP),
           this.db.getLedgerEntryType(LOCAL_ENUM.PRINCIPLE_VALUE)
         ])

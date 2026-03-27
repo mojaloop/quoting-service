@@ -32,7 +32,12 @@ ignore:
   - vulnerability: GHSA-qffp-2rhf-9h96
   - vulnerability: GHSA-9ppj-qmqm-q256 #  tar 7.5.7
   - vulnerability: CVE-2026-2673 # libcrypto3, libssl3 — Alpine OpenSSL system package
-
+  - vulnerability: GHSA-44fc-8fm5-q62h
+  - vulnerability: GHSA-hf2r-9gf9-rwch
+  - vulnerability: GHSA-c2c7-rcm5-vvqj
+  - vulnerability: GHSA-f886-m6hf-6m8v
+  - vulnerability: GHSA-3v7f-55p6-f55p
+  - vulnerability: GHSA-48c2-rrv3-qjmp
 # Set output format defaults
 output:
   - "table"

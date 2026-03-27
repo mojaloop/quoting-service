@@ -51,14 +51,14 @@ class BulkQuotesModel extends BaseQuotesModel {
    *
    * @returns {promise} - promise will reject if request is not valid
    */
-  async validateBulkQuoteRequest (fspiopSource, fspiopDestination, bulkQuoteRequest) {
-    await this.db.getParticipant(fspiopSource, LOCAL_ENUM.PAYER_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+  async validateBulkQuoteRequest (fspiopSource, fspiopDestination, bulkQuoteRequest, headers = {}) {
+    await this._getParticipant(headers, fspiopSource, LOCAL_ENUM.PAYER_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
 
     // Ensure the proxy client is connected
     if (this.proxyClient?.isConnected === false) await this.proxyClient.connect()
     // if the payee dfsp has a proxy cache entry, we do not validate the dfsp here
     if (!(await this.proxyClient?.lookupProxyByDfspId(fspiopDestination))) {
-      await this.db.getParticipant(fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
+      await this._getParticipant(headers, fspiopDestination, LOCAL_ENUM.PAYEE_DFSP, bulkQuoteRequest.individualQuotes[0].amount.currency, Enum.Accounts.LedgerAccountType.POSITION)
     }
   }
 
@@ -78,7 +78,7 @@ class BulkQuotesModel extends BaseQuotesModel {
 
       // validate - this will throw if the request is invalid
       childSpan = span.getChild('qs_bulkquote_forwardBulkQuoteRequest')
-      await this.validateBulkQuoteRequest(fspiopSource, fspiopDestination, bulkQuoteRequest)
+      await this.validateBulkQuoteRequest(fspiopSource, fspiopDestination, bulkQuoteRequest, headers)
       // if we got here rules passed, so we can forward the quote on to the recipient dfsp
       this.envConfig.simpleAudit || await childSpan.audit({ headers, payload: bulkQuoteRequest }, EventSdk.AuditEventAction.start)
       await this.forwardBulkQuoteRequest(headers, bulkQuoteRequest.bulkQuoteId, bulkQuoteRequest, childSpan)

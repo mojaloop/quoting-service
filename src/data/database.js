@@ -407,6 +407,26 @@ class Database {
   }
 
   /**
+   * Gets the id of the specified participant, bypassing any cache layer.
+   * On the base Database class this is identical to getParticipant.
+   *
+   * @returns {promise} - id of the participant
+   */
+  async getParticipantNoCache (...args) {
+    return this.getParticipant(...args)
+  }
+
+  /**
+   * Gets the id of the specified participant by name, bypassing any cache layer.
+   * On the base Database class this is identical to getParticipantByName.
+   *
+   * @returns {promise} - id of the participant
+   */
+  async getParticipantByNameNoCache (...args) {
+    return this.getParticipantByName(...args)
+  }
+
+  /**
      * Gets the id of the specified transfer participant role type
      *
      * @returns {promise} - id of the transfer participant role type

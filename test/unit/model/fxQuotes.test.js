@@ -166,7 +166,7 @@ describe('FxQuotesModel Tests -->', () => {
 
       await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span, request)).resolves.toBeUndefined()
 
-      expect(fxQuotesModel.validateFxQuoteRequest).toBeCalledWith(headers['fspiop-destination'], request)
+      expect(fxQuotesModel.validateFxQuoteRequest).toBeCalledWith(headers['fspiop-destination'], request, headers)
       expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalledWith(headers, request, request, span.getChild())
     })
 
@@ -250,7 +250,7 @@ describe('FxQuotesModel Tests -->', () => {
       await expect(fxQuotesModel.handleFxQuoteRequest(headers, request, span, request))
         .resolves.toBeUndefined()
 
-      expect(fxQuotesModel.validateFxQuoteRequest).toBeCalledWith(headers['fspiop-destination'], request)
+      expect(fxQuotesModel.validateFxQuoteRequest).toBeCalledWith(headers['fspiop-destination'], request, headers)
       expect(fxQuotesModel.forwardFxQuoteRequest).toBeCalledWith(headers, request, request, span.getChild())
       expect(fxQuotesModel.handleException).toBeCalledWith(headers['fspiop-source'], request.conversionRequestId, expect.any(Error), headers, span.getChild())
       expect(span.getChild().finish).toBeCalledTimes(1)
