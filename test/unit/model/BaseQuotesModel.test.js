@@ -59,6 +59,61 @@ describe('BaseQuotesModel Tests -->', () => {
     expect(meta.attributes?.['exception.stacktrace']).toBe(error.stack)
   })
 
+  describe('_getNormalizedHeaderValue', () => {
+    test('should retrieve header with lowercase name', () => {
+      const headers = { baggage: 'test-instruction=skip-participant-cache' }
+
+      const result = BaseQuotesModel._getNormalizedHeaderValue(headers, 'baggage')
+
+      expect(result).toBe('test-instruction=skip-participant-cache')
+    })
+
+    test('should retrieve header with different casing (Baggage)', () => {
+      const headers = { Baggage: 'test-instruction=skip-participant-cache' }
+
+      const result = BaseQuotesModel._getNormalizedHeaderValue(headers, 'baggage')
+
+      expect(result).toBe('test-instruction=skip-participant-cache')
+    })
+
+    test('should retrieve header with mixed casing (bAgGaGe)', () => {
+      const headers = { bAgGaGe: 'test-instruction=skip-participant-cache' }
+
+      const result = BaseQuotesModel._getNormalizedHeaderValue(headers, 'BAGGAGE')
+
+      expect(result).toBe('test-instruction=skip-participant-cache')
+    })
+
+    test('should coerce array header value by joining with comma', () => {
+      const headers = { baggage: ['foo=bar', 'test-instruction=skip-participant-cache'] }
+
+      const result = BaseQuotesModel._getNormalizedHeaderValue(headers, 'baggage')
+
+      expect(result).toBe('foo=bar,test-instruction=skip-participant-cache')
+    })
+
+    test('should return undefined for missing header', () => {
+      const headers = { 'content-type': 'application/json' }
+
+      const result = BaseQuotesModel._getNormalizedHeaderValue(headers, 'baggage')
+
+      expect(result).toBeUndefined()
+    })
+
+    test('should return undefined for null/undefined headers', () => {
+      expect(BaseQuotesModel._getNormalizedHeaderValue(null, 'baggage')).toBeUndefined()
+      expect(BaseQuotesModel._getNormalizedHeaderValue(undefined, 'baggage')).toBeUndefined()
+    })
+
+    test('should return string coercion of non-string values', () => {
+      const headers = { 'x-custom': 12345 }
+
+      const result = BaseQuotesModel._getNormalizedHeaderValue(headers, 'x-custom')
+
+      expect(result).toBe('12345')
+    })
+  })
+
   describe('_parseBaggageHeader', () => {
     test('should parse comma-separated key=value pairs', () => {
       const baggage = 'foo=bar,test-instruction=skip-participant-cache,sample=123'
@@ -82,6 +137,35 @@ describe('BaseQuotesModel Tests -->', () => {
         'test-instruction': 'skip-participant-cache'
       })
     })
+
+    test('should handle array input by joining with comma', () => {
+      const baggage = ['foo=bar', 'test-instruction=skip-participant-cache', 'sample=123']
+
+      const result = BaseQuotesModel._parseBaggageHeader(baggage)
+
+      expect(result).toEqual({
+        foo: 'bar',
+        'test-instruction': 'skip-participant-cache',
+        sample: '123'
+      })
+    })
+
+    test('should handle single-element array', () => {
+      const baggage = ['test-instruction=skip-participant-cache']
+
+      const result = BaseQuotesModel._parseBaggageHeader(baggage)
+
+      expect(result).toEqual({
+        'test-instruction': 'skip-participant-cache'
+      })
+    })
+
+    test('should return empty object for null/undefined/empty input', () => {
+      expect(BaseQuotesModel._parseBaggageHeader(null)).toEqual({})
+      expect(BaseQuotesModel._parseBaggageHeader(undefined)).toEqual({})
+      expect(BaseQuotesModel._parseBaggageHeader('')).toEqual({})
+      expect(BaseQuotesModel._parseBaggageHeader([])).toEqual({})
+    })
   })
 
   describe('_shouldSkipParticipantCache', () => {
@@ -96,6 +180,47 @@ describe('BaseQuotesModel Tests -->', () => {
     test('should return false when baggage does not contain test instruction', () => {
       const headers = { baggage: 'foo=bar,sample=123' }
       expect(BaseQuotesModel._shouldSkipParticipantCache(headers)).toBe(false)
+    })
+
+    test('should handle case-insensitive header lookup (Baggage)', () => {
+      const headers = {
+        Baggage: 'test-instruction=skip-participant-cache'
+      }
+
+      expect(BaseQuotesModel._shouldSkipParticipantCache(headers)).toBe(true)
+    })
+
+    test('should handle mixed-case header lookup (bAgGaGe)', () => {
+      const headers = {
+        bAgGaGe: 'foo=bar,test-instruction=skip-participant-cache'
+      }
+
+      expect(BaseQuotesModel._shouldSkipParticipantCache(headers)).toBe(true)
+    })
+
+    test('should handle array header value (repeated header)', () => {
+      const headers = {
+        baggage: ['foo=bar', 'test-instruction=skip-participant-cache', 'sample=123']
+      }
+
+      expect(BaseQuotesModel._shouldSkipParticipantCache(headers)).toBe(true)
+    })
+
+    test('should handle single-element array header value', () => {
+      const headers = {
+        baggage: ['test-instruction=skip-participant-cache']
+      }
+
+      expect(BaseQuotesModel._shouldSkipParticipantCache(headers)).toBe(true)
+    })
+
+    test('should return false for empty headers', () => {
+      expect(BaseQuotesModel._shouldSkipParticipantCache({})).toBe(false)
+    })
+
+    test('should return false for null/undefined headers', () => {
+      expect(BaseQuotesModel._shouldSkipParticipantCache(null)).toBe(false)
+      expect(BaseQuotesModel._shouldSkipParticipantCache(undefined)).toBe(false)
     })
   })
 

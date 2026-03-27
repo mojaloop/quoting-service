@@ -146,15 +146,44 @@ class BaseQuotesModel {
   }
 
   /**
-   * Parses a W3C baggage header value (comma-separated key=value pairs).
+   * Retrieves a header value with case-insensitive key lookup and array coercion.
+   * Handles different HTTP stack behaviors where headers may be lowercase/mixed-case
+   * or provided as arrays (when repeated in the request).
    *
-   * @param {string} baggage - raw baggage header value
+   * @param {Object} headers - incoming HTTP headers
+   * @param {string} headerName - header name to look up (e.g., 'baggage')
+   * @returns {string|undefined} - normalized header value or undefined
+   */
+  static _getNormalizedHeaderValue (headers, headerName) {
+    if (!headers || typeof headers !== 'object') return undefined
+
+    // Case-insensitive lookup
+    const key = Object.keys(headers).find(k => k.toLowerCase() === headerName.toLowerCase())
+    if (!key) return undefined
+
+    const value = headers[key]
+    // Coerce arrays to string by joining (HTTP allows repeated headers as arrays)
+    if (Array.isArray(value)) {
+      return value.join(',')
+    }
+    // Convert to string in case it's not already
+    return String(value || '')
+  }
+
+  /**
+   * Parses a W3C baggage header value (comma-separated key=value pairs).
+   * Handles string or array input.
+   *
+   * @param {string|string[]} baggage - raw baggage header value (string or array)
    * @returns {Object} - key/value map
    */
   static _parseBaggageHeader (baggage) {
     if (!baggage) return {}
+    // Coerce to string (handle array input from array header)
+    const baggageStr = Array.isArray(baggage) ? baggage.join(',') : String(baggage)
+    if (!baggageStr) return {}
     return Object.fromEntries(
-      baggage.split(',')
+      baggageStr.split(',')
         .map(entry => entry.trim().split('='))
         .filter(parts => parts.length >= 2)
         .map(([key, ...rest]) => [key.trim(), rest.join('=').trim()])
@@ -163,12 +192,13 @@ class BaseQuotesModel {
 
   /**
    * Returns true when the baggage header carries `test-instruction=skip-participant-cache`.
+   * Handles case-insensitive header lookup and array header values.
    *
    * @param {Object} headers - incoming HTTP headers
    * @returns {boolean}
    */
   static _shouldSkipParticipantCache (headers) {
-    const baggage = headers?.baggage
+    const baggage = BaseQuotesModel._getNormalizedHeaderValue(headers, 'baggage')
     if (!baggage) return false
     const parsed = BaseQuotesModel._parseBaggageHeader(baggage)
     return parsed['test-instruction'] === 'skip-participant-cache'
