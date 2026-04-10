@@ -755,8 +755,11 @@ class FxQuotesModel extends BaseQuotesModel {
       log.verbose('got errorCallback response with statusCode:', { statusCode })
 
       if (statusCode !== Enum.Http.ReturnCodes.OK.CODE) {
-        // think, if it's better to move this logic into this.sendHttpRequest()
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response sending error callback', {
+        // Use CLIENT_ERROR for 4xx, DESTINATION_COMMUNICATION_ERROR for 5xx
+        const errorCode = (statusCode >= 400 && statusCode < 500)
+          ? ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR
+          : ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR
+        throw ErrorHandler.CreateFSPIOPError(errorCode, 'Got non-success response sending error callback', {
           method: opts?.method,
           url: fullCallbackUrl,
           sourceFsp: fspiopSource,
@@ -809,9 +812,39 @@ class FxQuotesModel extends BaseQuotesModel {
     } catch (err) {
       this.log.warn('error in sendHttpRequest: ', err)
       const extensions = err.extensions || []
+
+      // Distinguish HTTP response errors from network/connection errors
+      if (err.response) {
+        const responseData = err.response.data
+        if (responseData?.errorInformation) {
+          throw ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(responseData.errorInformation)
+        }
+        if (err.response.status >= 400 && err.response.status < 500) {
+          const fspiopError = ErrorHandler.CreateFSPIOPError(
+            ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR,
+            `client error in sendHttpRequest: ${err.message}`,
+            {
+              error: err,
+              method: options?.method,
+              url: options?.url,
+              sourceFsp: fspiopSource,
+              destinationFsp: fspiopDest,
+              request: JSON.stringify(options, Util.getCircularReplacer())
+            },
+            fspiopSource,
+            extensions
+          )
+          if (!this.envConfig.instrumentationMetricsDisabled) {
+            this.libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendHttpRequest', step })
+          }
+          throw fspiopError
+        }
+      }
+
+      // True network/connection error or 5xx
       const fspiopError = ErrorHandler.CreateFSPIOPError(
         ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
-        `network error in sendErrorCallback: ${err.message}`,
+        `network error in sendHttpRequest: ${err.message}`,
         {
           error: err,
           method: options?.method,
