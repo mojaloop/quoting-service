@@ -37,6 +37,8 @@
 
 'use strict'
 
+const fs = require('node:fs')
+const path = require('node:path')
 const Hapi = require('@hapi/hapi')
 const Inert = require('@hapi/inert')
 const Vision = require('@hapi/vision')
@@ -56,6 +58,8 @@ const Handlers = require('./api')
 const Routes = require('./api/routes')
 const dto = require('./lib/dto')
 const { version } = require('../package.json')
+const { Jws } = require('@mojaloop/sdk-standard-components')
+const JwsValidator = Jws.validator
 
 const { OpenapiBackend } = CentralServices.Util
 const {
@@ -181,6 +185,40 @@ const initServer = async function (config, topicNames) {
     }
   ])
 
+  if (config.jws.jwsValidate) {
+    const validationKeys = loadJwsKeys(config.jws.jwsVerificationKeysDirectory)
+    const jwsValidator = new JwsValidator({ logger, validationKeys })
+    const validatePutParties = config.jws.jwsValidatePutParties
+
+    const watcher = watchJwsKeys(config.jws.jwsVerificationKeysDirectory, validationKeys)
+    if (watcher) {
+      server.app.jwsKeyWatcher = watcher
+      server.events.on('stop', () => watcher.close())
+    }
+
+    /* istanbul ignore next: handler logic tested via serverJws.test.js standalone Hapi server */
+    server.ext('onPostAuth', (request, h) => {
+      if (request.method === 'get') return h.continue
+
+      const resource = request.path.replace(/^\//, '').split('/')[0]
+      if (!['quotes', 'fxQuotes'].includes(resource)) return h.continue
+
+      if (!validatePutParties && request.method === 'put' && request.path.startsWith('/parties/')) {
+        return h.continue
+      }
+
+      try {
+        jwsValidator.validate({ headers: request.headers, body: request.payload })
+      } catch (err) {
+        logger.error('Inbound request failed JWS validation', err)
+        throw ErrorHandler.Factory.createFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.INVALID_SIGNATURE, err.message
+        )
+      }
+      return h.continue
+    })
+  }
+
   server.route(Routes.APIRoutes(api))
 
   // start the server
@@ -256,4 +294,36 @@ async function start () {
     })
 }
 
+const loadJwsKeys = (dir) => {
+  const keys = {}
+  if (!dir || !fs.existsSync(dir)) return keys
+  for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.pem'))) {
+    keys[path.basename(f, '.pem')] = fs.readFileSync(path.join(dir, f))
+  }
+  return keys
+}
+
+const watchJwsKeys = (dir, keyMap) => {
+  if (!dir || !fs.existsSync(dir)) return null
+  return fs.watch(dir, async (eventType, filename) => {
+    if (!filename || path.extname(filename) !== '.pem') return
+    const keyName = path.basename(filename, '.pem')
+    const keyPath = path.join(dir, filename)
+    try {
+      if (fs.existsSync(keyPath)) {
+        keyMap[keyName] = await fs.promises.readFile(keyPath)
+        logger.info(`JWS verification key loaded: ${keyName}`)
+      } else {
+        delete keyMap[keyName]
+        logger.info(`JWS verification key removed: ${keyName}`)
+      }
+    /* istanbul ignore next */
+    } catch (err) {
+      logger.error(`Failed to process JWS key change for ${filename}`, err)
+    }
+  })
+}
+
 module.exports = start
+module.exports._loadJwsKeys = loadJwsKeys
+module.exports._watchJwsKeys = watchJwsKeys

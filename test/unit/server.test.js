@@ -107,6 +107,17 @@ jest.mock('@mojaloop/central-services-metrics', () => ({
   setup: jest.fn()
 }))
 
+const mockChildLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  verbose: jest.fn(),
+  debug: jest.fn(),
+  isDebugEnabled: false,
+  push: jest.fn().mockReturnThis(),
+  child: jest.fn().mockReturnThis()
+}
+
 jest.mock('../../src/lib', () => ({
   ...jest.requireActual('../../src/lib'),
   initPayloadCache: jest.fn().mockResolvedValue({}),
@@ -114,7 +125,11 @@ jest.mock('../../src/lib', () => ({
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
-    verbose: jest.fn()
+    verbose: jest.fn(),
+    debug: jest.fn(),
+    isDebugEnabled: false,
+    push: jest.fn().mockReturnValue(mockChildLogger),
+    child: jest.fn().mockReturnValue(mockChildLogger)
   }
 }))
 
@@ -192,5 +207,50 @@ describe('Server Tests', () => {
     expect(mockRoute).not.toHaveBeenCalled()
     expect(mockLog).not.toHaveBeenCalled()
     expect(spyErrorLog).toHaveBeenCalledTimes(1)
+  })
+
+  it('registers JWS validation when jwsValidate is true', async () => {
+    const fs = require('node:fs')
+    const os = require('node:os')
+    const path = require('node:path')
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jws-qs-srv-'))
+    fs.writeFileSync(path.join(dir, 'testfsp.pem'), 'FAKE-KEY')
+
+    // Set env vars before config is loaded by the fresh module
+    process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VALIDATE = 'true'
+    process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VERIFICATION_KEYS_DIRECTORY = dir
+    process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VALIDATE_PUT_PARTIES = 'false'
+
+    const mockRegister = jest.fn()
+    const mockStart = jest.fn()
+    const mockRoute = jest.fn()
+    const mockLog = jest.fn()
+    const mockExt = jest.fn()
+    const mockEventsOn = jest.fn()
+    Hapi.Server.mockImplementationOnce(() => ({
+      app: {},
+      register: mockRegister,
+      start: mockStart,
+      route: mockRoute,
+      log: mockLog,
+      ext: mockExt,
+      events: { on: mockEventsOn },
+      info: { host: 'localhost', port: 3333, uri: 'http://localhost:3333' }
+    }))
+
+    const server = require('../../src/server')
+    await server()
+
+    expect(mockExt.mock.calls.some(c => c[0] === 'onPostAuth')).toBe(true)
+
+    // Close the fs.watch handle registered via events.on('stop', fn)
+    const stopCall = mockEventsOn.mock.calls.find(c => c[0] === 'stop')
+    if (stopCall) stopCall[1]()
+
+    delete process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VALIDATE
+    delete process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VERIFICATION_KEYS_DIRECTORY
+    delete process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VALIDATE_PUT_PARTIES
+    fs.rmSync(dir, { recursive: true, force: true })
   })
 })
