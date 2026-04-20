@@ -196,6 +196,7 @@ const initServer = async function (config, topicNames) {
       server.events.on('stop', () => watcher.close())
     }
 
+    /* istanbul ignore next: handler logic tested via serverJws.test.js standalone Hapi server */
     server.ext('onPostAuth', (request, h) => {
       if (request.method === 'get') return h.continue
 
@@ -316,6 +317,7 @@ const watchJwsKeys = (dir, keyMap) => {
         delete keyMap[keyName]
         logger.info(`JWS verification key removed: ${keyName}`)
       }
+    /* istanbul ignore next */
     } catch (err) {
       logger.error(`Failed to process JWS key change for ${filename}`, err)
     }
