@@ -220,7 +220,6 @@ describe('Server Tests', () => {
     // Set env vars before config is loaded by the fresh module
     process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VALIDATE = 'true'
     process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VERIFICATION_KEYS_DIRECTORY = dir
-    process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VALIDATE_PUT_PARTIES = 'false'
 
     const mockRegister = jest.fn()
     const mockStart = jest.fn()
@@ -250,7 +249,6 @@ describe('Server Tests', () => {
 
     delete process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VALIDATE
     delete process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VERIFICATION_KEYS_DIRECTORY
-    delete process.env.QUOTE_ENDPOINT_SECURITY__JWS__JWS_VALIDATE_PUT_PARTIES
     fs.rmSync(dir, { recursive: true, force: true })
   })
 })

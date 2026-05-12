@@ -188,7 +188,6 @@ const initServer = async function (config, topicNames) {
   if (config.jws.jwsValidate) {
     const validationKeys = loadJwsKeys(config.jws.jwsVerificationKeysDirectory)
     const jwsValidator = new JwsValidator({ logger, validationKeys })
-    const validatePutParties = config.jws.jwsValidatePutParties
 
     const watcher = watchJwsKeys(config.jws.jwsVerificationKeysDirectory, validationKeys)
     if (watcher) {
@@ -202,10 +201,6 @@ const initServer = async function (config, topicNames) {
 
       const resource = request.path.replace(/^\//, '').split('/')[0]
       if (!['quotes', 'fxQuotes'].includes(resource)) return h.continue
-
-      if (!validatePutParties && request.method === 'put' && request.path.startsWith('/parties/')) {
-        return h.continue
-      }
 
       try {
         jwsValidator.validate({ headers: request.headers, body: request.payload })

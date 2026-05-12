@@ -120,7 +120,6 @@ describe('server JWS helpers', () => {
         if (request.method === 'get') return h.continue
         const resource = request.path.replace(/^\//, '').split('/')[0]
         if (!['quotes', 'fxQuotes'].includes(resource)) return h.continue
-        if (request.method === 'put' && request.path.startsWith('/parties/')) return h.continue
 
         try {
           jwsValidator.validate({ headers: request.headers, body: request.payload })
@@ -144,8 +143,7 @@ describe('server JWS helpers', () => {
       server.route([
         { method: 'POST', path: '/quotes', handler: ok },
         { method: 'GET', path: '/quotes/{id}', handler: ok },
-        { method: 'POST', path: '/transfers', handler: ok },
-        { method: 'PUT', path: '/parties/{type}/{id}', handler: ok }
+        { method: 'POST', path: '/transfers', handler: ok }
       ])
       return server
     }
@@ -176,12 +174,6 @@ describe('server JWS helpers', () => {
     it('non-target resource bypasses validation', async () => {
       const server = createServer({ [FSPIOP_SOURCE]: publicKey })
       const res = await server.inject({ method: 'POST', url: '/transfers', payload: { x: 1 } })
-      expect(res.statusCode).toBe(200)
-    })
-
-    it('PUT /parties bypasses validation', async () => {
-      const server = createServer({ [FSPIOP_SOURCE]: publicKey })
-      const res = await server.inject({ method: 'PUT', url: '/parties/MSISDN/123', payload: { party: {} } })
       expect(res.statusCode).toBe(200)
     })
   })
