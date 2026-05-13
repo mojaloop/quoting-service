@@ -150,7 +150,9 @@ class Config {
       jwsSign: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN,
       fspiopSourceToSign: this.hubName,
       jwsSigningKeyPath: RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH,
-      jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined
+      jwsSigningKey: RC.ENDPOINT_SECURITY.JWS.JWS_SIGN ? this.getFileContent(RC.ENDPOINT_SECURITY.JWS.JWS_SIGNING_KEY_PATH) : undefined,
+      jwsValidate: RC.ENDPOINT_SECURITY.JWS.JWS_VALIDATE,
+      jwsVerificationKeysDirectory: RC.ENDPOINT_SECURITY.JWS.JWS_VERIFICATION_KEYS_DIRECTORY
     }
     this.kafkaConfig = RC.KAFKA
     this.apiDocumentationEndpoints = RC.API_DOCUMENTATION_ENDPOINTS || false
