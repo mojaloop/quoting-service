@@ -133,11 +133,12 @@
       "ajv": "8.20.0"
     },
     "@grpc/proto-loader": {
-      "protobufjs": "7.5.5"
+      "protobufjs": "7.5.8"
     },
     "@mojaloop/event-sdk": {
-      "protobufjs": "8.0.1"
+      "protobufjs": "8.0.3"
     },
+    "@protobufjs/utf8": "1.1.1",
     "convict": "6.2.5",
     "yaml": "2.8.3",
     "fast-uri": "3.1.2",
