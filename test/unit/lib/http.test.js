@@ -54,7 +54,7 @@ describe('httpRequest', () => {
     expect(axios.request).toHaveBeenCalledTimes(1)
   })
 
-  it('handles a http exception', async () => {
+  it('handles a network error (no response) as DESTINATION_COMMUNICATION_ERROR', async () => {
     // Arrange
     axios.request.mockImplementationOnce(() => { throw new Error('Network error') })
     const options = {}
@@ -67,7 +67,57 @@ describe('httpRequest', () => {
     expect(axios.request).toHaveBeenCalledTimes(1)
   })
 
-  it('handles a bad response', async () => {
+  it('propagates FSPIOP errorInformation from HTTP error response', async () => {
+    // Arrange
+    const axiosError = new Error('Request failed with status code 400')
+    axiosError.response = {
+      status: 400,
+      data: {
+        errorInformation: {
+          errorCode: '3100',
+          errorDescription: 'Generic validation error'
+        }
+      }
+    }
+    axios.request.mockRejectedValueOnce(axiosError)
+    const options = {}
+
+    // Act
+    const action = async () => httpRequest(options, 'payeefsp')
+
+    // Assert
+    await expect(action()).rejects.toThrow('Generic validation error')
+  })
+
+  it('handles HTTP 4xx error without errorInformation as CLIENT_ERROR', async () => {
+    // Arrange
+    const axiosError = new Error('Request failed with status code 400')
+    axiosError.response = { status: 400, data: { message: 'Bad Request' } }
+    axios.request.mockRejectedValueOnce(axiosError)
+    const options = {}
+
+    // Act
+    const action = async () => httpRequest(options, 'payeefsp')
+
+    // Assert
+    await expect(action()).rejects.toThrow('Bad Request')
+  })
+
+  it('handles HTTP 5xx error as DESTINATION_COMMUNICATION_ERROR', async () => {
+    // Arrange
+    const axiosError = new Error('Request failed with status code 502')
+    axiosError.response = { status: 502, data: {} }
+    axios.request.mockRejectedValueOnce(axiosError)
+    const options = {}
+
+    // Act
+    const action = async () => httpRequest(options, 'payeefsp')
+
+    // Assert
+    await expect(action()).rejects.toThrow('Network error')
+  })
+
+  it('handles a bad response with 4xx as CLIENT_ERROR', async () => {
     // Arrange
     axios.request.mockReturnValueOnce({
       status: 400,
@@ -81,6 +131,22 @@ describe('httpRequest', () => {
     // Assert
     await expect(action()).rejects.toThrow('Non-success response in HTTP request')
     expect(axios.request).toHaveBeenCalledTimes(1)
+  })
+
+  it('handles a bad response with 5xx as DESTINATION_COMMUNICATION_ERROR', async () => {
+    // Arrange
+    axios.request.mockReturnValueOnce({
+      status: 502,
+      statusText: 'Bad Gateway',
+      data: Promise.resolve({})
+    })
+    const options = {}
+
+    // Act
+    const action = async () => httpRequest(options, 'payeefsp')
+
+    // Assert
+    await expect(action()).rejects.toThrow('Non-success response in HTTP request')
   })
 
   it('httpRequestBase performs a successful request', async () => {

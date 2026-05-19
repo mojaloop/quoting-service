@@ -425,6 +425,36 @@ class BulkQuotesModel extends BaseQuotesModel {
       } catch (err) {
         log.warn('error in axios.request:', err)
         const extensions = err.extensions || []
+
+        // Distinguish HTTP response errors from network/connection errors
+        if (err.response) {
+          const responseData = err.response.data
+          if (responseData?.errorInformation) {
+            throw ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(responseData.errorInformation)
+          }
+          if (err.response.status >= 400 && err.response.status < 500) {
+            const fspiopError = ErrorHandler.CreateFSPIOPError(
+              ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR,
+              `client error in sendErrorCallback: ${err.message}`,
+              {
+                error: err,
+                url: fullCallbackUrl,
+                sourceFsp: fspiopSource,
+                destinationFsp: destination,
+                method: opts && opts.method,
+                request: JSON.stringify(opts, Util.getCircularReplacer())
+              },
+              fspiopSource,
+              extensions
+            )
+            if (!this.envConfig.instrumentationMetricsDisabled) {
+              this.libUtil.rethrowAndCountFspiopError(fspiopError, { operation: 'sendErrorCallback', step })
+            }
+            throw fspiopError
+          }
+        }
+
+        // True network/connection error or 5xx
         const fspiopError = ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
           `network error in sendErrorCallback: ${err.message}`,
@@ -447,9 +477,12 @@ class BulkQuotesModel extends BaseQuotesModel {
       log.verbose(`Error callback got response ${res.status} ${res.statusText}`)
 
       if (res.status !== Enum.Http.ReturnCodes.OK.CODE) {
-        // external-error
+        // Use CLIENT_ERROR for 4xx, DESTINATION_COMMUNICATION_ERROR for 5xx
+        const errorCode = (res.status >= 400 && res.status < 500)
+          ? ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR
+          : ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR
         const fspiopError = ErrorHandler.CreateFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+          errorCode,
           'Got non-success response sending error callback', {
             url: fullCallbackUrl,
             sourceFsp: fspiopSource,

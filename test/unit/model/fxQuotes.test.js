@@ -882,6 +882,31 @@ describe('FxQuotesModel Tests -->', () => {
       expect(Http.httpRequestBase).toBeCalledWith(options, expect.anything())
     })
 
+    test('should propagate FSPIOP errorInformation from HTTP 4xx response', async () => {
+      const options = { method: 'GET', url: 'https://example.com' }
+      const axiosError = new Error('Request failed with status code 400')
+      axiosError.response = {
+        status: 400,
+        data: { errorInformation: { errorCode: '3100', errorDescription: 'Generic validation error' } }
+      }
+
+      fxQuotesModel = new FxQuotesModel(deps)
+      Http.httpRequestBase.mockRejectedValueOnce(axiosError)
+
+      await expect(fxQuotesModel.sendHttpRequest(options, 'source', 'destination')).rejects.toThrow('Generic validation error')
+    })
+
+    test('should handle HTTP 4xx without errorInformation as CLIENT_ERROR', async () => {
+      const options = { method: 'GET', url: 'https://example.com' }
+      const axiosError = new Error('Request failed with status code 400')
+      axiosError.response = { status: 400, data: {} }
+
+      fxQuotesModel = new FxQuotesModel(deps)
+      Http.httpRequestBase.mockRejectedValueOnce(axiosError)
+
+      await expect(fxQuotesModel.sendHttpRequest(options, 'source', 'destination')).rejects.toThrow('client error in sendHttpRequest')
+    })
+
     test('should rethrow error if metrics is disabled', async () => {
       const options = { method: 'GET', url: 'https://example.com' }
       const fspiopSource = 'source'

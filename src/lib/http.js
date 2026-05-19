@@ -67,10 +67,28 @@ async function httpRequest (opts, fspiopSource) {
     log.verbose('httpRequest is finished', { body, opts })
   } catch (e) {
     log.error('httpRequest failed due to an error:', e)
-    const [fspiopErrorType, fspiopErrorDescr] = e.response && e.response.status === 404
-      ? [ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR, 'Not found']
-      : [ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Network error']
-    throw ErrorHandler.CreateFSPIOPError(fspiopErrorType, fspiopErrorDescr,
+
+    // Distinguish HTTP response errors (4xx/5xx) from network/connection errors
+    if (e.response) {
+      const responseData = e.response.data
+      // If response contains FSPIOP errorInformation, propagate it directly
+      if (responseData?.errorInformation) {
+        throw ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(responseData.errorInformation)
+      }
+      // For 4xx client errors without errorInformation, use CLIENT_ERROR
+      if (e.response.status >= 400 && e.response.status < 500) {
+        throw ErrorHandler.CreateFSPIOPError(
+          ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR,
+          responseData?.message || e.message,
+          `${e.stack || util.inspect(e)}. Opts: ${util.inspect(opts)}`,
+          fspiopSource)
+      }
+    }
+
+    // True network/connection error or 5xx server error
+    throw ErrorHandler.CreateFSPIOPError(
+      ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+      `Network error: ${e.message}`,
       `${e.stack || util.inspect(e)}. Opts: ${util.inspect(opts)}`,
       fspiopSource)
   }
@@ -84,7 +102,11 @@ async function httpRequest (opts, fspiopSource) {
     }
     log.warn('httpRequest returned non-success status code', errObj)
 
-    throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
+    // Use CLIENT_ERROR for 4xx responses, DESTINATION_COMMUNICATION_ERROR for 5xx
+    const errorCode = (res.status >= 400 && res.status < 500)
+      ? ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR
+      : ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR
+    throw ErrorHandler.CreateFSPIOPError(errorCode,
       'Non-success response in HTTP request',
       `${errObj}`,
       fspiopSource)

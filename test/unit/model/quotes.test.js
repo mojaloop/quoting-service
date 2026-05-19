@@ -2670,6 +2670,45 @@ describe('QuotesModel', () => {
       expect(Http.httpRequestBase).toHaveBeenCalledTimes(1)
     })
 
+    it('propagates FSPIOP errorInformation from HTTP 4xx response', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      Util.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      const axiosError = new Error('Request failed with status code 400')
+      axiosError.response = {
+        status: 400,
+        data: { errorInformation: { errorCode: '3100', errorDescription: 'Generic validation error' } }
+      }
+      Http.httpRequestBase.mockRejectedValueOnce(axiosError)
+
+      // Act
+      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
+
+      // Assert
+      await expect(action()).rejects.toThrow('Generic validation error')
+    })
+
+    it('handles HTTP 4xx without errorInformation as CLIENT_ERROR', async () => {
+      // Arrange
+      expect.assertions(1)
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      Util.generateRequestHeaders.mockReturnValueOnce({})
+      const error = new Error('Test Error')
+      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
+      const axiosError = new Error('Request failed with status code 400')
+      axiosError.response = { status: 400, data: {} }
+      Http.httpRequestBase.mockRejectedValueOnce(axiosError)
+
+      // Act
+      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
+
+      // Assert
+      await expect(action()).rejects.toThrow('client error in sendErrorCallback')
+    })
+
     it('rethrows error when metrics is disabled and error occured', async () => {
       // Arrange
       expect.assertions(1)

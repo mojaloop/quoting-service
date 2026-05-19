@@ -1039,7 +1039,26 @@ class QuotesModel extends BaseQuotesModel {
         // todo: use wrapper on axios
         histTimer({ success: true, queryName: 'quote_sendErrorCallback' })
       } catch (err) {
-        // external-error
+        // Distinguish HTTP response errors from network/connection errors
+        if (err.response) {
+          const responseData = err.response.data
+          if (responseData?.errorInformation) {
+            throw ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(responseData.errorInformation)
+          }
+          if (err.response.status >= 400 && err.response.status < 500) {
+            throw ErrorHandler.CreateFSPIOPError(
+              ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR,
+              `client error in sendErrorCallback: ${err.message}`, {
+                error: err,
+                url: fullCallbackUrl,
+                sourceFsp: fspiopSource,
+                destinationFsp: fspiopDest,
+                method: opts && opts.method,
+                request: JSON.stringify(opts, Util.getCircularReplacer())
+              }, fspiopSource)
+          }
+        }
+        // external-error: true network/connection error or 5xx
         throw ErrorHandler.CreateFSPIOPError(
           ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
           `network error in sendErrorCallback: ${err.message}`, {
@@ -1054,8 +1073,11 @@ class QuotesModel extends BaseQuotesModel {
       this.log.verbose(`callback got response: ${res.status} ${res.statusText}`)
 
       if (res.status !== Enum.Http.ReturnCodes.OK.CODE) {
-        // external-error
-        throw ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'Got non-success response sending error callback', {
+        // Use CLIENT_ERROR for 4xx, DESTINATION_COMMUNICATION_ERROR for 5xx
+        const errorCode = (res.status >= 400 && res.status < 500)
+          ? ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR
+          : ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR
+        throw ErrorHandler.CreateFSPIOPError(errorCode, 'Got non-success response sending error callback', {
           url: fullCallbackUrl,
           sourceFsp: fspiopSource,
           destinationFsp: fspiopDest,
