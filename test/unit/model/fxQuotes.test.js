@@ -295,7 +295,7 @@ describe('FxQuotesModel Tests -->', () => {
         url: `${mockProxyEndpoint}${ENUM.EndPoints.FspEndpointTemplates.FX_QUOTES_POST}`
       }), headers['fspiop-source'])
       expect(getEndpointSpy).toHaveBeenCalledWith(
-        deps.envConfig.endpointSourceUrl, destination, endpointType, {}, undefined, deps.envConfig.proxyCache
+        deps.envConfig.switchEndpoint, destination, endpointType, {}, undefined, deps.envConfig.proxyCache
       )
       getEndpointSpy.mockRestore()
     })

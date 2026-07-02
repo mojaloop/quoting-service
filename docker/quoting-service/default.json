@@ -50,8 +50,7 @@
     "DEBUG": false,
     "ADDITIONAL_CONNECTION_OPTIONS": {}
   },
-  "SWITCH_ENDPOINT": "http://mock-hub:7777",
-  "ENDPOINT_SOURCE_URL": "http://central-ledger:3001",
+  "SWITCH_ENDPOINT": "http://central-ledger:3001",
   "ERROR_HANDLING": {
     "includeCauseExtension": false,
     "truncateExtensions": true

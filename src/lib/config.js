@@ -105,7 +105,6 @@ class Config {
     this.monitoringPort = RC.MONITORING_PORT
     this.simpleRoutingMode = RC.SIMPLE_ROUTING_MODE
     this.switchEndpoint = RC.SWITCH_ENDPOINT
-    this.endpointSourceUrl = RC.ENDPOINT_SOURCE_URL || RC.SWITCH_ENDPOINT
     this.endpointCacheConfig = RC.ENDPOINT_CACHE_CONFIG
     this.amount = {
       precision: RC.AMOUNT.PRECISION ? RC.AMOUNT.PRECISION : 18,
