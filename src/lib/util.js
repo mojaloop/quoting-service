@@ -310,7 +310,7 @@ const getParticipantEndpoint = async ({ fspId, endpointType, log = logger }) => 
   try {
     // Resolve the endpoint from the shared, switch-backed endpoint cache. Inter-scheme (proxy)
     // fallback is handled inside the lib via the proxyConfig argument (config.proxyCache).
-    const result = await Util.Endpoints.getEndpoint(config.switchEndpoint, fspId, endpointType, {}, undefined, config.proxyCache)
+    const result = await Util.Endpoints.getEndpoint(config.endpointSourceUrl, fspId, endpointType, {}, undefined, config.proxyCache)
     const endpoint = typeof result === 'string' ? result : result?.url
     log.debug(`Cache lookup: resolved participant '${fspId}' ${endpointType} endpoint to: '${endpoint}'`)
     return endpoint

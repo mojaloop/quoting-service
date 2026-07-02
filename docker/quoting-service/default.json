@@ -51,6 +51,7 @@
     "ADDITIONAL_CONNECTION_OPTIONS": {}
   },
   "SWITCH_ENDPOINT": "http://mock-hub:7777",
+  "ENDPOINT_SOURCE_URL": "http://central-ledger:3001",
   "ERROR_HANDLING": {
     "includeCauseExtension": false,
     "truncateExtensions": true
@@ -82,6 +83,10 @@
   "CACHE": {
     "ENUM_DATA_EXPIRES_IN_MS": 4170000,
     "PARTICIPANT_DATA_EXPIRES_IN_MS": 60000
+  },
+  "ENDPOINT_CACHE_CONFIG": {
+    "expiresIn": 60000,
+    "generateTimeout": 30000
   },
   "PROXY_MAP": {
     "orangebank": "orangebankproxy"

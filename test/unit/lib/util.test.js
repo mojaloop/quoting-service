@@ -776,7 +776,7 @@ describe('util', () => {
       expect(result).toBe(expected)
       expect(Util.Endpoints.getEndpoint).toBeCalledTimes(1)
       expect(Util.Endpoints.getEndpoint).toBeCalledWith(
-        config.switchEndpoint, params.fspId, params.endpointType, {}, undefined, config.proxyCache
+        config.endpointSourceUrl, params.fspId, params.endpointType, {}, undefined, config.proxyCache
       )
     })
 
