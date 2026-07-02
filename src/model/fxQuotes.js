@@ -24,6 +24,7 @@
 
  * Infitx
  - Steven Oderayi <steven.oderayi@infitx.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
 --------------
 ******/
 
@@ -791,8 +792,8 @@ class FxQuotesModel extends BaseQuotesModel {
 
   // wrapping this dependency here to allow for easier use and testing
   async _getParticipantEndpoint (fspId, endpointType = Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_FX_QUOTES) {
-    const { db, proxyClient, log } = this
-    const endpoint = await this.libUtil.getParticipantEndpoint({ fspId, db, log, endpointType, proxyClient })
+    const { log } = this
+    const endpoint = await this.libUtil.getParticipantEndpoint({ fspId, endpointType, log })
     log.verbose('Resolved participant endpoint:', { fspId, endpoint, endpointType })
     return endpoint
   }

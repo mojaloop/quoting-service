@@ -24,6 +24,7 @@
 
  * Crosslake
  - Lewis Daly <lewisd@crosslaketech.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
 
  --------------
  ******/
@@ -37,7 +38,8 @@ const fs = require('node:fs/promises')
 const axios = require('axios')
 const Logger = require('@mojaloop/central-services-logger')
 const { Cache } = require('memory-cache')
-const { Enum } = require('@mojaloop/central-services-shared')
+const { Enum, Util } = require('@mojaloop/central-services-shared')
+const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const Http = require('../../../src/lib/http')
 
 let Config = require('../../../src/lib/config.js')
@@ -741,102 +743,71 @@ describe('util', () => {
   })
 
   describe('getParticipantEndpoint', () => {
+    beforeEach(() => {
+      jest.spyOn(Util.Endpoints, 'getEndpoint')
+    })
+
+    afterEach(() => {
+      Util.Endpoints.getEndpoint.mockRestore()
+    })
+
     it('throws an error if required arguments are missing', async () => {
       // Arrange
-      const fspId = 'fsp1'
-      const db = {
-        getParticipantEndpoint: jest.fn()
-      }
-      const endpointType = 'TEST_ENDPOINT_TYPE'
-      const proxyClient = {
-        connect: jest.fn(),
-        lookupProxyByDfspId: jest.fn()
-      }
-      const params = { db, endpointType, proxyClient }
+      const params = { endpointType: 'TEST_ENDPOINT_TYPE' }
 
-      // Act
-      const action = async () => getParticipantEndpoint(params)
-      // Assert
-      await expect(action()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
+      // Act / Assert - missing fspId
+      await expect(getParticipantEndpoint(params)).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
 
-      // Arrange
-      params.fspId = fspId
-      params.db = null
-      // Act
-      const action2 = async () => getParticipantEndpoint(params)
-      // Assert
-      await expect(action2()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
-
-      // Arrange
+      // Arrange - missing endpointType
+      params.fspId = 'fsp1'
       params.endpointType = null
-      // Act
-      const action4 = async () => getParticipantEndpoint(params)
-      // Assert
-      await expect(action4()).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
-
-      // Arrange
-      params.db = db
-      params.endpointType = endpointType
-      params.proxyClient = null
-      // Act
-      const action5 = async () => getParticipantEndpoint(params)
-      // Assert
-      await expect(action5()).resolves.not.toThrow()
+      // Act / Assert
+      await expect(getParticipantEndpoint(params)).rejects.toThrowError('Missing required arguments for \'getParticipantEndpoint\'')
     })
 
-    it('returns the participant endpoint by calling db.getParticipantEndpoint', async () => {
+    it('resolves the participant endpoint from the shared endpoint cache', async () => {
       // Arrange
       const expected = 'http://localhost:8444/payerfsp'
-      const params = {
-        fspId: 'fsp1',
-        db: {
-          getParticipantEndpoint: jest.fn().mockResolvedValue(expected)
-        },
-        endpointType: 'TEST_ENDPOINT_TYPE',
-        proxyClient: {
-          connect: jest.fn(),
-          lookupProxyByDfspId: jest.fn()
-        }
-      }
+      Util.Endpoints.getEndpoint.mockResolvedValue(expected)
+      const params = { fspId: 'fsp1', endpointType: 'TEST_ENDPOINT_TYPE' }
       // Act
       const result = await getParticipantEndpoint(params)
       // Assert
-      expect(result).toEqual(expected)
-      expect(params.db.getParticipantEndpoint).toBeCalledTimes(1)
-      expect(params.db.getParticipantEndpoint).toBeCalledWith(params.fspId, params.endpointType)
-      expect(params.proxyClient.connect).toBeCalledTimes(0)
-      expect(params.proxyClient.lookupProxyByDfspId).toBeCalledTimes(0)
+      expect(result).toBe(expected)
+      expect(Util.Endpoints.getEndpoint).toBeCalledTimes(1)
+      expect(Util.Endpoints.getEndpoint).toBeCalledWith(
+        config.switchEndpoint, params.fspId, params.endpointType, {}, undefined, config.proxyCache
+      )
     })
 
-    it('returns the participant endpoint using proxy client if participant not found in db', async () => {
+    it('normalizes a proxied endpoint object ({ url, proxyId }) to the url string', async () => {
       // Arrange
-      const expected = 'http://localhost:8444/payerfsp'
-      const proxyId = 'proxy1'
-      const params = {
-        fspId: 'fsp1',
-        db: {
-          getParticipantEndpoint: jest.fn().mockImplementation((fspId, endpointType) => {
-            if (fspId === proxyId && endpointType === 'TEST_ENDPOINT_TYPE') {
-              return Promise.resolve(expected)
-            }
-            return Promise.resolve(null)
-          })
-        },
-        endpointType: 'TEST_ENDPOINT_TYPE',
-        proxyClient: {
-          isConnecected: false,
-          connect: jest.fn().mockResolvedValue(true),
-          lookupProxyByDfspId: jest.fn().mockResolvedValue(proxyId)
-        }
-      }
+      const expected = 'http://localhost:8444/proxyfsp'
+      Util.Endpoints.getEndpoint.mockResolvedValue({ url: expected, proxyId: 'proxy1' })
       // Act
-      const result = await getParticipantEndpoint(params)
+      const result = await getParticipantEndpoint({ fspId: 'fsp1', endpointType: 'TEST_ENDPOINT_TYPE' })
       // Assert
-      expect(result).toEqual(expected)
-      expect(params.db.getParticipantEndpoint).toBeCalledTimes(2)
-      expect(params.db.getParticipantEndpoint).toBeCalledWith(proxyId, params.endpointType)
-      expect(params.proxyClient.connect).toBeCalledTimes(1)
-      expect(params.proxyClient.lookupProxyByDfspId).toBeCalledTimes(1)
+      expect(result).toBe(expected)
+    })
+
+    it('returns undefined when no endpoint is found (DESTINATION_COMMUNICATION_ERROR)', async () => {
+      // Arrange
+      Util.Endpoints.getEndpoint.mockRejectedValue(
+        ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'no endpoints found for fsp')
+      )
+      // Act
+      const result = await getParticipantEndpoint({ fspId: 'fsp1', endpointType: 'TEST_ENDPOINT_TYPE' })
+      // Assert
+      expect(result).toBeUndefined()
+    })
+
+    it('rethrows unexpected errors from the endpoint cache', async () => {
+      // Arrange
+      Util.Endpoints.getEndpoint.mockRejectedValue(
+        ErrorHandler.CreateFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'boom')
+      )
+      // Act / Assert
+      await expect(getParticipantEndpoint({ fspId: 'fsp1', endpointType: 'TEST_ENDPOINT_TYPE' })).rejects.toThrowError('boom')
     })
   })
 

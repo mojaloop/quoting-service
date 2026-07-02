@@ -86,6 +86,10 @@
     "ENUM_DATA_EXPIRES_IN_MS": 4170000,
     "PARTICIPANT_DATA_EXPIRES_IN_MS": 60000
   },
+  "ENDPOINT_CACHE_CONFIG": {
+    "expiresIn": 60000,
+    "generateTimeout": 30000
+  },
   "PROXY_MAP": {},
   "PROXY_CACHE": {
     "enabled": false,
