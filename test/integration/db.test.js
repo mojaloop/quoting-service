@@ -21,6 +21,7 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
+ - Justin Theodorus <justin.theodorus@gmail.com>
 
 *****/
 
@@ -30,9 +31,9 @@ const Config = require('../../src/lib/config')
 const dto = require('../../src/lib/dto')
 const mocks = require('../mocks')
 const Database = require('../../src/data/testDatabase')
+const { wrapWithRetries } = require('../util/helper')
 
 const TEST_TIMEOUT = 20_000
-const WAIT_TIMEOUT = 3_000
 
 jest.setTimeout(TEST_TIMEOUT)
 
@@ -40,6 +41,10 @@ describe('Database Integration Tests --> ', () => {
   let db
   const config = new Config()
   const { kafkaConfig } = config
+  const retryConf = {
+    remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
+    timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
+  }
 
   beforeAll(async () => {
     db = new Database(config)
@@ -54,7 +59,11 @@ describe('Database Integration Tests --> ', () => {
   })
 
   const base64Encode = (data) => Buffer.from(data).toString('base64')
-  const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+  // Poll the DB until the handler has processed the produced message, rather than
+  // waiting a fixed amount of time (which races against variable handler latency).
+  const getWithRetry = (func, condition = (result) => result != null) =>
+    wrapWithRetries(func, retryConf.remainingRetries, retryConf.timeout, condition)
 
   const createQuote = async ({
     from = 'pinkbank',
@@ -74,18 +83,16 @@ describe('Database Integration Tests --> ', () => {
   describe('POST /quotes database entries --> ', () => {
     test('should create quote entry in database on POST /quotes request', async () => {
       const quotePayload = await createQuote()
-      await wait(WAIT_TIMEOUT)
 
-      const quote = await db.getQuote(quotePayload.quoteId)
+      const quote = await getWithRetry(() => db.getQuote(quotePayload.quoteId))
       expect(quote).toBeDefined()
       expect(quote.quoteId).toBe(quotePayload.quoteId)
     })
 
     test('should create transaction reference in database on POST /quotes request', async () => {
       const quotePayload = await createQuote()
-      await wait(WAIT_TIMEOUT)
 
-      const txnRef = await db.getTransactionReference(quotePayload.quoteId)
+      const txnRef = await getWithRetry(() => db.getTransactionReference(quotePayload.quoteId))
       expect(txnRef).toBeDefined()
       expect(txnRef.quoteId).toBe(quotePayload.quoteId)
     })
@@ -94,9 +101,11 @@ describe('Database Integration Tests --> ', () => {
       const from = 'pinkbank'
       const to = 'greenbank'
       const quotePayload = await createQuote({ from, to })
-      await wait(WAIT_TIMEOUT)
 
-      const quoteParties = await db.getQuoteParties(quotePayload.quoteId)
+      const quoteParties = await getWithRetry(
+        () => db.getQuoteParties(quotePayload.quoteId),
+        (result) => result && result.length === 2
+      )
       expect(quoteParties).toBeDefined()
       expect(quoteParties.length).toBe(2)
 
@@ -129,9 +138,8 @@ describe('Database Integration Tests --> ', () => {
 
     test('should create quote duplicate check entry in database', async () => {
       const quotePayload = await createQuote()
-      await wait(WAIT_TIMEOUT)
 
-      const duplicateCheck = await db.getQuoteDuplicateCheck(quotePayload.quoteId)
+      const duplicateCheck = await getWithRetry(() => db.getQuoteDuplicateCheck(quotePayload.quoteId))
       expect(duplicateCheck).toBeDefined()
       expect(duplicateCheck.quoteId).toBe(quotePayload.quoteId)
     })
@@ -139,9 +147,8 @@ describe('Database Integration Tests --> ', () => {
     test('should store correct amount and currency in database', async () => {
       const amount = { amount: '250.50', currency: 'USD' }
       const quotePayload = await createQuote({ amount })
-      await wait(WAIT_TIMEOUT)
 
-      const quote = await db.getQuote(quotePayload.quoteId)
+      const quote = await getWithRetry(() => db.getQuote(quotePayload.quoteId))
       expect(quote).toBeDefined()
       expect(quote.amount).toBe(new MLNumber(amount.amount).toFixed(config.amount.scale))
       expect(quote.currencyId).toBe(amount.currency)
@@ -151,7 +158,7 @@ describe('Database Integration Tests --> ', () => {
   describe('PUT /quotes database updates --> ', () => {
     test('should create quote response duplicate check entry on PUT /quotes callback', async () => {
       const quotePayload = await createQuote()
-      await wait(WAIT_TIMEOUT)
+      await getWithRetry(() => db.getQuote(quotePayload.quoteId))
 
       const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: topic })
@@ -161,15 +168,14 @@ describe('Database Integration Tests --> ', () => {
         payloadBase64: base64Encode(JSON.stringify(putPayload))
       })
       await Producer.produceMessage(message, topicConfig, config)
-      await wait(WAIT_TIMEOUT)
 
-      const responseDuplicateCheck = await db.getQuoteResponseDuplicateCheck(quotePayload.quoteId)
+      const responseDuplicateCheck = await getWithRetry(() => db.getQuoteResponseDuplicateCheck(quotePayload.quoteId))
       expect(responseDuplicateCheck).toBeDefined()
     })
 
     test('should update quote with response data on PUT /quotes callback', async () => {
       const quotePayload = await createQuote()
-      await wait(WAIT_TIMEOUT)
+      await getWithRetry(() => db.getQuote(quotePayload.quoteId))
 
       const { topic, config } = kafkaConfig.PRODUCER.QUOTE.PUT
       const topicConfig = dto.topicConfigDto({ topicName: topic })
@@ -182,9 +188,8 @@ describe('Database Integration Tests --> ', () => {
       })
       delete message.content.headers.accept
       await Producer.produceMessage(message, topicConfig, config)
-      await wait(WAIT_TIMEOUT)
 
-      const quoteResponse = await db.getQuoteResponse(quotePayload.quoteId)
+      const quoteResponse = await getWithRetry(() => db.getQuoteResponse(quotePayload.quoteId))
       expect(quoteResponse).toBeDefined()
       expect(quoteResponse.transferAmount).toBeDefined()
     })
@@ -211,9 +216,8 @@ describe('Database Integration Tests --> ', () => {
 
     test('should create fx quote entry in database on POST /fxQuotes request', async () => {
       const fxQuotePayload = await createFxQuote()
-      await wait(WAIT_TIMEOUT)
 
-      const fxQuote = await db._getFxQuoteDetails(fxQuotePayload.conversionRequestId)
+      const fxQuote = await getWithRetry(() => db._getFxQuoteDetails(fxQuotePayload.conversionRequestId))
       expect(fxQuote).toBeDefined()
       expect(fxQuote.conversionRequestId).toBe(fxQuotePayload.conversionRequestId)
       expect(fxQuote.conversionId).toBe(fxQuotePayload.conversionTerms.conversionId)
@@ -221,9 +225,8 @@ describe('Database Integration Tests --> ', () => {
 
     test('should store source and target amounts correctly in database', async () => {
       const fxQuotePayload = await createFxQuote()
-      await wait(WAIT_TIMEOUT)
 
-      const fxQuote = await db._getFxQuoteDetails(fxQuotePayload.conversionRequestId)
+      const fxQuote = await getWithRetry(() => db._getFxQuoteDetails(fxQuotePayload.conversionRequestId))
       expect(fxQuote).toBeDefined()
       expect(fxQuote.sourceAmount).toBe(new MLNumber(fxQuotePayload.conversionTerms.sourceAmount.amount).toFixed(config.amount.scale))
       expect(fxQuote.sourceCurrency).toBe(fxQuotePayload.conversionTerms.sourceAmount.currency)
