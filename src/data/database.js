@@ -31,6 +31,7 @@
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
  * Steven Oderayi <steven.oderayi@modusbox.com>
  * Juan Correa <juan.correa@modusbox.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
  --------------
  ******/
 
@@ -663,32 +664,6 @@ class Database {
       return rows[0]
     } catch (err) {
       this.log.error('Error in getQuoteParty:', err)
-      libUtil.rethrowDatabaseError(err)
-    }
-  }
-
-  /**
-     * Gets the specified endpoint of the specified type for the specified participant
-     *
-     * @returns {promise} - resolves to the endpoint base url
-     */
-  async getParticipantEndpoint (participantName, endpointType) {
-    try {
-      const rows = await this.queryBuilder('participantEndpoint')
-        .innerJoin('participant', 'participant.participantId', 'participantEndpoint.participantId')
-        .innerJoin('endpointType', 'endpointType.endpointTypeId', 'participantEndpoint.endpointTypeId')
-        .where('participant.name', participantName)
-        .andWhere('endpointType.name', endpointType)
-        .andWhere('participantEndpoint.isActive', 1)
-        .select('participantEndpoint.value')
-
-      if ((!rows) || rows.length < 1) {
-        return null
-      }
-
-      return rows[0].value
-    } catch (err) {
-      this.log.error('Error in getParticipantEndpoint:', err)
       libUtil.rethrowDatabaseError(err)
     }
   }

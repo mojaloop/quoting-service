@@ -29,6 +29,7 @@
 
  * Henk Kodde <henk.kodde@modusbox.com>
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
  --------------
  ******/
 
@@ -100,10 +101,6 @@ class CachedDatabase extends Database {
     return this.getCacheValue('getLedgerEntryType', [name])
   }
 
-  async getParticipantEndpoint (participantName, endpointType) {
-    return this.getCacheValue('getParticipantEndpoint', [participantName, endpointType])
-  }
-
   async getCacheValue (type, params) {
     const histTimer = Metrics.getHistogram(
       'database_get_cache_value',
@@ -120,8 +117,7 @@ class CachedDatabase extends Database {
         // cache participant with a shorter TTL than enums (participant data is more likely to change)
         if (
           type === 'getParticipant' ||
-          type === 'getParticipantByName' ||
-          type === 'getParticipantEndpoint'
+          type === 'getParticipantByName'
         ) {
           this.cachePut(type, params, value, this.config.participantDataCacheExpiresInMs)
         } else {

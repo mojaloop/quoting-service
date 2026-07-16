@@ -5,6 +5,12 @@
   "moderate": true,
   "allowlist": [ // NOTE: Please add as much information as possible to any items added to the allowList
     "GHSA-44fc-8fm5-q62h", // convict prototype pollution via startsWith() - transitive from @mojaloop/inter-scheme-proxy-cache-lib
-    "GHSA-hf2r-9gf9-rwch" // convict prototype pollution via load()/loadFile() - transitive from @mojaloop/inter-scheme-proxy-cache-lib
+    "GHSA-hf2r-9gf9-rwch", // convict prototype pollution via load()/loadFile() - transitive from @mojaloop/inter-scheme-proxy-cache-lib
+    // --- Dev-only doc-generation & coverage tooling (NOT in the quoting-service runtime). ---
+    // These reach us via @mojaloop/central-services-shared -> shins/widdershins (HTML doc gen) and via
+    // istanbul coverage tooling. Their only fixes require MAJOR transitive jumps inside those dev tools.
+    "GHSA-6v5v-wf23-fmfq", // markdown-it quadratic DoS (smartquotes) - dev-only, via shins/widdershins doc gen
+    "GHSA-22p9-wv53-3rq4", // linkify-it quadratic complexity in match scan - dev-only, via markdown-it (shins/widdershins)
+    "GHSA-h67p-54hq-rp68" // js-yaml quadratic DoS (merge key handling) - dev-only, via istanbul & json-schema-ref-parser
   ]
 }

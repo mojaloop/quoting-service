@@ -29,6 +29,7 @@
 
  * ModusBox
  - Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
  --------------
  ******/
 
@@ -301,26 +302,27 @@ const cacheParticipantData = async (dfspId, config, cache) => {
   return participantData
 }
 
-const getParticipantEndpoint = async ({ fspId, endpointType, db, log = logger, proxyClient = null }) => {
-  if (!fspId || !db || !endpointType) {
+const getParticipantEndpoint = async ({ fspId, endpointType, log = logger }) => {
+  if (!fspId || !endpointType) {
     throw ErrorHandler.Factory.createFSPIOPError(ErrorHandler.Enums.FSPIOPErrorCodes.INTERNAL_SERVER_ERROR, 'Missing required arguments for \'getParticipantEndpoint\'')
   }
 
-  let endpoint = await db.getParticipantEndpoint(fspId, endpointType)
-  log.debug(`DB lookup: resolved participant '${fspId}' ${endpointType} endpoint to: '${endpoint}'`)
-
-  // if endpoint is not found in db, check the proxy cache for a proxy representative for the fsp (this might be an inter-scheme request)
-  if (!endpoint && proxyClient) {
-    if (!proxyClient.isConnected) await proxyClient.connect()
-    const proxyId = await proxyClient.lookupProxyByDfspId(fspId)
-    if (proxyId) {
-      endpoint = await db.getParticipantEndpoint(proxyId, endpointType)
+  try {
+    // Resolve the endpoint from the shared, switch-backed endpoint cache. Inter-scheme (proxy)
+    // fallback is handled inside the lib via the proxyConfig argument (config.proxyCache).
+    const result = await Util.Endpoints.getEndpoint(config.switchEndpoint, fspId, endpointType, {}, undefined, config.proxyCache)
+    const endpoint = typeof result === 'string' ? result : result?.url
+    log.debug(`Cache lookup: resolved participant '${fspId}' ${endpointType} endpoint to: '${endpoint}'`)
+    return endpoint
+  } catch (err) {
+    // getEndpoint throws DESTINATION_COMMUNICATION_ERROR when no endpoint is found (or the switch is
+    // unreachable). Preserve the previous contract of returning a falsy value, rethrow anything unexpected.
+    if (err?.apiErrorCode?.code === ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code) {
+      log.warn(`no ${endpointType} endpoint resolved for participant '${fspId}'`, err)
+      return undefined
     }
-
-    log.debug(`Proxy lookup: resolved participant '${fspId}' ${endpointType} endpoint to: '${endpoint}', proxyId: ${proxyId} `)
+    throw err
   }
-
-  return endpoint
 }
 
 const auditSpan = async (request, additionalTags = {}, additionalContentFields = {}) => {

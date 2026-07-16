@@ -24,6 +24,7 @@
 
  * Eugen Klymniuk <eugen.klymniuk@infitx.com>
  * Steven Oderayi <steven.oderayi@infitx.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
  --------------
  **********/
 process.env.LOG_LEVEL = 'debug'
@@ -39,6 +40,7 @@ axios.create = jest.fn(() => axios)
 
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const ENUM = require('@mojaloop/central-services-shared').Enum
+const { Endpoints } = require('@mojaloop/central-services-shared').Util
 const { FSPIOPError } = require('@mojaloop/central-services-error-handling/src/factory')
 const Metrics = require('@mojaloop/central-services-metrics')
 
@@ -276,25 +278,26 @@ describe('FxQuotesModel Tests -->', () => {
       }, headers['fspiop-source'])
     })
 
-    test('should forward quote request to proxy', async () => {
+    test('should forward quote request to a proxied endpoint resolved from the endpoint cache', async () => {
       const mockProxyEndpoint = 'https://proxy.endpoint'
       const mockProxy = 'mockProxy'
 
-      proxyClient.lookupProxyByDfspId = jest.fn().mockResolvedValue(mockProxy)
-      db.getParticipantEndpoint = jest.fn().mockImplementation((fspId, _endpointType) => {
-        if (fspId === destination) return null
-        if (fspId === mockProxy) return mockProxyEndpoint
-        return 'https://some.other.endpoint'
-      })
+      // The endpoint cache handles inter-scheme (proxy) resolution internally, returning
+      // { url, proxyId } which getParticipantEndpoint normalizes to the url string.
+      const getEndpointSpy = jest.spyOn(Endpoints, 'getEndpoint')
+        .mockResolvedValue({ url: mockProxyEndpoint, proxyId: mockProxy })
 
       fxQuotesModel = new FxQuotesModel(deps)
       await expect(fxQuotesModel.forwardFxQuoteRequest(headers, request, request, childSpan)).resolves.toBeUndefined()
 
       expect(httpRequest).toBeCalled()
-      expect(proxyClient.lookupProxyByDfspId).toBeCalledTimes(1)
-      expect(db.getParticipantEndpoint).toBeCalledTimes(2)
-      expect(db.getParticipantEndpoint).toHaveBeenNthCalledWith(1, destination, endpointType)
-      expect(db.getParticipantEndpoint).toHaveBeenNthCalledWith(2, mockProxy, endpointType)
+      expect(httpRequest).toHaveBeenCalledWith(expect.objectContaining({
+        url: `${mockProxyEndpoint}${ENUM.EndPoints.FspEndpointTemplates.FX_QUOTES_POST}`
+      }), headers['fspiop-source'])
+      expect(getEndpointSpy).toHaveBeenCalledWith(
+        deps.envConfig.switchEndpoint, destination, endpointType, {}, undefined, deps.envConfig.proxyCache
+      )
+      getEndpointSpy.mockRestore()
     })
 
     test('should format error thrown and re-throw', async () => {

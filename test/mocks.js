@@ -21,6 +21,7 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
+ - Justin Theodorus <justin.theodorus@gmail.com>
 *****/
 
 const idGenerator = require('@mojaloop/central-services-shared').Util.id
@@ -457,7 +458,6 @@ const fxQuoteMocks = {
     commit = jest.fn().mockResolvedValue({}),
     rollback = jest.fn(() => Promise.reject(new Error('DB error'))),
     getParticipant = jest.fn().mockResolvedValue({}),
-    getParticipantEndpoint = jest.fn().mockResolvedValue(undefined),
     createFxQuoteResponse = jest.fn().mockResolvedValue({}),
     createFxQuoteResponseConversionTerms = jest.fn().mockResolvedValue({}),
     createFxQuoteResponseFxCharge = jest.fn().mockResolvedValue({}),
@@ -471,7 +471,6 @@ const fxQuoteMocks = {
     createFxQuoteError = jest.fn().mockResolvedValue({})
   } = {}) => ({
     getParticipant,
-    getParticipantEndpoint,
     createFxQuoteResponse,
     createFxQuoteResponseConversionTerms,
     createFxQuoteResponseFxCharge,

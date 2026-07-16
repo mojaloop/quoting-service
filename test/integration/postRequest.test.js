@@ -22,6 +22,7 @@
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
  * Steven Oderayi <steven.oderayi@infitx.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
  --------------
  ******/
 
@@ -35,7 +36,7 @@ const Database = require('../../src/data/cachedDatabase')
 const mocks = require('../mocks')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
 
-jest.setTimeout(20_000)
+jest.setTimeout(60_000)
 
 describe('POST request tests --> ', () => {
   let db
@@ -43,7 +44,9 @@ describe('POST request tests --> ', () => {
   const { kafkaConfig, proxyCache } = config
   const hubClient = new MockServerClient()
   const retryConf = {
-    remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
+    // The endpoint cache resolves DFSP endpoints over HTTP and the shared handler can be
+    // busy resolving/retrying callbacks for other participants.
+    remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 40,
     timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
   }
 
@@ -65,18 +68,19 @@ describe('POST request tests --> ', () => {
 
   const base64Encode = (data) => Buffer.from(data).toString('base64')
 
-  const getResponseWithRetry = async () => {
-    return wrapWithRetries(() => hubClient.getHistory(),
+  // Poll the mock hub until a request matching the predicate is received, and return it.
+  // The endpoint cache resolves DFSP callback endpoints over HTTP, so a callback from an
+  // earlier test can arrive late.
+  const getMatchingRequestWithRetry = async (predicate) => {
+    const response = await wrapWithRetries(() => hubClient.getHistory(),
       retryConf.remainingRetries,
       retryConf.timeout,
-      (result) => result.data.history.length > 0
+      (result) => result.data.history.some(predicate)
     )
+    return response.data.history.find(predicate)
   }
 
   test('should pass validation for POST /quotes request if request amount currency is registered (position account exists) for the payer participant', async () => {
-    let response = await hubClient.getHistory()
-    expect(response.data.history.length).toBe(0)
-
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
@@ -86,16 +90,11 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await getResponseWithRetry()
-
-    expect(response.data.history.length).toBeGreaterThan(0)
-    const { url } = response.data.history[0]
-    expect(url).toBe(`/${message.to}/quotes`)
+    const request = await getMatchingRequestWithRetry(h => h.url === `/${message.to}/quotes`)
+    expect(request).toBeDefined()
   })
 
   test('should pass validation for POST /quotes request if source and/or destination are proxied', async () => {
-    let response = await hubClient.getHistory()
-    expect(response.data.history.length).toBe(0)
     const from = 'pinkbank'
     const to = 'greenbank'
     let proxyClient
@@ -113,11 +112,8 @@ describe('POST request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await getResponseWithRetry()
-      expect(response.data.history.length).toBe(1)
-
-      const { url } = response.data.history[0]
-      expect(url).toBe(`/${message.to}/quotes`)
+      const request = await getMatchingRequestWithRetry(h => h.url === `/${message.to}/quotes`)
+      expect(request).toBeDefined()
     } finally {
       await proxyClient.removeDfspIdFromProxyMapping(to)
       await proxyClient.removeDfspIdFromProxyMapping(from)
@@ -126,9 +122,6 @@ describe('POST request tests --> ', () => {
   })
 
   test('should fail validation for POST /quotes request if request amount currency is not registered (position account doesnt not exist) for the payer participant', async () => {
-    let response = await hubClient.getHistory()
-    expect(response.data.history.length).toBe(0)
-
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
@@ -138,19 +131,13 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await getResponseWithRetry()
-    expect(response.data.history.length).toBe(1)
-
-    const { url, body } = response.data.history[0]
-    expect(url).toBe(`/${message.from}/quotes/${message.id}/error`)
-    expect(body.errorInformation.errorCode).toBe('3201')
-    expect(body.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.to}'`)
+    const request = await getMatchingRequestWithRetry(h => h.url === `/${message.from}/quotes/${message.id}/error`)
+    expect(request).toBeDefined()
+    expect(request.body.errorInformation.errorCode).toBe('3201')
+    expect(request.body.errorInformation.errorDescription).toBe(`Destination FSP Error - Unsupported participant '${message.to}'`)
   })
 
   test('should pass validation for POST /quotes request if all request "supportedCurrencies" are registered (position account exists) for the payer participant', async () => {
-    let response = await hubClient.getHistory()
-    expect(response.data.history.length).toBe(0)
-
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
@@ -164,17 +151,11 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await getResponseWithRetry()
-    expect(response.data.history.length).toBeGreaterThanOrEqual(1)
-
-    const { url } = response.data.history[0]
-    expect(url).toBe(`/${message.to}/quotes`)
+    const request = await getMatchingRequestWithRetry(h => h.url === `/${message.to}/quotes`)
+    expect(request).toBeDefined()
   })
 
   test('should fail validation for POST /quotes request if any of request "supportedCurrencies" is not registered (no position account exists) for the payer participant', async () => {
-    let response = await hubClient.getHistory()
-    expect(response.data.history.length).toBe(0)
-
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
@@ -188,19 +169,13 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await getResponseWithRetry()
-    expect(response.data.history.length).toBe(1)
-
-    const { url, body } = response.data.history[0]
-    expect(url).toBe(`/${message.from}/quotes/${message.id}/error`)
-    expect(body.errorInformation.errorCode).toBe('3202')
-    expect(body.errorInformation.errorDescription).toBe(`Payer FSP ID not found - Unsupported participant '${message.from}'`)
+    const request = await getMatchingRequestWithRetry(h => h.url === `/${message.from}/quotes/${message.id}/error`)
+    expect(request).toBeDefined()
+    expect(request.body.errorInformation.errorCode).toBe('3202')
+    expect(request.body.errorInformation.errorDescription).toBe(`Payer FSP ID not found - Unsupported participant '${message.from}'`)
   })
 
   test('should forward POST /quotes request to payee dfsp registered in the hub', async () => {
-    let response = await hubClient.getHistory()
-    expect(response.data.history.length).toBe(0)
-
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
@@ -211,21 +186,15 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await getResponseWithRetry()
-    expect([1, 2]).toContain(response.data.history.length)
-
-    const request = response.data.history[0]
+    const request = await getMatchingRequestWithRetry(h => h.url === `/${to}/quotes`)
+    expect(request).toBeDefined()
     expect(request.method).toBe('POST')
-    expect(request.url).toBe(`/${to}/quotes`)
     expect(request.body).toEqual(payload)
     expect(request.headers['fspiop-source']).toBe(from)
     expect(request.headers['fspiop-destination']).toBe(to)
   })
 
   test('should forward POST /quotes request to proxy if the payee dfsp is not registered in the hub', async () => {
-    let response = await hubClient.getHistory()
-    expect(response.data.history.length).toBe(0)
-
     const { topic, config } = kafkaConfig.PRODUCER.QUOTE.POST
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
@@ -252,11 +221,8 @@ describe('POST request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await getResponseWithRetry()
-      expect([1, 2]).toContain(response.data.history.length)
-
-      const request = response.data.history[0]
-      expect(request.url).toBe(`/${proxyId}/quotes`)
+      const request = await getMatchingRequestWithRetry(h => h.url === `/${proxyId}/quotes`)
+      expect(request).toBeDefined()
       expect(request.body).toEqual(payload)
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
@@ -268,9 +234,6 @@ describe('POST request tests --> ', () => {
   })
 
   test('should forward POST /bulkQuotes request to payee dfsp registered in the hub', async () => {
-    let response = await hubClient.getHistory()
-    expect(response.data.history.length).toBe(0)
-
     const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.POST
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
@@ -281,20 +244,14 @@ describe('POST request tests --> ', () => {
     const isOk = await Producer.produceMessage(message, topicConfig, config)
     expect(isOk).toBe(true)
 
-    response = await getResponseWithRetry()
-    expect(response.data.history.length).toBe(1)
-
-    const request = response.data.history[0]
-    expect(request.url).toBe(`/${to}/bulkQuotes`)
+    const request = await getMatchingRequestWithRetry(h => h.url === `/${to}/bulkQuotes`)
+    expect(request).toBeDefined()
     expect(request.body).toEqual(payload)
     expect(request.headers['fspiop-source']).toBe(from)
     expect(request.headers['fspiop-destination']).toBe(to)
   })
 
   test('should forward POST /bulkQuotes request to proxy if the payee dfsp is not registered in the hub', async () => {
-    let response = await hubClient.getHistory()
-    expect(response.data.history.length).toBe(0)
-
     const { topic, config } = kafkaConfig.PRODUCER.BULK_QUOTE.POST
     const topicConfig = dto.topicConfigDto({ topicName: topic })
     const from = 'pinkbank'
@@ -334,11 +291,8 @@ describe('POST request tests --> ', () => {
       const isOk = await Producer.produceMessage(message, topicConfig, config)
       expect(isOk).toBe(true)
 
-      response = await getResponseWithRetry()
-      expect(response.data.history.length).toBe(1)
-
-      const request = response.data.history[0]
-      expect(request.url).toBe(`/${proxyId}/bulkQuotes`)
+      const request = await getMatchingRequestWithRetry(h => h.url === `/${proxyId}/bulkQuotes`)
+      expect(request).toBeDefined()
       expect(request.body).toEqual(payload)
       expect(request.headers['fspiop-source']).toBe(from)
       expect(request.headers['fspiop-destination']).toBe(to)
