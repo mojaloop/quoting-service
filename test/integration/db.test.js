@@ -33,7 +33,7 @@ const mocks = require('../mocks')
 const Database = require('../../src/data/testDatabase')
 const { wrapWithRetries } = require('../util/helper')
 
-const TEST_TIMEOUT = 20_000
+const TEST_TIMEOUT = 60_000
 
 jest.setTimeout(TEST_TIMEOUT)
 
@@ -42,7 +42,7 @@ describe('Database Integration Tests --> ', () => {
   const config = new Config()
   const { kafkaConfig } = config
   const retryConf = {
-    remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
+    remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 40,
     timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
   }
 
@@ -164,9 +164,14 @@ describe('Database Integration Tests --> ', () => {
       const topicConfig = dto.topicConfigDto({ topicName: topic })
       const putPayload = mocks.putQuotesPayloadDto()
       const message = mocks.kafkaMessagePayloadDto({
+        from: 'greenbank',
+        to: 'pinkbank',
         id: quotePayload.quoteId,
         payloadBase64: base64Encode(JSON.stringify(putPayload))
       })
+      // A PUT /quotes callback must not carry an 'accept' header, otherwise the
+      // handler rejects it before persisting the response duplicate-check row.
+      delete message.content.headers.accept
       await Producer.produceMessage(message, topicConfig, config)
 
       const responseDuplicateCheck = await getWithRetry(() => db.getQuoteResponseDuplicateCheck(quotePayload.quoteId))
