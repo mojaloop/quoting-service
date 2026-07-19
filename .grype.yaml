@@ -103,6 +103,25 @@ ignore:
   - vulnerability: GHSA-2g4f-4pwh-qvx6
     include-aliases: true
     reason: "Unfixable npm transitive vulnerability: unknown (unknown severity) as of 2026-02-23"
+  - vulnerability: GHSA-22p9-wv53-3rq4
+    include-aliases: true
+    reason: >-
+      linkify-it ReDoS (quadratic scan) - transitive via markdown-it@12.3.2, used only by shins/widdershins at
+      build time for API-doc generation. markdown-it 14.x (the fix) breaks the doc toolchain, hence the pin.
+      Not runtime-exploitable. Matches audit-ci.jsonc allowlist.
+  - vulnerability: GHSA-6v5v-wf23-fmfq
+    include-aliases: true
+    reason: >-
+      markdown-it quadratic DoS in smartquotes - same build-time API-doc generation path (shins/widdershins);
+      pinned at 12.3.2 because newer majors break the doc generator. Not in the request path. Matches
+      audit-ci.jsonc allowlist.
+  - vulnerability: GHSA-h67p-54hq-rp68
+    include-aliases: true
+    reason: >-
+      js-yaml DoS via YAML merge-key aliases - transitive via OpenAPI/swagger schema parsers
+      (@apidevtools/json-schema-ref-parser, @redocly/openapi-core). Fix needs js-yaml 5.x (major) across the
+      schema toolchain; schemas are static, trusted project files, not user-supplied YAML. Matches
+      audit-ci.jsonc allowlist.
 output:
   - table
   - json
