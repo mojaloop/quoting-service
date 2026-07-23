@@ -125,7 +125,7 @@
     "fast-xml-parser": "5.7.0",
     "qs": "6.15.3",
     "minimatch@3.0.5": "3.1.5",
-    "immutable": "5.1.5",
+    "immutable": "5.1.9",
     "axios": "1.18.1",
     "joi": "18.2.3",
     "@mojaloop/inter-scheme-proxy-cache-lib": {
@@ -148,13 +148,14 @@
     "uuid": "14.0.1",
     "@protobufjs/utf8": "1.1.1",
     "convict": "6.2.5",
-    "fast-uri": "3.1.2",
+    "fast-uri": "3.1.4",
     "postcss": "8.5.10",
-    "fast-xml-builder": "1.1.7"
+    "fast-xml-builder": "1.1.7",
+    "js-yaml": "4.3.0"
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
-    "@hapi/hapi": "21.4.9",
+    "@hapi/hapi": "21.4.10",
     "@hapi/inert": "7.1.2",
     "@hapi/vision": "7.0.3",
     "@mojaloop/central-services-error-handling": "13.1.7",
@@ -180,7 +181,7 @@
     "knex": "^3.3.0",
     "memory-cache": "0.2.0",
     "minimist": "1.2.8",
-    "mysql2": "^3.23.0",
+    "mysql2": "^3.23.1",
     "node-fetch": "3.3.2",
     "parse-strings-in-object": "2.0.0",
     "rc": "1.2.8"
@@ -189,7 +190,7 @@
     "audit-ci": "7.1.0",
     "eslint": "8.57.1",
     "eslint-config-standard": "17.1.0",
-    "eslint-plugin-jest": "29.15.4",
+    "eslint-plugin-jest": "29.15.5",
     "ioredis-mock": "8.13.1",
     "jest": "29.7.0",
     "jest-junit": "17.0.0",
@@ -197,7 +198,7 @@
     "nyc": "18.0.0",
     "pre-commit": "2.0.0",
     "replace": "1.2.2",
-    "sinon": "22.0.0",
+    "sinon": "22.1.0",
     "standard": "17.1.2",
     "standard-version": "9.5.0",
     "swagmock": "1.0.0"

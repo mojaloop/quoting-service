@@ -115,13 +115,13 @@ ignore:
       markdown-it quadratic DoS in smartquotes - same build-time API-doc generation path (shins/widdershins);
       pinned at 12.3.2 because newer majors break the doc generator. Not in the request path. Matches
       audit-ci.jsonc allowlist.
-  - vulnerability: GHSA-h67p-54hq-rp68
+  - vulnerability: GHSA-v245-v573-v5vm
     include-aliases: true
     reason: >-
-      js-yaml DoS via YAML merge-key aliases - transitive via OpenAPI/swagger schema parsers
-      (@apidevtools/json-schema-ref-parser, @redocly/openapi-core). Fix needs js-yaml 5.x (major) across the
-      schema toolchain; schemas are static, trusted project files, not user-supplied YAML. Matches
-      audit-ci.jsonc allowlist.
+      linkify-it quadratic DoS in the mailto: validator scan-loop - same build-time API-doc generation path
+      (shins/widdershins via markdown-it@12.3.2); linkify-it is pinned to 3.0.3 by that markdown-it version,
+      and jumping to the fixed 5.0.2+ line is a two-major bump that markdown-it 12.x doesn't support. Not
+      runtime-exploitable. Matches audit-ci.jsonc allowlist.
 output:
   - table
   - json
