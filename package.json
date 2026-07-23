@@ -151,7 +151,10 @@
     "fast-uri": "3.1.4",
     "postcss": "8.5.10",
     "fast-xml-builder": "1.1.7",
-    "js-yaml": "4.3.0"
+    "js-yaml": "4.3.0",
+    "swagmock": {
+      "js-yaml": "3.15.0"
+    }
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
