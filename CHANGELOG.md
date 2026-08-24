@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [17.15.0](https://github.com/mojaloop/quoting-service/compare/v17.14.5...v17.15.0) (2026-08-24)
+
+
+### Features
+
+* validate   ([ef2652e](https://github.com/mojaloop/quoting-service/commit/ef2652e1637f5bf2387065b19874ac45a7c32fb0)), closes [#470](https://github.com/mojaloop/quoting-service/issues/470)
+
+
+### Bug Fixes
+
+* properly handle HTTP 4xx errors instead of wrapping as 503 ([#468](https://github.com/mojaloop/quoting-service/issues/468)) ([43aaea2](https://github.com/mojaloop/quoting-service/commit/43aaea22e13f84d1589ae1a459211b115c62081c))
+
+
+### Chore
+
+* remediate dependency vulnerabilities and update deps ([#472](https://github.com/mojaloop/quoting-service/issues/472)) ([cfff33c](https://github.com/mojaloop/quoting-service/commit/cfff33cb04df6e9dd78ddb9e38d6b3c5fac89225))
+* **sbom:** update sbom [skip ci] ([f3db78b](https://github.com/mojaloop/quoting-service/commit/f3db78b494b9d34812bb47a2731d3b0890cb678b))
+
 ### [17.14.5](https://github.com/mojaloop/quoting-service/compare/v17.14.4...v17.14.5) (2026-03-25)
 
 
