@@ -33,11 +33,11 @@ async function main () {
   })
 
   try {
-    let allHealthy = await areAllServicesHealthy(waitingMap, waitTimeMs)
+    let allHealthy = await areAllServicesHealthy(waitingMap)
 
     while (!allHealthy && retries > 0) {
       await sleep(waitTimeMs)
-      allHealthy = await areAllServicesHealthy(waitingMap, waitTimeMs)
+      allHealthy = await areAllServicesHealthy(waitingMap)
 
       if (retries === 0) {
         throw new Error(`Out of retries waiting for service health.\nStill waiting for: ${getServicesForStatus(waitingMap, 'starting')}`)
@@ -60,7 +60,7 @@ async function main () {
 
 /**
  * @function areAllServicesHealthy
- * @description Get Update the service status, and sleep for `waitTimeMs` if the services aren't healthy
+ * @description Update the status of every waiting service, and report whether they are all healthy
  * @param {*} waitingMap
  * @returns boolean
  */
