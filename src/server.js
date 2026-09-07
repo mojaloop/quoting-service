@@ -109,7 +109,7 @@ const initServer = async function (config, topicNames) {
     await server.register({
       plugin: APIDocumentation,
       options: {
-        documentPath: openAPISpecPath
+        pathToSwaggerFile: openAPISpecPath
       }
     })
   }
