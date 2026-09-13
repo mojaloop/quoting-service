@@ -177,17 +177,26 @@ class BaseQuotesModel {
   }
 
   addFspiopSignatureHeader (opts) {
-    const { jws } = this.envConfig
-    // If JWS is enabled and the 'fspiop-source' matches the configured jws header value (i.e. the hubName)
-    // that means it's a switch generated message and we need to sign it
-    if (!opts.headers['fspiop-signature'] &&
-      jws?.jwsSign &&
-      opts.headers['fspiop-source'] === jws.fspiopSourceToSign
-    ) {
+    const jwsSigner = this.getJwsSigner(opts.headers)
+    // If this is a switch generated message (see getJwsSigner) and not already signed, sign it
+    if (jwsSigner && !opts.headers['fspiop-signature']) {
       this.log.verbose('Getting the JWS Signer to sign the switch generated message')
-      const jwsSigner = this.jwsSignerFactory(jws.jwsSigningKey, this.log.child())
       opts.headers['fspiop-signature'] = jwsSigner.getSignature(opts)
     }
+  }
+
+  /**
+   * Returns a JWS signer when JWS signing is enabled and the message is switch-generated
+   * (i.e. the 'fspiop-source' is the hub), otherwise undefined. Used both to sign inline
+   * (addFspiopSignatureHeader) and to hand to central-services-shared sendRequest, which
+   * signs after transformHeaders.
+   */
+  getJwsSigner (headers) {
+    const { jws } = this.envConfig
+    if (jws?.jwsSign && headers?.['fspiop-source'] === jws.fspiopSourceToSign) {
+      return this.jwsSignerFactory(jws.jwsSigningKey, this.log.child())
+    }
+    return undefined
   }
 
   injectSpanContext (span, requestOpts, operationName, tags = {}) {
