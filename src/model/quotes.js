@@ -1031,14 +1031,10 @@ class QuotesModel extends BaseQuotesModel {
       log.debug('sendErrorCallback quote http request opts:', { opts })
       if (span) opts = super.injectSpanContext(span, opts, { quoteId })
 
-      // Build a JWS signer under the same condition addFspiopSignatureHeader used, and let
-      // sendRequest sign the request AFTER transformHeaders. transformHeaders strips a
-      // pre-added fspiop-signature when the source is the hub, so pre-signing here would be
-      // dropped. See mojaloop/project#4444.
-      const { jws } = this.envConfig
-      const jwsSigner = (jws?.jwsSign && opts.headers[Enum.Http.Headers.FSPIOP.SOURCE] === jws.fspiopSourceToSign)
-        ? this.jwsSignerFactory(jws.jwsSigningKey, this.log.child())
-        : undefined
+      // Let sendRequest sign the request AFTER transformHeaders (which strips a pre-added
+      // fspiop-signature when the source is the hub), rather than pre-signing here. See
+      // mojaloop/project#4444.
+      const jwsSigner = super.getJwsSigner(opts.headers)
 
       // Note: span context injection and audit are already handled above by
       // injectSpanContext, so we intentionally do not pass `span` to sendRequest
