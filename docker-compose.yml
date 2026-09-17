@@ -82,7 +82,12 @@ services:
 
 
   central-ledger:
-    image: mojaloop/central-ledger:latest
+    # Pinned: the integration suite has no schema of its own (docker/sql-init only grants
+    # permissions), so every table comes from this container's migrations. `latest` moved to
+    # v20.0.0 on 2026-09-08 and its migrations no longer complete here, leaving central_ledger
+    # empty and failing all 40 integration tests. v19.14.0 is the release `latest` pointed at
+    # while this suite was green.
+    image: mojaloop/central-ledger:v19.14.0
     container_name: qs_central-ledger
     ports:
       - "3001:3001"
