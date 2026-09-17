@@ -30,6 +30,7 @@
 
 const RC = require('parse-strings-in-object')(require('rc')('QUOTE', require('../../config/default.json')))
 const fs = require('node:fs')
+const { HeaderValidation } = require('@mojaloop/central-services-shared').Util
 const { API_TYPES, PAYLOAD_STORAGES } = require('../constants')
 
 const DEFAULT_PROTOCOL_VERSION = {
@@ -99,6 +100,8 @@ class Config {
     // load config from environment (or use sensible defaults)
     this.isIsoApi = RC.API_TYPE === API_TYPES.iso20022
     this.hubName = RC.HUB_PARTICIPANT.NAME
+    // Precompute the hub name regex used by central-services-shared's request/header utilities
+    this.hubNameRegex = HeaderValidation.getHubNameRegex(this.hubName)
     this.listenAddress = RC.LISTEN_ADDRESS
     this.listenPort = RC.PORT
     this.monitoringPort = RC.MONITORING_PORT

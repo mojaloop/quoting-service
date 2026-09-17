@@ -46,7 +46,7 @@ const Metrics = require('@mojaloop/central-services-metrics')
 const LOCAL_ENUM = require('../lib/enum')
 const dto = require('../lib/dto')
 
-const { httpRequest, httpRequestBase } = require('../lib/http')
+const { httpRequest } = require('../lib/http')
 const { RESOURCES } = require('../constants')
 const BaseQuotesModel = require('./BaseQuotesModel')
 
@@ -1031,61 +1031,29 @@ class QuotesModel extends BaseQuotesModel {
       log.debug('sendErrorCallback quote http request opts:', { opts })
       if (span) opts = super.injectSpanContext(span, opts, { quoteId })
 
-      let res
-      try {
-        super.addFspiopSignatureHeader(opts)
-        step = 'axios-request-2'
-        res = await httpRequestBase(opts, axios)
-        // todo: use wrapper on axios
-        histTimer({ success: true, queryName: 'quote_sendErrorCallback' })
-      } catch (err) {
-        // Distinguish HTTP response errors from network/connection errors
-        if (err.response) {
-          const responseData = err.response.data
-          if (responseData?.errorInformation) {
-            throw ErrorHandler.Factory.createFSPIOPErrorFromErrorInformation(responseData.errorInformation)
-          }
-          if (err.response.status >= 400 && err.response.status < 500) {
-            throw ErrorHandler.CreateFSPIOPError(
-              ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR,
-              `client error in sendErrorCallback: ${err.message}`, {
-                error: err,
-                url: fullCallbackUrl,
-                sourceFsp: fspiopSource,
-                destinationFsp: fspiopDest,
-                method: opts && opts.method,
-                request: JSON.stringify(opts, Util.getCircularReplacer())
-              }, fspiopSource)
-          }
-        }
-        // external-error: true network/connection error or 5xx
-        throw ErrorHandler.CreateFSPIOPError(
-          ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR,
-          `network error in sendErrorCallback: ${err.message}`, {
-            error: err,
-            url: fullCallbackUrl,
-            sourceFsp: fspiopSource,
-            destinationFsp: fspiopDest,
-            method: opts && opts.method,
-            request: JSON.stringify(opts, Util.getCircularReplacer())
-          }, fspiopSource)
-      }
-      this.log.verbose(`callback got response: ${res.status} ${res.statusText}`)
+      // Let sendRequest sign the request AFTER transformHeaders (which strips a pre-added
+      // fspiop-signature when the source is the hub), rather than pre-signing here. See
+      // mojaloop/project#4444.
+      const jwsSigner = super.getJwsSigner(opts.headers)
 
-      if (res.status !== Enum.Http.ReturnCodes.OK.CODE) {
-        // Use CLIENT_ERROR for 4xx, DESTINATION_COMMUNICATION_ERROR for 5xx
-        const errorCode = (res.status >= 400 && res.status < 500)
-          ? ErrorHandler.Enums.FSPIOPErrorCodes.CLIENT_ERROR
-          : ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR
-        throw ErrorHandler.CreateFSPIOPError(errorCode, 'Got non-success response sending error callback', {
-          url: fullCallbackUrl,
-          sourceFsp: fspiopSource,
-          destinationFsp: fspiopDest,
-          method: opts && opts.method,
-          request: JSON.stringify(opts, Util.getCircularReplacer()),
-          response: JSON.stringify(res, Util.getCircularReplacer())
-        }, fspiopSource)
-      }
+      // Note: span context injection and audit are already handled above by
+      // injectSpanContext, so we intentionally do not pass `span` to sendRequest
+      // to avoid emitting a duplicate egress audit event. See mojaloop/project#4444.
+      step = 'sendRequest-2'
+      const res = await Util.Request.sendRequest({
+        url: opts.url,
+        headers: opts.headers,
+        source: opts.headers[Enum.Http.Headers.FSPIOP.SOURCE],
+        destination: opts.headers[Enum.Http.Headers.FSPIOP.DESTINATION],
+        method: opts.method,
+        payload: opts.data,
+        jwsSigner,
+        hubNameRegex: this.envConfig.hubNameRegex,
+        protocolVersions: this.envConfig.protocolVersions,
+        apiType: this.envConfig.isIsoApi ? Util.Hapi.API_TYPES.iso20022 : Util.Hapi.API_TYPES.fspiop
+      })
+      histTimer({ success: true, queryName: 'quote_sendErrorCallback' })
+      this.log.verbose(`callback got response: ${res.status} ${res.statusText}`)
     } catch (err) {
       log.error('error in sendErrorCallback:', err)
       histTimer({ success: false, queryName: 'quote_sendErrorCallback' })
