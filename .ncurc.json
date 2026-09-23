@@ -1,0 +1,14 @@
+{
+  "reject": [
+    "eslint",
+    "why-eslint: held at the version the committed lock pins (carried over from the js config)",
+    "jest",
+    "why-jest: v30 is out but the libraries this suite uses have not caught up (carried over from the js config); it also keeps sanitize-html on the 2.17.x line that still uses CommonJS htmlparser2",
+    "@mojaloop/event-sdk",
+    "why-event-sdk: 14.8.5 is a broken publish - requiring it executes the raw TypeScript src/Span.ts and breaks 30 suites via central-services-shared; held at 14.8.4 (carried over from the js config, review by 2026-10-21)",
+    "commander",
+    "why-commander: 15.x is a major with CLI arg-parsing changes, deferred to a dedicated pass (carried over from the js config)",
+    "@types/node",
+    "why-types-node: its major must match the Node runtime major in .nvmrc (24); a higher major only weakens type checking; bump together with the runtime"
+  ]
+}
