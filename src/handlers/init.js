@@ -21,11 +21,13 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
+ - Justin Theodorus <justin.theodorus@gmail.com>
 
 *****/
 
 const { Cache } = require('memory-cache')
 const { Tracer } = require('@mojaloop/event-sdk')
+const { Util } = require('@mojaloop/central-services-shared')
 
 const Config = require('../lib/config')
 const Database = require('../data/cachedDatabase')
@@ -42,14 +44,21 @@ let db
 let proxyClient
 let consumersMap
 let monitoringServer
+let config
 
 const startFn = async (handlerList, appConfig = undefined) => {
-  const config = appConfig || new Config()
+  config = appConfig || new Config()
 
   db = new Database(config)
   await db.connect()
   const isDbOk = await db.isConnected()
   if (!isDbOk) throw new Error('DB is not connected')
+
+  // Initialize the shared participant endpoint cache used for resolving DFSP callback endpoints.
+  await Util.Endpoints.initializeCache(config.endpointCacheConfig, {
+    hubName: config.hubName,
+    hubNameRegex: Util.HeaderValidation.getHubNameRegex(config.hubName)
+  })
 
   if (config.proxyCache.enabled) {
     proxyClient = createProxyClient({ proxyCacheConfig: config.proxyCache })
@@ -88,6 +97,9 @@ const startFn = async (handlerList, appConfig = undefined) => {
 
 const stopFn = async () => {
   await monitoringServer?.stop()
+
+  await Util.Endpoints.stopCache()
+  if (config?.proxyCache?.enabled) await Util.Endpoints.stopProxy()
 
   proxyClient?.isConnected && await proxyClient.disconnect()
 

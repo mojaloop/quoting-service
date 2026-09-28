@@ -24,6 +24,7 @@
 
  * Eugen Klymniuk <eugen.klymniuk@infitx.com>
  * Steven Oderayi <steven.oderayi@infitx.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
  --------------
  ******/
 
@@ -37,8 +38,7 @@ const MockServerClient = require('./mockHttpServer/MockServerClient')
 const { wrapWithRetries } = require('../util/helper')
 const Database = require('../../src/data/cachedDatabase')
 
-const TEST_TIMEOUT = 20_000
-const WAIT_TIMEOUT = 3_000
+const TEST_TIMEOUT = 60_000
 
 describe('PUT callback Tests --> ', () => {
   jest.setTimeout(TEST_TIMEOUT)
@@ -48,7 +48,7 @@ describe('PUT callback Tests --> ', () => {
   const { kafkaConfig, proxyCache } = config
   const hubClient = new MockServerClient()
   const retryConf = {
-    remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 20,
+    remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 40,
     timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
   }
 
@@ -69,7 +69,6 @@ describe('PUT callback Tests --> ', () => {
   })
 
   const base64Encode = (data) => Buffer.from(data).toString('base64')
-  const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
   /**
    * Publishes a test 'POST quote' message to the Kafka topic
@@ -101,7 +100,9 @@ describe('PUT callback Tests --> ', () => {
   test('should handle the JWS signing when a switch error event is produced to the PUT topic', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
-    await wait(WAIT_TIMEOUT)
+    // Wait for the POST /quotes callback to actually arrive before clearing it, so a
+    // late callback cannot leak into the assertions below.
+    await getResponseWithRetry()
     await hubClient.clearHistory()
 
     let response = await hubClient.getHistory()
@@ -127,7 +128,9 @@ describe('PUT callback Tests --> ', () => {
   test('should pass validation for PUT /quotes/{ID} request if request transferAmount/payeeReceiveAmount currency is registered (position account exists) for the payee participant', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
-    await wait(WAIT_TIMEOUT)
+    // Wait for the POST /quotes callback to actually arrive before clearing it, so a
+    // late callback cannot leak into the assertions below.
+    await getResponseWithRetry()
     await hubClient.clearHistory()
 
     let response = await hubClient.getHistory()
@@ -156,7 +159,9 @@ describe('PUT callback Tests --> ', () => {
   test('should pass validation for PUT /quotes/{ID} request if source is proxied participant', async () => {
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
-    await wait(WAIT_TIMEOUT)
+    // Wait for the POST /quotes callback to actually arrive before clearing it, so a
+    // late callback cannot leak into the assertions below.
+    await getResponseWithRetry()
     await hubClient.clearHistory()
 
     let response = await hubClient.getHistory()
@@ -197,7 +202,9 @@ describe('PUT callback Tests --> ', () => {
     // test the same scenario with only transferAmount set
     // create test quote to prevent db (row reference) error on PUT request
     const quoteCreated = await createQuote()
-    await wait(WAIT_TIMEOUT)
+    // Wait for the POST /quotes callback to actually arrive before clearing it, so a
+    // late callback cannot leak into the assertions below.
+    await getResponseWithRetry()
     await hubClient.clearHistory()
 
     let response = await hubClient.getHistory()

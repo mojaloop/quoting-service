@@ -21,10 +21,10 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
+ - Justin Theodorus <justin.theodorus@gmail.com>
 
 *****/
 
-const { setTimeout: sleep } = require('node:timers/promises')
 const { TransformFacades } = require('../../src/lib')
 const { createPayloadCache } = require('../../src/lib/payloadCache')
 const { ISO_HEADER_PART } = require('../../src/constants')
@@ -32,18 +32,36 @@ const Config = require('../../src/lib/config')
 const mocks = require('../mocks')
 const QSClient = require('./QSClient')
 const MockServerClient = require('./mockHttpServer/MockServerClient')
+const { wrapWithRetries } = require('../util/helper')
 
 const QS_ISO_PORT = 13002 // in docker-compose.yml
 const config = new Config()
 
-jest.setTimeout(10_000)
+const TEST_TIMEOUT = 60_000
+jest.setTimeout(TEST_TIMEOUT)
 
 describe('ISO API Tests -->', () => {
   const qsClient = new QSClient({ port: QS_ISO_PORT })
   const hubClient = new MockServerClient()
+  const retryConf = {
+    remainingRetries: process?.env?.TEST_INT_RETRY_COUNT || 40,
+    timeout: process?.env?.TEST_INT_RETRY_DELAY || 1
+  }
 
   const { type, connectionConfig } = config.payloadCache
   const payloadCache = createPayloadCache(type, connectionConfig)
+
+  // Poll the mock hub until the expected number of callbacks have arrived, rather
+  // than waiting a fixed amount of time. The switch-backed endpoint cache resolves
+  // participant callback endpoints over HTTP, so the first (cold) lookup for a DFSP
+  // can take longer than a fixed time.
+  const getHistoryWithRetry = (minLength = 1) =>
+    wrapWithRetries(
+      () => hubClient.getHistory(),
+      retryConf.remainingRetries,
+      retryConf.timeout,
+      (result) => result.data.history.length >= minLength
+    )
 
   beforeAll(async () => {
     await payloadCache.connect()
@@ -66,9 +84,8 @@ describe('ISO API Tests -->', () => {
       const transactionId = mocks.generateULID()
       const response = await qsClient.postIsoQuotes({ from, to, quoteId, transactionId })
       expect(response.status).toBe(202)
-      await sleep(3000)
 
-      const { data } = await hubClient.getHistory()
+      const { data } = await getHistoryWithRetry()
       expect(data.history.length).toBeGreaterThanOrEqual(1)
       const { PmtId, CdtrAgt, DbtrAgt } = data.history[0].body.CdtTrfTxInf
       expect(PmtId.TxId).toBe(quoteId)
@@ -79,10 +96,9 @@ describe('ISO API Tests -->', () => {
       await hubClient.clearHistory()
       const getResp = await qsClient.getIsoQuotes({ quoteId, from, to })
       expect(getResp.status).toBe(202)
-      await sleep(3000)
 
-      const getCallback = await hubClient.getHistory()
-      expect(getCallback.data.history.length).toBe(1)
+      const getCallback = await getHistoryWithRetry()
+      expect(getCallback.data.history).toHaveLength(1)
     })
   })
 
@@ -96,10 +112,8 @@ describe('ISO API Tests -->', () => {
       const response = await qsClient.putErrorIsoQuotes(id, fspiopPayload, from, to)
       expect(response.status).toBe(200)
 
-      await sleep(3000)
-
-      const { data } = await hubClient.getHistory()
-      expect(data.history.length).toBe(1)
+      const { data } = await getHistoryWithRetry()
+      expect(data.history).toHaveLength(1)
       const { body, headers } = data.history[0]
       expect(headers['content-type']).toContain(ISO_HEADER_PART)
       expect(body.TxInfAndSts.StsRsnInf.Rsn.Prtry).toBe(expectedErrorCode)
@@ -112,9 +126,8 @@ describe('ISO API Tests -->', () => {
       const transactionId = mocks.generateULID()
       const postResponse = await qsClient.postIsoQuotes({ from, to, quoteId, transactionId })
       expect(postResponse.status).toBe(202)
-      await sleep(3000)
 
-      const { data: postData } = await hubClient.getHistory()
+      const { data: postData } = await getHistoryWithRetry()
       expect(postData.history.length).toBeGreaterThanOrEqual(1)
       const { PmtId, CdtrAgt, DbtrAgt } = postData.history[0].body.CdtTrfTxInf
       expect(PmtId.TxId).toBe(quoteId)
@@ -129,10 +142,8 @@ describe('ISO API Tests -->', () => {
       const response = await qsClient.putErrorQuotes(quoteId, isoPayload, from, to)
       expect(response.status).toBe(200)
 
-      await sleep(3000)
-
-      const { data: putData } = await hubClient.getHistory()
-      expect(putData.history.length).toBe(1)
+      const { data: putData } = await getHistoryWithRetry()
+      expect(putData.history).toHaveLength(1)
       const { body, headers } = putData.history[0]
       expect(headers['content-type']).toContain(ISO_HEADER_PART)
 
@@ -156,10 +167,8 @@ describe('ISO API Tests -->', () => {
       const response = await qsClient.postIsoFxQuotes(postFxArgs)
       expect(response.status).toBe(202)
 
-      await sleep(3000)
-
-      const { data } = await hubClient.getHistory()
-      expect(data.history.length).toBe(1)
+      const { data } = await getHistoryWithRetry()
+      expect(data.history).toHaveLength(1)
       const { body, headers } = data.history[0]
       expect(headers['content-type']).toContain(ISO_HEADER_PART)
       expect(body.CdtTrfTxInf.PmtId.TxId).toBe(postFxArgs.conversionRequestId)
@@ -171,9 +180,8 @@ describe('ISO API Tests -->', () => {
       const postFxArgs = generatePostFxArgs()
       const postResponse = await qsClient.postIsoFxQuotes(postFxArgs)
       expect(postResponse.status).toBe(202)
-      await sleep(3000)
-      const postCallback = await hubClient.getHistory()
-      expect(postCallback.data.history.length).toBe(1)
+      const postCallback = await getHistoryWithRetry()
+      expect(postCallback.data.history).toHaveLength(1)
       await hubClient.clearHistory()
 
       const errorCode = '3100'
@@ -184,10 +192,9 @@ describe('ISO API Tests -->', () => {
       const to = postFxArgs.counterPartyFsp
       const response = await qsClient.putErrorIsoFxQuotes(id, fspiopPayload, from, to)
       expect(response.status).toBe(200)
-      await sleep(3000)
 
-      const { data } = await hubClient.getHistory()
-      expect(data.history.length).toBe(1)
+      const { data } = await getHistoryWithRetry()
+      expect(data.history).toHaveLength(1)
       const { body, headers } = data.history[0]
       expect(headers['content-type']).toContain(ISO_HEADER_PART)
       expect(body.TxInfAndSts.StsRsnInf.Rsn.Prtry).toBe(errorCode)
@@ -197,10 +204,9 @@ describe('ISO API Tests -->', () => {
       const postFxArgs = generatePostFxArgs()
       const postResponse = await qsClient.postIsoFxQuotes(postFxArgs)
       expect(postResponse.status).toBe(202)
-      await sleep(3000)
 
-      const { data: postData } = await hubClient.getHistory()
-      expect(postData.history.length).toBe(1)
+      const { data: postData } = await getHistoryWithRetry()
+      expect(postData.history).toHaveLength(1)
       const { body: postBody, headers: postHeaders } = postData.history[0]
       expect(postHeaders['content-type']).toContain(ISO_HEADER_PART)
       expect(postBody.CdtTrfTxInf.PmtId.TxId).toBe(postFxArgs.conversionRequestId)
@@ -214,10 +220,8 @@ describe('ISO API Tests -->', () => {
       const response = await qsClient.putErrorFxQuotes(postFxArgs.conversionRequestId, isoPayload, postFxArgs.initiatingFsp, postFxArgs.counterPartyFsp)
       expect(response.status).toBe(200)
 
-      await sleep(3000)
-
-      const { data: putData } = await hubClient.getHistory()
-      expect(putData.history.length).toBe(1)
+      const { data: putData } = await getHistoryWithRetry()
+      expect(putData.history).toHaveLength(1)
       const { body, headers } = putData.history[0]
       expect(headers['content-type']).toContain(ISO_HEADER_PART)
 

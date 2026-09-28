@@ -7,6 +7,19 @@ ignore:
   - vulnerability: GHSA-hf2r-9gf9-rwch
     include-aliases: true
     reason: "Unfixable npm transitive vulnerability: convict prototype pollution via load()/loadFile() (critical) - transitive from @mojaloop/inter-scheme-proxy-cache-lib"
+  # Dev-only doc-generation & coverage tooling (NOT in the quoting-service runtime). Mirrors the
+  # audit-ci.jsonc allowlist. These reach us via @mojaloop/central-services-shared -> shins/widdershins
+  # (HTML doc gen) and via istanbul coverage tooling; their only fixes require MAJOR transitive jumps
+  # inside those dev tools. Remove once the upstream doc toolchain ships patched deps.
+  - vulnerability: GHSA-6v5v-wf23-fmfq
+    include-aliases: true
+    reason: "Dev-only doc tooling: markdown-it quadratic DoS (smartquotes) - via shins/widdershins doc gen, not in runtime"
+  - vulnerability: GHSA-22p9-wv53-3rq4
+    include-aliases: true
+    reason: "Dev-only doc tooling: linkify-it quadratic complexity in match scan - via markdown-it (shins/widdershins), not in runtime"
+  - vulnerability: GHSA-h67p-54hq-rp68
+    include-aliases: true
+    reason: "Dev-only coverage tooling: js-yaml quadratic DoS (merge key handling) - via istanbul & json-schema-ref-parser, not in runtime"
   - vulnerability: CVE-2025-9230
   - vulnerability: CVE-2025-9232
   - vulnerability: CVE-2025-9231

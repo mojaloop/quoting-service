@@ -29,6 +29,7 @@
 
  * Crosslake
  - Lewis Daly <lewisd@crosslaketech.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
  --------------
 ******/
 
@@ -1515,7 +1516,7 @@ describe('/database', () => {
         const result = await database.getQuoteParty(quoteId, partyType)
 
         // Assert
-        expect(result).toStrictEqual(null)
+        expect(result).toBeNull()
       })
 
       it('returns null when the query returns no rows', async () => {
@@ -1532,7 +1533,7 @@ describe('/database', () => {
         const result = await database.getQuoteParty(quoteId, partyType)
 
         // Assert
-        expect(result).toStrictEqual(null)
+        expect(result).toBeNull()
       })
 
       it('handles an exception', async () => {
@@ -1605,7 +1606,7 @@ describe('/database', () => {
         const result = await database.getTxnQuoteParty(txn, quoteId, partyType)
 
         // Assert
-        expect(result).toStrictEqual(null)
+        expect(result).toBeNull()
       })
 
       it('returns null when the query returns no rows', async () => {
@@ -1623,7 +1624,7 @@ describe('/database', () => {
         const result = await database.getTxnQuoteParty(txn, quoteId, partyType)
 
         // Assert
-        expect(result).toStrictEqual(null)
+        expect(result).toBeNull()
       })
 
       it('handles an exception', async () => {
@@ -1659,79 +1660,6 @@ describe('/database', () => {
       })
     })
 
-    describe('getParticipantEndpoint', () => {
-      it('gets the participant endpoint', async () => {
-        // Arrange
-        const participantName = 'fsp1'
-        const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
-        const mockList = mockKnexBuilder(
-          mockKnex,
-          [{ value: 'http://localhost:3000/testEndpoint' }],
-          ['innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'select']
-        )
-
-        // Act
-        const result = await database.getParticipantEndpoint(participantName, endpointType)
-
-        // Assert
-        expect(result).toBe('http://localhost:3000/testEndpoint')
-        expect(mockList[0]).toBeCalledWith('participantEndpoint')
-        expect(mockList[1]).toBeCalledWith('participant', 'participant.participantId', 'participantEndpoint.participantId')
-        expect(mockList[2]).toBeCalledWith('endpointType', 'endpointType.endpointTypeId', 'participantEndpoint.endpointTypeId')
-        expect(mockList[3]).toBeCalledWith('participant.name', participantName)
-        expect(mockList[4]).toBeCalledWith('endpointType.name', endpointType)
-        expect(mockList[5]).toBeCalledWith('participantEndpoint.isActive', 1)
-        expect(mockList[6]).toBeCalledWith('participantEndpoint.value')
-      })
-
-      it('returns null when the query returns undefined', async () => {
-        // Arrange
-        const participantName = 'fsp1'
-        const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
-        mockKnexBuilder(
-          mockKnex,
-          undefined,
-          ['innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'select']
-        )
-
-        // Act
-        const result = await database.getParticipantEndpoint(participantName, endpointType)
-
-        // Assert
-        expect(result).toBe(null)
-      })
-
-      it('returns null when there are no rows found', async () => {
-        // Arrange
-        const participantName = 'fsp1'
-        const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
-        mockKnexBuilder(
-          mockKnex,
-          [],
-          ['innerJoin', 'innerJoin', 'where', 'andWhere', 'andWhere', 'select']
-        )
-
-        // Act
-        const result = await database.getParticipantEndpoint(participantName, endpointType)
-
-        // Assert
-        expect(result).toBe(null)
-      })
-
-      it('handles an exception', async () => {
-        // Arrange
-        const participantName = 'fsp1'
-        const endpointType = 'FSPIOP_CALLBACK_URL_QUOTES'
-        mockKnex.mockImplementationOnce(() => { throw new Error('Test Error') })
-
-        // Act
-        const action = async () => database.getParticipantEndpoint(participantName, endpointType)
-
-        // Assert
-        await expect(action()).rejects.toThrowError('Test Error')
-      })
-    })
-
     describe('getQuoteDuplicateCheck', () => {
       it('gets the getQuoteDuplicateCheck', async () => {
         // Arrange
@@ -1757,7 +1685,7 @@ describe('/database', () => {
         const result = await database.getQuoteDuplicateCheck(quoteId)
 
         // Assert
-        expect(result).toBe(null)
+        expect(result).toBeNull()
         expect(mockList[0]).toHaveBeenCalledWith('quoteDuplicateCheck')
         expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
@@ -1772,7 +1700,7 @@ describe('/database', () => {
         const result = await database.getQuoteDuplicateCheck(quoteId)
 
         // Assert
-        expect(result).toBe(null)
+        expect(result).toBeNull()
         expect(mockList[0]).toHaveBeenCalledWith('quoteDuplicateCheck')
         expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
@@ -1816,7 +1744,7 @@ describe('/database', () => {
         const result = await database.getQuoteResponseDuplicateCheck(quoteId)
 
         // Assert
-        expect(result).toBe(null)
+        expect(result).toBeNull()
         expect(mockList[0]).toHaveBeenCalledWith('quoteResponseDuplicateCheck')
         expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)
@@ -1831,7 +1759,7 @@ describe('/database', () => {
         const result = await database.getQuoteResponseDuplicateCheck(quoteId)
 
         // Assert
-        expect(result).toBe(null)
+        expect(result).toBeNull()
         expect(mockList[0]).toHaveBeenCalledWith('quoteResponseDuplicateCheck')
         expect(mockList[1]).toHaveBeenCalledWith({ quoteId })
         expect(mockList[2]).toHaveBeenCalledTimes(1)

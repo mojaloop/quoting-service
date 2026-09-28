@@ -25,6 +25,7 @@
  * James Bush <james.bush@modusbox.com
  * Henk Kodde <henk.kodde@modusbox.com>
  * Georgi Georgiev <georgi.georgiev@modusbox.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
  --------------
  ******/
 
@@ -104,6 +105,7 @@ class Config {
     this.monitoringPort = RC.MONITORING_PORT
     this.simpleRoutingMode = RC.SIMPLE_ROUTING_MODE
     this.switchEndpoint = RC.SWITCH_ENDPOINT
+    this.endpointCacheConfig = RC.ENDPOINT_CACHE_CONFIG
     this.amount = {
       precision: RC.AMOUNT.PRECISION ? RC.AMOUNT.PRECISION : 18,
       scale: RC.AMOUNT.SCALE ? RC.AMOUNT.SCALE : 4

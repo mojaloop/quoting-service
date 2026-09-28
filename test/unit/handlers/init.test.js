@@ -21,6 +21,7 @@
 
  * Mojaloop Foundation
  - Name Surname <name.surname@mojaloop.io>
+ - Justin Theodorus <justin.theodorus@gmail.com>
 
  --------------
  ******/
@@ -30,6 +31,7 @@ jest.mock('../../../src/handlers/monitoringServer')
 jest.mock('../../../src/lib/proxy')
 
 const Metrics = require('@mojaloop/central-services-metrics')
+const { Util } = require('@mojaloop/central-services-shared')
 const Config = require('../../../src/lib/config')
 const fileConfig = new Config()
 
@@ -46,9 +48,19 @@ describe('init Tests -->', () => {
   let isDbOk
   const mockIsConnected = jest.fn(async () => isDbOk)
 
+  let stopProxySpy
+
   beforeAll(() => {
     Database.prototype.isConnected = mockIsConnected
     Database.prototype.connect = jest.fn()
+  })
+
+  beforeEach(() => {
+    stopProxySpy = jest.spyOn(Util.Endpoints, 'stopProxy').mockResolvedValue(undefined)
+  })
+
+  afterEach(() => {
+    stopProxySpy.mockRestore()
   })
 
   test('should execute without error if no deps inited', async () => {
@@ -69,6 +81,17 @@ describe('init Tests -->', () => {
 
     await expect(init.stopFn()).resolves.toBeUndefined()
     expect(mockProxyCache.disconnect).toHaveBeenCalled()
+    expect(stopProxySpy).toHaveBeenCalled()
+  })
+
+  test('should not stop endpoint proxy if proxyCache is disabled', async () => {
+    isDbOk = true
+    const config = new Config()
+    config.proxyCache.enabled = false
+    await init.startFn(handlerList, config)
+
+    await expect(init.stopFn()).resolves.toBeUndefined()
+    expect(stopProxySpy).not.toHaveBeenCalled()
   })
 
   test('should execute startFn without error if DB is connected', async () => {

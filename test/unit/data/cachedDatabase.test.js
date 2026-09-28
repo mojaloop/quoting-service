@@ -29,6 +29,7 @@
 
  * Crosslake
  - Lewis Daly <lewisd@crosslaketech.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
  --------------
  ******/
 
@@ -170,17 +171,6 @@ describe('cachedDatabase', () => {
 
       // Assert
       expect(result).toBe('getParticipantByNameValue')
-    })
-
-    it('getParticipantEndpoint', async () => {
-      // Arrange
-      cachedDb.cachePut('getParticipantEndpoint', ['paramA', 'paramB'], 'getParticipantEndpointValue')
-
-      // Act
-      const result = await cachedDb.getParticipantEndpoint('paramA', 'paramB')
-
-      // Assert
-      expect(result).toBe('getParticipantEndpointValue')
     })
   })
 

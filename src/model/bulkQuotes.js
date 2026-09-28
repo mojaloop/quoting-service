@@ -29,6 +29,7 @@
 
  * ModusBox
  - Rajiv Mothilal <rajiv.mothilal@modusbox.com>
+ - Justin Theodorus <justin.theodorus@gmail.com>
  --------------
  ******/
 
@@ -515,8 +516,8 @@ class BulkQuotesModel extends BaseQuotesModel {
 
   // wrapping this dependency here to allow for easier use and testing
   async _getParticipantEndpoint (fspId, endpointType = Enum.EndPoints.FspEndpointTypes.FSPIOP_CALLBACK_URL_BULK_QUOTES) {
-    const { db, log, proxyClient } = this
-    return this.libUtil.getParticipantEndpoint({ fspId, endpointType, db, log, proxyClient })
+    const { log } = this
+    return this.libUtil.getParticipantEndpoint({ fspId, endpointType, log })
   }
 }
 
