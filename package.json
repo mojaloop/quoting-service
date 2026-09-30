@@ -127,7 +127,7 @@
     "minimatch@3.0.5": "3.1.5",
     "immutable": "5.1.9",
     "axios": "1.19.0",
-    "joi": "18.2.5",
+    "joi": "18.2.6",
     "@mojaloop/inter-scheme-proxy-cache-lib": {
       "ajv": "8.20.0"
     },
@@ -179,7 +179,7 @@
     "commander": "14.0.3",
     "event-stream": "4.0.1",
     "fast-safe-stringify": "2.1.1",
-    "joi": "18.2.5",
+    "joi": "18.2.6",
     "json-rules-engine": "7.3.1",
     "knex": "^3.3.0",
     "memory-cache": "0.2.0",
