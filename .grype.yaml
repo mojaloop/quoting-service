@@ -190,16 +190,6 @@ ignore:
     reason: >-
       sprintf-js 1.1.3 unbounded precision DoS - dev-only transitive via ioredis-mock > fengari; no patched release
       exists as of 2026-10-16; also allowlisted in audit-ci.jsonc
-  - vulnerability: GHSA-6v5v-wf23-fmfq
-    include-aliases: true
-    reason: >-
-      markdown-it 12.3.2 smartquotes quadratic DoS - build-time API-doc generation only (shins/widdershins pin, newer
-      majors break the doc generator); also allowlisted in audit-ci.jsonc
-  - vulnerability: GHSA-253c-mchw-3w2r
-    include-aliases: true
-    reason: >-
-      markdown-it 12.3.2 linkify quadratic paths - same shins/widdershins build-time pin; fix 14.3.1 is a two-major bump
-      the doc generator does not support; also allowlisted in audit-ci.jsonc
   - vulnerability: GHSA-g8qq-57p8-ggw5
     include-aliases: true
     reason: >-
