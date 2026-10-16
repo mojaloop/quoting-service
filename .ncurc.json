@@ -9,6 +9,8 @@
     "commander",
     "why-commander: 15.x is a major with CLI arg-parsing changes, deferred to a dedicated pass (carried over from the js config)",
     "@types/node",
-    "why-types-node: its major must match the Node runtime major in .nvmrc (24); a higher major only weakens type checking; bump together with the runtime"
+    "why-types-node: its major must match the Node runtime major in .nvmrc (24); a higher major only weakens type checking; bump together with the runtime",
+    "@mojaloop/ml-schema-transformer-lib",
+    "why-schema-transformer: 2.10.2 raises its api-snippets and swagger-parser pins to lines that require an ESM-only json-schema-ref-parser 16, so 44 CommonJS suites fail to parse under jest 29 (reproduced 2026-10-16); upgrade together with jest 30"
   ]
 }
