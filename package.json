@@ -93,11 +93,11 @@
       "ajv": "6.12.3",
       "ejs": "3.1.10",
       "sanitize-html": "2.17.5",
-      "markdown-it": "14.3.1"
+      "markdown-it": "14.3.3"
     },
     "widdershins": {
       "swagger2openapi": "7.0.8",
-      "markdown-it": "14.3.1"
+      "markdown-it": "14.3.3"
     },
     "yargs": {
       "yargs-parser": "21.1.1"
@@ -153,12 +153,13 @@
     "yaml@1": "1.10.3",
     "yaml@2": "2.9.1",
     "argparse@1": "2.0.1",
-    "serialize-error": "8.1.0"
+    "serialize-error": "8.1.0",
+    "follow-redirects": "1.16.1"
   },
   "dependencies": {
     "@hapi/good": "9.0.1",
-    "@hapi/hapi": "21.4.10",
-    "@hapi/inert": "7.1.2",
+    "@hapi/hapi": "21.4.11",
+    "@hapi/inert": "7.1.3",
     "@hapi/vision": "7.0.3",
     "@mojaloop/central-services-error-handling": "13.2.1",
     "@mojaloop/central-services-health": "15.2.4",
