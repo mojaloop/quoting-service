@@ -1,0 +1,14 @@
+{
+  "reject": [
+    "eslint",
+    "why-eslint: 10.x fails npm install with ERESOLVE against the standard-config lint plugins this repo uses (re-tested 2026-10-20)",
+    "jest",
+    "why-jest: 30.5.2 loads the ESM tree with NODE_OPTIONS=--experimental-vm-modules but the run dies on the handlers init test that expects \"DB is not connected\" - the error escapes as an uncaught exception and kills the worker (reproduced 2026-10-20); needs a test-level fix before the move",
+    "@mojaloop/central-services-shared",
+    "why-csl-shared: 19.0.0 raises openapi-backend to 5.21.2+ whose json-schema-ref-parser 16 is ESM-only; under jest 29 every CommonJS suite fails to parse (re-tested 2026-10-20); goes with the jest 30 move",
+    "@mojaloop/ml-schema-transformer-lib",
+    "why-schema-transformer: 2.10.2 raises its api-snippets and swagger-parser pins to lines that require the same ESM-only json-schema-ref-parser 16 (re-tested 2026-10-20)",
+    "@types/node",
+    "why-types-node: its major must match the Node runtime major in .nvmrc (24); a higher major only weakens type checking; bump together with the runtime"
+  ]
+}
