@@ -11,6 +11,11 @@ module.exports = {
     "@mojaloop/event-sdk",
     // commander 15.x is a major release; deferring to a dedicated dependency-update pass so this
     // security-focused PR stays scoped. Handle the major bump and its CLI arg-parsing changes separately.
-    "commander"
+    "commander",
+    // @mojaloop/ml-schema-transformer-lib 2.10.2 pulls in @apidevtools/swagger-parser 13 ->
+    // @apidevtools/json-schema-ref-parser 16, which is ESM-only and breaks 22 unit test suites
+    // ("Cannot use import statement outside a module"). Held at 2.10.1.
+    // TODO: re-check when the jest config supports ESM or the lib ships a CommonJS build.
+    "@mojaloop/ml-schema-transformer-lib"
   ]
 }

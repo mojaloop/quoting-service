@@ -10,6 +10,13 @@
     "GHSA-22p9-wv53-3rq4", // linkify-it ReDoS (quadratic scan) - transitive via markdown-it@12.3.2, used only by shins/widdershins at build time for API-doc generation. markdown-it 14.x (the fix) breaks the doc toolchain, hence the pin. Not runtime-exploitable.
     "GHSA-6v5v-wf23-fmfq", // markdown-it quadratic DoS in smartquotes - same build-time API-doc generation path (shins/widdershins); pinned at 12.3.2 because newer majors break the doc generator. Not in the request path.
     // GHSA-h67p-54hq-rp68 (js-yaml) removed: fixed by bumping js-yaml to 4.3.0 (blanket override) - no longer vulnerable.
-    "GHSA-v245-v573-v5vm" // linkify-it quadratic DoS in the mailto: validator scan-loop - same build-time API-doc generation path (shins/widdershins via markdown-it@12.3.2); linkify-it is pinned to 3.0.3 by that markdown-it version, and jumping to the fixed 5.0.2+ line is a two-major bump that markdown-it 12.x doesn't support. Not runtime-exploitable.
+    "GHSA-v245-v573-v5vm", // linkify-it quadratic DoS in the mailto: validator scan-loop - same build-time API-doc generation path (shins/widdershins via markdown-it@12.3.2); linkify-it is pinned to 3.0.3 by that markdown-it version, and jumping to the fixed 5.0.2+ line is a two-major bump that markdown-it 12.x doesn't support. Not runtime-exploitable.
+    "GHSA-r7fv-28h4-cvq7", // markdown-it <14.3.2 - same build-time API-doc generation path (shins/widdershins via markdown-it@12.3.2 pin); newer majors break the doc generator. Not in the request path.
+    "GHSA-253c-mchw-3w2r", // markdown-it <14.3.1 - same build-time API-doc generation path (shins/widdershins via markdown-it@12.3.2 pin). Not in the request path.
+    "GHSA-g8qq-57p8-ggw5", // sanitize-html <=2.17.6 - build-time API-doc generation only (shins). sanitize-html 2.18+ depends on ESM-only htmlparser2, which breaks the jest unit test run; held at 2.17.5. Not in the request path.
+    "GHSA-jxwj-j7wr-gfrw", // sanitize-html <=2.17.5 - same shins build-time path as above. Not in the request path.
+    "GHSA-x3q4-9hxx-gx8m", // sanitize-html <2.18.0 - same shins build-time path as above. Not in the request path.
+    "GHSA-cv27-6wvh-8x7j", // sanitize-html <2.18.0 - same shins build-time path as above. Not in the request path.
+    "GHSA-g3hv-75wg-m249" // minimatch <11.0.1 globparts DoS - transitive via minimatch@3.x (eslint/standard, nyc, rimraf@3, etc.); no fixed 3.x release and minimatch@11 has a different API. Dev tooling only.
   ]
 }
