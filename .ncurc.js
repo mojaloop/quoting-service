@@ -11,6 +11,14 @@ module.exports = {
     "@mojaloop/event-sdk",
     // commander 15.x is a major release; deferring to a dedicated dependency-update pass so this
     // security-focused PR stays scoped. Handle the major bump and its CLI arg-parsing changes separately.
-    "commander"
+    "commander",
+    // @mojaloop/central-services-logger 12.0.0 cannot be installed yet: @mojaloop/central-services-shared
+    // 19.0.0 (the latest release) still declares a peer of logger 11.x.x, so npm install fails with ERESOLVE.
+    // TODO: REMOVE THIS REJECT ENTRY AND BUMP THE LOGGER ONCE A central-services-shared RELEASE ACCEPTS LOGGER 12.
+    "@mojaloop/central-services-logger",
+    // @mojaloop/ml-schema-transformer-lib 2.10.2 moves to @apidevtools/swagger-parser 13.1.0, whose
+    // @apidevtools/json-schema-ref-parser 16.x is ESM-only; Jest cannot load it and 24 unit test suites fail.
+    // TODO: REMOVE THIS REJECT ENTRY ONCE THE TRANSFORMER LIB SHIPS A CJS-LOADABLE BUILD OR JEST IS SET UP FOR ESM.
+    "@mojaloop/ml-schema-transformer-lib"
   ]
 }
