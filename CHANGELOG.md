@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [17.15.1](https://github.com/mojaloop/quoting-service/compare/v17.15.0...v17.15.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* restore dev dependencies pruned from package-lock.json ([#475](https://github.com/mojaloop/quoting-service/issues/475)) ([8076196](https://github.com/mojaloop/quoting-service/commit/80761965f76685f78ab4bbe9f624bb6de685e1f5)), closes [mojaloop/ci-config-orb-build#88](https://github.com/mojaloop/ci-config-orb-build/issues/88) [ci-config-orb-build#84](https://github.com/mojaloop/ci-config-orb-build/issues/84) [#85](https://github.com/mojaloop/quoting-service/issues/85) [mojaloop/project#4546](https://github.com/mojaloop/project/issues/4546)
+
+
+### Chore
+
+* **sbom:** update sbom [skip ci] ([8bc0f88](https://github.com/mojaloop/quoting-service/commit/8bc0f889208924177ef5502bda9e6b5f93ba6027))
+* update dependencies and adopt central-services-error-handling 13.2.0 ([#480](https://github.com/mojaloop/quoting-service/issues/480)) ([bb33a89](https://github.com/mojaloop/quoting-service/commit/bb33a899558e998d2f6556aea8b5d5d78d90eb2c))
+
 ## [17.15.0](https://github.com/mojaloop/quoting-service/compare/v17.14.5...v17.15.0) (2026-08-24)
 
 
