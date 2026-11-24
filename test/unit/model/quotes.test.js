@@ -67,6 +67,7 @@ const axios = require('axios')
 axios.create = jest.fn(() => axios)
 
 const clone = require('@mojaloop/central-services-shared').Util.clone
+const Request = require('@mojaloop/central-services-shared').Util.Request
 const Enum = require('@mojaloop/central-services-shared').Enum
 const ErrorHandler = require('@mojaloop/central-services-error-handling')
 const EventSdk = require('@mojaloop/event-sdk')
@@ -2403,6 +2404,27 @@ describe('QuotesModel', () => {
   })
 
   describe('sendErrorCallback', () => {
+    const callbackUrl = 'http://localhost:8444/payeefsp/quotes/test123/error'
+
+    // Shared arrange: resolve endpoint + headers, stub sendRequest, build an fspiopError
+    const arrangeSendErrorCallback = () => {
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      Util.generateRequestHeaders.mockReturnValueOnce({})
+      jest.spyOn(Request, 'sendRequest').mockResolvedValueOnce({ status: 200 })
+      return ErrorHandler.ReformatFSPIOPError(new Error('Test Error'))
+    }
+
+    // Shared span mock returning transformed request options with the given fspiop-source
+    const mockSpanForSource = (fspiopSource) => {
+      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
+        headers: { spanHeaders: '12345', 'fspiop-source': fspiopSource, 'fspiop-destination': 'dfsp2' },
+        method: Enum.Http.RestMethods.PUT,
+        url: callbackUrl,
+        data: {}
+      }))
+      mockSpan.audit = jest.fn()
+    }
+
     beforeEach(() => {
       // restore the current method in test to its original implementation
       quotesModel.sendErrorCallback.mockRestore()
@@ -2411,211 +2433,73 @@ describe('QuotesModel', () => {
     it('sends the error callback without a span', async () => {
       // Arrange
       expect.assertions(1)
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      const expectedOptions = {
-        method: Enum.Http.RestMethods.PUT,
-        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
-        data: fspiopError.toApiErrorObject(mockConfig.errorHandling),
-        headers: {}
-      }
+      const fspiopError = arrangeSendErrorCallback()
 
       // Act
       await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
 
-      // Assert
-      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
+      // Assert: the callback is delegated to central-services-shared sendRequest
+      expect(Request.sendRequest).toBeCalledWith(expect.objectContaining({
+        method: Enum.Http.RestMethods.PUT,
+        url: callbackUrl
+      }))
     })
 
     it('sends the error callback and handles the span', async () => {
       // Arrange
       expect.assertions(3)
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
-        headers: {
-          spanHeaders: '12345'
-        },
-        method: Enum.Http.RestMethods.PUT,
-        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
-        data: {}
-      }))
-      mockSpan.audit = jest.fn()
-      const expectedOptions = {
-        method: Enum.Http.RestMethods.PUT,
-        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
-        data: {},
-        headers: {
-          spanHeaders: '12345'
-        }
-      }
+      const fspiopError = arrangeSendErrorCallback()
+      mockSpanForSource(mockConfig.hubName)
 
       // Act
       await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan)
 
-      // Assert
+      // Assert: span context + audit are still handled by injectSpanContext (unchanged),
+      // and span is intentionally NOT passed to sendRequest (avoids duplicate audit)
       expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
       expect(mockSpan.audit).toBeCalledTimes(1)
-      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
+      expect(Request.sendRequest).toBeCalledWith(expect.not.objectContaining({ span: expect.anything() }))
     })
 
-    it('sends the error callback JWS signed', async () => {
+    it('passes a jwsSigner to sendRequest when JWS signing is enabled and source is the hub', async () => {
       // Arrange
-      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
-      // expect.assertions(6)
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
-        headers: {
-          spanHeaders: '12345',
-          'fspiop-source': mockConfig.hubName,
-          'fspiop-destination': 'dfsp2'
-        },
-        method: Enum.Http.RestMethods.PUT,
-        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
-        data: {}
-      }))
-      mockSpan.audit = jest.fn()
+      expect.assertions(2)
+      const fspiopError = arrangeSendErrorCallback()
+      mockSpanForSource(mockConfig.hubName)
       mockConfig.jws.jwsSign = true
       mockConfig.jws.jwsSigningKey = jwsSigningKey
       // Act
       await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, true)
-      // Assert
-      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
-      expect(mockSpan.audit).toBeCalledTimes(1)
-      expect(jwsSignSpy).toBeCalledTimes(1)
-      expect(Http.httpRequestBase.mock.calls[0][0].headers).toHaveProperty('fspiop-signature')
-      expect(Http.httpRequestBase.mock.calls[0][0].headers['fspiop-signature']).toEqual(expect.stringContaining('signature'))
-      expect(Http.httpRequestBase.mock.calls[0][0].headers['fspiop-signature']).toEqual(expect.stringContaining('protectedHeader'))
-      jwsSignSpy.mockRestore()
+      // Assert: a jwsSigner is handed to sendRequest, which signs after transformHeaders
+      expect(Request.sendRequest).toBeCalledTimes(1)
+      expect(Request.sendRequest.mock.calls[0][0].jwsSigner).toBeInstanceOf(JwsSigner)
     })
 
-    it('should not JWS resign error callback, if fspiop-signature header already exists', async () => {
+    it('does not pass a jwsSigner to sendRequest when JWS signing is disabled', async () => {
       // Arrange
-      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
+      expect.assertions(2)
+      const fspiopError = arrangeSendErrorCallback()
+      mockSpanForSource(mockConfig.hubName)
+      mockConfig.jws.jwsSign = false
+      // Act
+      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, true)
+      // Assert
+      expect(Request.sendRequest).toBeCalledTimes(1)
+      expect(Request.sendRequest.mock.calls[0][0].jwsSigner).toBeUndefined()
+    })
 
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-
-      const fspiopSignature = 'mock-fspiop-signature'
-      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
-        headers: {
-          spanHeaders: '12345',
-          'fspiop-source': mockConfig.hubName,
-          'fspiop-destination': 'dfsp2',
-          'fspiop-signature': fspiopSignature
-        },
-        method: Enum.Http.RestMethods.PUT,
-        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
-        data: {}
-      }))
-      mockSpan.audit = jest.fn()
+    it('does not pass a jwsSigner to sendRequest when source is not the hub', async () => {
+      // Arrange
+      expect.assertions(2)
+      const fspiopError = arrangeSendErrorCallback()
+      mockSpanForSource('dfsp1')
       mockConfig.jws.jwsSign = true
       mockConfig.jws.jwsSigningKey = jwsSigningKey
-      // Act
-      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, true)
-      // Assert
-      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
-      expect(mockSpan.audit).toBeCalledTimes(1)
-      expect(jwsSignSpy).toBeCalledTimes(0)
-      expect(Http.httpRequestBase.mock.calls[0][0].headers['fspiop-signature']).toBe(fspiopSignature)
-      jwsSignSpy.mockRestore()
-    })
-
-    it('sends the error callback NOT JWS signed', async () => {
-      // Arrange
-      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
-      expect.assertions(5)
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
-        headers: {
-          spanHeaders: '12345',
-          'fspiop-source': mockConfig.hubName,
-          'fspiop-destination': 'dfsp2'
-        },
-        method: Enum.Http.RestMethods.PUT,
-        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
-        data: {}
-      }))
-      mockSpan.audit = jest.fn()
-      const expectedOptions = {
-        method: Enum.Http.RestMethods.PUT,
-        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
-        data: {},
-        headers: {
-          spanHeaders: '12345',
-          'fspiop-source': mockConfig.hubName,
-          'fspiop-destination': 'dfsp2'
-        }
-      }
-      mockConfig.jws.jwsSign = false
-      // Act
-      await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, true)
-      // Assert
-      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
-      expect(mockSpan.audit).toBeCalledTimes(1)
-      expect(jwsSignSpy).not.toHaveBeenCalled()
-      expect(Http.httpRequestBase.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
-      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
-      jwsSignSpy.mockRestore()
-    })
-
-    it('sends the error callback NOT JWS signed', async () => {
-      // Arrange
-      const jwsSignSpy = jest.spyOn(JwsSigner.prototype, 'getSignature')
-      expect.assertions(5)
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      Http.httpRequestBase.mockImplementationOnce(() => Promise.resolve(({ status: 200 })))
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      mockSpan.injectContextToHttpRequest = jest.fn().mockImplementation(() => ({
-        headers: {
-          spanHeaders: '12345',
-          'fspiop-source': mockConfig.hubName,
-          'fspiop-destination': 'dfsp2'
-        },
-        method: Enum.Http.RestMethods.PUT,
-        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
-        data: {}
-      }))
-      mockSpan.audit = jest.fn()
-      const expectedOptions = {
-        method: Enum.Http.RestMethods.PUT,
-        url: 'http://localhost:8444/payeefsp/quotes/test123/error',
-        data: {},
-        headers: {
-          spanHeaders: '12345',
-          'fspiop-source': mockConfig.hubName,
-          'fspiop-destination': 'dfsp2'
-        }
-      }
-      mockConfig.jws.jwsSign = false
       // Act
       await quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers, mockSpan, false)
-      // Assert
-      expect(mockSpan.injectContextToHttpRequest).toBeCalledTimes(1)
-      expect(mockSpan.audit).toBeCalledTimes(1)
-      expect(jwsSignSpy).not.toHaveBeenCalled()
-      expect(Http.httpRequestBase.mock.calls[0][0].headers).not.toHaveProperty('fspiop-signature')
-      expect(Http.httpRequestBase).toBeCalledWith(expectedOptions, expect.anything())
-      jwsSignSpy.mockRestore()
+      // Assert: signing only applies to switch-generated (hub-sourced) messages
+      expect(Request.sendRequest).toBeCalledTimes(1)
+      expect(Request.sendRequest.mock.calls[0][0].jwsSigner).toBeUndefined()
     })
 
     it('handles when the endpoint could not be found', async () => {
@@ -2634,95 +2518,53 @@ describe('QuotesModel', () => {
       expect(axios.request).not.toHaveBeenCalled()
     })
 
-    it('handles a http exception', async () => {
-      // Arrange
+    // Arrange helper for the error-propagation cases: endpoint + headers + a rejecting sendRequest
+    const arrangeRejectingSendRequest = (rejectWith) => {
+      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
+      Util.generateRequestHeaders.mockReturnValueOnce({})
+      jest.spyOn(Request, 'sendRequest').mockRejectedValueOnce(rejectWith)
+      return ErrorHandler.ReformatFSPIOPError(new Error('Test Error'))
+    }
+
+    it('propagates the FSPIOP error thrown by sendRequest', async () => {
+      // sendRequest performs the error classification and throws an FSPIOP error;
+      // sendErrorCallback simply propagates it (via the outer catch / rethrowAndCountFspiopError)
       expect.assertions(2)
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      Http.httpRequestBase.mockImplementationOnce(() => { throw new Error('HTTP test error') })
+      const fspiopError = arrangeRejectingSendRequest(ErrorHandler.CreateFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR, 'network error'
+      ))
 
-      // Act
       const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
 
-      // Assert
-      await expect(action()).rejects.toThrow('network error in sendErrorCallback: HTTP test error')
-      expect(Http.httpRequestBase).toHaveBeenCalledTimes(1)
+      await expect(action()).rejects.toHaveProperty(
+        'apiErrorCode.code',
+        ErrorHandler.Enums.FSPIOPErrorCodes.DESTINATION_COMMUNICATION_ERROR.code
+      )
+      expect(Request.sendRequest).toHaveBeenCalledTimes(1)
     })
 
-    it('handles a http bad status code', async () => {
-      // Arrange
-      expect.assertions(2)
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      Http.httpRequestBase.mockReturnValueOnce({
-        status: Enum.Http.ReturnCodes.BADREQUEST.CODE
-      })
-
-      // Act
-      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
-
-      // Assert
-      await expect(action()).rejects.toThrow('Got non-success response sending error callback')
-      expect(Http.httpRequestBase).toHaveBeenCalledTimes(1)
-    })
-
-    it('propagates FSPIOP errorInformation from HTTP 4xx response', async () => {
-      // Arrange
+    it('propagates an ID_NOT_FOUND error when sendRequest maps a downstream 404', async () => {
+      // central-services-shared sendRequest maps a 404 response to ID_NOT_FOUND (3200)
       expect.assertions(1)
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      const axiosError = new Error('Request failed with status code 400')
-      axiosError.response = {
-        status: 400,
-        data: { errorInformation: { errorCode: '3100', errorDescription: 'Generic validation error' } }
-      }
-      Http.httpRequestBase.mockRejectedValueOnce(axiosError)
+      const fspiopError = arrangeRejectingSendRequest(ErrorHandler.CreateFSPIOPError(
+        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND, 'not found'
+      ))
 
-      // Act
       const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
 
-      // Assert
-      await expect(action()).rejects.toThrow('Generic validation error')
-    })
-
-    it('handles HTTP 4xx without errorInformation as CLIENT_ERROR', async () => {
-      // Arrange
-      expect.assertions(1)
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      const axiosError = new Error('Request failed with status code 400')
-      axiosError.response = { status: 400, data: {} }
-      Http.httpRequestBase.mockRejectedValueOnce(axiosError)
-
-      // Act
-      const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
-
-      // Assert
-      await expect(action()).rejects.toThrow('client error in sendErrorCallback')
+      await expect(action()).rejects.toHaveProperty(
+        'apiErrorCode.code',
+        ErrorHandler.Enums.FSPIOPErrorCodes.ID_NOT_FOUND.code
+      )
     })
 
     it('rethrows error when metrics is disabled and error occured', async () => {
-      // Arrange
       expect.assertions(1)
       quotesModel.envConfig.instrumentationMetricsDisabled = true
-      quotesModel._getParticipantEndpoint.mockReturnValueOnce(mockData.endpoints.payeefsp)
-      Util.generateRequestHeaders.mockReturnValueOnce({})
-      const error = new Error('Test Error')
-      const fspiopError = ErrorHandler.ReformatFSPIOPError(error)
-      Http.httpRequestBase.mockImplementationOnce(() => { throw new Error('HTTP test error') })
+      const fspiopError = arrangeRejectingSendRequest(new Error('HTTP test error'))
 
-      // Act
       const action = async () => quotesModel.sendErrorCallback('payeefsp', fspiopError, mockData.quoteId, mockData.headers)
 
-      // Assert
       await expect(action()).rejects.toThrowError('HTTP test error')
     })
   })
